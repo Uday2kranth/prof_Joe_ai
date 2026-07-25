@@ -1697,3 +1697,62 @@ body {
   border-color: var(--accent-cyan);
 }
 
+/* Mobile View Optimizations (< 768px) */
+@media (max-width: 768px) {
+  .app-header {
+    padding: 10px 14px;
+  }
+
+  .view-title h2 {
+    font-size: 1.05rem;
+  }
+
+  .chat-input-wrapper {
+    padding: 10px 12px;
+  }
+
+  .input-toolbar-top {
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .model-select-btn,
+  .mode-select-btn {
+    font-size: 0.76rem;
+    padding: 4px 8px;
+  }
+
+  .card-box {
+    padding: 16px;
+  }
+
+  .sample-prompts-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .exam-prep-container {
+    padding: 16px;
+  }
+
+  .exam-prep-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .subject-select {
+    width: 100%;
+  }
+
+  .exam-tabs {
+    overflow-x: auto;
+    white-space: nowrap;
+    padding-bottom: 6px;
+  }
+
+  .tab-btn {
+    padding: 8px 12px;
+    font-size: 0.8rem;
+  }
+}
+

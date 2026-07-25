@@ -1,14 +1,9 @@
 import React from 'react';
 import { Menu, Settings, Trash2, UserCheck } from 'lucide-react';
-import { PROVIDERS } from '../constants';
 import type { ActiveViewType } from './Sidebar';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
-  selectedProvider: string;
-  selectedModel: string;
-  onProviderChange: (provider: string) => void;
-  onModelChange: (model: string) => void;
   onOpenSettings: () => void;
   onClearChat: () => void;
   theme: 'dark' | 'light';
@@ -20,17 +15,12 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   onToggleSidebar,
-  selectedProvider,
-  selectedModel,
-  onProviderChange,
-  onModelChange,
   onOpenSettings,
   onClearChat,
   activeView,
   username = 'Admin@uday',
   onOpenLogin
 }) => {
-  const currentProviderGroup = PROVIDERS.find(p => p.id === selectedProvider) || PROVIDERS[0];
 
   const viewTitles: Record<string, string> = {
     chat: 'AI Multi-Model Dashboard',
@@ -52,37 +42,6 @@ export const Header: React.FC<HeaderProps> = ({
       </div>
 
       <div className="controls-section">
-        {activeView === 'chat' && (
-          <div className="selector-group">
-            <select
-              value={selectedProvider}
-              onChange={(e) => {
-                const newProvider = e.target.value;
-                onProviderChange(newProvider);
-                const group = PROVIDERS.find(p => p.id === newProvider);
-                if (group && group.models.length > 0) {
-                  onModelChange(group.models[0].value);
-                }
-              }}
-              className="select-input"
-            >
-              {PROVIDERS.map(p => (
-                <option key={p.id} value={p.id}>{p.name}</option>
-              ))}
-            </select>
-
-            <select
-              value={selectedModel}
-              onChange={(e) => onModelChange(e.target.value)}
-              className="select-input model-select"
-            >
-              {currentProviderGroup.models.map(m => (
-                <option key={m.value} value={m.value}>{m.name}</option>
-              ))}
-            </select>
-          </div>
-        )}
-
         <div className="action-buttons">
           {activeView === 'chat' && (
             <button onClick={onClearChat} className="btn btn-secondary" title="Clear Chat History">

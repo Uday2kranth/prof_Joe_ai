@@ -8,6 +8,7 @@ import { SystemPromptLibraryView } from './components/SystemPromptLibraryView';
 import { PromptLibraryView } from './components/PromptLibraryView';
 import { DiagramStudioView } from './components/DiagramStudioView';
 import { SettingsModal } from './components/SettingsModal';
+import { LoginModal } from './components/LoginModal';
 import { sendChatMessage } from './services/apiService';
 
 const DEFAULT_KEYS: UserKeys = {
@@ -71,7 +72,16 @@ export const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false);
+  const [currentUser, setCurrentUser] = useState<string>(() => localStorage.getItem('chatterbot_username') || 'Admin@uday');
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  const handleLoginSuccess = (username: string, token: string, role: string) => {
+    setCurrentUser(username);
+    localStorage.setItem('chatterbot_username', username);
+    localStorage.setItem('chatterbot_token', token);
+    localStorage.setItem('chatterbot_role', role);
+  };
 
   useEffect(() => {
     localStorage.setItem('chatterbot_sessions', JSON.stringify(sessions));
@@ -319,19 +329,17 @@ export const App: React.FC = () => {
 
       <div className="app-main-viewport">
         <Header
-          onToggleSidebar={() => setIsSidebarOpen(!isSidebarOpen)}
-          selectedProvider={selectedProvider}
-          selectedModel={selectedModel}
-          onProviderChange={setSelectedProvider}
-          onModelChange={setSelectedModel}
+          onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onClearChat={handleClearChat}
           theme={theme}
           onToggleTheme={handleToggleTheme}
           activeView={activeView}
+          username={currentUser}
+          onOpenLogin={() => setIsLoginOpen(true)}
         />
 
-        <main className="main-content">
+        <main className="app-main">
           {activeView === 'chat' && (
             <ChatWindow
               messages={activeSession ? activeSession.messages : []}
@@ -374,6 +382,13 @@ export const App: React.FC = () => {
         onClose={() => setIsSettingsOpen(false)}
         userKeys={userKeys}
         onSaveKeys={setUserKeys}
+      />
+
+      <LoginModal
+        isOpen={isLoginOpen}
+        onClose={() => setIsLoginOpen(false)}
+        onLoginSuccess={handleLoginSuccess}
+        currentUsername={currentUser}
       />
     </div>
   );
