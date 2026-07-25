@@ -1,0 +1,207 @@
+import React, { useState } from 'react';
+import { BookOpen, FileText, Send, Award } from 'lucide-react';
+import { marked } from 'marked';
+import examData from '../data/examPrepData.json';
+
+interface ExamPrepViewProps {
+  onLoadQuestionToChat: (questionText: string) => void;
+}
+
+const renderFormattedContent = (content: string) => {
+  if (!content) return '';
+  if (content.trim().startsWith('<')) {
+    return content;
+  }
+  return marked.parse(content) as string;
+};
+
+export const ExamPrepView: React.FC<ExamPrepViewProps> = ({ onLoadQuestionToChat }) => {
+  const subjectKeys = Object.keys(examData);
+  const [selectedSubject, setSelectedSubject] = useState<string>(subjectKeys[0] || 'crypto');
+  const [activeTab, setActiveTab] = useState<'syllabus' | 'bank' | 'sets'>('bank');
+  const [selectedPaperSet, setSelectedPaperSet] = useState<'all' | 'set-a' | 'set-b' | 'set-c' | 'set-d'>('all');
+  const [bankSubTab, setBankSubTab] = useState<'standard' | 'gagan'>('standard');
+
+  const currentSubjectData = (examData as any)[selectedSubject] || {};
+
+  return (
+    <div className="exam-prep-container">
+      <div className="exam-prep-header">
+        <div className="subject-selector-area">
+          <BookOpen className="text-cyan-400" size={24} />
+          <div>
+            <h2>Exam Prep & Syllabus Hub</h2>
+            <p className="subtitle">Osmania University M.Sc (CBCS) Final Examination Prep</p>
+          </div>
+        </div>
+
+        <select
+          value={selectedSubject}
+          onChange={(e) => setSelectedSubject(e.target.value)}
+          className="select-input subject-select"
+        >
+          {subjectKeys.map((key) => {
+            const item = (examData as any)[key];
+            return (
+              <option key={key} value={key}>
+                {item.title || key.toUpperCase()} ({item.code || ''})
+              </option>
+            );
+          })}
+        </select>
+      </div>
+
+      <div className="exam-tabs">
+        <button
+          onClick={() => setActiveTab('bank')}
+          className={`tab-btn ${activeTab === 'bank' ? 'active' : ''}`}
+        >
+          <Award size={16} />
+          <span>High-Yield Question Bank</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('sets')}
+          className={`tab-btn ${activeTab === 'sets' ? 'active' : ''}`}
+        >
+          <FileText size={16} />
+          <span>Predicted Paper Sets (A–D)</span>
+        </button>
+        <button
+          onClick={() => setActiveTab('syllabus')}
+          className={`tab-btn ${activeTab === 'syllabus' ? 'active' : ''}`}
+        >
+          <BookOpen size={16} />
+          <span>Full Syllabus Outline</span>
+        </button>
+      </div>
+
+      <div className="exam-tab-content">
+        {activeTab === 'syllabus' && (
+          <div className="syllabus-content card-box">
+            <div
+              className="formatted-content markdown-body"
+              dangerouslySetInnerHTML={{ __html: renderFormattedContent(currentSubjectData.syllabus || 'No syllabus available.') }}
+            />
+          </div>
+        )}
+
+        {activeTab === 'bank' && (
+          <div className="question-bank-content card-box">
+            {/* Sub-tab toggle for Gagan's High-Yield Topics when available */}
+            {currentSubjectData['gagan-important-topics'] && (
+              <div style={{ display: 'flex', gap: '8px', marginBottom: '16px', background: 'var(--bg-tertiary)', padding: '6px', borderRadius: '12px', border: '1px solid var(--border-color)' }}>
+                <button
+                  type="button"
+                  onClick={() => setBankSubTab('standard')}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: bankSubTab === 'standard' ? 'var(--accent-cyan)' : 'transparent',
+                    color: bankSubTab === 'standard' ? '#ffffff' : 'var(--text-primary)',
+                    fontWeight: 600,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  🎯 Standard Question Bank
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setBankSubTab('gagan')}
+                  style={{
+                    flex: 1,
+                    padding: '8px 12px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: bankSubTab === 'gagan' ? '#ef4444' : 'transparent',
+                    color: bankSubTab === 'gagan' ? '#ffffff' : 'var(--text-primary)',
+                    fontWeight: 600,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  🔥 Gagan's High-Yield Topics
+                </button>
+              </div>
+            )}
+
+            <div
+              className="formatted-content markdown-body"
+              dangerouslySetInnerHTML={{
+                __html: renderFormattedContent(
+                  bankSubTab === 'gagan' && currentSubjectData['gagan-important-topics']
+                    ? currentSubjectData['gagan-important-topics']
+                    : (currentSubjectData['question-bank'] || 'No question bank available.')
+                )
+              }}
+            />
+          </div>
+        )}
+
+        {activeTab === 'sets' && (
+          <div className="paper-sets-content">
+            {/* Paper Set Filter Pills */}
+            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px', background: 'var(--bg-tertiary)', padding: '10px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', alignItems: 'center' }}>
+              <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', marginRight: '4px' }}>Filter Paper:</span>
+              {[
+                { id: 'all', label: '🎯 All Sets' },
+                { id: 'set-a', label: '📄 Set A (Baseline)' },
+                { id: 'set-b', label: '📄 Set B (Alternative)' },
+                { id: 'set-c', label: '📄 Set C (Wildcard)' },
+                { id: 'set-d', label: '📄 Set D (Final Review)' }
+              ].map(setItem => (
+                <button
+                  key={setItem.id}
+                  type="button"
+                  onClick={() => setSelectedPaperSet(setItem.id as any)}
+                  style={{
+                    background: selectedPaperSet === setItem.id ? 'var(--accent-cyan)' : 'var(--bg-secondary)',
+                    color: selectedPaperSet === setItem.id ? '#ffffff' : 'var(--text-primary)',
+                    border: '1px solid var(--border-color)',
+                    borderRadius: '16px',
+                    padding: '4px 12px',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  {setItem.label}
+                </button>
+              ))}
+            </div>
+
+            {['set-a', 'set-b', 'set-c', 'set-d']
+              .filter(setKey => selectedPaperSet === 'all' || selectedPaperSet === setKey)
+              .map((setKey) => {
+                const htmlContent = currentSubjectData[setKey];
+                if (!htmlContent) return null;
+
+                return (
+                  <div key={setKey} className="paper-set-card card-box" style={{ marginBottom: '20px' }}>
+                    <div
+                      className="formatted-content markdown-body"
+                      dangerouslySetInnerHTML={{ __html: renderFormattedContent(htmlContent) }}
+                    />
+                    <div className="card-actions" style={{ marginTop: '16px' }}>
+                      <button
+                        onClick={() => onLoadQuestionToChat(`Explain and answer all questions from ${setKey.toUpperCase()} of ${currentSubjectData.title}:`)}
+                        className="btn btn-primary"
+                      >
+                        <Send size={14} />
+                        <span>Ask AI to Solve Paper {setKey.toUpperCase().replace('SET-', 'SET ')}</span>
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
