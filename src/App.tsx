@@ -67,8 +67,8 @@ export const App: React.FC = () => {
   });
 
   const [activeView, setActiveView] = useState<ActiveViewType>('chat');
-  const [selectedProvider, setSelectedProvider] = useState<string>('Ollama Cloud');
-  const [selectedModel, setSelectedModel] = useState<string>('gpt-oss:20b');
+  const [selectedProvider, setSelectedProvider] = useState<string>('OpenRouter');
+  const [selectedModel, setSelectedModel] = useState<string>('google/gemini-2.0-flash-lite-001');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
