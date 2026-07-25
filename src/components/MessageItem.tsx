@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { Bot, User, Copy, Download, FileText, Volume2, Check, RotateCcw, Edit3 } from 'lucide-react';
+import { User, Copy, Download, FileText, Volume2, Check, RotateCcw, Edit3 } from 'lucide-react';
 import { marked } from 'marked';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -130,8 +130,16 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
 
   return (
     <div className={`message-row ${isUser ? 'user-row' : 'assistant-row'}`}>
-      <div className="avatar">
-        {isUser ? <User size={18} /> : <Bot size={18} className="text-cyan-400" />}
+      <div className="avatar" style={{ overflow: 'hidden', border: !isUser ? '1px solid rgba(6, 182, 212, 0.4)' : 'none' }}>
+        {isUser ? (
+          <User size={16} />
+        ) : (
+          <img
+            src="/joe-avatar.png"
+            alt="Prof. Joe AI"
+            style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+          />
+        )}
       </div>
 
       <div className="bubble-wrapper">
