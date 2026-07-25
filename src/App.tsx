@@ -9,6 +9,7 @@ import { PromptLibraryView } from './components/PromptLibraryView';
 import { DiagramStudioView } from './components/DiagramStudioView';
 import { SettingsModal } from './components/SettingsModal';
 import { LoginModal } from './components/LoginModal';
+import { UserProfileModal } from './components/UserProfileModal';
 import { sendChatMessage } from './services/apiService';
 
 const DEFAULT_KEYS: UserKeys = {
@@ -72,6 +73,7 @@ export const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<string>(() => localStorage.getItem('chatterbot_username') || '');
   const [authToken, setAuthToken] = useState<string>(() => localStorage.getItem('chatterbot_token') || '');
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(() => !localStorage.getItem('chatterbot_token'));
@@ -446,6 +448,7 @@ export const App: React.FC = () => {
         theme={theme}
         onToggleTheme={handleToggleTheme}
         currentUser={currentUser}
+        onOpenProfileModal={() => setIsProfileModalOpen(true)}
       />
 
       <div className="app-main-viewport">
@@ -503,6 +506,17 @@ export const App: React.FC = () => {
         onClose={() => setIsSettingsOpen(false)}
         userKeys={userKeys}
         onSaveKeys={handleSaveUserKeys}
+      />
+
+      <UserProfileModal
+        isOpen={isProfileModalOpen}
+        onClose={() => setIsProfileModalOpen(false)}
+        username={currentUser}
+        theme={theme}
+        onToggleTheme={handleToggleTheme}
+        onOpenSettings={() => setIsSettingsOpen(true)}
+        onClearHistory={() => setSessions([])}
+        onLogout={handleLogout}
       />
 
       <LoginModal

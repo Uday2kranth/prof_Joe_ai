@@ -29,7 +29,8 @@ interface SidebarProps {
   onOpenSettings: () => void;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
-  currentUser?: string;
+  currentUser?: any;
+  onOpenProfileModal?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -45,8 +46,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenSettings,
   theme,
   onToggleTheme,
-  currentUser
+  currentUser,
+  onOpenProfileModal
 }) => {
+  const displayUsername = typeof currentUser === 'string' && currentUser.trim() 
+    ? currentUser 
+    : (currentUser && typeof currentUser === 'object' && currentUser.username) 
+      ? currentUser.username 
+      : 'Admin@uday';
+
   return (
     <>
       <div
@@ -99,7 +107,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => { onViewChange('system_prompts'); onCloseMobile(); }}
             className={`nav-item ${activeView === 'system_prompts' ? 'active' : ''}`}
           >
-            <GraduationCap size={16} />
+            <Sparkles size={16} />
             <span>System Prompt Library</span>
           </button>
 
@@ -107,7 +115,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             onClick={() => { onViewChange('prompts'); onCloseMobile(); }}
             className={`nav-item ${activeView === 'prompts' ? 'active' : ''}`}
           >
-            <Sparkles size={16} />
+            <GraduationCap size={16} />
             <span>User Prompts Hub</span>
           </button>
 
@@ -116,17 +124,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
             className={`nav-item ${activeView === 'diagrams' ? 'active' : ''}`}
           >
             <Layers size={16} />
-            <span>Diagram Studio Engine</span>
+            <span>Diagram & Mermaid Studio</span>
           </button>
         </nav>
 
-        <div className="sidebar-sessions-list">
-          <div className="nav-section-title">Chat History</div>
-          <div className="sessions-scroll-area">
+        <div className="sidebar-history-section">
+          <div className="nav-section-title">Chat History ({sessions.length})</div>
+          <div className="session-list">
             {sessions.length === 0 ? (
-              <div className="empty-sessions">No previous chats</div>
+              <div className="no-sessions">No previous chats. Start a new session above.</div>
             ) : (
-              sessions.map((sess) => (
+              sessions.map(sess => (
                 <div
                   key={sess.id}
                   className={`session-item ${activeSessionId === sess.id ? 'active' : ''}`}
@@ -152,14 +160,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <div className="sidebar-footer">
           {/* KokonutUI Profile Card */}
-          <div className="kokonut-profile-card">
+          <div
+            className="kokonut-profile-card"
+            onClick={onOpenProfileModal}
+            style={{ cursor: 'pointer' }}
+            title="Click to view Account & Preferences"
+          >
             <div className="profile-avatar-container">
               <div className="profile-avatar-gradient-ring">
                 <img src="/joe-avatar.png" alt="User Profile" className="profile-avatar-img" />
               </div>
             </div>
             <div className="profile-details">
-              <div className="profile-username">{currentUser || 'Admin@uday'}</div>
+              <div className="profile-username">{displayUsername}</div>
               <span className="profile-role-badge">OU PRO MENTOR</span>
             </div>
           </div>

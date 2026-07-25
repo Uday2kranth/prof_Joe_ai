@@ -89,6 +89,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       }}
     >
       {/* Animated Floating Glow Orbs (Magic UI / React Bits Style) */}
+      <div className="kokonut-dots-overlay login-mouse-dots" />
       <div
         style={{
           position: 'absolute',

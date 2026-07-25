@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Globe, Sparkles, CheckCircle2, X, Zap, Layers, FileText, CheckSquare, MessageSquare, Paperclip, Download } from 'lucide-react';
+import { Send, Globe, Sparkles, CheckCircle2, X, Zap, FileText, CheckSquare, MessageSquare, Paperclip, Download } from 'lucide-react';
 import type { Message } from '../types';
 import { MessageItem } from './MessageItem';
 import { PROVIDERS } from '../constants';
@@ -191,38 +191,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       <div className="chat-input-bar-container card-box kokonut-input-card">
         {/* Top Scrollable Toolbar Strip */}
         <div className="input-toolbar-top">
-          {onProviderChange && onModelChange && (
-            <div className="provider-model-group">
-              <Layers size={13} className="text-cyan-400" />
-              <select
-                value={selectedProvider}
-                onChange={(e) => {
-                  const newProvider = e.target.value;
-                  onProviderChange(newProvider);
-                  const group = PROVIDERS.find(p => p.id === newProvider);
-                  if (group && group.models.length > 0) {
-                    onModelChange(group.models[0].value);
-                  }
-                }}
-                className="kokonut-select-btn"
-              >
-                {PROVIDERS.map(p => (
-                  <option key={p.id} value={p.id}>{p.name}</option>
-                ))}
-              </select>
-
-              <select
-                value={selectedModel}
-                onChange={(e) => onModelChange(e.target.value)}
-                className="kokonut-select-btn model-select"
-              >
-                {currentProviderGroup.models.map(m => (
-                  <option key={m.value} value={m.value}>{m.name}</option>
-                ))}
-              </select>
-            </div>
-          )}
-
           <div className="mode-selector-strip">
             <button
               type="button"
@@ -308,20 +276,44 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           />
 
           <div className="kokonut-bottom-row">
-            <div className="kokonut-left-actions">
+            <div className="kokonut-left-actions flex items-center gap-2">
               {onProviderChange && onModelChange && (
-                <div className="kokonut-model-picker-pill">
-                  <span className="picker-icon">🤖</span>
-                  <select
-                    value={selectedModel}
-                    onChange={(e) => onModelChange(e.target.value)}
-                    className="kokonut-bottom-model-select"
-                  >
-                    {currentProviderGroup.models.map(m => (
-                      <option key={m.value} value={m.value}>{m.name}</option>
-                    ))}
-                  </select>
-                </div>
+                <>
+                  {/* Provider Selector Pill */}
+                  <div className="kokonut-model-picker-pill provider-pill flex items-center gap-1">
+                    <span className="picker-icon">⚡</span>
+                    <select
+                      value={selectedProvider}
+                      onChange={(e) => {
+                        const newProvider = e.target.value;
+                        onProviderChange(newProvider);
+                        const group = PROVIDERS.find(p => p.id === newProvider);
+                        if (group && group.models.length > 0) {
+                          onModelChange(group.models[0].value);
+                        }
+                      }}
+                      className="kokonut-bottom-model-select"
+                    >
+                      {PROVIDERS.map(p => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {/* Model Selector Pill */}
+                  <div className="kokonut-model-picker-pill model-pill flex items-center gap-1">
+                    <span className="picker-icon">🤖</span>
+                    <select
+                      value={selectedModel}
+                      onChange={(e) => onModelChange(e.target.value)}
+                      className="kokonut-bottom-model-select"
+                    >
+                      {currentProviderGroup.models.map(m => (
+                        <option key={m.value} value={m.value}>{m.name}</option>
+                      ))}
+                    </select>
+                  </div>
+                </>
               )}
 
               <button
