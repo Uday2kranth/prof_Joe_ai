@@ -445,6 +445,7 @@ export const App: React.FC = () => {
         onOpenSettings={() => setIsSettingsOpen(true)}
         theme={theme}
         onToggleTheme={handleToggleTheme}
+        currentUser={currentUser}
       />
 
       <div className="app-main-viewport">

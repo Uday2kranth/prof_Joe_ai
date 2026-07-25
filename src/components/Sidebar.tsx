@@ -29,6 +29,7 @@ interface SidebarProps {
   onOpenSettings: () => void;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
+  currentUser?: string;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -43,7 +44,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onDeleteSession,
   onOpenSettings,
   theme,
-  onToggleTheme
+  onToggleTheme,
+  currentUser
 }) => {
   return (
     <>
@@ -149,15 +151,30 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         <div className="sidebar-footer">
-          <button onClick={onToggleTheme} className="btn btn-secondary btn-full" title="Toggle Theme">
-            {theme === 'dark' ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} className="text-indigo-400" />}
-            <span>{theme === 'dark' ? 'Light Theme' : 'Dark Theme'}</span>
-          </button>
+          {/* KokonutUI Profile Card */}
+          <div className="kokonut-profile-card">
+            <div className="profile-avatar-container">
+              <div className="profile-avatar-gradient-ring">
+                <img src="/joe-avatar.png" alt="User Profile" className="profile-avatar-img" />
+              </div>
+            </div>
+            <div className="profile-details">
+              <div className="profile-username">{currentUser || 'Admin@uday'}</div>
+              <span className="profile-role-badge">OU PRO MENTOR</span>
+            </div>
+          </div>
 
-          <button onClick={onOpenSettings} className="btn btn-primary btn-full" title="Configure API Keys">
-            <Settings size={16} />
-            <span>API Credentials</span>
-          </button>
+          <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+            <button onClick={onToggleTheme} className="btn btn-secondary" style={{ flex: 1, padding: '6px 8px', fontSize: '0.78rem' }} title="Toggle Theme">
+              {theme === 'dark' ? <Sun size={14} className="text-amber-400" /> : <Moon size={14} className="text-indigo-400" />}
+              <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
+            </button>
+
+            <button onClick={onOpenSettings} className="btn btn-primary" style={{ flex: 1, padding: '6px 8px', fontSize: '0.78rem' }} title="Configure API Keys">
+              <Settings size={14} />
+              <span>API Keys</span>
+            </button>
+          </div>
         </div>
       </aside>
     </>
