@@ -8,21 +8,6 @@ interface LoginModalProps {
   onClose?: () => void;
 }
 
-const PRESET_USERNAMES = [
-  'Admin@uday',
-  'sai_kiran',
-  'gagan',
-  'akash',
-  'sai_ram',
-  'tharun',
-  'ban',
-  'balraj',
-  'AV_Student',
-  'uday01',
-  'uday02',
-  'uday03'
-];
-
 export const LoginModal: React.FC<LoginModalProps> = ({
   isOpen,
   onLoginSuccess,
@@ -82,18 +67,15 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               <UserCheck size={14} />
               <span>Username / Account</span>
             </label>
-            <select
+            <input
+              type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              className="select-input"
+              placeholder="Enter your username (e.g. Admin@uday or sai_kiran)"
+              required
+              className="text-input"
               style={{ width: '100%', padding: '10px 12px', fontSize: '0.9rem' }}
-            >
-              {PRESET_USERNAMES.map((user) => (
-                <option key={user} value={user}>
-                  {user} {user === 'Admin@uday' ? '(Admin)' : ''}
-                </option>
-              ))}
-            </select>
+            />
           </div>
 
           <div>
