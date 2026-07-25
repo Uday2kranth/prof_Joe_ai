@@ -114,9 +114,12 @@ export const App: React.FC = () => {
   };
 
   const handleNewSession = () => {
+    const customTitle = prompt('Enter title for new chat session:', `Chat Session ${sessions.length + 1}`);
+    const finalTitle = customTitle && customTitle.trim() ? customTitle.trim() : `Chat Session ${sessions.length + 1}`;
+
     const newSess: ChatSession = {
       id: `session-${Date.now()}`,
-      title: 'New Chat Session',
+      title: finalTitle,
       provider: selectedProvider,
       model: selectedModel,
       messages: [],
@@ -358,7 +361,6 @@ export const App: React.FC = () => {
           onToggleTheme={handleToggleTheme}
           activeView={activeView}
           username={currentUser}
-          onOpenLogin={() => setIsLoginOpen(true)}
           onLogout={handleLogout}
         />
 

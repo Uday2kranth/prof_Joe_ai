@@ -14,8 +14,12 @@ export async function sendChatMessage(
     content: m.content
   }));
 
+  const activeUsername = localStorage.getItem('chatterbot_username') || 'Admin@uday';
+  const activeToken = localStorage.getItem('chatterbot_token') || '';
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
+    'x-user-authorization': activeToken,
     'x-user-ollama-key': userKeys.ollama || '',
     'x-user-openrouter-key': userKeys.openrouter || '',
     'x-user-gemini-key': userKeys.gemini || '',
@@ -33,7 +37,7 @@ export async function sendChatMessage(
     method: 'POST',
     headers,
     body: JSON.stringify({
-      user: 'Admin@uday',
+      user: activeUsername,
       provider,
       model,
       messages: formattedMessages,
@@ -43,14 +47,26 @@ export async function sendChatMessage(
     })
   });
 
-  const resData = await response.json();
+  const resText = await response.text();
+  let resData: any = {};
+
+  if (resText && resText.trim()) {
+    try {
+      resData = JSON.parse(resText);
+    } catch (e) {
+      console.error('Non-JSON response received from server:', resText);
+      resData = { error: `Server returned invalid response (${response.status}): ${resText.substring(0, 150)}` };
+    }
+  } else {
+    resData = { error: `Server returned empty response (HTTP ${response.status}). Please verify API key configuration.` };
+  }
 
   if (!response.ok) {
     throw new Error(resData.error || `HTTP ${response.status} error from server`);
   }
 
   return {
-    content: resData.content,
+    content: resData.content || resData.message || resData.text || '',
     modelUsed: resData.modelUsed || model,
     usage: resData.usage
   };

@@ -196,7 +196,7 @@ GENERAL AI ASSISTANT DIRECTIVES:
 
     // 1. Resolve API Key: prioritizes client-submitted header keys.
     let apiKey = '';
-    const isAdmin = (user === "Admin@uday");
+    const isAdmin = (user && user.toLowerCase() === "admin@uday");
 
     if (provider === "openrouter") {
         apiKey = req.headers['x-user-openrouter-key'] || (isAdmin ? (process.env.OPENROUTER_API_KEY || DEFAULT_OPENROUTER_KEY) : '');

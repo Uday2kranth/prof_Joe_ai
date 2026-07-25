@@ -10,7 +10,6 @@ interface HeaderProps {
   onToggleTheme: () => void;
   activeView: ActiveViewType;
   username?: string;
-  onOpenLogin?: () => void;
   onLogout?: () => void;
 }
 
@@ -20,7 +19,6 @@ export const Header: React.FC<HeaderProps> = ({
   onClearChat,
   activeView,
   username = 'Admin@uday',
-  onOpenLogin,
   onLogout
 }) => {
   const viewTitles: Record<string, string> = {
@@ -56,9 +54,9 @@ export const Header: React.FC<HeaderProps> = ({
           </button>
 
           <button
-            onClick={onOpenLogin}
+            onClick={onOpenSettings}
             className="btn btn-secondary user-badge-btn"
-            title="Active User Account"
+            title={`Active Account: ${username} (Click for API Settings)`}
             style={{ gap: '6px' }}
           >
             <UserCheck size={15} />
