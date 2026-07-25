@@ -230,7 +230,7 @@ GENERAL AI ASSISTANT DIRECTIVES:
 
     if (!apiKey) {
         return res.status(400).json({ 
-            error: `API key required for provider "${provider}". Please configure your credentials in Settings.` 
+            error: `API key required for ${provider.toUpperCase()}. Please configure your API key in Settings (⚙️) or select Pollinations AI (Free Keyless).` 
         });
     }
 
