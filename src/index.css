@@ -1699,31 +1699,110 @@ body {
 
 /* Mobile View Optimizations (< 768px) */
 @media (max-width: 768px) {
+  .desktop-only {
+    display: none !important;
+  }
+
   .app-header {
-    padding: 10px 14px;
+    padding: 8px 10px;
+    gap: 6px;
   }
 
   .view-title h2 {
-    font-size: 1.05rem;
+    font-size: 0.88rem;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
+  }
+
+  .controls-section {
+    gap: 4px;
+  }
+
+  .action-buttons {
+    gap: 4px;
+  }
+
+  .action-buttons .btn {
+    padding: 4px 8px;
+    font-size: 0.75rem;
+    height: 32px;
+  }
+
+  .user-badge-btn {
+    max-width: 90px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  /* Chat Window & Input Area */
+  .chat-messages-container {
+    padding: 12px 10px;
+  }
+
+  .chat-input-container {
+    padding: 6px 8px 12px 8px;
   }
 
   .chat-input-wrapper {
-    padding: 10px 12px;
+    padding: 8px 10px;
+    gap: 6px;
   }
 
   .input-toolbar-top {
-    flex-wrap: wrap;
-    gap: 8px;
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    flex-wrap: nowrap !important;
+    padding-bottom: 4px;
+    gap: 6px;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+
+  .input-toolbar-top::-webkit-scrollbar {
+    display: none;
   }
 
   .model-select-btn,
-  .mode-select-btn {
-    font-size: 0.76rem;
-    padding: 4px 8px;
+  .mode-select-btn,
+  .rag-toggle-btn,
+  .export-pdf-btn {
+    font-size: 0.72rem;
+    padding: 3px 8px;
+    flex-shrink: 0;
+  }
+
+  .input-toolbar-bottom {
+    gap: 8px;
+  }
+
+  .chat-textarea {
+    font-size: 0.85rem;
+    min-height: 36px;
+    padding: 4px 0;
+  }
+
+  /* Markdown Table Touch Scrolling */
+  .markdown-body table {
+    display: block !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    margin-bottom: 1rem;
+    font-size: 0.8rem;
+  }
+
+  .markdown-body th,
+  .markdown-body td {
+    padding: 6px 10px;
+    white-space: nowrap;
   }
 
   .card-box {
-    padding: 16px;
+    padding: 14px;
   }
 
   .sample-prompts-grid {
@@ -1731,28 +1810,30 @@ body {
   }
 
   .exam-prep-container {
-    padding: 16px;
+    padding: 12px;
   }
 
   .exam-prep-header {
     flex-direction: column;
     align-items: flex-start;
-    gap: 12px;
+    gap: 10px;
   }
 
   .subject-select {
     width: 100%;
+    font-size: 0.85rem;
   }
 
   .exam-tabs {
     overflow-x: auto;
     white-space: nowrap;
     padding-bottom: 6px;
+    -webkit-overflow-scrolling: touch;
   }
 
   .tab-btn {
-    padding: 8px 12px;
-    font-size: 0.8rem;
+    padding: 6px 10px;
+    font-size: 0.78rem;
   }
 }
 
