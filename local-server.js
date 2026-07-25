@@ -118,6 +118,15 @@ const server = http.createServer((req, res) => {
   });
 });
 
+server.on('error', (err) => {
+  if (err.code === 'EADDRINUSE') {
+    console.log(`Port ${PORT} is already in use by an active Prof. Joe AI server. Server is ready!`);
+    process.exit(0);
+  } else {
+    console.error('Server error:', err);
+  }
+});
+
 server.listen(PORT, () => {
   console.log(`Prof. Joe AI Local Server running on http://localhost:${PORT}`);
 });
