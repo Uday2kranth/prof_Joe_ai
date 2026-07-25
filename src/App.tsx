@@ -41,8 +41,8 @@ export const App: React.FC = () => {
       {
         id: 'default-session-1',
         title: 'New Chat Session',
-        provider: 'Ollama Cloud',
-        model: 'gpt-oss:20b',
+        provider: 'OpenRouter',
+        model: 'google/gemini-2.0-flash-lite-001',
         messages: [],
         createdAt: Date.now(),
         updatedAt: Date.now()
@@ -77,6 +77,26 @@ export const App: React.FC = () => {
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(() => !localStorage.getItem('chatterbot_token'));
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
+  const activeSession = sessions.find(s => s.id === activeSessionIdState) || sessions[0];
+
+  const handleProviderChange = (provider: string) => {
+    setSelectedProvider(provider);
+    setSessions(prev =>
+      prev.map(s =>
+        s.id === activeSession.id ? { ...s, provider, updatedAt: Date.now() } : s
+      )
+    );
+  };
+
+  const handleModelChange = (model: string) => {
+    setSelectedModel(model);
+    setSessions(prev =>
+      prev.map(s =>
+        s.id === activeSession.id ? { ...s, model, updatedAt: Date.now() } : s
+      )
+    );
+  };
+
   const handleLoginSuccess = (username: string, token: string, role: string) => {
     setCurrentUser(username);
     setAuthToken(token);
@@ -107,7 +127,6 @@ export const App: React.FC = () => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
 
-  const activeSession = sessions.find(s => s.id === activeSessionIdState) || sessions[0];
 
   const handleToggleTheme = () => {
     setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
@@ -372,8 +391,8 @@ export const App: React.FC = () => {
               onSendMessage={handleSendMessage}
               selectedProvider={selectedProvider}
               selectedModel={selectedModel}
-              onProviderChange={setSelectedProvider}
-              onModelChange={setSelectedModel}
+              onProviderChange={handleProviderChange}
+              onModelChange={handleModelChange}
               onRetry={handleRetryLastAssistantMessage}
               onEditUserMessage={handleEditLastUserMessage}
               activeSystemPromptTitle={activeSession?.systemPromptTitle}
