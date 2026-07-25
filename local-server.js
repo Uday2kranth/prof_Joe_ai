@@ -5,6 +5,7 @@ import url, { fileURLToPath } from 'url';
 
 import chatHandler from './api/chat.js';
 import loginHandler from './api/login.js';
+import userKeysHandler from './api/user-keys.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -82,6 +83,8 @@ const server = http.createServer((req, res) => {
           await chatHandler(mockReq, mockRes);
         } else if (pathname === '/api/login') {
           await loginHandler(mockReq, mockRes);
+        } else if (pathname === '/api/user-keys') {
+          await userKeysHandler(mockReq, mockRes);
         } else {
           mockRes.status(404).json({ error: `API route ${pathname} not found.` });
         }

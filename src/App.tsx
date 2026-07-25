@@ -123,6 +123,48 @@ export const App: React.FC = () => {
     localStorage.setItem('chatterbot_user_keys', JSON.stringify(userKeys));
   }, [userKeys]);
 
+  // Fetch Cloud API Keys when currentUser logs in or opens app
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const fetchCloudKeys = async () => {
+      try {
+        const response = await fetch(`/api/user-keys?username=${encodeURIComponent(currentUser)}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.keys && Object.keys(data.keys).length > 0) {
+            setUserKeys(prev => {
+              const merged = { ...prev, ...data.keys };
+              localStorage.setItem('chatterbot_user_keys', JSON.stringify(merged));
+              return merged;
+            });
+          }
+        }
+      } catch (err) {
+        console.warn('Could not sync keys from cloud storage:', err);
+      }
+    };
+
+    fetchCloudKeys();
+  }, [currentUser]);
+
+  const handleSaveUserKeys = async (newKeys: UserKeys) => {
+    setUserKeys(newKeys);
+    localStorage.setItem('chatterbot_user_keys', JSON.stringify(newKeys));
+
+    if (currentUser) {
+      try {
+        await fetch('/api/user-keys', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username: currentUser, keys: newKeys })
+        });
+      } catch (err) {
+        console.error('Failed to backup keys to cloud storage:', err);
+      }
+    }
+  };
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
   }, [theme]);
@@ -425,7 +467,7 @@ export const App: React.FC = () => {
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
         userKeys={userKeys}
-        onSaveKeys={setUserKeys}
+        onSaveKeys={handleSaveUserKeys}
       />
 
       <LoginModal
