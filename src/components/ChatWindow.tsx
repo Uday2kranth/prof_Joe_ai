@@ -308,13 +308,28 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
           <div className="kokonut-bottom-row">
             <div className="kokonut-left-actions">
+              {onProviderChange && onModelChange && (
+                <div className="kokonut-model-picker-pill">
+                  <span className="picker-icon">🤖</span>
+                  <select
+                    value={selectedModel}
+                    onChange={(e) => onModelChange(e.target.value)}
+                    className="kokonut-bottom-model-select"
+                  >
+                    {currentProviderGroup.models.map(m => (
+                      <option key={m.value} value={m.value}>{m.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 className="kokonut-action-btn"
                 title="Attach File or PDF"
               >
-                <Paperclip size={16} />
+                <Paperclip size={15} />
               </button>
 
               {messages.length > 0 && (
@@ -333,7 +348,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             <button
               type="submit"
               disabled={isLoading || !inputPrompt.trim()}
-              className="kokonut-send-btn"
+              className="kokonut-send-btn attract-btn"
               title="Send Message"
             >
               <Send size={16} />
