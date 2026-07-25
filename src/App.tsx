@@ -86,6 +86,15 @@ export const App: React.FC = () => {
     setIsLoginOpen(false);
   };
 
+  const handleLogout = () => {
+    setCurrentUser('');
+    setAuthToken('');
+    localStorage.removeItem('chatterbot_username');
+    localStorage.removeItem('chatterbot_token');
+    localStorage.removeItem('chatterbot_role');
+    setIsLoginOpen(true);
+  };
+
   useEffect(() => {
     localStorage.setItem('chatterbot_sessions', JSON.stringify(sessions));
   }, [sessions]);
@@ -340,6 +349,7 @@ export const App: React.FC = () => {
           activeView={activeView}
           username={currentUser}
           onOpenLogin={() => setIsLoginOpen(true)}
+          onLogout={handleLogout}
         />
 
         <main className="app-main">

@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, Settings, Trash2, UserCheck } from 'lucide-react';
+import { Menu, Settings, Trash2, UserCheck, LogOut } from 'lucide-react';
 import type { ActiveViewType } from './Sidebar';
 
 interface HeaderProps {
@@ -11,6 +11,7 @@ interface HeaderProps {
   activeView: ActiveViewType;
   username?: string;
   onOpenLogin?: () => void;
+  onLogout?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -19,9 +20,9 @@ export const Header: React.FC<HeaderProps> = ({
   onClearChat,
   activeView,
   username = 'Admin@uday',
-  onOpenLogin
+  onOpenLogin,
+  onLogout
 }) => {
-
   const viewTitles: Record<string, string> = {
     chat: 'AI Multi-Model Dashboard',
     examprep: 'Exam Prep & Syllabus Hub',
@@ -56,13 +57,25 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={onOpenLogin}
-            className="btn btn-primary user-badge-btn"
+            className="btn btn-secondary user-badge-btn"
             title="Active User Account"
             style={{ gap: '6px' }}
           >
             <UserCheck size={15} />
             <span>{username}</span>
           </button>
+
+          {onLogout && (
+            <button
+              onClick={onLogout}
+              className="btn btn-primary"
+              title="Sign Out of Account"
+              style={{ gap: '6px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}
+            >
+              <LogOut size={15} />
+              <span className="desktop-only">Logout</span>
+            </button>
+          )}
         </div>
       </div>
     </header>
