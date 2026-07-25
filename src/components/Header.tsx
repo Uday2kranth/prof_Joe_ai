@@ -1,5 +1,5 @@
 import React from 'react';
-import { Menu, Settings, Trash2, UserCheck, LogOut } from 'lucide-react';
+import { Menu, Trash2, LogOut } from 'lucide-react';
 import type { ActiveViewType } from './Sidebar';
 
 interface HeaderProps {
@@ -15,10 +15,8 @@ interface HeaderProps {
 
 export const Header: React.FC<HeaderProps> = ({
   onToggleSidebar,
-  onOpenSettings,
   onClearChat,
   activeView,
-  username = 'Admin@uday',
   onLogout
 }) => {
   const viewTitles: Record<string, string> = {
@@ -49,20 +47,6 @@ export const Header: React.FC<HeaderProps> = ({
             </button>
           )}
 
-          <button onClick={onOpenSettings} className="btn btn-secondary" title="Configure API Keys">
-            <Settings size={16} />
-          </button>
-
-          <button
-            onClick={onOpenSettings}
-            className="btn btn-secondary user-badge-btn"
-            title={`Active Account: ${username} (Click for API Settings)`}
-            style={{ gap: '6px' }}
-          >
-            <UserCheck size={15} />
-            <span>{username}</span>
-          </button>
-
           {onLogout && (
             <button
               onClick={onLogout}
@@ -71,7 +55,7 @@ export const Header: React.FC<HeaderProps> = ({
               style={{ gap: '6px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444', border: '1px solid rgba(239, 68, 68, 0.3)' }}
             >
               <LogOut size={15} />
-              <span className="desktop-only">Logout</span>
+              <span>Logout</span>
             </button>
           )}
         </div>

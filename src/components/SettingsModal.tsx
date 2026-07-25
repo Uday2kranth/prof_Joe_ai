@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { X, Key, Save, Check, Eye, EyeOff, Download, Upload } from 'lucide-react';
 import type { UserKeys } from '../types';
 
@@ -19,6 +19,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   const [saved, setSaved] = useState(false);
   const [visibleFields, setVisibleFields] = useState<Record<string, boolean>>({});
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    if (isOpen) {
+      setKeys({ ...userKeys });
+    }
+  }, [userKeys, isOpen]);
 
   if (!isOpen) return null;
 
