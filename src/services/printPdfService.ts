@@ -198,7 +198,27 @@ export async function printBubbleToPdf(content: string, modelUsed?: string): Pro
     </html>
   `;
 
-  // 6. Create hidden iframe and trigger native print engine
+  executePrintDocument(printHtml);
+}
+
+function executePrintDocument(printHtml: string): void {
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+
+  if (isMobile) {
+    const printWin = window.open('', '_blank');
+    if (printWin) {
+      printWin.document.open();
+      printWin.document.write(printHtml);
+      printWin.document.close();
+      setTimeout(() => {
+        printWin.focus();
+        printWin.print();
+      }, 500);
+      return;
+    }
+  }
+
+  // Desktop printable iframe fallback
   const iframe = document.createElement('iframe');
   iframe.style.position = 'fixed';
   iframe.style.right = '0';
@@ -216,7 +236,6 @@ export async function printBubbleToPdf(content: string, modelUsed?: string): Pro
   doc.write(printHtml);
   doc.close();
 
-  // Wait for images/SVGs to load before printing
   setTimeout(() => {
     iframe.contentWindow?.focus();
     iframe.contentWindow?.print();
@@ -415,30 +434,5 @@ export async function printSessionToPdf(messages: any[], sessionTitle: string = 
     </html>
   `;
 
-  const iframe = document.createElement('iframe');
-  iframe.style.position = 'fixed';
-  iframe.style.right = '0';
-  iframe.style.bottom = '0';
-  iframe.style.width = '0';
-  iframe.style.height = '0';
-  iframe.style.border = '0';
-
-  document.body.appendChild(iframe);
-
-  const doc = iframe.contentWindow?.document;
-  if (!doc) return;
-
-  doc.open();
-  doc.write(printHtml);
-  doc.close();
-
-  setTimeout(() => {
-    iframe.contentWindow?.focus();
-    iframe.contentWindow?.print();
-    setTimeout(() => {
-      if (document.body.contains(iframe)) {
-        document.body.removeChild(iframe);
-      }
-    }, 1000);
-  }, 400);
+  executePrintDocument(printHtml);
 }

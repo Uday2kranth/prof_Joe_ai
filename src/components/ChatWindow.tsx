@@ -287,6 +287,42 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             <span>Web Search {webSearch ? 'ON' : 'OFF'}</span>
           </button>
 
+          {activeSystemPromptTitle && (
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'rgba(168, 85, 247, 0.15)',
+              color: '#c084fc',
+              border: '1px solid rgba(168, 85, 247, 0.4)',
+              padding: '3px 10px',
+              borderRadius: '16px',
+              fontSize: '0.72rem',
+              fontWeight: 600,
+              flexShrink: 0
+            }}>
+              <span>📌 {activeSystemPromptTitle}</span>
+              {onClearSystemPrompt && (
+                <button
+                  type="button"
+                  onClick={onClearSystemPrompt}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    color: '#ef4444',
+                    cursor: 'pointer',
+                    padding: 0,
+                    display: 'flex',
+                    alignItems: 'center'
+                  }}
+                  title="Clear active system prompt"
+                >
+                  <X size={13} />
+                </button>
+              )}
+            </div>
+          )}
+
           {messages.length > 0 && (
             <button
               type="button"

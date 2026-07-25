@@ -115,9 +115,43 @@ export const App: React.FC = () => {
     setIsLoginOpen(true);
   };
 
+  // Save sessions to localStorage & Cloud Storage
   useEffect(() => {
     localStorage.setItem('chatterbot_sessions', JSON.stringify(sessions));
-  }, [sessions]);
+
+    if (currentUser && sessions && sessions.length > 0) {
+      fetch('/api/sessions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: currentUser, sessions })
+      }).catch(err => console.warn('Could not sync sessions to cloud:', err));
+    }
+  }, [sessions, currentUser]);
+
+  // Fetch Cloud Sessions when currentUser logs in or opens app
+  useEffect(() => {
+    if (!currentUser) return;
+
+    const fetchCloudSessions = async () => {
+      try {
+        const response = await fetch(`/api/sessions?username=${encodeURIComponent(currentUser)}`);
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && Array.isArray(data.sessions) && data.sessions.length > 0) {
+            setSessions(data.sessions);
+            localStorage.setItem('chatterbot_sessions', JSON.stringify(data.sessions));
+            if (data.sessions[0]?.id) {
+              setActiveSessionIdState(data.sessions[0].id);
+            }
+          }
+        }
+      } catch (err) {
+        console.warn('Could not sync sessions from cloud storage:', err);
+      }
+    };
+
+    fetchCloudSessions();
+  }, [currentUser]);
 
   useEffect(() => {
     localStorage.setItem('chatterbot_user_keys', JSON.stringify(userKeys));

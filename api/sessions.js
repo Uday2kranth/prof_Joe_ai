@@ -1,68 +1,73 @@
-import { MongoClient } from 'mongodb';
-
-async function getDbClient() {
-  if (!process.env.MONGODB_URI) return null;
-  const client = new MongoClient(process.env.MONGODB_URI);
-  await client.connect();
-  return client;
-}
+let IN_MEMORY_SESSIONS = {};
 
 export default async function handler(req, res) {
-  const { username } = req.query || req.body || {};
-  if (!username) {
-    return res.status(400).json({ error: 'Username is required' });
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-user-authorization');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
   }
 
-  const client = await getDbClient();
-  if (!client) {
-    // Graceful fallback if MongoDB is not connected
-    return res.status(200).json({ success: true, sessions: [], storage: 'local' });
-  }
+  const mongodbUri = process.env.MONGODB_URI;
 
-  try {
-    const db = client.db('prof_joe_ai');
-    const sessionsCol = db.collection('chat_sessions');
-
-    if (req.method === 'GET') {
-      const userSessions = await sessionsCol.find({ username }).sort({ updatedAt: -1 }).toArray();
-      await client.close();
-      return res.status(200).json({ success: true, sessions: userSessions });
+  if (req.method === 'GET') {
+    const { username } = req.query || {};
+    if (!username) {
+      return res.status(400).json({ error: 'Username query parameter is required' });
     }
 
-    if (req.method === 'POST') {
-      const { session } = req.body;
-      if (!session || !session.id) {
+    if (mongodbUri) {
+      try {
+        const { MongoClient } = await import('mongodb');
+        const client = new MongoClient(mongodbUri);
+        await client.connect();
+        const db = client.db('prof_joe_ai');
+        const doc = await db.collection('user_chat_sessions').findOne({ username });
         await client.close();
-        return res.status(400).json({ error: 'Valid session payload required' });
+
+        if (doc && doc.sessions) {
+          return res.status(200).json({ success: true, sessions: doc.sessions });
+        }
+      } catch (err) {
+        console.error('MongoDB fetch sessions failed:', err.message);
       }
-
-      await sessionsCol.updateOne(
-        { id: session.id, username },
-        { $set: { ...session, username, updatedAt: Date.now() } },
-        { upsert: true }
-      );
-
-      await client.close();
-      return res.status(200).json({ success: true, message: 'Session saved to MongoDB' });
     }
 
-    if (req.method === 'DELETE') {
-      const { sessionId } = req.body || req.query;
-      if (!sessionId) {
-        await client.close();
-        return res.status(400).json({ error: 'Session ID required for deletion' });
-      }
-
-      await sessionsCol.deleteOne({ id: sessionId, username });
-      await client.close();
-      return res.status(200).json({ success: true, message: 'Session deleted from MongoDB' });
-    }
-
-    await client.close();
-    return res.status(405).json({ error: 'Method Not Allowed' });
-  } catch (err) {
-    if (client) await client.close();
-    console.error('Sessions API Error:', err);
-    return res.status(500).json({ error: err.message || 'Database error' });
+    // Fallback to in-memory store
+    const sessions = IN_MEMORY_SESSIONS[username] || [];
+    return res.status(200).json({ success: true, sessions });
   }
+
+  if (req.method === 'POST') {
+    const { username, sessions } = req.body || {};
+    if (!username || !Array.isArray(sessions)) {
+      return res.status(400).json({ error: 'Username and sessions array are required in body' });
+    }
+
+    // Save to in-memory store
+    IN_MEMORY_SESSIONS[username] = sessions;
+
+    if (mongodbUri) {
+      try {
+        const { MongoClient } = await import('mongodb');
+        const client = new MongoClient(mongodbUri);
+        await client.connect();
+        const db = client.db('prof_joe_ai');
+        await db.collection('user_chat_sessions').updateOne(
+          { username },
+          { $set: { username, sessions, updatedAt: new Date() } },
+          { upsert: true }
+        );
+        await client.close();
+      } catch (err) {
+        console.error('MongoDB save sessions failed:', err.message);
+      }
+    }
+
+    return res.status(200).json({ success: true, message: 'Cloud chat sessions saved successfully.' });
+  }
+
+  return res.status(405).json({ error: 'Method Not Allowed' });
 }
