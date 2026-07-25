@@ -128,7 +128,7 @@ module.exports = async (req, res) => {
     // CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-user-openrouter-key, x-user-nvidia-key, x-user-omnirouter-key, x-user-mistral-key, x-user-cerebras-key, x-user-groq-key, x-user-sambanova-key, x-user-gemini-key, x-user-nararouter-key, x-user-huggingface-key, x-user-pollinations-key, x-user-ollama-key, x-pollinations-subtype');
+    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-user-authorization, x-user-openrouter-key, x-user-nvidia-key, x-user-omnirouter-key, x-user-mistral-key, x-user-cerebras-key, x-user-groq-key, x-user-sambanova-key, x-user-gemini-key, x-user-nararouter-key, x-user-huggingface-key, x-user-pollinations-key, x-user-ollama-key, x-pollinations-subtype');
 
     // Handle OPTIONS preflight request
     if (req.method === 'OPTIONS') {
@@ -136,14 +136,15 @@ module.exports = async (req, res) => {
     }
 
     if (req.method !== 'POST') {
-        return res.status(405).json({ error: 'Method Not Allowed' });
+        return res.status(405).json({ error: 'Method Not Allowed. Please send a POST request.' });
     }
 
-    const { user, model, provider, messages, sessionId, sessionTitle, webSearch, imageSearch, mode } = req.body;
+    try {
+        const { user, model, provider, messages, sessionId, sessionTitle, webSearch, imageSearch, mode } = req.body || {};
 
-    if (!user || !model || !provider || !messages || !Array.isArray(messages)) {
-        return res.status(400).json({ error: 'Invalid request body. Fields "user", "model", "provider", and "messages" are required.' });
-    }
+        if (!user || !model || !provider || !messages || !Array.isArray(messages)) {
+            return res.status(400).json({ error: 'Invalid request body. Fields "user", "model", "provider", and "messages" are required.' });
+        }
 
     const prompt = messages[messages.length - 1]?.content || 'N/A';
     let apiMessages = [...messages];
