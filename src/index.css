@@ -2230,3 +2230,72 @@ body {
   -webkit-mask-image: radial-gradient(circle at center, black 40%, transparent 80%);
 }
 
+/* KokonutUI SpotlightCards 3D Tilt & Radial Ambient Glow */
+.prompt-card,
+.paper-set-card,
+.suggestion-card {
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.25s ease-out, border-color 0.3s ease, box-shadow 0.3s ease, opacity 0.3s ease !important;
+  transform-style: preserve-3d;
+  perspective: 900px;
+}
+
+.prompt-card::before,
+.paper-set-card::before,
+.suggestion-card::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: radial-gradient(ellipse at 20% 20%, rgba(6, 182, 212, 0.18), transparent 65%);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.prompt-card::after,
+.paper-set-card::after,
+.suggestion-card::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  height: 2px;
+  width: 0;
+  background: linear-gradient(to right, #06b6d4, #a855f7, transparent);
+  transition: width 0.4s ease;
+  border-radius: 999px;
+  pointer-events: none;
+}
+
+.prompt-card:hover,
+.paper-set-card:hover,
+.suggestion-card:hover {
+  transform: translateY(-3px) scale(1.015) !important;
+  border-color: rgba(6, 182, 212, 0.5) !important;
+  box-shadow: 0 12px 30px -10px rgba(6, 182, 212, 0.25) !important;
+}
+
+.prompt-card:hover::before,
+.paper-set-card:hover::before,
+.suggestion-card:hover::before {
+  opacity: 1;
+}
+
+.prompt-card:hover::after,
+.paper-set-card:hover::after,
+.suggestion-card:hover::after {
+  width: 100%;
+}
+
+/* KokonutUI FlowField Aurora Ambient Background */
+.app-container {
+  background-image: 
+    radial-gradient(ellipse 80% 50% at 50% -20%, rgba(6, 182, 212, 0.15), transparent 70%),
+    radial-gradient(ellipse 60% 40% at 100% 100%, rgba(168, 85, 247, 0.12), transparent 70%),
+    radial-gradient(ellipse 50% 50% at 0% 100%, rgba(59, 130, 246, 0.1), transparent 70%);
+  background-attachment: fixed;
+}
+
