@@ -72,15 +72,18 @@ export const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
-  const [isLoginOpen, setIsLoginOpen] = useState<boolean>(false);
-  const [currentUser, setCurrentUser] = useState<string>(() => localStorage.getItem('chatterbot_username') || 'Admin@uday');
+  const [currentUser, setCurrentUser] = useState<string>(() => localStorage.getItem('chatterbot_username') || '');
+  const [authToken, setAuthToken] = useState<string>(() => localStorage.getItem('chatterbot_token') || '');
+  const [isLoginOpen, setIsLoginOpen] = useState<boolean>(() => !localStorage.getItem('chatterbot_token'));
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   const handleLoginSuccess = (username: string, token: string, role: string) => {
     setCurrentUser(username);
+    setAuthToken(token);
     localStorage.setItem('chatterbot_username', username);
     localStorage.setItem('chatterbot_token', token);
     localStorage.setItem('chatterbot_role', role);
+    setIsLoginOpen(false);
   };
 
   useEffect(() => {
@@ -385,10 +388,12 @@ export const App: React.FC = () => {
       />
 
       <LoginModal
-        isOpen={isLoginOpen}
-        onClose={() => setIsLoginOpen(false)}
+        isOpen={isLoginOpen || !authToken}
+        preventClose={!authToken}
+        onClose={() => {
+          if (authToken) setIsLoginOpen(false);
+        }}
         onLoginSuccess={handleLoginSuccess}
-        currentUsername={currentUser}
       />
     </div>
   );

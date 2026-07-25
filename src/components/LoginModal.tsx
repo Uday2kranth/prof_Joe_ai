@@ -1,42 +1,40 @@
 import React, { useState } from 'react';
-import { UserCheck, Key, ShieldCheck, X, LogIn } from 'lucide-react';
+import { ShieldCheck, UserCheck, Key, LogIn, AlertCircle } from 'lucide-react';
 
 interface LoginModalProps {
   isOpen: boolean;
-  onClose: () => void;
   onLoginSuccess: (username: string, token: string, role: string) => void;
-  currentUsername: string;
+  preventClose?: boolean;
+  onClose?: () => void;
 }
 
-const PRESET_USERS = [
-  { username: 'Admin@uday', label: '👑 Admin (Uday)', role: 'admin' },
-  { username: 'sai_kiran', label: '🎓 Sai Kiran', role: 'student' },
-  { username: 'gagan', label: '🎓 Gagan', role: 'student' },
-  { username: 'akash', label: '🎓 Akash', role: 'student' },
-  { username: 'sai_ram', label: '🎓 Sai Ram', role: 'student' },
-  { username: 'tharun', label: '🎓 Tharun', role: 'student' },
-  { username: 'ban', label: '🎓 Ban', role: 'student' },
-  { username: 'AV_Student', label: '🏫 AV Student', role: 'guest_student' },
-  { username: 'uday01', label: '👤 Guest 01', role: 'guest' }
+const PRESET_USERNAMES = [
+  'Admin@uday',
+  'sai_kiran',
+  'gagan',
+  'akash',
+  'sai_ram',
+  'tharun',
+  'ban',
+  'balraj',
+  'AV_Student',
+  'uday01',
+  'uday02',
+  'uday03'
 ];
 
 export const LoginModal: React.FC<LoginModalProps> = ({
   isOpen,
-  onClose,
   onLoginSuccess,
-  currentUsername
+  preventClose = false,
+  onClose
 }) => {
-  const [username, setUsername] = useState<string>(currentUsername || 'Admin@uday');
+  const [username, setUsername] = useState<string>('Admin@uday');
   const [password, setPassword] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
 
   if (!isOpen) return null;
-
-  const handlePresetSelect = (selectedUser: string) => {
-    setUsername(selectedUser);
-    setErrorMsg('');
-  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -53,117 +51,91 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       const data = await response.json();
 
       if (response.ok && data.success) {
-        onLoginSuccess(data.username, data.token, data.role || 'user');
-        onClose();
+        onLoginSuccess(data.username, data.token, data.role || 'student');
       } else {
-        setErrorMsg(data.error || 'Invalid credentials. Please check your username and password.');
+        setErrorMsg(data.error || 'Invalid credentials. Please check your password.');
       }
     } catch (err: any) {
-      // Fallback for local demo mode if backend serverless endpoint is offline
-      console.warn('Backend login endpoint unavailable, applying local authentication fallback', err);
-      onLoginSuccess(username, 'local_demo_token', username.includes('Admin') ? 'admin' : 'student');
-      onClose();
+      console.error('Login network error:', err);
+      setErrorMsg('Connection error. Please ensure Vercel environment variables are configured.');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <div className="modal-overlay">
-      <div className="modal-content login-modal-box" style={{ maxWidth: '440px' }}>
-        <div className="modal-header">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <ShieldCheck className="text-cyan-400" size={22} />
-            <h3 style={{ margin: 0 }}>Prof. Joe AI Login</h3>
+    <div className="modal-overlay" style={{ background: 'rgba(5, 7, 15, 0.92)', backdropFilter: 'blur(12px)', zIndex: 9999 }}>
+      <div className="modal-content login-modal-box" style={{ maxWidth: '420px', width: '90%', border: '1px solid var(--border-color)', boxShadow: '0 20px 50px rgba(0,0,0,0.6)' }}>
+        <div style={{ textAlign: 'center', marginBottom: '20px', paddingTop: '10px' }}>
+          <div style={{ display: 'inline-flex', padding: '12px', background: 'rgba(6, 182, 212, 0.1)', borderRadius: '50%', marginBottom: '12px', border: '1px solid rgba(6, 182, 212, 0.2)' }}>
+            <ShieldCheck size={32} className="text-cyan-400" />
           </div>
-          <button onClick={onClose} className="close-btn" aria-label="Close modal">
-            <X size={18} />
-          </button>
+          <h2 style={{ fontSize: '1.4rem', fontWeight: 700, margin: '0 0 6px 0', color: 'var(--text-primary)' }}>Prof. Joe AI Login</h2>
+          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
+            Enter your credentials to unlock your exam prep hub.
+          </p>
         </div>
 
-        <div className="modal-body" style={{ paddingTop: '12px' }}>
-          <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginBottom: '14px' }}>
-            Select your student or admin profile to access your personalized exam prep hub & AI models.
-          </p>
-
-          {/* Quick Profile Selection Chips */}
-          <div style={{ marginBottom: '16px' }}>
-            <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', display: 'block', marginBottom: '8px' }}>
-              Quick Profile Switcher:
+        <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+              <UserCheck size={14} />
+              <span>Username / Account</span>
             </label>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-              {PRESET_USERS.map((user) => (
-                <button
-                  key={user.username}
-                  type="button"
-                  onClick={() => handlePresetSelect(user.username)}
-                  style={{
-                    background: username === user.username ? 'var(--accent-cyan)' : 'var(--bg-tertiary)',
-                    color: username === user.username ? '#ffffff' : 'var(--text-primary)',
-                    border: '1px solid var(--border-color)',
-                    borderRadius: '16px',
-                    padding: '4px 10px',
-                    fontSize: '0.76rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  {user.label}
-                </button>
+            <select
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+              className="select-input"
+              style={{ width: '100%', padding: '10px 12px', fontSize: '0.9rem' }}
+            >
+              {PRESET_USERNAMES.map((user) => (
+                <option key={user} value={user}>
+                  {user} {user === 'Admin@uday' ? '(Admin)' : ''}
+                </option>
               ))}
-            </div>
+            </select>
           </div>
 
-          <form onSubmit={handleSubmit}>
-            <div className="form-group" style={{ marginBottom: '14px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 600, marginBottom: '6px' }}>
-                <UserCheck size={14} />
-                <span>Username / Account</span>
-              </label>
-              <input
-                type="text"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                placeholder="Enter username (e.g. Admin@uday or sai_kiran)"
-                required
-                className="text-input"
-                style={{ width: '100%' }}
-              />
+          <div>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: '6px' }}>
+              <Key size={14} />
+              <span>Password</span>
+            </label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Enter account password"
+              required
+              className="text-input"
+              style={{ width: '100%', padding: '10px 12px', fontSize: '0.9rem' }}
+            />
+          </div>
+
+          {errorMsg && (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#ef4444', fontSize: '0.8rem', background: 'rgba(239, 68, 68, 0.1)', padding: '10px 12px', borderRadius: '8px', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+              <AlertCircle size={16} style={{ flexShrink: 0 }} />
+              <span>{errorMsg}</span>
             </div>
+          )}
 
-            <div className="form-group" style={{ marginBottom: '16px' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 600, marginBottom: '6px' }}>
-                <Key size={14} />
-                <span>Password</span>
-              </label>
-              <input
-                type="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                placeholder="Enter password"
-                className="text-input"
-                style={{ width: '100%' }}
-              />
-            </div>
-
-            {errorMsg && (
-              <div style={{ color: '#ef4444', fontSize: '0.8rem', marginBottom: '12px', background: 'rgba(239, 68, 68, 0.1)', padding: '8px 12px', borderRadius: '8px' }}>
-                {errorMsg}
-              </div>
-            )}
-
-            <div className="modal-actions" style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '18px' }}>
-              <button type="button" onClick={onClose} className="btn btn-secondary">
+          <div style={{ display: 'flex', gap: '10px', marginTop: '8px' }}>
+            {!preventClose && onClose && (
+              <button type="button" onClick={onClose} className="btn btn-secondary" style={{ flex: 1 }}>
                 Cancel
               </button>
-              <button type="submit" disabled={loading} className="btn btn-primary">
-                <LogIn size={16} />
-                <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
-              </button>
-            </div>
-          </form>
-        </div>
+            )}
+            <button
+              type="submit"
+              disabled={loading}
+              className="btn btn-primary"
+              style={{ flex: 1, padding: '10px', justifyContent: 'center', fontSize: '0.95rem' }}
+            >
+              <LogIn size={16} />
+              <span>{loading ? 'Authenticating...' : 'Sign In'}</span>
+            </button>
+          </div>
+        </form>
       </div>
     </div>
   );
