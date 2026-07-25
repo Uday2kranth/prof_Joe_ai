@@ -4,12 +4,9 @@ import {
   BookOpen,
   Sparkles,
   Layers,
-  Settings,
   Plus,
   Trash2,
   X,
-  Sun,
-  Moon,
   GraduationCap
 } from 'lucide-react';
 import type { ChatSession } from '../types';
@@ -26,9 +23,9 @@ interface SidebarProps {
   onSelectSession: (id: string) => void;
   onNewSession: () => void;
   onDeleteSession: (id: string) => void;
-  onOpenSettings: () => void;
-  theme: 'dark' | 'light';
-  onToggleTheme: () => void;
+  onOpenSettings?: () => void;
+  theme?: 'dark' | 'light';
+  onToggleTheme?: () => void;
   currentUser?: any;
   onOpenProfileModal?: () => void;
 }
@@ -43,17 +40,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onSelectSession,
   onNewSession,
   onDeleteSession,
-  onOpenSettings,
-  theme,
-  onToggleTheme,
   currentUser,
   onOpenProfileModal
 }) => {
-  const displayUsername = typeof currentUser === 'string' && currentUser.trim() 
-    ? currentUser 
-    : (currentUser && typeof currentUser === 'object' && currentUser.username) 
-      ? currentUser.username 
-      : 'Admin@uday';
+  let displayUsername = 'Admin@uday';
+  if (currentUser && typeof currentUser === 'string' && currentUser.trim() !== '' && currentUser !== 'undefined') {
+    displayUsername = currentUser;
+  } else if (currentUser && typeof currentUser === 'object' && currentUser.username && currentUser.username !== 'undefined') {
+    displayUsername = currentUser.username;
+  } else {
+    const saved = localStorage.getItem('chatterbot_username');
+    if (saved && saved !== 'undefined' && saved.trim() !== '') {
+      displayUsername = saved;
+    }
+  }
 
   return (
     <>
@@ -159,7 +159,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         <div className="sidebar-footer">
-          {/* KokonutUI Profile Card */}
+          {/* KokonutUI Profile Card (Opens User Profile Drawer) */}
           <div
             className="kokonut-profile-card"
             onClick={onOpenProfileModal}
@@ -175,18 +175,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div className="profile-username">{displayUsername}</div>
               <span className="profile-role-badge">OU PRO MENTOR</span>
             </div>
-          </div>
-
-          <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-            <button onClick={onToggleTheme} className="btn btn-secondary" style={{ flex: 1, padding: '6px 8px', fontSize: '0.78rem' }} title="Toggle Theme">
-              {theme === 'dark' ? <Sun size={14} className="text-amber-400" /> : <Moon size={14} className="text-indigo-400" />}
-              <span>{theme === 'dark' ? 'Light' : 'Dark'}</span>
-            </button>
-
-            <button onClick={onOpenSettings} className="btn btn-primary" style={{ flex: 1, padding: '6px 8px', fontSize: '0.78rem' }} title="Configure API Keys">
-              <Settings size={14} />
-              <span>API Keys</span>
-            </button>
           </div>
         </div>
       </aside>

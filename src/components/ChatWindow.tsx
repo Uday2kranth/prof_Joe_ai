@@ -330,6 +330,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   type="button"
                   onClick={handleExportFullChatPdf}
                   className="kokonut-action-btn export-pdf-action"
+                  style={{ marginRight: '10px' }}
                   title="Export Chat Session to PDF"
                 >
                   <Download size={14} />
