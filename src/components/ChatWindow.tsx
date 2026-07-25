@@ -130,8 +130,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         )}
 
         {messages.length === 0 ? (
-          <div className="empty-state-hero">
-            <div className="hero-icon-box" style={{ padding: 0, overflow: 'hidden', borderRadius: '50%', width: '72px', height: '72px', margin: '0 auto 16px auto', border: '2px solid var(--accent-cyan)' }}>
+          <div className="empty-state-hero kokonut-hero-card">
+            <div className="kokonut-dots-overlay" />
+            <div className="hero-icon-box" style={{ padding: 0, overflow: 'hidden', borderRadius: '50%', width: '76px', height: '76px', margin: '0 auto 16px auto', border: '3px solid var(--accent-cyan)', boxShadow: '0 0 20px rgba(6, 182, 212, 0.4)' }}>
               <img src="/joe-avatar.png" alt="Prof. Joe" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
             <h2>Welcome to Prof. Joe AI Engine</h2>
