@@ -183,12 +183,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         <div ref={messagesEndRef} />
       </div>
 
-      {/* KokonutUI-Inspired Sleek Input Bar Container */}
-      <div className="chat-input-bar-container card-box">
+      {/* KokonutUI-Inspired AI Prompt Input Container */}
+      <div className="chat-input-bar-container card-box kokonut-input-card">
+        {/* Top Scrollable Toolbar Strip */}
         <div className="input-toolbar-top">
-          {/* KokonutUI Model Selector Dropdown inside Input Bar */}
           {onProviderChange && onModelChange && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div className="provider-model-group">
               <Layers size={13} className="text-cyan-400" />
               <select
                 value={selectedProvider}
@@ -200,16 +200,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     onModelChange(group.models[0].value);
                   }
                 }}
-                style={{
-                  background: 'var(--bg-tertiary)',
-                  color: 'var(--text-primary)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '16px',
-                  padding: '3px 8px',
-                  fontSize: '0.75rem',
-                  outline: 'none',
-                  cursor: 'pointer'
-                }}
+                className="kokonut-select-btn"
               >
                 {PROVIDERS.map(p => (
                   <option key={p.id} value={p.id}>{p.name}</option>
@@ -219,18 +210,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               <select
                 value={selectedModel}
                 onChange={(e) => onModelChange(e.target.value)}
-                style={{
-                  background: 'var(--bg-tertiary)',
-                  color: 'var(--accent-cyan)',
-                  border: '1px solid var(--border-color)',
-                  borderRadius: '16px',
-                  padding: '3px 8px',
-                  fontSize: '0.75rem',
-                  fontWeight: 600,
-                  outline: 'none',
-                  cursor: 'pointer',
-                  maxWidth: '150px'
-                }}
+                className="kokonut-select-btn model-select"
               >
                 {currentProviderGroup.models.map(m => (
                   <option key={m.value} value={m.value}>{m.name}</option>
@@ -253,7 +233,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               type="button"
               onClick={() => setPromptMode('12marks')}
               className={`mode-pill ${promptMode === '12marks' ? 'active' : ''}`}
-              title="12 Marks Essay Evaluator (600-900 words)"
+              title="12 Marks Essay Evaluator"
             >
               <FileText size={12} /> 12 Marks
             </button>
@@ -262,7 +242,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               type="button"
               onClick={() => setPromptMode('2marks')}
               className={`mode-pill ${promptMode === '2marks' ? 'active' : ''}`}
-              title="3-4 Marks Short Answer (150-250 words)"
+              title="3-4 Marks Short Answer"
             >
               <CheckSquare size={12} /> 3–4 Marks
             </button>
@@ -283,38 +263,18 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             className={`web-search-toggle-pill ${webSearch ? 'active' : ''}`}
             title="Toggle Web Search RAG"
           >
-            <Globe size={13} />
-            <span>Web Search {webSearch ? 'ON' : 'OFF'}</span>
+            <Globe size={12} />
+            <span>RAG {webSearch ? 'ON' : 'OFF'}</span>
           </button>
 
           {activeSystemPromptTitle && (
-            <div style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: 'rgba(168, 85, 247, 0.15)',
-              color: '#c084fc',
-              border: '1px solid rgba(168, 85, 247, 0.4)',
-              padding: '3px 10px',
-              borderRadius: '16px',
-              fontSize: '0.72rem',
-              fontWeight: 600,
-              flexShrink: 0
-            }}>
+            <div className="system-prompt-active-badge">
               <span>📌 {activeSystemPromptTitle}</span>
               {onClearSystemPrompt && (
                 <button
                   type="button"
                   onClick={onClearSystemPrompt}
-                  style={{
-                    background: 'none',
-                    border: 'none',
-                    color: '#ef4444',
-                    cursor: 'pointer',
-                    padding: 0,
-                    display: 'flex',
-                    alignItems: 'center'
-                  }}
+                  className="clear-prompt-btn"
                   title="Clear active system prompt"
                 >
                   <X size={13} />
@@ -322,34 +282,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               )}
             </div>
           )}
-
-          {messages.length > 0 && (
-            <button
-              type="button"
-              onClick={handleExportFullChatPdf}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                background: 'rgba(6, 182, 212, 0.15)',
-                color: 'var(--accent-cyan)',
-                border: '1px solid var(--accent-cyan)',
-                borderRadius: '16px',
-                padding: '4px 10px',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-              title="Export complete chat session to PDF"
-            >
-              <Download size={13} />
-              <span>Export PDF</span>
-            </button>
-          )}
         </div>
 
-        <form onSubmit={handleSubmit} className="chat-form-modern">
+        {/* Textarea + Bottom Action Row */}
+        <form onSubmit={handleSubmit} className="chat-form-modern kokonut-form">
           <input
             type="file"
             ref={fileInputRef}
@@ -357,48 +293,49 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             style={{ display: 'none' }}
           />
 
-          <button
-            type="button"
-            onClick={() => fileInputRef.current?.click()}
-            style={{
-              background: 'none',
-              border: 'none',
-              color: 'var(--text-secondary)',
-              cursor: 'pointer',
-              padding: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              borderRadius: '50%',
-              transition: 'all 0.15s'
-            }}
-            title="Attach File or PDF"
-          >
-            <Paperclip size={18} />
-          </button>
-
           <textarea
             ref={textareaRef}
             value={inputPrompt}
-            onChange={(e) => {
-              setInputPrompt(e.target.value);
-              e.target.style.height = 'auto';
-              e.target.style.height = `${Math.min(e.target.scrollHeight, 180)}px`;
-            }}
+            onChange={(e) => setInputPrompt(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={`Ask ${selectedModel}... (Press Enter to send, Shift+Enter for newline)`}
+            placeholder={`Ask ${selectedModel}... (Press Enter to Send)`}
             rows={1}
-            className="chat-textarea-modern"
+            className="chat-textarea kokonut-textarea"
           />
 
-          <button
-            type="submit"
-            disabled={!inputPrompt.trim() || isLoading}
-            className="send-btn-modern"
-            title="Send Message"
-          >
-            {isLoading ? <Loader2 size={16} className="spin-icon" /> : <Send size={16} />}
-          </button>
+          <div className="kokonut-bottom-row">
+            <div className="kokonut-left-actions">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="kokonut-action-btn"
+                title="Attach File or PDF"
+              >
+                <Paperclip size={16} />
+              </button>
+
+              {messages.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleExportFullChatPdf}
+                  className="kokonut-action-btn export-pdf-action"
+                  title="Export Chat Session to PDF"
+                >
+                  <Download size={14} />
+                  <span>PDF</span>
+                </button>
+              )}
+            </div>
+
+            <button
+              type="submit"
+              disabled={isLoading || !inputPrompt.trim()}
+              className="kokonut-send-btn"
+              title="Send Message"
+            >
+              <Send size={16} />
+            </button>
+          </div>
         </form>
       </div>
     </div>
