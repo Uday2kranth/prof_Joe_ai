@@ -1,11 +1,13 @@
-const http = require('http');
-const fs = require('fs');
-const path = require('path');
-const url = require('url');
+import http from 'http';
+import fs from 'fs';
+import path from 'path';
+import url, { fileURLToPath } from 'url';
 
-// Load Vercel Serverless Handlers
-const chatHandler = require('./api/chat');
-const loginHandler = require('./api/login');
+import chatHandler from './api/chat.js';
+import loginHandler from './api/login.js';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const PORT = process.env.PORT || 3000;
 
