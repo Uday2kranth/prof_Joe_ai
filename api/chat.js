@@ -233,6 +233,14 @@ GENERAL AI ASSISTANT DIRECTIVES:
         });
     }
 
+    // Load-balance across multiple comma-separated API keys if configured
+    if (apiKey && apiKey.includes(',')) {
+        const keyList = apiKey.split(',').map(k => k.trim()).filter(k => k.length > 0);
+        if (keyList.length > 0) {
+            apiKey = keyList[Math.floor(Math.random() * keyList.length)];
+        }
+    }
+
     // 2. Resolve API Endpoint
     let endpoint = '';
     if (provider === "openrouter") {
