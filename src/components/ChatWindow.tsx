@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Globe, Sparkles, Loader2, Cpu, Zap, FileText, CheckSquare, MessageSquare, X, CheckCircle2, Paperclip, Download, Layers } from 'lucide-react';
+import { Send, Globe, Sparkles, CheckCircle2, X, Zap, Layers, FileText, CheckSquare, MessageSquare, Paperclip, Download } from 'lucide-react';
 import type { Message } from '../types';
 import { MessageItem } from './MessageItem';
 import { PROVIDERS } from '../constants';
@@ -168,13 +168,16 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
         {isLoading && (
           <div className="message-row assistant-row loading-row">
-            <div className="avatar">
-              <Cpu size={18} className="spin-icon text-cyan-400" />
+            <div className="avatar" style={{ overflow: 'hidden', border: '1px solid rgba(6, 182, 212, 0.4)' }}>
+              <img src="/joe-avatar.png" alt="Prof. Joe AI" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
             </div>
             <div className="bubble-wrapper">
-              <div className="message-bubble assistant-bubble loading-bubble">
-                <Loader2 size={16} className="spin-icon" />
-                <span>Generating response...</span>
+              <div className="message-bubble assistant-bubble loading-bubble kokonut-loader-bubble">
+                <div className="kokonut-conic-spinner" />
+                <div className="kokonut-loader-text">
+                  <span className="title">Prof. Joe is thinking...</span>
+                  <span className="subtitle">Synthesizing answer & diagram structure</span>
+                </div>
               </div>
             </div>
           </div>

@@ -91,7 +91,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content">
+      <div className="modal-content kokonut-drawer-card">
         <div className="modal-header">
           <div className="modal-title">
             <Key className="text-cyan-400" size={20} />

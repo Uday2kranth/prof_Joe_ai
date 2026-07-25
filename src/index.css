@@ -2101,3 +2101,70 @@ body {
   width: fit-content;
 }
 
+/* KokonutUI Loader & SmoothDrawer Styling */
+.kokonut-loader-bubble {
+  display: flex;
+  align-items: center;
+  gap: 12px !important;
+  background: var(--bg-secondary) !important;
+  border: 1px solid var(--border-color) !important;
+  padding: 12px 16px !important;
+  border-radius: 16px !important;
+}
+
+.kokonut-conic-spinner {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: conic-gradient(from 0deg, transparent 0deg, #06b6d4 180deg, #3b82f6 360deg);
+  animation: kokonutSpin 1.2s linear infinite;
+  flex-shrink: 0;
+  mask: radial-gradient(circle at 50% 50%, transparent 50%, black 52%);
+  -webkit-mask: radial-gradient(circle at 50% 50%, transparent 50%, black 52%);
+}
+
+@keyframes kokonutSpin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.kokonut-loader-text {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.kokonut-loader-text .title {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--accent-cyan);
+  animation: kokonutBreathe 2.5s ease-in-out infinite;
+}
+
+.kokonut-loader-text .subtitle {
+  font-size: 0.72rem;
+  color: var(--text-muted);
+}
+
+@keyframes kokonutBreathe {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.6; }
+}
+
+.kokonut-drawer-card {
+  border-radius: 20px !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.6) !important;
+  animation: kokonutDrawerSlide 0.35s cubic-bezier(0.32, 0.72, 0, 1) !important;
+}
+
+@keyframes kokonutDrawerSlide {
+  from {
+    transform: translateY(30px) scale(0.97);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
