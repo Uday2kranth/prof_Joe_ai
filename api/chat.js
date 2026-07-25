@@ -1,4 +1,4 @@
-const fetch = require('node-fetch');
+const fetch = globalThis.fetch || (typeof fetch !== 'undefined' ? fetch : require('node-fetch'));
 
 const DEFAULT_OPENROUTER_KEY = "";
 const DEFAULT_NVIDIA_KEY = "";
@@ -124,7 +124,7 @@ async function getImageSearchLinks(query) {
     }
 }
 
-module.exports = async (req, res) => {
+export default async function handler(req, res) {
     // CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
@@ -139,12 +139,11 @@ module.exports = async (req, res) => {
         return res.status(405).json({ error: 'Method Not Allowed. Please send a POST request.' });
     }
 
-    try {
-        const { user, model, provider, messages, sessionId, sessionTitle, webSearch, imageSearch, mode } = req.body || {};
+    const { user, model, provider, messages, sessionId, sessionTitle, webSearch, imageSearch, mode } = req.body || {};
 
-        if (!user || !model || !provider || !messages || !Array.isArray(messages)) {
-            return res.status(400).json({ error: 'Invalid request body. Fields "user", "model", "provider", and "messages" are required.' });
-        }
+    if (!user || !model || !provider || !messages || !Array.isArray(messages)) {
+        return res.status(400).json({ error: 'Invalid request body. Fields "user", "model", "provider", and "messages" are required.' });
+    }
 
     const prompt = messages[messages.length - 1]?.content || 'N/A';
     let apiMessages = [...messages];

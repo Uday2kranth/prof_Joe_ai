@@ -1,5 +1,3 @@
-import { MongoClient } from 'mongodb';
-
 const DEFAULT_USERS = {
   "Admin@uday": { password: "Superm@n62", role: "admin" },
   "sai_kiran": { password: "kiransir@bava", role: "student" },
@@ -43,6 +41,7 @@ export default async function handler(req, res) {
     // Optional MongoDB Audit logging
     if (process.env.MONGODB_URI) {
       try {
+        const { MongoClient } = await import('mongodb');
         const client = new MongoClient(process.env.MONGODB_URI);
         await client.connect();
         const db = client.db('prof_joe_ai');
