@@ -317,6 +317,16 @@ export const App: React.FC = () => {
     }));
   };
 
+  if (!authToken || !currentUser) {
+    return (
+      <LoginModal
+        isOpen={true}
+        preventClose={true}
+        onLoginSuccess={handleLoginSuccess}
+      />
+    );
+  }
+
   return (
     <div className="app-container">
       <div
@@ -398,11 +408,9 @@ export const App: React.FC = () => {
       />
 
       <LoginModal
-        isOpen={isLoginOpen || !authToken}
-        preventClose={!authToken}
-        onClose={() => {
-          if (authToken) setIsLoginOpen(false);
-        }}
+        isOpen={isLoginOpen}
+        preventClose={false}
+        onClose={() => setIsLoginOpen(false)}
         onLoginSuccess={handleLoginSuccess}
       />
     </div>
