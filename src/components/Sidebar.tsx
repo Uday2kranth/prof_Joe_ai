@@ -7,7 +7,7 @@ import {
 } from 'lucide-react';
 import type { ChatSession } from '../types';
 
-export type ActiveViewType = 'chat' | 'examprep' | 'prompts' | 'system_prompts' | 'diagrams';
+export type ActiveViewType = 'chat' | 'examprep' | 'prompts' | 'system_prompts' | 'diagrams' | 'cubes';
 
 interface SidebarProps {
   isOpen: boolean;

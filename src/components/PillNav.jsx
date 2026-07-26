@@ -7,7 +7,8 @@ const DEFAULT_ITEMS = [
   { label: '🎓 Exam Prep', href: 'examprep' },
   { label: '📘 System Prompts', href: 'system_prompts' },
   { label: '✨ Prompts', href: 'prompts' },
-  { label: '📊 Diagrams', href: 'diagrams' }
+  { label: '📊 Diagrams', href: 'diagrams' },
+  { label: '🎮 3D Cubes', href: 'cubes' }
 ];
 
 export const PillNav = ({

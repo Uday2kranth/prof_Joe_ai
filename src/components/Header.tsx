@@ -30,7 +30,8 @@ export const Header: React.FC<HeaderProps> = ({
     examprep: 'Exam Prep & Syllabus Hub',
     system_prompts: 'Official System Prompt Library',
     prompts: 'User Prompts Hub',
-    diagrams: 'Kroki Diagram Studio'
+    diagrams: 'Kroki Diagram Studio',
+    cubes: 'Interactive 3D Cubes Playground'
   };
 
   const navItems = [
@@ -38,7 +39,8 @@ export const Header: React.FC<HeaderProps> = ({
     { label: '🎓 Exam Prep', href: 'examprep' },
     { label: '📘 System Prompts', href: 'system_prompts' },
     { label: '✨ Prompts', href: 'prompts' },
-    { label: '📊 Diagrams', href: 'diagrams' }
+    { label: '📊 Diagrams', href: 'diagrams' },
+    { label: '🎮 3D Cubes', href: 'cubes' }
   ];
 
   return (

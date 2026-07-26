@@ -7,6 +7,7 @@ import { ExamPrepView } from './components/ExamPrepView';
 import { SystemPromptLibraryView } from './components/SystemPromptLibraryView';
 import { PromptLibraryView } from './components/PromptLibraryView';
 import { DiagramStudioView } from './components/DiagramStudioView';
+import { CubesPlaygroundView } from './components/CubesPlaygroundView';
 import { SettingsModal } from './components/SettingsModal';
 import { LoginModal } from './components/LoginModal';
 import { UserProfileModal } from './components/UserProfileModal';
@@ -499,6 +500,10 @@ export const App: React.FC = () => {
 
           {activeView === 'diagrams' && (
             <DiagramStudioView />
+          )}
+
+          {activeView === 'cubes' && (
+            <CubesPlaygroundView />
           )}
         </main>
       </div>
