@@ -459,6 +459,7 @@ export const App: React.FC = () => {
           theme={theme}
           onToggleTheme={handleToggleTheme}
           activeView={activeView}
+          onViewChange={setActiveView}
           username={currentUser}
           onLogout={handleLogout}
         />
