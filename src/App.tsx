@@ -77,22 +77,45 @@ export const App: React.FC = () => {
     return DEFAULT_KEYS;
   });
 
+  const DEFAULT_FREE_PROVIDER = 'Pollinations AI (Free Keyless)';
+  const DEFAULT_FREE_MODEL = 'openai-fast';
+
   const [activeView, setActiveView] = useState<ActiveViewType>('chat');
-  const [selectedProvider, setSelectedProvider] = useState<string>('OpenRouter');
-  const [selectedModel, setSelectedModel] = useState<string>('openrouter/free');
-  const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
-  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
   const [currentUser, setCurrentUser] = useState<string>(() => localStorage.getItem('chatterbot_username') || '');
   const [authToken, setAuthToken] = useState<string>(() => localStorage.getItem('chatterbot_token') || '');
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(() => !localStorage.getItem('chatterbot_token'));
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
+  const [selectedProvider, setSelectedProvider] = useState<string>(() => {
+    const activeUser = localStorage.getItem('chatterbot_username');
+    if (activeUser) {
+      const saved = localStorage.getItem(`chatterbot_provider_${activeUser}`);
+      if (saved) return saved;
+    }
+    return DEFAULT_FREE_PROVIDER;
+  });
+
+  const [selectedModel, setSelectedModel] = useState<string>(() => {
+    const activeUser = localStorage.getItem('chatterbot_username');
+    if (activeUser) {
+      const saved = localStorage.getItem(`chatterbot_model_${activeUser}`);
+      if (saved) return saved;
+    }
+    return DEFAULT_FREE_MODEL;
+  });
+
+  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
+  const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
+  const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
+
   const activeSession = sessions.find(s => s.id === activeSessionIdState) || sessions[0];
 
   const handleProviderChange = (provider: string) => {
     setSelectedProvider(provider);
+    if (currentUser) {
+      localStorage.setItem(`chatterbot_provider_${currentUser}`, provider);
+    }
     setSessions(prev =>
       prev.map(s =>
         s.id === activeSession.id ? { ...s, provider, updatedAt: Date.now() } : s
@@ -102,6 +125,9 @@ export const App: React.FC = () => {
 
   const handleModelChange = (model: string) => {
     setSelectedModel(model);
+    if (currentUser) {
+      localStorage.setItem(`chatterbot_model_${currentUser}`, model);
+    }
     setSessions(prev =>
       prev.map(s =>
         s.id === activeSession.id ? { ...s, model, updatedAt: Date.now() } : s
@@ -126,6 +152,12 @@ export const App: React.FC = () => {
     localStorage.setItem('chatterbot_token', token);
     localStorage.setItem('chatterbot_role', role);
     setIsLoginOpen(false);
+
+    // Restore user-specific provider & model preference or default to Keyless Free AI
+    const savedProv = localStorage.getItem(`chatterbot_provider_${username}`) || DEFAULT_FREE_PROVIDER;
+    const savedMod = localStorage.getItem(`chatterbot_model_${username}`) || DEFAULT_FREE_MODEL;
+    setSelectedProvider(savedProv);
+    setSelectedModel(savedMod);
 
     // Fetch user-isolated cloud sessions immediately on login
     try {
