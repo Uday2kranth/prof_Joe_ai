@@ -2567,23 +2567,32 @@ body {
 
   .exam-tabs {
     display: flex !important;
-    flex-wrap: nowrap !important;
-    overflow-x: auto !important;
-    padding-bottom: 8px !important;
+    flex-direction: column !important;
+    width: 100% !important;
     gap: 8px !important;
-    -webkit-overflow-scrolling: touch !important;
-    scrollbar-width: none !important;
-  }
-
-  .exam-tabs::-webkit-scrollbar {
-    display: none !important;
+    border-bottom: none !important;
+    padding-bottom: 0 !important;
+    margin-bottom: 16px !important;
   }
 
   .tab-btn {
-    white-space: nowrap !important;
-    flex-shrink: 0 !important;
-    font-size: 0.8rem !important;
-    padding: 8px 12px !important;
+    width: 100% !important;
+    justify-content: center !important;
+    padding: 10px 14px !important;
+    font-size: 0.88rem !important;
+    font-weight: 600 !important;
+    border-radius: 10px !important;
+    background: var(--bg-secondary) !important;
+    border: 1px solid var(--border-color) !important;
+    white-space: normal !important;
+    text-align: center !important;
+  }
+
+  .tab-btn.active {
+    background: var(--accent-cyan) !important;
+    color: #ffffff !important;
+    border-color: var(--accent-cyan) !important;
+    box-shadow: 0 4px 12px rgba(6, 182, 212, 0.3) !important;
   }
 
   .question-bank-content,
