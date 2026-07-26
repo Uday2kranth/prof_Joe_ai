@@ -28,6 +28,7 @@ export const Header: React.FC<HeaderProps> = ({
     system_prompts: 'Official System Prompt Library',
     prompts: 'User Prompts Hub',
     diagrams: 'Kroki Diagram Studio',
+    fun_personas: 'Fun AI Personas Lounge',
     cubes: 'Interactive 3D Cubes Playground'
   };
 
@@ -37,6 +38,7 @@ export const Header: React.FC<HeaderProps> = ({
     { label: '📘 System Prompts', href: 'system_prompts' },
     { label: '✨ Prompts', href: 'prompts' },
     { label: '📊 Diagrams', href: 'diagrams' },
+    { label: '🎭 Fun Personas', href: 'fun_personas' },
     { label: '🎮 3D Cubes', href: 'cubes' }
   ];
 
