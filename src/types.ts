@@ -48,5 +48,6 @@ export interface UserKeys {
   nararouter: string;
   huggingface: string;
   pollinations: string;
+  opencode?: string;
   local_endpoint: string;
 }

@@ -86,6 +86,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     { id: 'sambanova', label: 'SambaNova Cloud API Key', placeholder: 'c72d24de-...' },
     { id: 'nararouter', label: 'NaraRouter API Key', placeholder: 'sk-nry-...' },
     { id: 'huggingface', label: 'Hugging Face Access Token', placeholder: 'hf_...' },
+    { id: 'opencode', label: 'OpenCode AI API Key (50 req/day, 20 req/hr free tier)', placeholder: 'oc_...' },
     { id: 'pollinations', label: 'Pollinations Priority Key (Optional)', placeholder: 'sk_...' }
   ] as const;
 

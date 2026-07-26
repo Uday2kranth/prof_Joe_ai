@@ -25,6 +25,7 @@ const DEFAULT_KEYS: UserKeys = {
   nararouter: '',
   huggingface: '',
   pollinations: '',
+  opencode: '',
   local_endpoint: ''
 };
 

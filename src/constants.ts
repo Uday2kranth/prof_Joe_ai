@@ -112,5 +112,14 @@ export const PROVIDERS: ProviderGroup[] = [
       { value: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash (Omni) [WS]' },
       { value: 'anthropic/claude-3-haiku', name: 'Claude 3 Haiku (Omni)' }
     ]
+  },
+  {
+    id: 'opencode',
+    name: 'OpenCode AI (Free Tier)',
+    models: [
+      { value: 'opencode-zen/auto', name: 'Zen Auto Free Router (OpenCode) [WS]' },
+      { value: 'opencode-zen/fast', name: 'Zen Fast Low-Latency (OpenCode)' },
+      { value: 'opencode-zen/coder', name: 'Zen Coder Specialist (OpenCode)' }
+    ]
   }
 ];

@@ -30,6 +30,7 @@ export async function sendChatMessage(
     'x-user-sambanova-key': userKeys.sambanova || '',
     'x-user-nararouter-key': userKeys.nararouter || '',
     'x-user-huggingface-key': userKeys.huggingface || '',
+    'x-user-opencode-key': userKeys.opencode || '',
     'x-user-pollinations-key': userKeys.pollinations || ''
   };
 
