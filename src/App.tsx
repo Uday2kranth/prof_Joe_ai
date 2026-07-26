@@ -218,26 +218,35 @@ export const App: React.FC = () => {
     fetchCloudSessions();
   }, [currentUser, authToken]);
 
-  useEffect(() => {
-    if (currentUser) {
-      localStorage.setItem(`chatterbot_user_keys_${currentUser}`, JSON.stringify(userKeys));
-    }
-  }, [userKeys, currentUser]);
-
-  // Fetch Cloud API Keys when currentUser logs in or opens app
+  // Fetch & Load Account API Keys safely when currentUser logs in or opens app
   useEffect(() => {
     if (!currentUser) {
       setUserKeys(DEFAULT_KEYS);
       return;
     }
 
+    // 1. Immediately load local storage keys for this user
+    let currentLocalKeys = DEFAULT_KEYS;
+    const savedLocal = localStorage.getItem(`chatterbot_user_keys_${currentUser}`);
+    if (savedLocal) {
+      try {
+        currentLocalKeys = { ...DEFAULT_KEYS, ...JSON.parse(savedLocal) };
+        setUserKeys(currentLocalKeys);
+      } catch (e) {
+        console.error('Failed to parse local userKeys', e);
+      }
+    } else {
+      setUserKeys(DEFAULT_KEYS);
+    }
+
+    // 2. Sync with cloud MongoDB user_api_keys collection
     const fetchCloudKeys = async () => {
       try {
         const response = await fetch(`/api/user-keys?username=${encodeURIComponent(currentUser)}`);
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.keys && Object.keys(data.keys).length > 0) {
-            const merged = { ...DEFAULT_KEYS, ...data.keys };
+            const merged = { ...currentLocalKeys, ...data.keys };
             localStorage.setItem(`chatterbot_user_keys_${currentUser}`, JSON.stringify(merged));
             setUserKeys(merged);
           }
