@@ -2554,7 +2554,7 @@ body {
 
   .question-bank-content,
   .syllabus-content {
-    padding: 12px 8px !important;
+    padding: 10px 6px !important;
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
@@ -2568,16 +2568,17 @@ body {
     width: 100% !important;
     max-width: 100% !important;
     box-sizing: border-box !important;
+    overflow-x: hidden !important;
   }
 
   .unit-box ul,
   .unit-box ol,
   .set-box ul,
   .set-box ol {
-    margin-left: 0.6rem !important;
-    padding-left: 0.4rem !important;
-    width: calc(100% - 0.8rem) !important;
-    max-width: calc(100% - 0.8rem) !important;
+    margin-left: 0 !important;
+    padding-left: 1rem !important;
+    width: 100% !important;
+    max-width: 100% !important;
     box-sizing: border-box !important;
   }
 
@@ -2585,12 +2586,17 @@ body {
   .set-box li,
   .unit-box p,
   .set-box p,
+  .unit-box div,
+  .set-box div,
   .markdown-body p,
   .markdown-body li {
     font-size: 0.82rem !important;
     line-height: 1.45 !important;
     word-break: break-word !important;
     overflow-wrap: anywhere !important;
+    box-sizing: border-box !important;
+    max-width: 100% !important;
+    padding-right: 4px !important;
   }
 }
 
