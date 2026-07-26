@@ -111,30 +111,30 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
               onClick={handleExportPng}
               disabled={downloadingImage}
               className="pdf-action-btn-secondary"
-              title="Save Preview as PNG Image"
+              title="Save Preview Card as PNG Image File directly"
             >
               <ImageIcon size={16} />
               <span>{downloadingImage ? 'Saving...' : 'Save PNG Image'}</span>
             </button>
 
             <button
-              onClick={handlePrint}
-              disabled={printing}
-              className="pdf-action-btn-secondary"
-              title="Print via Browser Print Engine"
-            >
-              <Printer size={16} />
-              <span>{printing ? 'Preparing...' : 'Print Paper'}</span>
-            </button>
-
-            <button
               onClick={handleDownload}
               disabled={downloading}
               className="pdf-action-btn-primary"
-              title="Save PDF File Directly"
+              title="Download PDF File directly to device without opening print window"
             >
               <Download size={16} />
-              <span>{downloading ? 'Downloading...' : 'Save PDF File'}</span>
+              <span>{downloading ? 'Downloading...' : 'Download PDF File'}</span>
+            </button>
+
+            <button
+              onClick={handlePrint}
+              disabled={printing}
+              className="pdf-action-btn-secondary"
+              title="Trigger System Print Preview (Chrome / Mobile native printer)"
+            >
+              <Printer size={16} />
+              <span>{printing ? 'Preparing...' : 'System Print Preview'}</span>
             </button>
           </div>
         </div>

@@ -62,9 +62,16 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSubmit(e);
+    const isMobile = window.innerWidth <= 768 || 'ontouchstart' in window;
+    if (e.key === 'Enter') {
+      if (isMobile) {
+        // On mobile view, Enter inserts a new line (\n) so users can compose multi-line prompts smoothly
+        return;
+      }
+      if (!e.shiftKey) {
+        e.preventDefault();
+        handleSubmit(e);
+      }
     }
   };
 
