@@ -24,6 +24,7 @@ interface SidebarProps {
   onToggleTheme?: () => void;
   currentUser?: any;
   onOpenProfileModal?: () => void;
+  onClearChat?: () => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -36,7 +37,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onNewSession,
   onDeleteSession,
   currentUser,
-  onOpenProfileModal
+  onOpenProfileModal,
+  onClearChat
 }) => {
   let displayUsername = 'Admin@uday';
   if (currentUser && typeof currentUser === 'string' && currentUser.trim() !== '' && currentUser !== 'undefined') {
@@ -82,8 +84,18 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         {/* Scrollable Chat History List (Expanded to fill vertical space) */}
         <div className="sidebar-history-section" style={{ flex: 1, overflowY: 'auto', padding: '0 16px', display: 'flex', flexDirection: 'column' }}>
-          <div className="nav-section-title" style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '8px' }}>
-            Chat History ({sessions.length})
+          <div className="nav-section-title" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '8px' }}>
+            <span>Chat History ({sessions.length})</span>
+            {onClearChat && (
+              <button
+                onClick={onClearChat}
+                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px', fontSize: '0.7rem', fontWeight: 700 }}
+                title="Clear All Chat History"
+              >
+                <Trash2 size={12} />
+                <span>Clear All</span>
+              </button>
+            )}
           </div>
           <div className="session-list" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {sessions.length === 0 ? (

@@ -450,6 +450,7 @@ export const App: React.FC = () => {
         onToggleTheme={handleToggleTheme}
         currentUser={currentUser}
         onOpenProfileModal={() => setIsProfileModalOpen(true)}
+        onClearChat={handleClearChat}
       />
 
       <div className="app-main-viewport">
