@@ -55,22 +55,35 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Invalid credentials. Please check your username and password.' });
     }
 
-    // Optional MongoDB Audit logging
+    const userToken = `prof-joe-${Date.now()}-${Buffer.from(username).toString('base64')}`;
+
+    // Optional MongoDB Audit & Single-Device Token Registration
     if (process.env.MONGODB_URI) {
       try {
         const { MongoClient } = await import('mongodb');
         const client = new MongoClient(process.env.MONGODB_URI);
         await client.connect();
         const db = client.db('prof_joe_ai');
+        
         await db.collection('user_logins').insertOne({
           username,
           role: matchedUser.role,
           loginTime: new Date(),
           ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress
         });
+
+        // Enforce single-device session token for non-admin users
+        if (matchedUser.role !== 'admin') {
+          await db.collection('active_device_tokens').updateOne(
+            { username },
+            { $set: { username, token: userToken, role: matchedUser.role, updatedAt: new Date() } },
+            { upsert: true }
+          );
+        }
+
         await client.close();
       } catch (dbErr) {
-        console.error('MongoDB login audit failed:', dbErr.message);
+        console.error('MongoDB login audit & active token update failed:', dbErr.message);
       }
     }
 
@@ -79,7 +92,7 @@ export default async function handler(req, res) {
       user: {
         username,
         role: matchedUser.role,
-        token: `prof-joe-${Date.now()}-${Buffer.from(username).toString('base64')}`
+        token: userToken
       }
     });
   } catch (err) {

@@ -13,7 +13,7 @@ export default async function handler(req, res) {
   const mongodbUri = process.env.MONGODB_URI;
 
   if (req.method === 'GET') {
-    const { username } = req.query || {};
+    const { username, token } = req.query || {};
     if (!username) {
       return res.status(400).json({ error: 'Username query parameter is required' });
     }
@@ -24,6 +24,20 @@ export default async function handler(req, res) {
         const client = new MongoClient(mongodbUri);
         await client.connect();
         const db = client.db('prof_joe_ai');
+
+        // Verify active token for non-admin single-device restriction
+        if (token) {
+          const activeDoc = await db.collection('active_device_tokens').findOne({ username });
+          if (activeDoc && activeDoc.role !== 'admin' && activeDoc.token && activeDoc.token !== token) {
+            await client.close();
+            return res.status(403).json({
+              success: false,
+              displaced: true,
+              error: 'Logged out: Your account was logged in on another device.'
+            });
+          }
+        }
+
         const doc = await db.collection('user_chat_sessions').findOne({ username });
         await client.close();
 

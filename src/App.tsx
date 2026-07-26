@@ -131,15 +131,31 @@ export const App: React.FC = () => {
     }
   }, [sessions, currentUser]);
 
-  // Fetch Cloud Sessions when currentUser logs in or opens app
+  // Fetch Cloud Sessions when currentUser logs in or opens app & verify active token
   useEffect(() => {
     if (!currentUser) return;
 
     const fetchCloudSessions = async () => {
       try {
-        const response = await fetch(`/api/sessions?username=${encodeURIComponent(currentUser)}`);
+        const queryToken = authToken ? `&token=${encodeURIComponent(authToken)}` : '';
+        const response = await fetch(`/api/sessions?username=${encodeURIComponent(currentUser)}${queryToken}`);
+        
+        if (response.status === 403) {
+          const data = await response.json().catch(() => ({}));
+          if (data.displaced) {
+            alert('⚠️ Logged out: Your account was logged in on another device.');
+            handleLogout();
+            return;
+          }
+        }
+
         if (response.ok) {
           const data = await response.json();
+          if (data.displaced) {
+            alert('⚠️ Logged out: Your account was logged in on another device.');
+            handleLogout();
+            return;
+          }
           if (data.success && Array.isArray(data.sessions) && data.sessions.length > 0) {
             setSessions(data.sessions);
             localStorage.setItem('chatterbot_sessions', JSON.stringify(data.sessions));
@@ -154,7 +170,7 @@ export const App: React.FC = () => {
     };
 
     fetchCloudSessions();
-  }, [currentUser]);
+  }, [currentUser, authToken]);
 
   useEffect(() => {
     localStorage.setItem('chatterbot_user_keys', JSON.stringify(userKeys));
