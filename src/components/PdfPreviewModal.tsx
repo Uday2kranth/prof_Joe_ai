@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { X, Download, Printer, Sparkles, FileText, Image as ImageIcon } from 'lucide-react';
-import { exportBubbleDirectPdf, printBubbleToPdf } from '../services/printPdfService';
+import { X, Download, Sparkles, FileText, Image as ImageIcon } from 'lucide-react';
+import { exportBubbleDirectPdf } from '../services/printPdfService';
 import { exportBubbleToImage } from '../services/exportService';
 
 interface PdfPreviewModalProps {
@@ -22,7 +22,6 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
 }) => {
   const [downloading, setDownloading] = useState(false);
   const [downloadingImage, setDownloadingImage] = useState(false);
-  const [printing, setPrinting] = useState(false);
   const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -53,15 +52,6 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
       await exportBubbleToImage(cardRef.current, docTitle);
     } finally {
       setDownloadingImage(false);
-    }
-  };
-
-  const handlePrint = async () => {
-    setPrinting(true);
-    try {
-      await printBubbleToPdf(content, modelUsed, docTitle);
-    } finally {
-      setPrinting(false);
     }
   };
 
@@ -125,16 +115,6 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
             >
               <Download size={16} />
               <span>{downloading ? 'Downloading...' : 'Download PDF File'}</span>
-            </button>
-
-            <button
-              onClick={handlePrint}
-              disabled={printing}
-              className="pdf-action-btn-secondary"
-              title="Trigger System Print Preview (Chrome / Mobile native printer)"
-            >
-              <Printer size={16} />
-              <span>{printing ? 'Preparing...' : 'System Print Preview'}</span>
             </button>
           </div>
         </div>

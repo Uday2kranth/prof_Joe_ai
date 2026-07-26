@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { User, Copy, Download, FileText, Volume2, Check, RotateCcw, Edit3 } from 'lucide-react';
+import { User, Copy, Download, Eye, Printer, Volume2, Check, RotateCcw, Edit3 } from 'lucide-react';
 import { marked } from 'marked';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -7,6 +7,7 @@ import 'katex/dist/katex.min.css';
 import type { Message } from '../types';
 import { extractDiagrams, fetchKrokiSvg } from '../services/krokiService';
 import { exportBubbleToImage } from '../services/exportService';
+import { printBubbleToPdf } from '../services/printPdfService';
 import { PdfPreviewModal } from './PdfPreviewModal';
 
 marked.setOptions({
@@ -166,6 +167,10 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
     }
   };
 
+  const handleDirectPrint = async () => {
+    await printBubbleToPdf(message.content, message.modelUsed, generateExportFilename('pdf').replace(/\.pdf$/, ''));
+  };
+
   return (
     <div className={`message-row ${isUser ? 'user-row' : 'assistant-row'}`}>
       <div className="avatar" style={{ overflow: 'hidden', border: !isUser ? '1px solid rgba(6, 182, 212, 0.4)' : 'none' }}>
@@ -198,11 +203,14 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
           <button onClick={handleCopy} className="icon-action-btn" title="Copy Text">
             {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
           </button>
-          <button onClick={handleExportImage} disabled={exportingImage} className="icon-action-btn" title="Export PNG Image">
+          <button onClick={handleExportImage} disabled={exportingImage} className="icon-action-btn" title="Save PNG Image">
             <Download size={14} />
           </button>
-          <button onClick={handleExportPdf} className="icon-action-btn" title="Print / Export PDF">
-            <FileText size={14} />
+          <button onClick={handleExportPdf} className="icon-action-btn text-cyan-400" title="Interactive Document Preview Modal">
+            <Eye size={14} />
+          </button>
+          <button onClick={handleDirectPrint} className="icon-action-btn text-blue-400" title="Direct System Print Preview">
+            <Printer size={14} />
           </button>
           {!isUser && (
             <button onClick={handleSpeak} className="icon-action-btn" title="Read Aloud">

@@ -1,11 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Globe, Sparkles, X, Zap, FileText, CheckSquare, MessageSquare, Paperclip, Download } from 'lucide-react';
+import { Send, Globe, X, Zap, FileText, CheckSquare, MessageSquare, Paperclip, Eye, Printer } from 'lucide-react';
 // @ts-ignore
 import TextType from './TextType';
 import type { Message } from '../types';
 import { MessageItem, renderMarkdownWithMathAndDiagrams } from './MessageItem';
 import { PROVIDERS } from '../constants';
 import { PdfPreviewModal } from './PdfPreviewModal';
+import { printSessionToPdf } from '../services/printPdfService';
 
 interface ChatWindowProps {
   messages: Message[];
@@ -97,6 +98,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     setIsSessionPreviewOpen(true);
   };
 
+  const handleDirectSessionPrint = async () => {
+    const docTitle = `ProfJoe_Session_${activeSystemPromptTitle ? activeSystemPromptTitle.replace(/[^a-zA-Z0-9]/g, '_') : 'Chat'}_${new Date().toISOString().split('T')[0]}`;
+    await printSessionToPdf(messages, docTitle);
+  };
+
   return (
     <div className="chat-window-container">
       <div className="messages-viewport">
@@ -121,31 +127,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 cursorCharacter="|"
               />
             </h2>
-            <p>Active Provider: <strong>{selectedProvider || 'Ollama Cloud'}</strong> | Model: <strong>{selectedModel}</strong></p>
-
-            <div className="quick-suggestions-grid">
-              <div
-                className="suggestion-card card-box"
-                onClick={() => setInputPrompt('Explain Apriori algorithm step-by-step with an association rule mining example.')}
-              >
-                <Zap size={18} className="text-amber-400" />
-                <span>Apriori Algorithm Step-by-Step</span>
-              </div>
-              <div
-                className="suggestion-card card-box"
-                onClick={() => setInputPrompt('Compare K-Means vs DBSCAN clustering in a clean 4-row markdown table.')}
-              >
-                <Sparkles size={18} className="text-purple-400" />
-                <span>K-Means vs DBSCAN Comparison</span>
-              </div>
-            </div>
+            <p>Select a model, enter your exam query or syllabus topic, and let Prof. Joe structure high-scoring answers!</p>
           </div>
         ) : (
-          messages.map((msg, index) => (
+          messages.map((m, idx) => (
             <MessageItem
-              key={msg.id}
-              message={msg}
-              isLast={index === messages.length - 1}
+              key={m.id}
+              message={m}
+              isLast={idx === messages.length - 1}
               onRetry={onRetry}
               onEditUserMessage={handleEditPromptInBox}
             />
@@ -153,16 +142,20 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         )}
 
         {isLoading && (
-          <div className="message-row assistant-row loading-row">
-            <div className="avatar" style={{ overflow: 'hidden', border: '1px solid rgba(6, 182, 212, 0.4)' }}>
-              <img src="/joe-avatar.png" alt="Prof. Joe AI" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+          <div className="message-row assistant-row">
+            <div className="avatar">
+              <img src="/joe-avatar.png" alt="Prof. Joe" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
             </div>
             <div className="bubble-wrapper">
-              <div className="message-bubble assistant-bubble loading-bubble kokonut-loader-bubble">
-                <div className="kokonut-conic-spinner" />
-                <div className="kokonut-loader-text">
-                  <span className="title">Prof. Joe is thinking...</span>
-                  <span className="subtitle">Synthesizing answer & diagram structure</span>
+              <div className="bubble-header">
+                <span className="role-label">Assistant</span>
+                <span className="model-badge">{selectedModel}</span>
+              </div>
+              <div className="message-bubble assistant-bubble loading-bubble">
+                <div className="loading-dots">
+                  <span />
+                  <span />
+                  <span />
                 </div>
               </div>
             </div>
@@ -173,16 +166,16 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         </div>
       </div>
 
-      {/* KokonutUI-Inspired AI Prompt Input Container */}
-      <div className="chat-input-bar-container card-box kokonut-input-card">
-        {/* Top Scrollable Toolbar Strip */}
-        <div className="input-toolbar-top">
-          <div className="mode-selector-strip">
+      {/* Input Control Container */}
+      <div className="input-bar-container">
+        {/* System Prompt & Exam Mode Selector Pill Nav Bar */}
+        <div className="input-modes-bar flex items-center justify-between gap-2 overflow-x-auto py-1 px-2">
+          <div className="flex items-center gap-1.5 overflow-x-auto">
             <button
               type="button"
               onClick={() => setPromptMode('auto')}
               className={`mode-pill ${promptMode === 'auto' ? 'active' : ''}`}
-              title="Auto-Detect question type"
+              title="Automatic OU Exam Intelligence Engine"
             >
               <Zap size={12} /> Auto
             </button>
@@ -266,7 +259,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             <div className="kokonut-left-actions flex items-center gap-2">
               {onProviderChange && onModelChange && (
                 <>
-                  {/* Provider Selector Pill */}
                   <div className="kokonut-model-picker-pill provider-pill flex items-center gap-1">
                     <span className="picker-icon">⚡</span>
                     <select
@@ -287,7 +279,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     </select>
                   </div>
 
-                  {/* Model Selector Pill */}
                   <div className="kokonut-model-picker-pill model-pill flex items-center gap-1">
                     <span className="picker-icon">🤖</span>
                     <select
@@ -306,23 +297,36 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               <button
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
-                className="kokonut-action-btn"
-                title="Attach File or PDF"
+                className="kokonut-action-btn file-attach-btn"
+                title="Attach Document or Image"
               >
-                <Paperclip size={15} />
+                <Paperclip size={14} />
               </button>
 
               {messages.length > 0 && (
-                <button
-                  type="button"
-                  onClick={handleExportFullChatPdf}
-                  className="kokonut-action-btn export-pdf-action"
-                  style={{ marginRight: '10px' }}
-                  title="Export Chat Session to PDF"
-                >
-                  <Download size={14} />
-                  <span>PDF</span>
-                </button>
+                <>
+                  <button
+                    type="button"
+                    onClick={handleExportFullChatPdf}
+                    className="kokonut-action-btn export-pdf-action text-cyan-400"
+                    style={{ marginRight: '4px' }}
+                    title="Interactive Full Session Document Preview Modal"
+                  >
+                    <Eye size={14} />
+                    <span>Preview</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={handleDirectSessionPrint}
+                    className="kokonut-action-btn export-pdf-action text-blue-400"
+                    style={{ marginRight: '10px' }}
+                    title="Direct Full Session System Print Preview"
+                  >
+                    <Printer size={14} />
+                    <span>Print</span>
+                  </button>
+                </>
               )}
             </div>
 
