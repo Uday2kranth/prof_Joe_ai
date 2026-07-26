@@ -82,28 +82,30 @@ export const ExamPrepView: React.FC<ExamPrepViewProps> = ({ onLoadQuestionToChat
         />
       </div>
 
-      <div className="exam-tabs">
-        <button
-          onClick={() => setActiveTab('bank')}
-          className={`tab-btn ${activeTab === 'bank' ? 'active' : ''}`}
-        >
-          <Award size={16} />
-          <span>High-Yield Question Bank</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('sets')}
-          className={`tab-btn ${activeTab === 'sets' ? 'active' : ''}`}
-        >
-          <FileText size={16} />
-          <span>Predicted Paper Sets (A–D)</span>
-        </button>
-        <button
-          onClick={() => setActiveTab('syllabus')}
-          className={`tab-btn ${activeTab === 'syllabus' ? 'active' : ''}`}
-        >
-          <BookOpen size={16} />
-          <span>Full Syllabus Outline</span>
-        </button>
+      <div className="exam-tabs-container">
+        <div className="exam-tabs">
+          <button
+            onClick={() => setActiveTab('bank')}
+            className={`tab-btn ${activeTab === 'bank' ? 'active' : ''}`}
+          >
+            <Award size={16} />
+            <span>High-Yield Question Bank</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('sets')}
+            className={`tab-btn ${activeTab === 'sets' ? 'active' : ''}`}
+          >
+            <FileText size={16} />
+            <span>Predicted Paper Sets (A–D)</span>
+          </button>
+          <button
+            onClick={() => setActiveTab('syllabus')}
+            className={`tab-btn ${activeTab === 'syllabus' ? 'active' : ''}`}
+          >
+            <BookOpen size={16} />
+            <span>Full Syllabus Outline</span>
+          </button>
+        </div>
       </div>
 
       <div className="exam-tab-content">
