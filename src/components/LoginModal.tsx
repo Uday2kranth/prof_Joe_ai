@@ -213,7 +213,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
               type="text"
               value={username}
               onChange={(e) => setUsername(e.target.value)}
-              placeholder="Enter username (e.g. Admin@uday or sai_kiran)"
+              placeholder="Enter username (e.g. professor@Joe or sai_kiran)"
               required
               className="text-input"
               style={{
