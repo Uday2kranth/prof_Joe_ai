@@ -2668,5 +2668,63 @@ body {
     word-break: break-word !important;
     white-space: normal !important;
   }
+
+  /* Chat Window Mobile 100% Full-Width Message Space Utilization */
+  .message-row {
+    gap: 8px !important;
+    max-width: 100% !important;
+    width: 100% !important;
+    padding: 0 4px !important;
+  }
+
+  .bubble-wrapper {
+    max-width: 100% !important;
+    width: 100% !important;
+    flex: 1 !important;
+  }
+
+  .user-row .bubble-wrapper {
+    align-items: stretch !important;
+    width: 100% !important;
+  }
+
+  .message-bubble {
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 12px 14px !important;
+  }
+
+  .user-bubble {
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    border-radius: 16px 16px 4px 16px !important;
+  }
+
+  .assistant-bubble {
+    max-width: 100% !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    border-radius: 16px 16px 16px 4px !important;
+  }
+
+  .markdown-body table {
+    display: block !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    box-sizing: border-box !important;
+    margin: 10px 0 !important;
+  }
+
+  .markdown-body th,
+  .markdown-body td {
+    padding: 8px 10px !important;
+    font-size: 0.8rem !important;
+    white-space: normal !important;
+    word-break: break-word !important;
+  }
 }
 
