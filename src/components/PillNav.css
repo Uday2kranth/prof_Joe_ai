@@ -210,16 +210,16 @@
 }
 
 .mobile-menu-popover {
-  position: absolute;
-  top: 3.5rem;
-  left: 0;
-  right: 0;
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(20px);
-  border: 1px solid rgba(6, 182, 212, 0.4);
-  border-radius: 20px;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
-  z-index: 998;
+  position: fixed !important;
+  top: 64px !important;
+  left: 12px !important;
+  right: 12px !important;
+  background: rgba(15, 23, 42, 0.98) !important;
+  backdrop-filter: blur(24px) !important;
+  border: 1px solid rgba(6, 182, 212, 0.5) !important;
+  border-radius: 20px !important;
+  box-shadow: 0 25px 60px rgba(0, 0, 0, 0.95), 0 0 30px rgba(6, 182, 212, 0.3) !important;
+  z-index: 99999 !important;
   opacity: 0;
   transform-origin: top center;
   visibility: hidden;
@@ -228,31 +228,31 @@
 .mobile-menu-list {
   list-style: none;
   margin: 0;
-  padding: 6px;
+  padding: 8px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
 .mobile-menu-popover .mobile-menu-link {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 14px;
-  color: var(--text-primary, #f8fafc);
-  background: rgba(30, 41, 59, 0.5);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  text-decoration: none;
-  font-size: 14px;
-  font-weight: 600;
-  border-radius: 12px;
-  transition: all 0.2s ease;
-  cursor: pointer;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 14px 18px !important;
+  color: #f8fafc !important;
+  background: rgba(30, 41, 59, 0.9) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+  text-decoration: none !important;
+  font-size: 15px !important;
+  font-weight: 600 !important;
+  border-radius: 14px !important;
+  transition: all 0.2s ease !important;
+  cursor: pointer !important;
 }
 
 .mobile-menu-popover .mobile-menu-link:hover,
 .mobile-menu-popover .mobile-menu-link.is-active {
-  background: rgba(6, 182, 212, 0.2);
-  color: #06b6d4;
-  border-color: rgba(6, 182, 212, 0.5);
+  background: rgba(6, 182, 212, 0.25) !important;
+  color: #06b6d4 !important;
+  border-color: rgba(6, 182, 212, 0.6) !important;
 }

@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Globe, Sparkles, CheckCircle2, X, Zap, FileText, CheckSquare, MessageSquare, Paperclip, Download } from 'lucide-react';
+import { Send, Globe, Sparkles, X, Zap, FileText, CheckSquare, MessageSquare, Paperclip, Download } from 'lucide-react';
 import type { Message } from '../types';
 import { MessageItem } from './MessageItem';
 import { PROVIDERS } from '../constants';
@@ -89,46 +89,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   return (
     <div className="chat-window-container">
       <div className="messages-viewport">
-        {/* Top Header Bar for Active Prompt */}
-        {activeSystemPromptTitle && (
-          <div style={{
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between',
-            background: 'rgba(6, 182, 212, 0.12)',
-            border: '1px solid var(--accent-cyan)',
-            borderRadius: '8px',
-            padding: '8px 14px',
-            fontSize: '0.82rem',
-            color: 'var(--accent-cyan)',
-            marginBottom: '12px'
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <CheckCircle2 size={16} />
-              <span><strong>Active System Prompt:</strong> {activeSystemPromptTitle}</span>
-            </div>
-            {onClearSystemPrompt && (
-              <button
-                onClick={onClearSystemPrompt}
-                style={{
-                  background: 'none',
-                  border: 'none',
-                  color: 'var(--accent-cyan)',
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  fontSize: '0.78rem',
-                  fontWeight: 600
-                }}
-                title="Remove Active System Prompt"
-              >
-                <X size={14} /> Clear
-              </button>
-            )}
-          </div>
-        )}
-
+        <div className="messages-scroll-area">
         {messages.length === 0 ? (
           <div className="empty-state-hero kokonut-hero-card">
             <div className="kokonut-dots-overlay" />
@@ -185,6 +146,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         )}
 
         <div ref={messagesEndRef} />
+        </div>
       </div>
 
       {/* KokonutUI-Inspired AI Prompt Input Container */}
@@ -271,7 +233,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             onChange={(e) => setInputPrompt(e.target.value)}
             onKeyDown={handleKeyDown}
             placeholder={`Ask ${selectedModel}... (Press Enter to Send)`}
-            rows={1}
+            rows={3}
+            style={{ minHeight: '72px', fontSize: '0.92rem', padding: '12px 16px' }}
             className="chat-textarea kokonut-textarea"
           />
 
