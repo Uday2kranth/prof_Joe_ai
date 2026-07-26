@@ -29,22 +29,27 @@ const DEFAULT_KEYS: UserKeys = {
 };
 
 export const App: React.FC = () => {
+  const [isCloudSessionsLoaded, setIsCloudSessionsLoaded] = useState<boolean>(false);
+
   const [sessions, setSessions] = useState<ChatSession[]>(() => {
-    const saved = localStorage.getItem('chatterbot_sessions');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
-      } catch (e) {
-        console.error('Failed to parse sessions from localStorage', e);
+    const activeUser = localStorage.getItem('chatterbot_username');
+    if (activeUser) {
+      const saved = localStorage.getItem(`chatterbot_sessions_${activeUser}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch (e) {
+          console.error('Failed to parse sessions from localStorage', e);
+        }
       }
     }
     return [
       {
-        id: 'default-session-1',
+        id: `session-${Date.now()}`,
         title: 'New Chat Session',
-        provider: 'OpenRouter',
-        model: 'openrouter/free',
+        provider: 'Pollinations AI (Free Keyless)',
+        model: 'openai-fast',
         messages: [],
         createdAt: Date.now(),
         updatedAt: Date.now()
@@ -146,6 +151,7 @@ export const App: React.FC = () => {
   });
 
   const handleLoginSuccess = async (username: string, token: string, role: string) => {
+    setIsCloudSessionsLoaded(false);
     setCurrentUser(username);
     setAuthToken(token);
     localStorage.setItem('chatterbot_username', username);
@@ -166,8 +172,9 @@ export const App: React.FC = () => {
         const data = await response.json();
         if (data.success && Array.isArray(data.sessions) && data.sessions.length > 0) {
           setSessions(data.sessions);
-          localStorage.setItem('chatterbot_sessions', JSON.stringify(data.sessions));
+          localStorage.setItem(`chatterbot_sessions_${username}`, JSON.stringify(data.sessions));
           setActiveSessionIdState(data.sessions[0].id);
+          setIsCloudSessionsLoaded(true);
           return;
         }
       }
@@ -178,11 +185,17 @@ export const App: React.FC = () => {
     // Default fresh session if user has no cloud sessions
     const fresh = [createFreshDefaultSession()];
     setSessions(fresh);
-    localStorage.setItem('chatterbot_sessions', JSON.stringify(fresh));
+    localStorage.setItem(`chatterbot_sessions_${username}`, JSON.stringify(fresh));
     setActiveSessionIdState(fresh[0].id);
+    setIsCloudSessionsLoaded(true);
   };
 
   const handleLogout = () => {
+    setIsCloudSessionsLoaded(false);
+    if (currentUser) {
+      localStorage.removeItem(`chatterbot_sessions_${currentUser}`);
+      localStorage.removeItem(`chatterbot_user_keys_${currentUser}`);
+    }
     setCurrentUser('');
     setAuthToken('');
     localStorage.removeItem('chatterbot_username');
@@ -196,18 +209,20 @@ export const App: React.FC = () => {
     setIsLoginOpen(true);
   };
 
-  // Save sessions to localStorage & Cloud Storage
+  // Save sessions to localStorage & Cloud Storage ONLY AFTER cloud history has finished loading!
   useEffect(() => {
-    localStorage.setItem('chatterbot_sessions', JSON.stringify(sessions));
+    if (!currentUser || !isCloudSessionsLoaded) return;
 
-    if (currentUser && sessions && sessions.length > 0) {
+    localStorage.setItem(`chatterbot_sessions_${currentUser}`, JSON.stringify(sessions));
+
+    if (sessions && sessions.length > 0) {
       fetch('/api/sessions', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: currentUser, sessions })
       }).catch(err => console.warn('Could not sync sessions to cloud:', err));
     }
-  }, [sessions, currentUser]);
+  }, [sessions, currentUser, isCloudSessionsLoaded]);
 
   // Fetch Cloud Sessions when currentUser logs in or opens app & verify active token
   useEffect(() => {
@@ -236,7 +251,7 @@ export const App: React.FC = () => {
           }
           if (data.success && Array.isArray(data.sessions) && data.sessions.length > 0) {
             setSessions(data.sessions);
-            localStorage.setItem('chatterbot_sessions', JSON.stringify(data.sessions));
+            localStorage.setItem(`chatterbot_sessions_${currentUser}`, JSON.stringify(data.sessions));
             if (data.sessions[0]?.id) {
               setActiveSessionIdState(data.sessions[0].id);
             }
@@ -244,6 +259,8 @@ export const App: React.FC = () => {
         }
       } catch (err) {
         console.warn('Could not sync sessions from cloud storage:', err);
+      } finally {
+        setIsCloudSessionsLoaded(true);
       }
     };
 
