@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { UserCheck, Key, LogIn, AlertCircle, Sparkles } from 'lucide-react';
 import { BorderBeam } from './ui/BorderBeam';
+import { LetterGlitch } from './LetterGlitch';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -81,7 +82,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         left: 0,
         width: '100vw',
         height: '100vh',
-        background: 'radial-gradient(circle at 50% 50%, #0f172a 0%, #020617 100%)',
+        background: '#020617',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -89,8 +90,17 @@ export const LoginModal: React.FC<LoginModalProps> = ({
         overflow: 'hidden'
       }}
     >
-      {/* Animated Floating Glow Orbs (Magic UI / React Bits Style) */}
-      <div className="kokonut-dots-overlay login-mouse-dots" />
+      {/* React Bits LetterGlitch Scrambling Matrix Background */}
+      <LetterGlitch
+        glitchColors={['#06b6d4', '#61dca3', '#3b82f6', '#a855f7']}
+        glitchSpeed={45}
+        centerVignette={false}
+        outerVignette={true}
+        smooth={true}
+      />
+
+      {/* Animated Floating Glow Orbs */}
+      <div className="kokonut-dots-overlay login-mouse-dots" style={{ zIndex: 2 }} />
       <div
         style={{
           position: 'absolute',
