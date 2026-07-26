@@ -115,8 +115,8 @@ export async function printBubbleToPdf(content: string, modelUsed?: string): Pro
             color: #64748b;
           }
 
-          .markdown-content h1, .markdown-content h2, .markdown-content h3 {
-            color: ${textColor};
+          .markdown-content h1, .markdown-content h2, .markdown-content h3, .markdown-content h4, .markdown-content h5, .markdown-content h6 {
+            color: #0f172a;
             margin-top: 18px;
             margin-bottom: 8px;
           }
@@ -175,6 +175,9 @@ export async function printBubbleToPdf(content: string, modelUsed?: string): Pro
             body {
               padding: 0;
               background: #ffffff !important;
+              color: #0f172a !important;
+            }
+            .markdown-content h1, .markdown-content h2, .markdown-content h3, .markdown-content h4, .markdown-content h5, .markdown-content h6 {
               color: #0f172a !important;
             }
             .pdf-diagram-page {
@@ -372,8 +375,8 @@ export async function printSessionToPdf(messages: any[], sessionTitle: string = 
             color: #06b6d4;
           }
 
-          .markdown-content h1, .markdown-content h2, .markdown-content h3 {
-            color: ${textColor};
+          .markdown-content h1, .markdown-content h2, .markdown-content h3, .markdown-content h4, .markdown-content h5, .markdown-content h6 {
+            color: #0f172a;
             margin-top: 14px;
             margin-bottom: 6px;
           }
@@ -416,6 +419,9 @@ export async function printSessionToPdf(messages: any[], sessionTitle: string = 
             body {
               padding: 0;
               background: #ffffff !important;
+              color: #0f172a !important;
+            }
+            .markdown-content h1, .markdown-content h2, .markdown-content h3, .markdown-content h4, .markdown-content h5, .markdown-content h6 {
               color: #0f172a !important;
             }
             .message-block {
