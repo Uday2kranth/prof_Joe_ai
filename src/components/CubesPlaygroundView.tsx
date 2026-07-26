@@ -33,7 +33,28 @@ export const CubesPlaygroundView: React.FC = () => {
         </div>
       </div>
 
-      <div className="playground-content-grid" style={{ display: 'grid', gridTemplateColumns: '320px 1fr', gap: '20px' }}>
+      <div className="playground-content-grid">
+        {/* 3D Cubes Stage (Renders First on Mobile) */}
+        <div className="stage-card card-box" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px', background: 'rgba(15, 23, 42, 0.8)', border: '1px solid var(--border-color)', borderRadius: '16px', minHeight: '440px', position: 'relative' }}>
+          <div className="stage-card-hint" style={{ position: 'absolute', top: '16px', left: '16px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+            <Zap size={14} className="text-cyan-400" />
+            <span>Hover cursor or drag touch over grid to tilt 3D cubes. Click to trigger ripple pulse!</span>
+          </div>
+
+          <Cubes
+            key={`${gridSize}-${maxAngle}-${rippleColor}-${rippleSpeed}-${autoAnimate}`}
+            gridSize={gridSize}
+            maxAngle={maxAngle}
+            radius={4}
+            faceColor="#0f172a"
+            borderStyle="1px solid rgba(6, 182, 212, 0.35)"
+            rippleColor={rippleColor}
+            rippleSpeed={rippleSpeed}
+            autoAnimate={autoAnimate}
+            rippleOnClick={rippleOnClick}
+          />
+        </div>
+
         {/* Customization Control Panel */}
         <div className="control-panel card-box" style={{ display: 'flex', flexDirection: 'column', gap: '16px', padding: '20px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
@@ -141,27 +162,6 @@ export const CubesPlaygroundView: React.FC = () => {
               />
             </label>
           </div>
-        </div>
-
-        {/* 3D Cubes Stage */}
-        <div className="stage-card card-box" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px', background: 'rgba(15, 23, 42, 0.8)', border: '1px solid var(--border-color)', borderRadius: '16px', minHeight: '480px', position: 'relative' }}>
-          <div style={{ position: 'absolute', top: '16px', left: '16px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-            <Zap size={14} className="text-cyan-400" />
-            <span>Hover cursor or drag touch over grid to tilt 3D cubes. Click to trigger ripple pulse!</span>
-          </div>
-
-          <Cubes
-            key={`${gridSize}-${maxAngle}-${rippleColor}-${rippleSpeed}-${autoAnimate}`}
-            gridSize={gridSize}
-            maxAngle={maxAngle}
-            radius={4}
-            faceColor="#0f172a"
-            borderStyle="1px solid rgba(6, 182, 212, 0.35)"
-            rippleColor={rippleColor}
-            rippleSpeed={rippleSpeed}
-            autoAnimate={autoAnimate}
-            rippleOnClick={rippleOnClick}
-          />
         </div>
       </div>
     </div>
