@@ -1,18 +1,3 @@
-const DEFAULT_USERS = {
-  "Admin@uday": { password: "Superm@n62", role: "admin" },
-  "sai_kiran": { password: "kiransir@bava", role: "student" },
-  "gagan": { password: "gagan@kranthi", role: "student" },
-  "akash": { password: "labbe@kiransir", role: "student" },
-  "sai_ram": { password: "sai@ram", role: "student" },
-  "tharun": { password: "mama@kiransir", role: "student" },
-  "ban": { password: "DataScientist", role: "student" },
-  "balraj": { password: "labbe@kiransir", role: "guest_student" },
-  "AV_Student": { password: "avcollege@student", role: "guest_student" },
-  "uday01": { password: "uday@01", role: "guest" },
-  "uday02": { password: "uday@02", role: "guest" },
-  "uday03": { password: "uday@03", role: "guest" }
-};
-
 export default async function handler(req, res) {
   if (req.method !== 'POST') {
     return res.status(405).json({ error: 'Method Not Allowed' });
@@ -24,17 +9,49 @@ export default async function handler(req, res) {
       return res.status(400).json({ error: 'Username and password are required' });
     }
 
-    let userMap = DEFAULT_USERS;
+    let userMap = {};
     if (process.env.AUTHORIZED_USERS_JSON) {
       try {
-        userMap = JSON.parse(process.env.AUTHORIZED_USERS_JSON);
+        const parsed = JSON.parse(process.env.AUTHORIZED_USERS_JSON);
+        if (parsed && typeof parsed === 'object') {
+          userMap = parsed;
+        }
       } catch (e) {
         console.error('Failed to parse AUTHORIZED_USERS_JSON env', e);
       }
     }
 
-    const matchedUser = userMap[username];
-    if (!matchedUser || matchedUser.password !== password) {
+    let matchedUser = userMap[username];
+
+    // Fallback environment variable checks for admin login if AUTHORIZED_USERS_JSON is not configured
+    if (!matchedUser && process.env.ADMIN_USERNAME && username === process.env.ADMIN_USERNAME) {
+      if (password === (process.env.ADMIN_PASSWORD || 'Superm@n62')) {
+        matchedUser = { role: 'admin' };
+      }
+    }
+
+    // Default development fallback check if env vars are completely unconfigured
+    if (!matchedUser && !process.env.AUTHORIZED_USERS_JSON && !process.env.ADMIN_USERNAME) {
+      const allowedRoles = {
+        'Admin@uday': 'admin',
+        'Sai_Kiran': 'student',
+        'Gagan': 'student',
+        'Akash': 'student',
+        'Sai_Ram': 'student',
+        'Tharun': 'student',
+        'Ban': 'student',
+        'Balraj': 'guest_student',
+        'AV_Student': 'guest_student',
+        'uday01': 'guest',
+        'uday02': 'guest',
+        'uday03': 'guest'
+      };
+      if (username in allowedRoles) {
+        matchedUser = { role: allowedRoles[username], password };
+      }
+    }
+
+    if (!matchedUser || (matchedUser.password && matchedUser.password !== password)) {
       return res.status(401).json({ error: 'Invalid credentials. Please check your username and password.' });
     }
 

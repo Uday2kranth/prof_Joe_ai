@@ -2,30 +2,6 @@ import type { ProviderGroup } from './types';
 
 export const PROVIDERS: ProviderGroup[] = [
   {
-    id: 'pollinations-keyless',
-    name: 'Pollinations AI (Free Keyless)',
-    models: [
-      { value: 'openai-fast', name: 'GPT-5 Nano / GPT-OSS 20B (Free Keyless) [WS]' },
-      { value: 'openai', name: 'GPT-4o Mini / OpenAI (Free Keyless) [WS]' },
-      { value: 'deepseek', name: 'DeepSeek V4 Flash (Free Keyless) [WS]' },
-      { value: 'llama', name: 'Meta Llama 3.3 70B (Free Keyless) [WS]' },
-      { value: 'qwen-coder', name: 'Qwen3 Coder 30B (Free Keyless) [WS]' },
-      { value: 'mistral', name: 'Mistral Small 4 (Free Keyless) [WS]' }
-    ]
-  },
-  {
-    id: 'ollama',
-    name: 'Ollama Cloud',
-    models: [
-      { value: 'gpt-oss:120b', name: 'GPT-OSS 120B (Free Cloud)' },
-      { value: 'gemma4:31b', name: 'Gemma 4 31B (Free Cloud)' },
-      { value: 'gpt-oss:20b', name: 'GPT-OSS 20B (Free Cloud)' },
-      { value: 'nemotron-3-nano:30b', name: 'Nemotron 3 Nano 30B (Free Cloud)' },
-      { value: 'nemotron-3-super', name: 'Nemotron 3 Super 120B (Free Cloud)' },
-      { value: 'nemotron-3-ultra', name: 'Nemotron 3 Ultra 550B (Free Cloud)' }
-    ]
-  },
-  {
     id: 'openrouter',
     name: 'OpenRouter',
     models: [
@@ -44,22 +20,6 @@ export const PROVIDERS: ProviderGroup[] = [
     ]
   },
   {
-    id: 'nvidia',
-    name: 'NVIDIA NIM Gateway',
-    models: [
-      { value: 'nvidia/nemotron-3-ultra', name: 'Nemotron 3 Ultra (Frontier Reasoning) [WS]' },
-      { value: 'nvidia/nemotron-3-super-120b-a12b', name: 'Nemotron 3 Super (High-Throughput Math) [WS]' },
-      { value: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B (Open Weights)' },
-      { value: 'qwen/qwen3-32b', name: 'Qwen 3 32B (Multilingual)' },
-      { value: 'nvidia/nemotron-3-nano-30b-a3b', name: 'Nemotron 3 Nano 30B (Sub-Agent)' },
-      { value: 'poolside/laguna-m.1', name: 'Laguna M.1 (Coding Agent)' },
-      { value: 'poolside/laguna-xs-2.1', name: 'Laguna XS 2.1 (Developer)' },
-      { value: 'cohere/north-mini-code', name: 'North Mini Code (Terminal/CLI)' },
-      { value: 'google/gemma-4-31b-it', name: 'Gemma 4 31B (OCR/Layout)' },
-      { value: 'nvidia/nemotron-3-nano-omni', name: 'Nemotron 3 Nano Omni (Multimodal)' }
-    ]
-  },
-  {
     id: 'gemini',
     name: 'Google Gemini',
     models: [
@@ -68,6 +28,18 @@ export const PROVIDERS: ProviderGroup[] = [
       { value: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash [WS]' },
       { value: 'gemma-4-31b-it', name: 'Gemma 4 31B (AI Studio) [WS]' },
       { value: 'gemma-4-26b-a4b-it', name: 'Gemma 4 26B (AI Studio) [WS]' }
+    ]
+  },
+  {
+    id: 'pollinations-keyless',
+    name: 'Pollinations AI (Free Keyless)',
+    models: [
+      { value: 'openai-fast', name: 'GPT-5 Nano / GPT-OSS 20B (Free Keyless) [WS]' },
+      { value: 'openai', name: 'GPT-4o Mini / OpenAI (Free Keyless) [WS]' },
+      { value: 'deepseek', name: 'DeepSeek V4 Flash (Free Keyless) [WS]' },
+      { value: 'llama', name: 'Meta Llama 3.3 70B (Free Keyless) [WS]' },
+      { value: 'qwen-coder', name: 'Qwen3 Coder 30B (Free Keyless) [WS]' },
+      { value: 'mistral', name: 'Mistral Small 4 (Free Keyless) [WS]' }
     ]
   },
   {

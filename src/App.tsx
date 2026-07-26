@@ -44,7 +44,7 @@ export const App: React.FC = () => {
         id: 'default-session-1',
         title: 'New Chat Session',
         provider: 'OpenRouter',
-        model: 'google/gemini-2.0-flash-lite-001',
+        model: 'openrouter/free',
         messages: [],
         createdAt: Date.now(),
         updatedAt: Date.now()
@@ -70,7 +70,7 @@ export const App: React.FC = () => {
 
   const [activeView, setActiveView] = useState<ActiveViewType>('chat');
   const [selectedProvider, setSelectedProvider] = useState<string>('OpenRouter');
-  const [selectedModel, setSelectedModel] = useState<string>('google/gemini-2.0-flash-lite-001');
+  const [selectedModel, setSelectedModel] = useState<string>('openrouter/free');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
