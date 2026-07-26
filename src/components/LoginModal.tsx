@@ -54,7 +54,12 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       if (response.ok) {
         const data = await response.json();
         if (data.success) {
-          onLoginSuccess(data.username, data.token, data.role || 'student');
+          const userObj = data.user || data;
+          onLoginSuccess(
+            userObj.username || username,
+            userObj.token || `token_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+            userObj.role || 'student'
+          );
           setLoading(false);
           return;
         }

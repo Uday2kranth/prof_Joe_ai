@@ -3,10 +3,9 @@ import { Send, Globe, Sparkles, X, Zap, FileText, CheckSquare, MessageSquare, Pa
 // @ts-ignore
 import TextType from './TextType';
 import type { Message } from '../types';
-import { MessageItem } from './MessageItem';
+import { MessageItem, renderMarkdownWithMathAndDiagrams } from './MessageItem';
 import { PROVIDERS } from '../constants';
 import { PdfPreviewModal } from './PdfPreviewModal';
-import { marked } from 'marked';
 
 interface ChatWindowProps {
   messages: Message[];
@@ -340,7 +339,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           content={messages.map(m => `### ${m.role === 'user' ? '👤 User Query' : '🎓 Prof. Joe AI'}\n${m.content}`).join('\n\n---\n\n')}
           modelUsed={selectedModel}
           docTitle={`ProfJoe_Session_${activeSystemPromptTitle ? activeSystemPromptTitle.replace(/[^a-zA-Z0-9]/g, '_') : 'Chat'}_${new Date().toISOString().split('T')[0]}`}
-          renderedHtml={marked.parse(messages.map(m => `### ${m.role === 'user' ? '👤 User Query' : '🎓 Prof. Joe AI'}\n${m.content}`).join('\n\n---\n\n')) as string}
+          renderedHtml={renderMarkdownWithMathAndDiagrams(
+            messages.map(m => `### ${m.role === 'user' ? '👤 User Query' : '🎓 Prof. Joe AI'}\n${m.content}`).join('\n\n---\n\n'),
+            new Map()
+          )}
         />
       )}
     </div>

@@ -14,7 +14,7 @@ marked.setOptions({
   breaks: true
 });
 
-function renderMarkdownWithMathAndDiagrams(content: string, diagramMap: Map<string, string>): string {
+export function renderMarkdownWithMathAndDiagrams(content: string, diagramMap: Map<string, string>): string {
   if (!content) return '';
   const mathMap = new Map<string, string>();
   let tokenIdx = 0;
