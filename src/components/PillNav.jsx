@@ -8,6 +8,7 @@ const DEFAULT_ITEMS = [
   { label: '📘 System Prompts', href: 'system_prompts' },
   { label: '✨ Prompts', href: 'prompts' },
   { label: '📊 Diagrams', href: 'diagrams' },
+  { label: '🎭 Fun Personas', href: 'fun_personas' },
   { label: '🎮 3D Cubes', href: 'cubes' }
 ];
 

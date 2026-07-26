@@ -59,3 +59,5 @@ export interface UserKeys {
   opencode?: string;
   local_endpoint: string;
 }
+
+export type ActiveViewType = 'chat' | 'prompts' | 'examprep' | 'system_prompts' | 'diagrams' | 'cubes' | 'fun_personas';

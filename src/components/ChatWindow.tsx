@@ -4,7 +4,7 @@ import { Send, Globe, X, Zap, FileText, CheckSquare, MessageSquare, Paperclip, E
 import TextType from './TextType';
 import type { Message } from '../types';
 import { MessageItem, renderMarkdownWithMathAndDiagrams } from './MessageItem';
-import { PROVIDERS, PERSONAS } from '../constants';
+import { PROVIDERS } from '../constants';
 import { PdfPreviewModal } from './PdfPreviewModal';
 import { printSessionToPdf } from '../services/printPdfService';
 
@@ -14,10 +14,8 @@ interface ChatWindowProps {
   onSendMessage: (prompt: string, webSearch: boolean, mode: 'auto' | '12marks' | '2marks' | 'general' | 'none') => void;
   selectedProvider?: string;
   selectedModel: string;
-  selectedPersona?: string;
   onProviderChange?: (provider: string) => void;
   onModelChange?: (model: string) => void;
-  onPersonaChange?: (persona: string) => void;
   onRetry?: () => void;
   onEditUserMessage?: (oldText: string) => void;
   activeSystemPromptTitle?: string;
@@ -30,10 +28,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   onSendMessage,
   selectedProvider = 'Ollama Cloud',
   selectedModel,
-  selectedPersona = 'default',
   onProviderChange,
   onModelChange,
-  onPersonaChange,
   onRetry,
   onEditUserMessage,
   activeSystemPromptTitle,
@@ -210,25 +206,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             >
               <MessageSquare size={12} /> General
             </button>
-
-            {onPersonaChange && (
-              <div className="mode-pill persona-pill flex items-center gap-1" style={{ padding: '2px 8px', background: 'rgba(6, 182, 212, 0.1)', border: '1px solid rgba(6, 182, 212, 0.3)', borderRadius: '16px' }}>
-                <span style={{ fontSize: '0.8rem' }}>🎭</span>
-                <select
-                  value={selectedPersona}
-                  onChange={(e) => onPersonaChange(e.target.value)}
-                  className="bg-transparent text-cyan-400 font-medium focus:outline-none"
-                  style={{ fontSize: '0.78rem', cursor: 'pointer', background: 'transparent' }}
-                  title="Select Character Persona Voice"
-                >
-                  {PERSONAS.map(p => (
-                    <option key={p.id} value={p.id} style={{ background: '#0f172a', color: '#f8fafc' }}>
-                      {p.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-            )}
           </div>
 
           <button

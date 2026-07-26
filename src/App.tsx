@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import type { ChatSession, Message, UserKeys } from './types';
-import { Sidebar, type ActiveViewType } from './components/Sidebar';
+import type { ChatSession, Message, UserKeys, ActiveViewType } from './types';
+import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { ChatWindow } from './components/ChatWindow';
 import { ExamPrepView } from './components/ExamPrepView';
@@ -8,6 +8,7 @@ import { SystemPromptLibraryView } from './components/SystemPromptLibraryView';
 import { PromptLibraryView } from './components/PromptLibraryView';
 import { DiagramStudioView } from './components/DiagramStudioView';
 import { CubesPlaygroundView } from './components/CubesPlaygroundView';
+import { FunPersonaChatView } from './components/FunPersonaChatView';
 import { SettingsModal } from './components/SettingsModal';
 import { LoginModal } from './components/LoginModal';
 import { UserProfileModal } from './components/UserProfileModal';
@@ -404,10 +405,20 @@ export const App: React.FC = () => {
   const handleSendMessage = async (
     prompt: string,
     webSearch: boolean,
-    mode: 'auto' | '12marks' | '2marks' | 'general' | 'none' = 'auto'
+    modeOrPersona: 'auto' | '12marks' | '2marks' | 'general' | 'none' | string = 'auto',
+    personaArg?: string
   ) => {
     const currentSess = activeSession || sessions[0];
     if (!currentSess) return;
+
+    let effectiveMode: 'auto' | '12marks' | '2marks' | 'general' | 'none' = 'auto';
+    let effectivePersona = personaArg || selectedPersona;
+
+    if (['auto', '12marks', '2marks', 'general', 'none'].includes(modeOrPersona)) {
+      effectiveMode = modeOrPersona as any;
+    } else {
+      effectivePersona = modeOrPersona;
+    }
 
     const userMsg: Message = {
       id: `msg-${Date.now()}`,
@@ -437,9 +448,9 @@ export const App: React.FC = () => {
         updatedMessages,
         userKeys,
         webSearch,
-        mode,
+        effectiveMode,
         currentSess.systemPrompt,
-        selectedPersona
+        effectivePersona
       );
 
       const assistantMsg: Message = {
@@ -621,8 +632,6 @@ export const App: React.FC = () => {
               onEditUserMessage={handleEditLastUserMessage}
               activeSystemPromptTitle={activeSession?.systemPromptTitle}
               onClearSystemPrompt={handleClearSystemPrompt}
-              selectedPersona={selectedPersona}
-              onPersonaChange={handlePersonaChange}
             />
           )}
 
@@ -647,6 +656,22 @@ export const App: React.FC = () => {
 
           {activeView === 'cubes' && (
             <CubesPlaygroundView />
+          )}
+
+          {activeView === 'fun_personas' && (
+            <FunPersonaChatView
+              messages={activeSession ? activeSession.messages : []}
+              isLoading={isLoading}
+              onSendMessage={handleSendMessage}
+              selectedProvider={selectedProvider}
+              selectedModel={selectedModel}
+              selectedPersona={selectedPersona}
+              onProviderChange={handleProviderChange}
+              onModelChange={handleModelChange}
+              onPersonaChange={handlePersonaChange}
+              onRetry={handleRetryLastAssistantMessage}
+              onEditUserMessage={handleEditLastUserMessage}
+            />
           )}
         </main>
       </div>

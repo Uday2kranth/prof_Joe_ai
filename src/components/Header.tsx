@@ -1,6 +1,6 @@
 import React from 'react';
 import { Menu } from 'lucide-react';
-import type { ActiveViewType } from './Sidebar';
+import type { ActiveViewType } from '../types';
 // @ts-ignore
 import { PillNav } from './PillNav';
 
