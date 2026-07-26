@@ -26,7 +26,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
 }) => {
   if (!isOpen) return null;
 
-  let displayUsername = 'Admin@uday';
+  let displayUsername = 'Guest User';
   if (username && typeof username === 'string' && username.trim() !== '' && username !== 'undefined') {
     displayUsername = username;
   } else {

@@ -14,7 +14,7 @@ export async function sendChatMessage(
     content: m.content
   }));
 
-  const activeUsername = localStorage.getItem('chatterbot_username') || 'Admin@uday';
+  const activeUsername = localStorage.getItem('chatterbot_username') || '';
   const activeToken = localStorage.getItem('chatterbot_token') || '';
 
   const headers: Record<string, string> = {

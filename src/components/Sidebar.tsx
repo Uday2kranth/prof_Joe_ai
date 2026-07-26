@@ -40,7 +40,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
   onOpenProfileModal,
   onClearChat
 }) => {
-  let displayUsername = 'Admin@uday';
+  let displayUsername = 'Guest User';
   if (currentUser && typeof currentUser === 'string' && currentUser.trim() !== '' && currentUser !== 'undefined') {
     displayUsername = currentUser;
   } else if (currentUser && typeof currentUser === 'object' && currentUser.username && currentUser.username !== 'undefined') {

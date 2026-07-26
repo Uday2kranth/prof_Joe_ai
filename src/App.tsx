@@ -100,13 +100,45 @@ export const App: React.FC = () => {
     );
   };
 
-  const handleLoginSuccess = (username: string, token: string, role: string) => {
+  const createFreshDefaultSession = (): ChatSession => ({
+    id: `session-${Date.now()}`,
+    title: 'New Chat Session',
+    provider: selectedProvider,
+    model: selectedModel,
+    messages: [],
+    createdAt: Date.now(),
+    updatedAt: Date.now()
+  });
+
+  const handleLoginSuccess = async (username: string, token: string, role: string) => {
     setCurrentUser(username);
     setAuthToken(token);
     localStorage.setItem('chatterbot_username', username);
     localStorage.setItem('chatterbot_token', token);
     localStorage.setItem('chatterbot_role', role);
     setIsLoginOpen(false);
+
+    // Fetch user-isolated cloud sessions immediately on login
+    try {
+      const response = await fetch(`/api/sessions?username=${encodeURIComponent(username)}&token=${encodeURIComponent(token)}`);
+      if (response.ok) {
+        const data = await response.json();
+        if (data.success && Array.isArray(data.sessions) && data.sessions.length > 0) {
+          setSessions(data.sessions);
+          localStorage.setItem('chatterbot_sessions', JSON.stringify(data.sessions));
+          setActiveSessionIdState(data.sessions[0].id);
+          return;
+        }
+      }
+    } catch (err) {
+      console.warn('Could not fetch cloud sessions on login:', err);
+    }
+
+    // Default fresh session if user has no cloud sessions
+    const fresh = [createFreshDefaultSession()];
+    setSessions(fresh);
+    localStorage.setItem('chatterbot_sessions', JSON.stringify(fresh));
+    setActiveSessionIdState(fresh[0].id);
   };
 
   const handleLogout = () => {
@@ -115,6 +147,11 @@ export const App: React.FC = () => {
     localStorage.removeItem('chatterbot_username');
     localStorage.removeItem('chatterbot_token');
     localStorage.removeItem('chatterbot_role');
+    localStorage.removeItem('chatterbot_sessions');
+    localStorage.removeItem('chatterbot_user_keys');
+    const fresh = [createFreshDefaultSession()];
+    setSessions(fresh);
+    setActiveSessionIdState(fresh[0].id);
     setIsLoginOpen(true);
   };
 
