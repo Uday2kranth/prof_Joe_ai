@@ -100,11 +100,35 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
     setTimeout(() => setCopied(false), 1500);
   };
 
+  const generateExportFilename = (extension: string): string => {
+    // 1. Extract plain text (strip markdown headers, bolding, code blocks, latex)
+    const textOnly = (message.content || '')
+      .replace(/```[\s\S]*?```/g, '')
+      .replace(/<[^>]*>/g, '')
+      .replace(/[#*`$\-\\_]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+
+    // 2. Extract first 25 chars for safe topic slug
+    const rawTopic = textOnly.slice(0, 25).trim();
+    const cleanTopic = rawTopic.replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_') || 'Export';
+
+    // 3. Shorten model name slug
+    const rawModel = message.modelUsed || 'AI';
+    const modelSlug = (rawModel.includes('/') ? rawModel.split('/')[1] : rawModel).replace(/[^a-zA-Z0-9.-]/g, '');
+
+    // 4. Current date (YYYY-MM-DD)
+    const dateStr = new Date().toISOString().split('T')[0];
+
+    return `ProfJoe_${cleanTopic}_${modelSlug}_${dateStr}.${extension}`;
+  };
+
   const handleExportImage = async () => {
     if (!bubbleRef.current) return;
     setExportingImage(true);
     try {
-      await exportBubbleToImage(bubbleRef.current, `chat-${message.role}-${message.id}`);
+      const filename = generateExportFilename('png');
+      await exportBubbleToImage(bubbleRef.current, filename.replace(/\.png$/, ''));
     } finally {
       setExportingImage(false);
     }
@@ -113,7 +137,8 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
   const handleExportPdf = async () => {
     setExportingPdf(true);
     try {
-      await printBubbleToPdf(message.content, message.modelUsed);
+      const docTitle = generateExportFilename('pdf').replace(/\.pdf$/, '');
+      await printBubbleToPdf(message.content, message.modelUsed, docTitle);
     } finally {
       setExportingPdf(false);
     }

@@ -32,7 +32,7 @@ function renderMathForPrint(content: string): string {
  * Native Printable PDF Engine via Print Iframe & @media print CSS
  * Produces a printable document with 100% real selectable text and dedicated pages for Kroki diagrams.
  */
-export async function printBubbleToPdf(content: string, modelUsed?: string): Promise<void> {
+export async function printBubbleToPdf(content: string, modelUsed?: string, customTitle?: string): Promise<void> {
   // 1. Extract Kroki diagrams
   const diagrams = extractDiagrams(content);
   const diagramMap = new Map<string, string>();
@@ -73,13 +73,14 @@ export async function printBubbleToPdf(content: string, modelUsed?: string): Pro
   const isLight = document.documentElement.getAttribute('data-theme') === 'light';
   const bgColor = isLight ? '#ffffff' : '#0b0f19';
   const textColor = isLight ? '#0f172a' : '#f8fafc';
+  const docTitle = customTitle || `ProfJoe_${modelUsed ? modelUsed.replace(/[^a-zA-Z0-9.-]/g, '_') : 'Export'}_${new Date().toISOString().split('T')[0]}`;
 
   const printHtml = `
     <!DOCTYPE html>
     <html>
       <head>
         <meta charset="utf-8">
-        <title>ChatterBot Document - ${modelUsed || 'Export'}</title>
+        <title>${docTitle}</title>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
