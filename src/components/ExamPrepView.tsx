@@ -59,7 +59,7 @@ export const ExamPrepView: React.FC<ExamPrepViewProps> = ({ onLoadQuestionToChat
             const item = (examData as any)[key];
             return (
               <option key={key} value={key}>
-                {item.title || key.toUpperCase()} ({item.code || ''})
+                {item.title || key.toUpperCase()}
               </option>
             );
           })}
