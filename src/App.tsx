@@ -589,7 +589,6 @@ export const App: React.FC = () => {
       <Sidebar
         isOpen={isSidebarOpen}
         onCloseMobile={() => setIsSidebarOpen(false)}
-        activeView={activeView}
         onViewChange={setActiveView}
         sessions={sessions}
         activeSessionId={activeSession ? activeSession.id : activeSessionIdState}

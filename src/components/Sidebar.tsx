@@ -10,7 +10,6 @@ import type { ChatSession, ActiveViewType } from '../types';
 interface SidebarProps {
   isOpen: boolean;
   onCloseMobile: () => void;
-  activeView?: ActiveViewType;
   onViewChange: (view: ActiveViewType) => void;
   sessions: ChatSession[];
   activeSessionId: string | null;
@@ -28,7 +27,6 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   onCloseMobile,
-  activeView = 'chat',
   onViewChange,
   sessions,
   activeSessionId,
@@ -74,52 +72,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
 
-        <div className="sidebar-action-top" style={{ padding: '12px 16px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+        <div className="sidebar-action-top" style={{ padding: '12px 16px' }}>
           <button onClick={onNewSession} className="new-chat-btn" style={{ width: '100%' }}>
             <Plus size={16} />
             <span>New Chat Session</span>
           </button>
-
-          {/* Dedicated Navigation Sections */}
-          <div className="sidebar-nav-buttons flex flex-col gap-1 mt-2">
-            <div style={{ fontSize: '0.7rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '4px' }}>
-              Navigation Sections
-            </div>
-            {[
-              { id: 'chat', label: '💬 Main Academic Chat' },
-              { id: 'examprep', label: '🎓 Exam Prep Question Bank' },
-              { id: 'diagrams', label: '📊 Diagram Studio' },
-              { id: 'fun_personas', label: '🎭 Fun AI Personas Lounge' },
-              { id: 'cubes', label: '🎮 3D Cubes Playground' }
-            ].map(item => {
-              const isActive = activeView === item.id;
-              return (
-                <button
-                  key={item.id}
-                  type="button"
-                  onClick={() => { onViewChange(item.id as any); onCloseMobile(); }}
-                  className={`sidebar-nav-btn ${isActive ? 'active-nav-btn' : ''}`}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                    width: '100%',
-                    padding: '8px 12px',
-                    borderRadius: '8px',
-                    fontSize: '0.83rem',
-                    fontWeight: isActive ? 700 : 500,
-                    background: isActive ? 'rgba(6, 182, 212, 0.18)' : 'rgba(30, 41, 59, 0.4)',
-                    border: isActive ? '1px solid var(--accent-cyan)' : '1px solid rgba(148, 163, 184, 0.15)',
-                    color: isActive ? '#06b6d4' : '#cbd5e1',
-                    cursor: 'pointer',
-                    transition: 'all 0.2s ease'
-                  }}
-                >
-                  <span>{item.label}</span>
-                </button>
-              );
-            })}
-          </div>
         </div>
 
         {/* Scrollable Chat History List (Expanded to fill vertical space) */}
