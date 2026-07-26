@@ -495,6 +495,53 @@ body {
   min-height: 0;
 }
 
+.messages-scroll-area {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.message-row {
+  display: flex;
+  gap: 12px;
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  align-items: flex-start;
+}
+
+.user-row {
+  flex-direction: row-reverse;
+}
+
+.bubble-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  width: 100%;
+}
+
+.bubble-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 6px;
+  font-size: 0.78rem;
+  color: var(--text-muted);
+}
+
+.message-bubble {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  padding: 16px 20px;
+  border-radius: 18px;
+}
+
 .welcome-screen {
   max-width: 680px;
   margin: auto;
@@ -2800,6 +2847,53 @@ body {
     font-weight: 700 !important;
     background: rgba(6, 182, 212, 0.12) !important;
     color: #38bdf8 !important;
+  }
+
+  /* Floating Chat Input Bar Mobile Wrapping & Overflow Optimization */
+  .floating-input-container,
+  .kokonut-hero-card {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 12px 10px !important;
+  }
+
+  .mode-chips-row {
+    display: flex !important;
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    gap: 6px !important;
+    padding-bottom: 6px !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+
+  .mode-chips-row::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .kokonut-bottom-row {
+    flex-wrap: wrap !important;
+    gap: 8px !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    width: 100% !important;
+  }
+
+  .kokonut-left-actions {
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+    max-width: 100% !important;
+  }
+
+  .kokonut-model-picker-pill {
+    max-width: 140px !important;
+    padding: 3px 6px !important;
+  }
+
+  .kokonut-bottom-model-select {
+    max-width: 105px !important;
+    font-size: 0.72rem !important;
   }
 }
 
