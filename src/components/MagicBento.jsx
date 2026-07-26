@@ -11,30 +11,30 @@ const DEFAULT_CARDS = [
   {
     id: 'crypto',
     color: '#0f172a',
-    title: 'Cryptography & Security (MDS-401)',
-    description: 'DES, AES, RSA, ECC, Hash Functions & Public Key Crypto',
+    title: 'Paper I: Cryptography & Security (MDS-401)',
+    description: 'DES, AES, RSA, ECC, Hash Functions, HMAC & Public Key Cryptography',
     label: 'Paper I'
   },
   {
     id: 'datamining',
     color: '#0f172a',
-    title: 'Data Mining & Warehousing (MDS-402)',
-    description: 'Apriori, FP-Growth, Decision Trees, K-Means & DBSCAN',
+    title: 'Paper II: Data Mining & Warehousing (MDS-402)',
+    description: 'Apriori, FP-Growth, Decision Trees, K-Means & DBSCAN Clustering',
     label: 'Paper II'
   },
   {
-    id: 'bigdata',
+    id: 'sentiment',
     color: '#0f172a',
-    title: 'Big Data Analytics & Hadoop (MDS-403)',
-    description: 'HDFS, MapReduce, YARN, Spark RDDs & Hive Architecture',
-    label: 'Paper III'
+    title: 'Paper III (A): Sentiment Analysis (MDS-403 A)',
+    description: 'Document & Sentence Sentiment, Aspect Summarization & Deceptive Review Detection',
+    label: 'Paper III (A)'
   },
   {
-    id: 'deeplearning',
+    id: 'vision',
     color: '#0f172a',
-    title: 'Deep Learning & Neural Networks (MDS-404)',
-    description: 'CNN, RNN, LSTM, Backpropagation & Transformer Models',
-    label: 'Paper IV'
+    title: 'Paper III (B): Computer Vision (MDS-403 B)',
+    description: 'Image Formation, Filtering, Canny Edges, Active Contours & Face Recognition',
+    label: 'Paper III (B)'
   },
   {
     id: 'gagan',
@@ -42,13 +42,6 @@ const DEFAULT_CARDS = [
     title: "Gagan's High-Yield Predictions",
     description: "Must-solve 12-mark questions curated by Gagan for OU exams",
     label: '🔥 OU Special'
-  },
-  {
-    id: 'sets',
-    color: '#0f172a',
-    title: '2026 Solved Question Papers',
-    description: 'Complete examination paper sets A, B, C & D with answers',
-    label: '📄 Sets A-D'
   }
 ];
 

@@ -192,3 +192,24 @@
   position: relative;
   user-select: none;
 }
+
+@media (max-width: 768px) {
+  .magic-bento-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+  }
+
+  .magic-bento-card {
+    min-height: auto !important;
+    padding: 16px 14px !important;
+  }
+
+  .magic-bento-card-title {
+    font-size: 0.95rem !important;
+  }
+
+  .magic-bento-card-description {
+    font-size: 0.78rem !important;
+  }
+}

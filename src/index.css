@@ -2485,3 +2485,46 @@ body {
   border-radius: 4px;
 }
 
+/* Kroki Diagram Studio Engine Mobile Responsive Layout Fix */
+@media (max-width: 768px) {
+  .studio-content-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 16px !important;
+  }
+
+  .diagram-studio-container {
+    padding: 12px 12px 60px 12px !important;
+  }
+
+  .studio-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+
+  .studio-controls {
+    flex-direction: column !important;
+    width: 100% !important;
+  }
+
+  .select-input.engine-select {
+    min-width: 100% !important;
+    width: 100% !important;
+  }
+
+  .editor-box {
+    width: 100% !important;
+  }
+
+  .code-editor-textarea {
+    min-height: 260px !important;
+  }
+
+  .preview-display-area {
+    min-height: 280px !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+  }
+}
+
