@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Send, Globe, Sparkles, X, Zap, FileText, CheckSquare, MessageSquare, Paperclip, Download } from 'lucide-react';
+// @ts-ignore
+import TextType from './TextType';
 import type { Message } from '../types';
 import { MessageItem } from './MessageItem';
 import { PROVIDERS } from '../constants';
@@ -96,7 +98,20 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             <div className="hero-icon-box" style={{ padding: 0, overflow: 'hidden', borderRadius: '50%', width: '76px', height: '76px', margin: '0 auto 16px auto', border: '3px solid var(--accent-cyan)', boxShadow: '0 0 20px rgba(6, 182, 212, 0.4)' }}>
               <img src="/joe-avatar.png" alt="Prof. Joe" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
-            <h2>Welcome to Prof. Joe AI Engine</h2>
+            <h2 style={{ minHeight: '38px', margin: '0 0 8px 0' }}>
+              <TextType
+                text={[
+                  "Welcome to Prof. Joe AI Engine 🚀",
+                  "Osmania University M.Sc Exam Prep 🎓",
+                  "Generate Mermaid Diagrams & High-Yield Banks 📊",
+                  "Multi-Model Intelligence with RAG & System Prompts ⚡"
+                ]}
+                typingSpeed={60}
+                pauseDuration={2200}
+                showCursor={true}
+                cursorCharacter="|"
+              />
+            </h2>
             <p>Active Provider: <strong>{selectedProvider || 'Ollama Cloud'}</strong> | Model: <strong>{selectedModel}</strong></p>
 
             <div className="quick-suggestions-grid">

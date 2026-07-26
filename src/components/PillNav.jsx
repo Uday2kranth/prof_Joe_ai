@@ -287,13 +287,13 @@ export const PillNav = ({
       </nav>
 
       <div className="mobile-menu-popover mobile-only" ref={mobileMenuRef} style={cssVars}>
-        <ul className="mobile-menu-list">
+        <ul className="mobile-menu-grid">
           {items.map((item, i) => {
             const isActive = activeHref === item.href;
             return (
               <li key={item.href || `mobile-item-${i}`}>
                 <div
-                  className={`mobile-menu-link${isActive ? ' is-active' : ''}`}
+                  className={`mobile-menu-card${isActive ? ' is-active' : ''}`}
                   onClick={(e) => {
                     handleItemClick(item.href, e);
                     setIsMobileMenuOpen(false);
@@ -309,8 +309,8 @@ export const PillNav = ({
                     }
                   }}
                 >
-                  <span>{item.label}</span>
-                  {isActive && <span style={{ fontSize: '10px', color: '#06b6d4', fontWeight: 700 }}>● Active</span>}
+                  <span className="mobile-card-label">{item.label}</span>
+                  {isActive && <span className="active-dot">● Active</span>}
                 </div>
               </li>
             );

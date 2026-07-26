@@ -1,0 +1,32 @@
+.border-beam-container {
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  border: var(--border-beam-width, 2px) solid transparent;
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask-composite: xor;
+  z-index: 20;
+  overflow: hidden;
+}
+
+.border-beam-element {
+  position: absolute;
+  aspect-ratio: 1 / 1;
+  width: var(--border-beam-size, 120px);
+  background: linear-gradient(to left, var(--border-beam-color-from, #06b6d4), var(--border-beam-color-to, #a855f7), transparent);
+  offset-path: rect(0 auto auto 0 round var(--border-beam-size, 120px));
+  animation: borderBeamOrbit var(--border-beam-duration, 6s) linear infinite;
+  animation-delay: var(--border-beam-delay, 0s);
+}
+
+@keyframes borderBeamOrbit {
+  0% {
+    offset-distance: 0%;
+  }
+  100% {
+    offset-distance: 100%;
+  }
+}
