@@ -32,10 +32,18 @@ export const LoginModal: React.FC<LoginModalProps> = ({
   preventClose = false,
   onClose
 }) => {
-  const [username, setUsername] = useState<string>('Admin@uday');
+  const [username, setUsername] = useState<string>('');
   const [password, setPassword] = useState<string>('');
   const [errorMsg, setErrorMsg] = useState<string>('');
   const [loading, setLoading] = useState<boolean>(false);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setUsername('');
+      setPassword('');
+      setErrorMsg('');
+    }
+  }, [isOpen]);
 
   if (!isOpen) return null;
 
