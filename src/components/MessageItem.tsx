@@ -7,7 +7,7 @@ import 'katex/dist/katex.min.css';
 import type { Message } from '../types';
 import { extractDiagrams, fetchKrokiSvg } from '../services/krokiService';
 import { exportBubbleToImage } from '../services/exportService';
-import { printBubbleToPdf } from '../services/printPdfService';
+import { printBubbleToPdf, exportBubbleDirectPdf } from '../services/printPdfService';
 
 marked.setOptions({
   gfm: true,
@@ -137,6 +137,10 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
   const handleExportPdf = async () => {
     setExportingPdf(true);
     try {
+      const docTitle = generateExportFilename('pdf').replace(/\.pdf$/, '');
+      await exportBubbleDirectPdf(message.content, message.modelUsed, docTitle);
+    } catch (err) {
+      console.warn('Direct PDF export fallback to print engine:', err);
       const docTitle = generateExportFilename('pdf').replace(/\.pdf$/, '');
       await printBubbleToPdf(message.content, message.modelUsed, docTitle);
     } finally {

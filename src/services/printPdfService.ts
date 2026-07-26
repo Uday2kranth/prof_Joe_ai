@@ -1,6 +1,101 @@
 import { marked } from 'marked';
 import katex from 'katex';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 import { extractDiagrams, fetchKrokiSvg } from './krokiService';
+
+/**
+ * Direct PDF File Downloader via html2canvas & jsPDF
+ * Directly generates and downloads a .pdf file without opening Chrome's print popup window.
+ */
+export async function exportBubbleDirectPdf(content: string, modelUsed?: string, customTitle?: string): Promise<void> {
+  const diagrams = extractDiagrams(content);
+  const diagramMap = new Map<string, string>();
+
+  for (let i = 0; i < diagrams.length; i++) {
+    const diag = diagrams[i];
+    const token = `PRINTDIAGRAMTOKEN${i}ENDTOKEN`;
+    const svgHtml = await fetchKrokiSvg(diag.type, diag.source);
+    diagramMap.set(
+      token,
+      `<div class="pdf-diagram-page" data-type="${diag.type}">${svgHtml}</div>`
+    );
+  }
+
+  let markdownToParse = renderMathForPrint(content);
+  let tokenIndex = 0;
+  diagrams.forEach(diag => {
+    const token = `PRINTDIAGRAMTOKEN${tokenIndex++}ENDTOKEN`;
+    markdownToParse = markdownToParse.replace(diag.fullMatch, token);
+  });
+
+  let parsedHtml = marked.parse(markdownToParse) as string;
+
+  diagramMap.forEach((svgContainerHtml, token) => {
+    const paragraphWrapped = `<p>${token}</p>`;
+    if (parsedHtml.includes(paragraphWrapped)) {
+      parsedHtml = parsedHtml.replace(paragraphWrapped, svgContainerHtml);
+    } else {
+      parsedHtml = parsedHtml.replace(token, svgContainerHtml);
+    }
+  });
+
+  const tempContainer = document.createElement('div');
+  tempContainer.style.position = 'fixed';
+  tempContainer.style.left = '-9999px';
+  tempContainer.style.top = '0';
+  tempContainer.style.width = '800px';
+  tempContainer.style.background = '#ffffff';
+  tempContainer.style.color = '#0f172a';
+  tempContainer.style.padding = '32px';
+  tempContainer.style.fontFamily = "'Inter', sans-serif";
+
+  const fileName = customTitle || `ProfJoe_${modelUsed ? modelUsed.replace(/[^a-zA-Z0-9.-]/g, '_') : 'Export'}_${new Date().toISOString().split('T')[0]}`;
+
+  tempContainer.innerHTML = `
+    <div style="border-bottom: 2px solid #06b6d4; padding-bottom: 12px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+      <h1 style="font-size: 1.4rem; margin: 0; color: #06b6d4;">Prof. Joe AI Document</h1>
+      <div style="font-size: 0.85rem; color: #64748b;">Model: ${modelUsed || 'AI Model'} | Date: ${new Date().toLocaleDateString()}</div>
+    </div>
+    <div class="markdown-content" style="line-height: 1.65; color: #0f172a;">
+      ${parsedHtml}
+    </div>
+  `;
+
+  document.body.appendChild(tempContainer);
+
+  try {
+    const canvas = await html2canvas(tempContainer, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: '#ffffff'
+    });
+
+    const imgData = canvas.toDataURL('image/png');
+    const pdf = new jsPDF('p', 'mm', 'a4');
+    const imgWidth = 210;
+    const pageHeight = 295;
+    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    let heightLeft = imgHeight;
+    let position = 0;
+
+    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+    heightLeft -= pageHeight;
+
+    while (heightLeft >= 0) {
+      position = heightLeft - imgHeight;
+      pdf.addPage();
+      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+      heightLeft -= pageHeight;
+    }
+
+    pdf.save(`${fileName}.pdf`);
+  } finally {
+    if (document.body.contains(tempContainer)) {
+      document.body.removeChild(tempContainer);
+    }
+  }
+}
 
 /**
  * Pre-processes LaTeX math formulas ($...$ and $$...$$) into KaTeX HTML strings
