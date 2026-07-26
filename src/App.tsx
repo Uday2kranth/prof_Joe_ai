@@ -462,6 +462,7 @@ export const App: React.FC = () => {
           onViewChange={setActiveView}
           username={currentUser}
           onLogout={handleLogout}
+          onOpenProfileModal={() => setIsProfileModalOpen(true)}
         />
 
         <main className="app-main">

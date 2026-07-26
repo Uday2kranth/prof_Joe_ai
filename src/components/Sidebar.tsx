@@ -1,13 +1,9 @@
 import React from 'react';
 import {
   MessageSquare,
-  BookOpen,
-  Sparkles,
-  Layers,
   Plus,
   Trash2,
-  X,
-  GraduationCap
+  X
 } from 'lucide-react';
 import type { ChatSession } from '../types';
 
@@ -16,7 +12,7 @@ export type ActiveViewType = 'chat' | 'examprep' | 'prompts' | 'system_prompts' 
 interface SidebarProps {
   isOpen: boolean;
   onCloseMobile: () => void;
-  activeView: ActiveViewType;
+  activeView?: ActiveViewType;
   onViewChange: (view: ActiveViewType) => void;
   sessions: ChatSession[];
   activeSessionId: string | null;
@@ -33,7 +29,6 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({
   isOpen,
   onCloseMobile,
-  activeView,
   onViewChange,
   sessions,
   activeSessionId,
@@ -62,7 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         onClick={onCloseMobile}
       />
 
-      <aside className={`app-sidebar ${isOpen ? 'open' : 'collapsed'}`}>
+      <aside className={`app-sidebar ${isOpen ? 'open' : 'collapsed'}`} style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
         <div className="sidebar-header">
           <div className="brand-section">
             <div className="logo-icon" style={{ padding: 0, overflow: 'hidden', borderRadius: '50%' }}>
@@ -78,61 +73,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </button>
         </div>
 
-        <div className="sidebar-action-top">
-          <button onClick={onNewSession} className="new-chat-btn">
+        <div className="sidebar-action-top" style={{ padding: '12px 16px' }}>
+          <button onClick={onNewSession} className="new-chat-btn" style={{ width: '100%' }}>
             <Plus size={16} />
             <span>New Chat Session</span>
           </button>
         </div>
 
-        <nav className="sidebar-nav">
-          <div className="nav-section-title">Navigation Hub</div>
-          <button
-            onClick={() => { onViewChange('chat'); onCloseMobile(); }}
-            className={`nav-item ${activeView === 'chat' ? 'active' : ''}`}
-          >
-            <MessageSquare size={16} />
-            <span>AI Multi-Model Chat</span>
-          </button>
-
-          <button
-            onClick={() => { onViewChange('examprep'); onCloseMobile(); }}
-            className={`nav-item ${activeView === 'examprep' ? 'active' : ''}`}
-          >
-            <BookOpen size={16} />
-            <span>Exam Prep & Syllabus</span>
-          </button>
-
-          <button
-            onClick={() => { onViewChange('system_prompts'); onCloseMobile(); }}
-            className={`nav-item ${activeView === 'system_prompts' ? 'active' : ''}`}
-          >
-            <Sparkles size={16} />
-            <span>System Prompt Library</span>
-          </button>
-
-          <button
-            onClick={() => { onViewChange('prompts'); onCloseMobile(); }}
-            className={`nav-item ${activeView === 'prompts' ? 'active' : ''}`}
-          >
-            <GraduationCap size={16} />
-            <span>User Prompts Hub</span>
-          </button>
-
-          <button
-            onClick={() => { onViewChange('diagrams'); onCloseMobile(); }}
-            className={`nav-item ${activeView === 'diagrams' ? 'active' : ''}`}
-          >
-            <Layers size={16} />
-            <span>Diagram & Mermaid Studio</span>
-          </button>
-        </nav>
-
-        <div className="sidebar-history-section">
-          <div className="nav-section-title">Chat History ({sessions.length})</div>
-          <div className="session-list">
+        {/* Scrollable Chat History List (Expanded to fill vertical space) */}
+        <div className="sidebar-history-section" style={{ flex: 1, overflowY: 'auto', padding: '0 16px', display: 'flex', flexDirection: 'column' }}>
+          <div className="nav-section-title" style={{ fontSize: '0.72rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em', color: 'var(--text-muted)', marginBottom: '8px' }}>
+            Chat History ({sessions.length})
+          </div>
+          <div className="session-list" style={{ flex: 1, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '4px' }}>
             {sessions.length === 0 ? (
-              <div className="no-sessions">No previous chats. Start a new session above.</div>
+              <div className="no-sessions" style={{ fontSize: '0.8rem', color: 'var(--text-muted)', padding: '12px 0' }}>
+                No previous chats. Start a new session above.
+              </div>
             ) : (
               sessions.map(sess => (
                 <div
@@ -158,8 +115,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
 
-        <div className="sidebar-footer">
-          {/* KokonutUI Profile Card (Opens User Profile Drawer) */}
+        {/* KokonutUI Profile Card Anchored at Very Bottom */}
+        <div className="sidebar-footer" style={{ marginTop: 'auto', padding: '16px', borderTop: '1px solid var(--border-color)' }}>
           <div
             className="kokonut-profile-card"
             onClick={onOpenProfileModal}

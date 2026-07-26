@@ -14,6 +14,7 @@ interface HeaderProps {
   onViewChange?: (view: ActiveViewType) => void;
   username?: string;
   onLogout?: () => void;
+  onOpenProfileModal?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
@@ -21,7 +22,8 @@ export const Header: React.FC<HeaderProps> = ({
   onClearChat,
   activeView,
   onViewChange,
-  onLogout
+  onLogout,
+  onOpenProfileModal
 }) => {
   const viewTitles: Record<string, string> = {
     chat: 'AI Multi-Model Dashboard',
@@ -67,6 +69,18 @@ export const Header: React.FC<HeaderProps> = ({
             <button onClick={onClearChat} className="btn btn-secondary" title="Clear Chat History">
               <Trash2 size={16} />
               <span className="desktop-only">Clear</span>
+            </button>
+          )}
+
+          {/* User Account & Preferences Avatar Trigger Button */}
+          {onOpenProfileModal && (
+            <button
+              onClick={onOpenProfileModal}
+              className="btn btn-secondary"
+              title="User Account & Preferences"
+              style={{ padding: '6px', borderRadius: '50%', border: '1px solid rgba(6, 182, 212, 0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <img src="/joe-avatar.png" alt="Profile" style={{ width: '22px', height: '22px', borderRadius: '50%', objectFit: 'cover' }} />
             </button>
           )}
 
