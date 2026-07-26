@@ -56,13 +56,22 @@ export const App: React.FC = () => {
     return sessions[0]?.id || 'default-session-1';
   });
 
+  // Perform hard legacy key cache wipe on app startup
+  useEffect(() => {
+    localStorage.removeItem('chatterbot_user_keys');
+    localStorage.removeItem('chatterbot_keys');
+  }, []);
+
   const [userKeys, setUserKeys] = useState<UserKeys>(() => {
-    const savedKeys = localStorage.getItem('chatterbot_user_keys');
-    if (savedKeys) {
-      try {
-        return { ...DEFAULT_KEYS, ...JSON.parse(savedKeys) };
-      } catch (e) {
-        console.error('Failed to parse userKeys', e);
+    const activeUser = localStorage.getItem('chatterbot_username');
+    if (activeUser) {
+      const savedKeys = localStorage.getItem(`chatterbot_user_keys_${activeUser}`);
+      if (savedKeys) {
+        try {
+          return { ...DEFAULT_KEYS, ...JSON.parse(savedKeys) };
+        } catch (e) {
+          console.error('Failed to parse userKeys', e);
+        }
       }
     }
     return DEFAULT_KEYS;
@@ -210,12 +219,17 @@ export const App: React.FC = () => {
   }, [currentUser, authToken]);
 
   useEffect(() => {
-    localStorage.setItem('chatterbot_user_keys', JSON.stringify(userKeys));
-  }, [userKeys]);
+    if (currentUser) {
+      localStorage.setItem(`chatterbot_user_keys_${currentUser}`, JSON.stringify(userKeys));
+    }
+  }, [userKeys, currentUser]);
 
   // Fetch Cloud API Keys when currentUser logs in or opens app
   useEffect(() => {
-    if (!currentUser) return;
+    if (!currentUser) {
+      setUserKeys(DEFAULT_KEYS);
+      return;
+    }
 
     const fetchCloudKeys = async () => {
       try {
@@ -223,11 +237,9 @@ export const App: React.FC = () => {
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.keys && Object.keys(data.keys).length > 0) {
-            setUserKeys(prev => {
-              const merged = { ...prev, ...data.keys };
-              localStorage.setItem('chatterbot_user_keys', JSON.stringify(merged));
-              return merged;
-            });
+            const merged = { ...DEFAULT_KEYS, ...data.keys };
+            localStorage.setItem(`chatterbot_user_keys_${currentUser}`, JSON.stringify(merged));
+            setUserKeys(merged);
           }
         }
       } catch (err) {
@@ -240,9 +252,8 @@ export const App: React.FC = () => {
 
   const handleSaveUserKeys = async (newKeys: UserKeys) => {
     setUserKeys(newKeys);
-    localStorage.setItem('chatterbot_user_keys', JSON.stringify(newKeys));
-
     if (currentUser) {
+      localStorage.setItem(`chatterbot_user_keys_${currentUser}`, JSON.stringify(newKeys));
       try {
         await fetch('/api/user-keys', {
           method: 'POST',
