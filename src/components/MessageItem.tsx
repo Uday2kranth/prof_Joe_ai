@@ -7,7 +7,7 @@ import 'katex/dist/katex.min.css';
 import type { Message } from '../types';
 import { extractDiagrams, fetchKrokiSvg } from '../services/krokiService';
 import { exportBubbleToImage } from '../services/exportService';
-import { printBubbleToPdf, exportBubbleDirectPdf } from '../services/printPdfService';
+import { PdfPreviewModal } from './PdfPreviewModal';
 
 marked.setOptions({
   gfm: true,
@@ -73,7 +73,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
   const [exportingImage, setExportingImage] = useState(false);
-  const [exportingPdf, setExportingPdf] = useState(false);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [renderedHtml, setRenderedHtml] = useState<string>('');
   const bubbleRef = useRef<HTMLDivElement>(null);
 
@@ -153,18 +153,8 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
     }
   };
 
-  const handleExportPdf = async () => {
-    setExportingPdf(true);
-    try {
-      const docTitle = generateExportFilename('pdf').replace(/\.pdf$/, '');
-      await exportBubbleDirectPdf(message.content, message.modelUsed, docTitle);
-    } catch (err) {
-      console.warn('Direct PDF export fallback to print engine:', err);
-      const docTitle = generateExportFilename('pdf').replace(/\.pdf$/, '');
-      await printBubbleToPdf(message.content, message.modelUsed, docTitle);
-    } finally {
-      setExportingPdf(false);
-    }
+  const handleExportPdf = () => {
+    setIsPdfModalOpen(true);
   };
 
   const handleSpeak = () => {
@@ -211,7 +201,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
           <button onClick={handleExportImage} disabled={exportingImage} className="icon-action-btn" title="Export PNG Image">
             <Download size={14} />
           </button>
-          <button onClick={handleExportPdf} disabled={exportingPdf} className="icon-action-btn" title="Print / Export PDF">
+          <button onClick={handleExportPdf} className="icon-action-btn" title="Print / Export PDF">
             <FileText size={14} />
           </button>
           {!isUser && (
@@ -235,6 +225,16 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
           )}
         </div>
       </div>
+
+      {/* Option 3 Custom Animated PDF Preview Modal */}
+      <PdfPreviewModal
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
+        content={message.content}
+        modelUsed={message.modelUsed}
+        docTitle={generateExportFilename('pdf').replace(/\.pdf$/, '')}
+        renderedHtml={renderedHtml}
+      />
     </div>
   );
 };
