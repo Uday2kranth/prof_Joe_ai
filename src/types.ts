@@ -36,6 +36,14 @@ export interface ProviderGroup {
   models: ModelOption[];
 }
 
+export interface PersonaOption {
+  id: string;
+  name: string;
+  icon: string;
+  description: string;
+  allowDiagrams: boolean;
+}
+
 export interface UserKeys {
   ollama: string;
   openrouter: string;

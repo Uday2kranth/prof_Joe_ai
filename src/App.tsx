@@ -110,6 +110,15 @@ export const App: React.FC = () => {
     return DEFAULT_FREE_MODEL;
   });
 
+  const [selectedPersona, setSelectedPersona] = useState<string>(() => {
+    const activeUser = localStorage.getItem('chatterbot_username');
+    if (activeUser) {
+      const saved = localStorage.getItem(`chatterbot_persona_${activeUser}`);
+      if (saved) return saved;
+    }
+    return 'default';
+  });
+
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
@@ -139,6 +148,13 @@ export const App: React.FC = () => {
         s.id === activeSession.id ? { ...s, model, updatedAt: Date.now() } : s
       )
     );
+  };
+
+  const handlePersonaChange = (persona: string) => {
+    setSelectedPersona(persona);
+    if (currentUser) {
+      localStorage.setItem(`chatterbot_persona_${currentUser}`, persona);
+    }
   };
 
   const createFreshDefaultSession = (): ChatSession => ({
@@ -422,7 +438,8 @@ export const App: React.FC = () => {
         userKeys,
         webSearch,
         mode,
-        currentSess.systemPrompt
+        currentSess.systemPrompt,
+        selectedPersona
       );
 
       const assistantMsg: Message = {
@@ -604,6 +621,8 @@ export const App: React.FC = () => {
               onEditUserMessage={handleEditLastUserMessage}
               activeSystemPromptTitle={activeSession?.systemPromptTitle}
               onClearSystemPrompt={handleClearSystemPrompt}
+              selectedPersona={selectedPersona}
+              onPersonaChange={handlePersonaChange}
             />
           )}
 

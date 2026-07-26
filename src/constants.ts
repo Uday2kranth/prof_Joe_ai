@@ -1,4 +1,4 @@
-import type { ProviderGroup } from './types';
+import type { ProviderGroup, PersonaOption } from './types';
 
 export const PROVIDERS: ProviderGroup[] = [
   {
@@ -96,17 +96,8 @@ export const PROVIDERS: ProviderGroup[] = [
     ]
   },
   {
-    id: 'pollinations-keyed',
-    name: 'Pollinations AI (Keyed)',
-    models: [
-      { value: 'YoannDev90/diffusiongemma-26b-a4b-it:free', name: 'DiffusionGemma 26B A4B (Keyed) [WS]' },
-      { value: 'YoannDev90/llama-3.1-8b-instant:free', name: 'Llama 3.1 8B Instant (Keyed) [WS]' },
-      { value: 'YoannDev90/laguna-s-2.1:free(n2)', name: 'Laguna S 2.1 N2 (Keyed) [WS]' }
-    ]
-  },
-  {
-    id: 'omnirouter',
-    name: 'OmniRouter API',
+    id: 'nararouter',
+    name: 'NaraRouter',
     models: [
       { value: 'meta-llama/llama-3-8b-instruct', name: 'Llama 3 8B (Omni)' },
       { value: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash (Omni) [WS]' },
@@ -122,4 +113,14 @@ export const PROVIDERS: ProviderGroup[] = [
       { value: 'opencode-zen/coder', name: 'Zen Coder Specialist (OpenCode)' }
     ]
   }
+];
+
+export const PERSONAS: PersonaOption[] = [
+  { id: 'default', name: 'Prof. Joe Academic (Default)', icon: '🎓', description: 'Exam prep engine with Kroki diagrams', allowDiagrams: true },
+  { id: 'computer', name: "Courage's Computer 🖥️", icon: '🖥️', description: 'Diagnostic expert, dry British wit & kroki diagrams', allowDiagrams: true },
+  { id: 'courage', name: 'Courage-Inspired 🐶', icon: '🐶', description: 'Timid, loyal step-by-step solver & kroki diagrams', allowDiagrams: true },
+  { id: 'peter', name: 'Peter-Inspired 🍺', icon: '🍺', description: 'Enthusiastic sitcom dad analogies (Text Mode)', allowDiagrams: false },
+  { id: 'stewie', name: 'Stewie-Inspired 👶', icon: '👶', description: 'Sophisticated child genius dry wit (Text Mode)', allowDiagrams: false },
+  { id: 'rick', name: 'Rick-Inspired 🧪', icon: '🧪', description: 'Eccentric super-genius scientist (Text Mode)', allowDiagrams: false },
+  { id: 'morty', name: 'Morty-Inspired 🧢', icon: '🧢', description: 'Kind-hearted & encouraging teenager (Text Mode)', allowDiagrams: false }
 ];
