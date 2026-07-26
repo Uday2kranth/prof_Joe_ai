@@ -86,7 +86,7 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
 
         {/* Modal Body: Wave Card Page Preview */}
         <div className="pdf-modal-body">
-          <div className="pdf-page-wave-card" ref={cardRef} style={{ background: '#ffffff', color: '#0f172a' }}>
+          <div className="pdf-page-wave-card" ref={cardRef} style={{ background: 'rgba(255, 255, 255, 0.84)', color: '#0f172a' }}>
             <div style={{ borderBottom: '2px solid #06b6d4', paddingBottom: '12px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h1 style={{ fontSize: '1.4rem', margin: 0, color: '#06b6d4' }}>Prof. Joe AI Document</h1>
               <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Model: {modelUsed || 'AI Model'}</div>

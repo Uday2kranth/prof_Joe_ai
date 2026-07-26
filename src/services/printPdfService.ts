@@ -45,10 +45,11 @@ export async function exportBubbleDirectPdf(content: string, modelUsed?: string,
 
   tempContainer.innerHTML = `
     <style>
-      table { width: 100%; border-collapse: collapse; margin: 16px 0; border: 1px solid #cbd5e1; }
-      th, td { border: 1px solid #cbd5e1; padding: 10px 14px; text-align: left; font-size: 0.9rem; }
-      th { background-color: #f1f5f9; color: #06b6d4; font-weight: 700; }
-      tr:nth-child(even) { background-color: #f8fafc; }
+      table { width: 100%; border-collapse: collapse; margin: 16px 0; border: 1px solid rgba(6, 182, 212, 0.3); background: rgba(255, 255, 255, 0.6); }
+      th, td { border: 1px solid rgba(6, 182, 212, 0.25); padding: 10px 14px; text-align: left; font-size: 0.9rem; color: #0f172a; }
+      th { background-color: rgba(6, 182, 212, 0.15); color: #0284c7; font-weight: 700; }
+      tr:nth-child(odd) { background-color: rgba(255, 255, 255, 0.75); }
+      tr:nth-child(even) { background-color: rgba(240, 249, 255, 0.82); }
     </style>
     <div style="border-bottom: 2px solid #06b6d4; padding-bottom: 12px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
       <h1 style="font-size: 1.4rem; margin: 0; color: #06b6d4;">Prof. Joe AI Document</h1>

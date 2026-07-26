@@ -2965,7 +2965,9 @@ body {
 .pdf-page-wave-card {
   width: 100%;
   max-width: 780px;
-  background: #ffffff !important;
+  background: rgba(255, 255, 255, 0.84) !important;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: #0f172a !important;
   padding: 40px;
   border-radius: 12px;
@@ -2975,26 +2977,25 @@ body {
   transform-style: preserve-3d;
   min-height: auto;
   height: fit-content;
-  isolation: isolate;
 }
 
-/* Explicit Solid Table Border & Outline Styles for PDF Preview & Downloads */
+/* Explicit Uniform Translucent Table Border & Glassmorphism Flow */
 .pdf-page-wave-card table,
 .markdown-content table {
   width: 100% !important;
   border-collapse: collapse !important;
   margin: 16px 0 !important;
-  border: 1px solid #cbd5e1 !important;
+  border: 1px solid rgba(6, 182, 212, 0.3) !important;
   border-radius: 8px !important;
   overflow: hidden !important;
-  background: #ffffff !important;
+  background: rgba(255, 255, 255, 0.5) !important;
 }
 
 .pdf-page-wave-card th,
 .pdf-page-wave-card td,
 .markdown-content th,
 .markdown-content td {
-  border: 1px solid #cbd5e1 !important;
+  border: 1px solid rgba(6, 182, 212, 0.25) !important;
   padding: 10px 14px !important;
   text-align: left !important;
   font-size: 0.9rem !important;
@@ -3003,19 +3004,19 @@ body {
 
 .pdf-page-wave-card th,
 .markdown-content th {
-  background-color: #e0f2fe !important;
-  color: #0369a1 !important;
+  background: rgba(6, 182, 212, 0.18) !important;
+  color: #0284c7 !important;
   font-weight: 700 !important;
 }
 
 .pdf-page-wave-card tr:nth-child(odd),
 .markdown-content tr:nth-child(odd) {
-  background-color: #ffffff !important;
+  background: rgba(255, 255, 255, 0.72) !important;
 }
 
 .pdf-page-wave-card tr:nth-child(even),
 .markdown-content tr:nth-child(even) {
-  background-color: #f8fafc !important;
+  background: rgba(240, 249, 255, 0.78) !important;
 }
 
 .pdf-page-wave-card::before {
