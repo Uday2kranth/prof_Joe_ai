@@ -2,7 +2,7 @@ import React from 'react';
 import { Menu } from 'lucide-react';
 import type { ActiveViewType } from '../types';
 // @ts-ignore
-import { PillNav } from './PillNav';
+import Dock from './Dock';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -32,18 +32,18 @@ export const Header: React.FC<HeaderProps> = ({
     cubes: 'Interactive 3D Cubes Playground'
   };
 
-  const navItems = [
-    { label: '💬 Chat', href: 'chat' },
-    { label: '🎓 Exam Prep', href: 'examprep' },
-    { label: '📘 System Prompts', href: 'system_prompts' },
-    { label: '✨ Prompts', href: 'prompts' },
-    { label: '📊 Diagrams', href: 'diagrams' },
-    { label: '🎭 Fun Personas', href: 'fun_personas' },
-    { label: '🎮 3D Cubes', href: 'cubes' }
+  const dockNavItems = [
+    { icon: '💬', label: 'Chat', onClick: () => onViewChange?.('chat'), active: activeView === 'chat' },
+    { icon: '🎓', label: 'Exam Prep', onClick: () => onViewChange?.('examprep'), active: activeView === 'examprep' },
+    { icon: '📘', label: 'System Prompts', onClick: () => onViewChange?.('system_prompts'), active: activeView === 'system_prompts' },
+    { icon: '✨', label: 'Prompts', onClick: () => onViewChange?.('prompts'), active: activeView === 'prompts' },
+    { icon: '📊', label: 'Diagrams', onClick: () => onViewChange?.('diagrams'), active: activeView === 'diagrams' },
+    { icon: '🎭', label: 'Fun Personas', onClick: () => onViewChange?.('fun_personas'), active: activeView === 'fun_personas' },
+    { icon: '🎮', label: '3D Cubes', onClick: () => onViewChange?.('cubes'), active: activeView === 'cubes' }
   ];
 
   return (
-    <header className="app-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 16px', borderBottom: '1px solid var(--border-color)', gap: '12px' }}>
+    <header className="app-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px', borderBottom: '1px solid var(--border-color)', gap: '12px' }}>
       <div className="header-left" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
         <button onClick={onToggleSidebar} className="menu-btn" aria-label="Toggle Navigation Sidebar">
           <Menu size={20} />
@@ -53,14 +53,14 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
       </div>
 
-      {/* PillNav GSAP Liquid Nav Container */}
-      <div className="header-pillnav-center">
-        <PillNav
-          items={navItems}
-          activeHref={activeView}
-          onItemSelect={(href: string) => onViewChange && onViewChange(href as ActiveViewType)}
-          logo="/joe-avatar.png"
-          logoAlt="Prof. Joe AI Avatar"
+      {/* React Bits Magnetic Dock Section Navigation */}
+      <div className="header-dock-center flex items-center justify-center">
+        <Dock
+          items={dockNavItems}
+          panelHeight={46}
+          baseItemSize={38}
+          magnification={56}
+          distance={160}
         />
       </div>
     </header>
