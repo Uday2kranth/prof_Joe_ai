@@ -2526,5 +2526,30 @@ body {
     max-width: 100% !important;
     overflow-x: auto !important;
   }
+
+  .exam-prep-container {
+    padding: 12px 12px 60px 12px !important;
+  }
+
+  .exam-tabs {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    padding-bottom: 8px !important;
+    gap: 8px !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+
+  .exam-tabs::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .tab-btn {
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    font-size: 0.8rem !important;
+    padding: 8px 12px !important;
+  }
 }
 

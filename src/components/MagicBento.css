@@ -194,22 +194,37 @@
 }
 
 @media (max-width: 768px) {
+  .card-grid,
   .magic-bento-grid {
     display: flex !important;
     flex-direction: column !important;
     gap: 12px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
   }
 
   .magic-bento-card {
     min-height: auto !important;
-    padding: 16px 14px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 14px 12px !important;
   }
 
+  .magic-bento-card__title,
   .magic-bento-card-title {
     font-size: 0.95rem !important;
+    line-height: 1.3 !important;
+    word-break: break-word !important;
+    white-space: normal !important;
   }
 
+  .magic-bento-card__description,
   .magic-bento-card-description {
     font-size: 0.78rem !important;
+    line-height: 1.35 !important;
+    word-break: break-word !important;
+    white-space: normal !important;
   }
 }
