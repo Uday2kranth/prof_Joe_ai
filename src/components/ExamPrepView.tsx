@@ -67,7 +67,7 @@ export const ExamPrepView: React.FC<ExamPrepViewProps> = ({ onLoadQuestionToChat
       </div>
 
       {/* React Bits MagicBento Interactive Grid */}
-      <div style={{ marginBottom: '16px' }}>
+      <div className="bento-wrapper-container" style={{ marginBottom: '16px', width: '100%', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
         <MagicBento
           enableStars={true}
           enableSpotlight={true}

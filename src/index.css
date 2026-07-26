@@ -2551,5 +2551,46 @@ body {
     font-size: 0.8rem !important;
     padding: 8px 12px !important;
   }
+
+  .question-bank-content,
+  .syllabus-content {
+    padding: 12px 8px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  .unit-box,
+  .set-box {
+    padding: 10px 8px !important;
+    margin: 0 0 12px 0 !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .unit-box ul,
+  .unit-box ol,
+  .set-box ul,
+  .set-box ol {
+    margin-left: 0.6rem !important;
+    padding-left: 0.4rem !important;
+    width: calc(100% - 0.8rem) !important;
+    max-width: calc(100% - 0.8rem) !important;
+    box-sizing: border-box !important;
+  }
+
+  .unit-box li,
+  .set-box li,
+  .unit-box p,
+  .set-box p,
+  .markdown-body p,
+  .markdown-body li {
+    font-size: 0.82rem !important;
+    line-height: 1.45 !important;
+    word-break: break-word !important;
+    overflow-wrap: anywhere !important;
+  }
 }
 
