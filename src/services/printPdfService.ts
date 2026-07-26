@@ -22,23 +22,14 @@ export async function exportBubbleDirectPdf(content: string, modelUsed?: string,
     );
   }
 
-  let markdownToParse = renderMathForPrint(content);
+  let markdownToParse = content;
   let tokenIndex = 0;
   diagrams.forEach(diag => {
     const token = `PRINTDIAGRAMTOKEN${tokenIndex++}ENDTOKEN`;
     markdownToParse = markdownToParse.replace(diag.fullMatch, token);
   });
 
-  let parsedHtml = marked.parse(markdownToParse) as string;
-
-  diagramMap.forEach((svgContainerHtml, token) => {
-    const paragraphWrapped = `<p>${token}</p>`;
-    if (parsedHtml.includes(paragraphWrapped)) {
-      parsedHtml = parsedHtml.replace(paragraphWrapped, svgContainerHtml);
-    } else {
-      parsedHtml = parsedHtml.replace(token, svgContainerHtml);
-    }
-  });
+  const parsedHtml = parseMarkdownWithMathAndDiagrams(markdownToParse, diagramMap);
 
   const tempContainer = document.createElement('div');
   tempContainer.style.position = 'fixed';
@@ -97,30 +88,52 @@ export async function exportBubbleDirectPdf(content: string, modelUsed?: string,
   }
 }
 
-/**
- * Pre-processes LaTeX math formulas ($...$ and $$...$$) into KaTeX HTML strings
- */
-function renderMathForPrint(content: string): string {
+function parseMarkdownWithMathAndDiagrams(content: string, diagramMap: Map<string, string>): string {
   if (!content) return '';
-  // Replace block math $$ ... $$
-  let processed = content.replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
+  const mathMap = new Map<string, string>();
+  let tokenIdx = 0;
+
+  // 1. Extract block math $$...$$
+  let prepped = content.replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
+    const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
     try {
-      return `<div class="katex-block">${katex.renderToString(math.trim(), { displayMode: true, throwOnError: false })}</div>`;
+      mathMap.set(token, `<div class="katex-block">${katex.renderToString(math.trim(), { displayMode: true, throwOnError: false })}</div>`);
     } catch {
-      return `$$${math}$$`;
+      mathMap.set(token, `$$${math}$$`);
+    }
+    return token;
+  });
+
+  // 2. Extract inline math $...$
+  prepped = prepped.replace(/\$([^\$\n]+?)\$/g, (_, math) => {
+    const token = `KATEXINLINETOKEN${tokenIdx++}ENDTOKEN`;
+    try {
+      mathMap.set(token, katex.renderToString(math.trim(), { displayMode: false, throwOnError: false }));
+    } catch {
+      mathMap.set(token, `$${math}$`);
+    }
+    return token;
+  });
+
+  // 3. Parse clean markdown tables and text
+  let parsedHtml = marked.parse(prepped) as string;
+
+  // 4. Restore math HTML
+  mathMap.forEach((html, token) => {
+    parsedHtml = parsedHtml.replaceAll(token, html);
+  });
+
+  // 5. Restore Kroki diagram containers
+  diagramMap.forEach((svgContainerHtml, token) => {
+    const paragraphWrapped = `<p>${token}</p>`;
+    if (parsedHtml.includes(paragraphWrapped)) {
+      parsedHtml = parsedHtml.replace(paragraphWrapped, svgContainerHtml);
+    } else {
+      parsedHtml = parsedHtml.replaceAll(token, svgContainerHtml);
     }
   });
 
-  // Replace inline math $ ... $
-  processed = processed.replace(/\$([^\$\n]+?)\$/g, (_, math) => {
-    try {
-      return katex.renderToString(math.trim(), { displayMode: false, throwOnError: false });
-    } catch {
-      return `$${math}$`;
-    }
-  });
-
-  return processed;
+  return parsedHtml;
 }
 
 /**
@@ -143,26 +156,15 @@ export async function printBubbleToPdf(content: string, modelUsed?: string, cust
     );
   }
 
-  // 2. Replace code blocks with unique tokens before Markdown parsing
-  let markdownToParse = renderMathForPrint(content);
+  // 2. Parse Markdown, Math, and Diagrams cleanly
+  let markdownToParse = content;
   let tokenIndex = 0;
   diagrams.forEach(diag => {
     const token = `PRINTDIAGRAMTOKEN${tokenIndex++}ENDTOKEN`;
     markdownToParse = markdownToParse.replace(diag.fullMatch, token);
   });
 
-  // 3. Parse Markdown into clean HTML
-  let parsedHtml = marked.parse(markdownToParse) as string;
-
-  // 4. Restore SVG diagram page containers into parsed HTML
-  diagramMap.forEach((svgContainerHtml, token) => {
-    const paragraphWrapped = `<p>${token}</p>`;
-    if (parsedHtml.includes(paragraphWrapped)) {
-      parsedHtml = parsedHtml.replace(paragraphWrapped, svgContainerHtml);
-    } else {
-      parsedHtml = parsedHtml.replace(token, svgContainerHtml);
-    }
-  });
+  const parsedHtml = parseMarkdownWithMathAndDiagrams(markdownToParse, diagramMap);
 
   // 5. Build printable HTML document
   const isLight = document.documentElement.getAttribute('data-theme') === 'light';
@@ -374,23 +376,14 @@ export async function printSessionToPdf(messages: any[], sessionTitle: string = 
       );
     }
 
-    let markdownToParse = renderMathForPrint(msg.content || '');
+    let markdownToParse = msg.content || '';
     let tokenIndex = 0;
     diagrams.forEach(diag => {
       const token = `PRINTDIAGRAMTOKEN${mIdx}_${tokenIndex++}ENDTOKEN`;
       markdownToParse = markdownToParse.replace(diag.fullMatch, token);
     });
 
-    let parsedHtml = marked.parse(markdownToParse) as string;
-
-    diagramMap.forEach((svgContainerHtml, token) => {
-      const paragraphWrapped = `<p>${token}</p>`;
-      if (parsedHtml.includes(paragraphWrapped)) {
-        parsedHtml = parsedHtml.replace(paragraphWrapped, svgContainerHtml);
-      } else {
-        parsedHtml = parsedHtml.replace(token, svgContainerHtml);
-      }
-    });
+    const parsedHtml = parseMarkdownWithMathAndDiagrams(markdownToParse, diagramMap);
 
     sessionHtmlContent += `
       <div class="message-block ${isUser ? 'user-block' : 'assistant-block'}">

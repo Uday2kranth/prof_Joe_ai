@@ -14,24 +14,52 @@ marked.setOptions({
   breaks: true
 });
 
-function renderLatex(text: string): string {
-  let result = text.replace(/(\$\$|\\\[)([\s\S]*?)(\$\$|\\\])/g, (_, __, math) => {
+function renderMarkdownWithMathAndDiagrams(content: string, diagramMap: Map<string, string>): string {
+  if (!content) return '';
+  const mathMap = new Map<string, string>();
+  let tokenIdx = 0;
+
+  // 1. Extract block math $$...$$
+  let prepped = content.replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
+    const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
     try {
-      return katex.renderToString(math.trim(), { displayMode: true, throwOnError: false });
+      mathMap.set(token, `<div class="katex-block">${katex.renderToString(math.trim(), { displayMode: true, throwOnError: false })}</div>`);
     } catch {
-      return math;
+      mathMap.set(token, `$$${math}$$`);
+    }
+    return token;
+  });
+
+  // 2. Extract inline math $...$
+  prepped = prepped.replace(/\$([^\$\n]+?)\$/g, (_, math) => {
+    const token = `KATEXINLINETOKEN${tokenIdx++}ENDTOKEN`;
+    try {
+      mathMap.set(token, katex.renderToString(math.trim(), { displayMode: false, throwOnError: false }));
+    } catch {
+      mathMap.set(token, `$${math}$`);
+    }
+    return token;
+  });
+
+  // 3. Parse clean markdown tables and text
+  let parsedHtml = marked.parse(prepped) as string;
+
+  // 4. Restore math HTML
+  mathMap.forEach((html, token) => {
+    parsedHtml = parsedHtml.replaceAll(token, html);
+  });
+
+  // 5. Restore Kroki diagram containers
+  diagramMap.forEach((svgContainerHtml, token) => {
+    const paragraphWrapped = `<p>${token}</p>`;
+    if (parsedHtml.includes(paragraphWrapped)) {
+      parsedHtml = parsedHtml.replace(paragraphWrapped, svgContainerHtml);
+    } else {
+      parsedHtml = parsedHtml.replaceAll(token, svgContainerHtml);
     }
   });
 
-  result = result.replace(/(\$|\\\()([^\$\n]+?)(\$|\\\))/g, (_, __, math) => {
-    try {
-      return katex.renderToString(math.trim(), { displayMode: false, throwOnError: false });
-    } catch {
-      return math;
-    }
-  });
-
-  return result;
+  return parsedHtml;
 }
 
 interface MessageItemProps {
@@ -53,8 +81,8 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
     let isMounted = true;
 
     async function processMessage() {
-      const latexProcessed = renderLatex(message.content);
-      const diagrams = extractDiagrams(latexProcessed);
+      const rawContent = message.content || '';
+      const diagrams = extractDiagrams(rawContent);
       const diagramMap = new Map<string, string>();
 
       for (let index = 0; index < diagrams.length; index++) {
@@ -64,23 +92,14 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
         diagramMap.set(token, `<div class="kroki-container" data-type="${diag.type}">${svgHtml}</div>`);
       }
 
-      let markdownToParse = latexProcessed;
+      let markdownToParse = rawContent;
       let tokenIndex = 0;
       diagrams.forEach(diag => {
         const token = `KROKIDIAGRAMTOKEN${tokenIndex++}ENDTOKEN`;
         markdownToParse = markdownToParse.replace(diag.fullMatch, token);
       });
 
-      let parsedHtml = marked.parse(markdownToParse) as string;
-
-      diagramMap.forEach((svgContainerHtml, token) => {
-        const paragraphWrapped = `<p>${token}</p>`;
-        if (parsedHtml.includes(paragraphWrapped)) {
-          parsedHtml = parsedHtml.replace(paragraphWrapped, svgContainerHtml);
-        } else {
-          parsedHtml = parsedHtml.replace(token, svgContainerHtml);
-        }
-      });
+      const parsedHtml = renderMarkdownWithMathAndDiagrams(markdownToParse, diagramMap);
 
       if (isMounted) {
         setRenderedHtml(parsedHtml);
