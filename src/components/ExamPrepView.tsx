@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import { BookOpen, FileText, Send, Award } from 'lucide-react';
 import { marked } from 'marked';
 import examData from '../data/examPrepData.json';
+// @ts-ignore
+import MagicBento from './MagicBento';
 
 interface ExamPrepViewProps {
   onLoadQuestionToChat: (questionText: string) => void;
@@ -23,6 +25,19 @@ export const ExamPrepView: React.FC<ExamPrepViewProps> = ({ onLoadQuestionToChat
   const [bankSubTab, setBankSubTab] = useState<'standard' | 'gagan'>('standard');
 
   const currentSubjectData = (examData as any)[selectedSubject] || {};
+
+  const handleBentoCardClick = (card: any) => {
+    if (card.id === 'gagan') {
+      setActiveTab('bank');
+      setBankSubTab('gagan');
+    } else if (card.id === 'sets') {
+      setActiveTab('sets');
+    } else if (examData[card.id as keyof typeof examData]) {
+      setSelectedSubject(card.id);
+      setActiveTab('bank');
+      setBankSubTab('standard');
+    }
+  };
 
   return (
     <div className="exam-prep-container">
@@ -49,6 +64,22 @@ export const ExamPrepView: React.FC<ExamPrepViewProps> = ({ onLoadQuestionToChat
             );
           })}
         </select>
+      </div>
+
+      {/* React Bits MagicBento Interactive Grid */}
+      <div style={{ marginBottom: '16px' }}>
+        <MagicBento
+          enableStars={true}
+          enableSpotlight={true}
+          enableBorderGlow={true}
+          enableTilt={true}
+          enableMagnetism={true}
+          clickEffect={true}
+          spotlightRadius={280}
+          particleCount={10}
+          glowColor="6, 182, 212"
+          onCardClick={handleBentoCardClick}
+        />
       </div>
 
       <div className="exam-tabs">
