@@ -5,7 +5,8 @@ import TextType from './TextType';
 import type { Message } from '../types';
 import { MessageItem } from './MessageItem';
 import { PROVIDERS } from '../constants';
-import { printSessionToPdf } from '../services/printPdfService';
+import { PdfPreviewModal } from './PdfPreviewModal';
+import { marked } from 'marked';
 
 interface ChatWindowProps {
   messages: Message[];
@@ -84,8 +85,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     }
   };
 
-  const handleExportFullChatPdf = async () => {
-    await printSessionToPdf(messages, activeSystemPromptTitle || 'Exam Chat Session');
+  const [isSessionPreviewOpen, setIsSessionPreviewOpen] = useState(false);
+
+  const handleExportFullChatPdf = () => {
+    setIsSessionPreviewOpen(true);
   };
 
   return (
@@ -328,6 +331,18 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           </div>
         </form>
       </div>
+
+      {/* Full Chat Session Custom Animated PDF Preview Modal */}
+      {isSessionPreviewOpen && (
+        <PdfPreviewModal
+          isOpen={isSessionPreviewOpen}
+          onClose={() => setIsSessionPreviewOpen(false)}
+          content={messages.map(m => `### ${m.role === 'user' ? '👤 User Query' : '🎓 Prof. Joe AI'}\n${m.content}`).join('\n\n---\n\n')}
+          modelUsed={selectedModel}
+          docTitle={`ProfJoe_Session_${activeSystemPromptTitle ? activeSystemPromptTitle.replace(/[^a-zA-Z0-9]/g, '_') : 'Chat'}_${new Date().toISOString().split('T')[0]}`}
+          renderedHtml={marked.parse(messages.map(m => `### ${m.role === 'user' ? '👤 User Query' : '🎓 Prof. Joe AI'}\n${m.content}`).join('\n\n---\n\n')) as string}
+        />
+      )}
     </div>
   );
 };

@@ -1,6 +1,7 @@
-import React, { useEffect, useState } from 'react';
-import { X, Download, Printer, Sparkles, FileText } from 'lucide-react';
+import React, { useEffect, useState, useRef } from 'react';
+import { X, Download, Printer, Sparkles, FileText, Image as ImageIcon } from 'lucide-react';
 import { exportBubbleDirectPdf, printBubbleToPdf } from '../services/printPdfService';
+import { exportBubbleToImage } from '../services/exportService';
 
 interface PdfPreviewModalProps {
   isOpen: boolean;
@@ -20,7 +21,9 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
   renderedHtml
 }) => {
   const [downloading, setDownloading] = useState(false);
+  const [downloadingImage, setDownloadingImage] = useState(false);
   const [printing, setPrinting] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
@@ -43,6 +46,16 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
     }
   };
 
+  const handleExportPng = async () => {
+    if (!cardRef.current) return;
+    setDownloadingImage(true);
+    try {
+      await exportBubbleToImage(cardRef.current, docTitle);
+    } finally {
+      setDownloadingImage(false);
+    }
+  };
+
   const handlePrint = async () => {
     setPrinting(true);
     try {
@@ -59,7 +72,7 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
         <div className="pdf-modal-header">
           <h3>
             <Sparkles size={18} className="text-cyan-400" />
-            <span>Interactive PDF Document Preview</span>
+            <span>Interactive PDF & Image Document Preview</span>
           </h3>
           <button
             onClick={onClose}
@@ -73,7 +86,7 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
 
         {/* Modal Body: Wave Card Page Preview */}
         <div className="pdf-modal-body">
-          <div className="pdf-page-wave-card">
+          <div className="pdf-page-wave-card" ref={cardRef}>
             <div style={{ borderBottom: '2px solid #06b6d4', paddingBottom: '12px', marginBottom: '24px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <h1 style={{ fontSize: '1.4rem', margin: 0, color: '#06b6d4' }}>Prof. Joe AI Document</h1>
               <div style={{ fontSize: '0.85rem', color: '#64748b' }}>Model: {modelUsed || 'AI Model'}</div>
@@ -90,14 +103,25 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
         <div className="pdf-modal-footer">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8', fontSize: '0.85rem' }}>
             <FileText size={16} className="text-cyan-400" />
-            <span>{docTitle}.pdf</span>
+            <span>{docTitle}</span>
           </div>
 
-          <div style={{ display: 'flex', gap: '10px' }}>
+          <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+            <button
+              onClick={handleExportPng}
+              disabled={downloadingImage}
+              className="pdf-action-btn-secondary"
+              title="Save Preview as PNG Image"
+            >
+              <ImageIcon size={16} />
+              <span>{downloadingImage ? 'Saving...' : 'Save PNG Image'}</span>
+            </button>
+
             <button
               onClick={handlePrint}
               disabled={printing}
               className="pdf-action-btn-secondary"
+              title="Print via Browser Print Engine"
             >
               <Printer size={16} />
               <span>{printing ? 'Preparing...' : 'Print Paper'}</span>
@@ -107,6 +131,7 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
               onClick={handleDownload}
               disabled={downloading}
               className="pdf-action-btn-primary"
+              title="Save PDF File Directly"
             >
               <Download size={16} />
               <span>{downloading ? 'Downloading...' : 'Save PDF File'}</span>
