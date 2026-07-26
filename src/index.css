@@ -2441,3 +2441,47 @@ body {
   border-color: rgba(6, 182, 212, 0.4) !important;
 }
 
+/* Full-Page & Hub View Unlocked Scrolling Fix */
+.app-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 60px) !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+}
+
+.exam-prep-container,
+.prompt-library-container,
+.diagram-studio-container,
+.system-prompt-library-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 24px 24px 80px 24px !important;
+  overflow-y: auto !important;
+  height: auto !important;
+  min-height: 100%;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(6, 182, 212, 0.4) transparent;
+}
+
+.exam-prep-container::-webkit-scrollbar,
+.prompt-library-container::-webkit-scrollbar,
+.diagram-studio-container::-webkit-scrollbar,
+.app-main::-webkit-scrollbar {
+  width: 8px;
+}
+
+.exam-prep-container::-webkit-scrollbar-thumb,
+.prompt-library-container::-webkit-scrollbar-thumb,
+.diagram-studio-container::-webkit-scrollbar-thumb,
+.app-main::-webkit-scrollbar-thumb {
+  background: rgba(6, 182, 212, 0.4);
+  border-radius: 4px;
+}
+
