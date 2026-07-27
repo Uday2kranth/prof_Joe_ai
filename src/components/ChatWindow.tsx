@@ -169,8 +169,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       {/* Input Control Container */}
       <div className="input-bar-container">
         {/* System Prompt & Exam Mode Selector Pill Nav Bar */}
-        <div className="input-modes-bar flex items-center justify-between gap-2 overflow-x-auto py-1 px-2">
-          <div className="kokonut-mode-dock flex items-center gap-1.5 overflow-x-auto">
+        <div className="input-modes-bar">
+          <div className="kokonut-mode-dock">
             <button
               type="button"
               onClick={() => setPromptMode('auto')}
@@ -208,31 +208,33 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
             </button>
           </div>
 
-          <button
-            type="button"
-            onClick={() => setWebSearch(!webSearch)}
-            className={`kokonut-mode-pill web-search-toggle-pill ${webSearch ? 'active' : ''}`}
-            title="Toggle Web Search RAG"
-          >
-            <Globe size={13} />
-            <span>RAG {webSearch ? 'ON' : 'OFF'}</span>
-          </button>
+          <div className="right-controls-group">
+            {activeSystemPromptTitle && (
+              <div className="system-prompt-active-badge">
+                <span>📌 {activeSystemPromptTitle}</span>
+                {onClearSystemPrompt && (
+                  <button
+                    type="button"
+                    onClick={onClearSystemPrompt}
+                    className="clear-prompt-btn"
+                    title="Clear active system prompt"
+                  >
+                    <X size={13} />
+                  </button>
+                )}
+              </div>
+            )}
 
-          {activeSystemPromptTitle && (
-            <div className="system-prompt-active-badge">
-              <span>📌 {activeSystemPromptTitle}</span>
-              {onClearSystemPrompt && (
-                <button
-                  type="button"
-                  onClick={onClearSystemPrompt}
-                  className="clear-prompt-btn"
-                  title="Clear active system prompt"
-                >
-                  <X size={13} />
-                </button>
-              )}
-            </div>
-          )}
+            <button
+              type="button"
+              onClick={() => setWebSearch(!webSearch)}
+              className={`kokonut-mode-pill web-search-toggle-pill ${webSearch ? 'active' : ''}`}
+              title="Toggle Web Search RAG"
+            >
+              <Globe size={13} />
+              <span>RAG {webSearch ? 'ON' : 'OFF'}</span>
+            </button>
+          </div>
         </div>
 
         {/* Textarea + Bottom Action Row */}

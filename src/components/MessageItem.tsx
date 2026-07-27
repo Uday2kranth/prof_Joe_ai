@@ -199,7 +199,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
           />
         </div>
 
-        <div className="kokonut-msg-actions-container">
+        <div className={`kokonut-msg-actions-container ${isUser ? 'user-actions' : 'assistant-actions'}`}>
           <button
             onClick={handleCopy}
             className={`kokonut-msg-btn ${copied ? 'active-action' : ''}`}
