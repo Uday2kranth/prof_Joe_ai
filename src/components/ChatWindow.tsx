@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Globe, X, Zap, FileText, CheckSquare, MessageSquare, Paperclip, Eye, Printer } from 'lucide-react';
+import { Send, Globe, X, Zap, FileText, CheckSquare, MessageSquare, Paperclip, Eye, Printer, ChevronDown, Check } from 'lucide-react';
 // @ts-ignore
 import TextType from './TextType';
 import type { Message } from '../types';
@@ -38,19 +38,37 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const [inputPrompt, setInputPrompt] = useState('');
   const [webSearch, setWebSearch] = useState(false);
   const [promptMode, setPromptMode] = useState<'auto' | '12marks' | '2marks' | 'general' | 'none'>('auto');
+  const [isSessionPreviewOpen, setIsSessionPreviewOpen] = useState(false);
+
+  // Custom Glass Dropdown States
+  const [isProviderOpen, setIsProviderOpen] = useState(false);
+  const [isModelOpen, setIsModelOpen] = useState(false);
+  const providerRef = useRef<HTMLDivElement>(null);
+  const modelRef = useRef<HTMLDivElement>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const currentProviderGroup = PROVIDERS.find(p => p.id === selectedProvider) || PROVIDERS[0];
-
-  const scrollToBottom = () => {
+  useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  };
+  }, [messages, isLoading]);
 
   useEffect(() => {
-    scrollToBottom();
-  }, [messages, isLoading]);
+    const handleClickOutside = (e: MouseEvent) => {
+      if (providerRef.current && !providerRef.current.contains(e.target as Node)) {
+        setIsProviderOpen(false);
+      }
+      if (modelRef.current && !modelRef.current.contains(e.target as Node)) {
+        setIsModelOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const currentProviderGroup = PROVIDERS.find(p => p.id === selectedProvider) || PROVIDERS[0];
+  const currentModelName = currentProviderGroup.models.find(m => m.value === selectedModel)?.name || selectedModel;
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -65,10 +83,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     const isMobile = window.innerWidth <= 768 || 'ontouchstart' in window;
     if (e.key === 'Enter') {
-      if (isMobile) {
-        // On mobile view, Enter inserts a new line (\n) so users can compose multi-line prompts smoothly
-        return;
-      }
+      if (isMobile) return;
       if (!e.shiftKey) {
         e.preventDefault();
         handleSubmit(e);
@@ -91,8 +106,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       setInputPrompt(prev => `${prev}\n\n[Attached File: ${file.name} (${Math.round(file.size / 1024)} KB)]`);
     }
   };
-
-  const [isSessionPreviewOpen, setIsSessionPreviewOpen] = useState(false);
 
   const handleExportFullChatPdf = () => {
     setIsSessionPreviewOpen(true);
@@ -166,46 +179,13 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         </div>
       </div>
 
-      {/* Input Control Container */}
       <div className="input-bar-container">
-        {/* System Prompt & Exam Mode Selector Pill Nav Bar */}
         <div className="input-modes-bar">
           <div className="kokonut-mode-dock">
-            <button
-              type="button"
-              onClick={() => setPromptMode('auto')}
-              className={`kokonut-mode-pill ${promptMode === 'auto' ? 'active' : ''}`}
-              title="Automatic OU Exam Intelligence Engine"
-            >
-              <Zap size={13} /> <span>Auto</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setPromptMode('12marks')}
-              className={`kokonut-mode-pill ${promptMode === '12marks' ? 'active' : ''}`}
-              title="12 Marks Essay Evaluator"
-            >
-              <FileText size={13} /> <span>12 Marks</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setPromptMode('2marks')}
-              className={`kokonut-mode-pill ${promptMode === '2marks' ? 'active' : ''}`}
-              title="3-4 Marks Short Answer"
-            >
-              <CheckSquare size={13} /> <span>3–4 Marks</span>
-            </button>
-
-            <button
-              type="button"
-              onClick={() => setPromptMode('general')}
-              className={`kokonut-mode-pill ${promptMode === 'general' ? 'active' : ''}`}
-              title="General AI Mode"
-            >
-              <MessageSquare size={13} /> <span>General</span>
-            </button>
+            <button type="button" onClick={() => setPromptMode('auto')} className={`kokonut-mode-pill ${promptMode === 'auto' ? 'active' : ''}`}><Zap size={13} /> <span>Auto</span></button>
+            <button type="button" onClick={() => setPromptMode('12marks')} className={`kokonut-mode-pill ${promptMode === '12marks' ? 'active' : ''}`}><FileText size={13} /> <span>12 Marks</span></button>
+            <button type="button" onClick={() => setPromptMode('2marks')} className={`kokonut-mode-pill ${promptMode === '2marks' ? 'active' : ''}`}><CheckSquare size={13} /> <span>3–4 Marks</span></button>
+            <button type="button" onClick={() => setPromptMode('general')} className={`kokonut-mode-pill ${promptMode === 'general' ? 'active' : ''}`}><MessageSquare size={13} /> <span>General</span></button>
           </div>
 
           <div className="right-controls-group">
@@ -213,85 +193,114 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               <div className="system-prompt-active-badge">
                 <span>📌 {activeSystemPromptTitle}</span>
                 {onClearSystemPrompt && (
-                  <button
-                    type="button"
-                    onClick={onClearSystemPrompt}
-                    className="clear-prompt-btn"
-                    title="Clear active system prompt"
-                  >
-                    <X size={13} />
-                  </button>
+                  <button type="button" onClick={onClearSystemPrompt} className="clear-prompt-btn"><X size={13} /></button>
                 )}
               </div>
             )}
-
-            <button
-              type="button"
-              onClick={() => setWebSearch(!webSearch)}
-              className={`kokonut-mode-pill web-search-toggle-pill ${webSearch ? 'active' : ''}`}
-              title="Toggle Web Search RAG"
-            >
-              <Globe size={13} />
-              <span>RAG {webSearch ? 'ON' : 'OFF'}</span>
-            </button>
+            <button type="button" onClick={() => setWebSearch(!webSearch)} className={`kokonut-mode-pill web-search-toggle-pill ${webSearch ? 'active' : ''}`}><Globe size={13} /><span>RAG {webSearch ? 'ON' : 'OFF'}</span></button>
           </div>
         </div>
 
-        {/* Textarea + Bottom Action Row */}
         <form onSubmit={handleSubmit} className="chat-form-modern kokonut-form">
-          <input
-            type="file"
-            ref={fileInputRef}
-            onChange={handleFileUpload}
-            style={{ display: 'none' }}
-          />
-
+          <input type="file" ref={fileInputRef} onChange={handleFileUpload} style={{ display: 'none' }} />
           <textarea
             ref={textareaRef}
             value={inputPrompt}
             onChange={(e) => setInputPrompt(e.target.value)}
             onKeyDown={handleKeyDown}
-            placeholder={`Ask ${selectedModel}... (Press Enter to Send)`}
+            placeholder={`Ask ${currentModelName}... (Press Enter to Send)`}
             rows={3}
             style={{ minHeight: '72px', fontSize: '0.92rem', padding: '12px 16px' }}
             className="chat-textarea kokonut-textarea"
           />
 
           <div className="kokonut-bottom-row">
-            <div className="kokonut-left-actions flex items-center gap-2">
+            <div className="kokonut-left-actions flex items-center gap-2 flex-wrap">
               {onProviderChange && onModelChange && (
                 <>
-                  <div className="kokonut-model-picker-pill provider-pill flex items-center gap-1">
-                    <span className="picker-icon">⚡</span>
-                    <select
-                      value={selectedProvider}
-                      onChange={(e) => {
-                        const newProvider = e.target.value;
-                        onProviderChange(newProvider);
-                        const group = PROVIDERS.find(p => p.id === newProvider);
-                        if (group && group.models.length > 0) {
-                          onModelChange(group.models[0].value);
-                        }
+                  {/* Custom Glassmorphic Provider Dropdown */}
+                  <div className="relative inline-block" style={{ position: 'relative' }} ref={providerRef}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsProviderOpen(!isProviderOpen);
+                        setIsModelOpen(false);
                       }}
-                      className="kokonut-bottom-model-select"
+                      className="custom-dropdown-pill"
+                      title="Select AI Provider"
                     >
-                      {PROVIDERS.map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
+                      <span className="picker-icon">⚡</span>
+                      <span>{currentProviderGroup.name}</span>
+                      <ChevronDown size={13} className={`transition-transform duration-200 ${isProviderOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {isProviderOpen && (
+                      <div className="custom-dropdown-menu provider-menu">
+                        <div className="dropdown-header">AI Providers</div>
+                        {PROVIDERS.map(p => {
+                          const isSelected = p.id === selectedProvider;
+                          return (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => {
+                                onProviderChange(p.id);
+                                if (p.models.length > 0) {
+                                  onModelChange(p.models[0].value);
+                                }
+                                setIsProviderOpen(false);
+                              }}
+                              className={`dropdown-item ${isSelected ? 'selected' : ''}`}
+                            >
+                              <span>{p.name}</span>
+                              {isSelected && <Check size={13} className="text-cyan-400" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
-                  <div className="kokonut-model-picker-pill model-pill flex items-center gap-1">
-                    <span className="picker-icon">🤖</span>
-                    <select
-                      value={selectedModel}
-                      onChange={(e) => onModelChange(e.target.value)}
-                      className="kokonut-bottom-model-select"
+                  {/* Custom Glassmorphic Model Dropdown */}
+                  <div className="relative inline-block" style={{ position: 'relative' }} ref={modelRef}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsModelOpen(!isModelOpen);
+                        setIsProviderOpen(false);
+                      }}
+                      className="custom-dropdown-pill"
+                      title="Select AI Model"
                     >
-                      {currentProviderGroup.models.map(m => (
-                        <option key={m.value} value={m.value}>{m.name}</option>
-                      ))}
-                    </select>
+                      <span className="picker-icon">🤖</span>
+                      <span className="truncate max-w-[130px] sm:max-w-[190px]">
+                        {currentModelName}
+                      </span>
+                      <ChevronDown size={13} className={`transition-transform duration-200 ${isModelOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {isModelOpen && (
+                      <div className="custom-dropdown-menu model-menu">
+                        <div className="dropdown-header">{currentProviderGroup.name} Models</div>
+                        {currentProviderGroup.models.map(m => {
+                          const isSelected = m.value === selectedModel;
+                          return (
+                            <button
+                              key={m.value}
+                              type="button"
+                              onClick={() => {
+                                onModelChange(m.value);
+                                setIsModelOpen(false);
+                              }}
+                              className={`dropdown-item ${isSelected ? 'selected' : ''}`}
+                            >
+                              <span>{m.name}</span>
+                              {isSelected && <Check size={13} className="text-cyan-400" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </>
               )}

@@ -573,6 +573,105 @@ body {
   margin-left: auto;
 }
 
+/* Custom Glassmorphic Dropdown Styling */
+.custom-dropdown-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.85rem !important;
+  background: rgba(30, 41, 59, 0.85) !important;
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(6, 182, 212, 0.35) !important;
+  border-radius: 9999px !important;
+  color: #f1f5f9 !important;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.22s ease;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+
+.custom-dropdown-pill:hover {
+  background: rgba(6, 182, 212, 0.22) !important;
+  border-color: rgba(6, 182, 212, 0.65) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 16px rgba(6, 182, 212, 0.45) !important;
+}
+
+.custom-dropdown-menu {
+  position: absolute;
+  bottom: calc(100% + 8px);
+  left: 0;
+  min-width: 220px;
+  max-width: 320px;
+  max-height: 280px;
+  overflow-y: auto;
+  background: rgba(15, 23, 42, 0.96) !important;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(6, 182, 212, 0.4) !important;
+  border-radius: 14px !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.75), 0 0 24px rgba(6, 182, 212, 0.3) !important;
+  padding: 6px;
+  z-index: 100;
+  animation: dropdownPop 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  scrollbar-width: thin;
+  scrollbar-color: rgba(6, 182, 212, 0.4) rgba(15, 23, 42, 0.5);
+}
+
+@keyframes dropdownPop {
+  from {
+    opacity: 0;
+    transform: translateY(6px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+.dropdown-header {
+  padding: 6px 10px;
+  font-size: 0.68rem;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  color: #06b6d4;
+  text-transform: uppercase;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  margin-bottom: 4px;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 8px 12px;
+  border-radius: 8px !important;
+  border: none !important;
+  background: transparent !important;
+  color: #cbd5e1 !important;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.dropdown-item:hover {
+  background: rgba(6, 182, 212, 0.2) !important;
+  color: #ffffff !important;
+  padding-left: 14px;
+}
+
+.dropdown-item.selected {
+  background: rgba(6, 182, 212, 0.28) !important;
+  color: #06b6d4 !important;
+  font-weight: 700 !important;
+}
+
 .kokonut-mode-dock::-webkit-scrollbar {
   display: none;
 }
