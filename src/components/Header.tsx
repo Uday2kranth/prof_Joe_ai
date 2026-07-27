@@ -1,8 +1,7 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Menu } from 'lucide-react';
 import type { ActiveViewType } from '../types';
-// @ts-ignore
-import Dock from './Dock';
+import Toolbar from './Toolbar';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -22,6 +21,8 @@ export const Header: React.FC<HeaderProps> = ({
   activeView,
   onViewChange
 }) => {
+  const [isSpinning, setIsSpinning] = useState(false);
+
   const viewTitles: Record<string, string> = {
     chat: 'AI Multi-Model Dashboard',
     examprep: 'Exam Prep & Syllabus Hub',
@@ -32,35 +33,57 @@ export const Header: React.FC<HeaderProps> = ({
     cubes: 'Interactive 3D Cubes Playground'
   };
 
-  const dockNavItems = [
-    { icon: '💬', label: 'Chat', onClick: () => onViewChange?.('chat'), active: activeView === 'chat' },
-    { icon: '🎓', label: 'Exam Prep', onClick: () => onViewChange?.('examprep'), active: activeView === 'examprep' },
-    { icon: '📘', label: 'System Prompts', onClick: () => onViewChange?.('system_prompts'), active: activeView === 'system_prompts' },
-    { icon: '✨', label: 'Prompts', onClick: () => onViewChange?.('prompts'), active: activeView === 'prompts' },
-    { icon: '📊', label: 'Diagrams', onClick: () => onViewChange?.('diagrams'), active: activeView === 'diagrams' },
-    { icon: '🎭', label: 'Fun Personas', onClick: () => onViewChange?.('fun_personas'), active: activeView === 'fun_personas' },
-    { icon: '🎮', label: '3D Cubes', onClick: () => onViewChange?.('cubes'), active: activeView === 'cubes' }
-  ];
+  const toggleSpin = () => {
+    setIsSpinning(prev => !prev);
+  };
 
   return (
-    <header className="app-header" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px', borderBottom: '1px solid var(--border-color)', gap: '12px' }}>
-      <div className="header-left" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-        <button onClick={onToggleSidebar} className="menu-btn" aria-label="Toggle Navigation Sidebar">
-          <Menu size={20} />
-        </button>
-        <div className="view-title" style={{ display: 'flex', flexDirection: 'column' }}>
-          <h2 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>{viewTitles[activeView] || 'Prof. Joe AI Dashboard'}</h2>
+    <header className="app-header">
+      <div className="header-top-row">
+        <div className="header-left">
+          <button onClick={onToggleSidebar} className="menu-btn" aria-label="Toggle Navigation Sidebar">
+            <Menu size={20} />
+          </button>
+
+          {/* Animated Prof. Joe Dog Icon Avatar */}
+          <div
+            onClick={toggleSpin}
+            style={{
+              width: '32px',
+              height: '32px',
+              borderRadius: '50%',
+              overflow: 'hidden',
+              cursor: 'pointer',
+              border: '2px solid var(--accent-cyan)',
+              boxShadow: isSpinning ? '0 0 14px rgba(6, 182, 212, 0.9)' : '0 0 6px rgba(6, 182, 212, 0.4)',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              background: '#0f172a',
+              flexShrink: 0
+            }}
+            title="Click to spin Prof. Joe!"
+          >
+            <img
+              src="/joe-avatar.png"
+              alt="Prof. Joe"
+              className={isSpinning ? 'spinning-dog' : ''}
+              style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+            />
+          </div>
+
+          <div className="view-title">
+            <h2 style={{ margin: 0, fontSize: '1.02rem', fontWeight: 700 }}>{viewTitles[activeView] || 'Prof. Joe AI Dashboard'}</h2>
+          </div>
         </div>
       </div>
 
-      {/* React Bits Magnetic Dock Section Navigation */}
-      <div className="header-dock-center flex items-center justify-center">
-        <Dock
-          items={dockNavItems}
-          panelHeight={46}
-          baseItemSize={38}
-          magnification={56}
-          distance={160}
+      {/* KokonutUI Figma-Inspired Animated Toolbar Navigation */}
+      <div className="header-dock-center">
+        <Toolbar
+          activeId={activeView}
+          onSelect={(itemId) => onViewChange?.(itemId as ActiveViewType)}
         />
       </div>
     </header>

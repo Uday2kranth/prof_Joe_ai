@@ -5,7 +5,7 @@ import { Children, cloneElement, useEffect, useMemo, useRef, useState } from 're
 
 import './Dock.css';
 
-function DockItem({ children, className = '', onClick, mouseX, spring, distance, magnification, baseItemSize, label }) {
+function DockItem({ children, className = '', onClick, mouseX, spring, distance, magnification, baseItemSize, label, active }) {
   const ref = useRef(null);
   const isHovered = useMotionValue(0);
 
@@ -46,12 +46,12 @@ function DockItem({ children, className = '', onClick, mouseX, spring, distance,
       aria-label={label}
       onKeyDown={handleKeyDown}
     >
-      {Children.map(children, child => cloneElement(child, { isHovered }))}
+      {Children.map(children, child => cloneElement(child, { isHovered, active }))}
     </motion.div>
   );
 }
 
-function DockLabel({ children, className = '', ...rest }) {
+function DockLabel({ children, className = '', active = false, ...rest }) {
   const { isHovered } = rest;
   const [isVisible, setIsVisible] = useState(false);
 
@@ -62,15 +62,17 @@ function DockLabel({ children, className = '', ...rest }) {
     return () => unsubscribe();
   }, [isHovered]);
 
+  const showLabel = active || isVisible;
+
   return (
     <AnimatePresence>
-      {isVisible && (
+      {showLabel && (
         <motion.div
           initial={{ opacity: 0, y: 0 }}
           animate={{ opacity: 1, y: -10 }}
           exit={{ opacity: 0, y: 0 }}
           transition={{ duration: 0.2 }}
-          className={`dock-label ${className}`}
+          className={`dock-label ${active ? 'active-dock-label' : ''} ${className}`}
           role="tooltip"
           style={{ x: '-50%' }}
         >
@@ -89,11 +91,11 @@ export default function Dock({
   items,
   className = '',
   spring = { mass: 0.1, stiffness: 150, damping: 12 },
-  magnification = 58,
-  distance = 160,
-  panelHeight = 48,
-  dockHeight = 56,
-  baseItemSize = 40
+  magnification = 54,
+  distance = 150,
+  panelHeight = 44,
+  dockHeight = 52,
+  baseItemSize = 38
 }) {
   const mouseX = useMotionValue(Infinity);
   const isHovered = useMotionValue(0);
@@ -132,9 +134,10 @@ export default function Dock({
             magnification={magnification}
             baseItemSize={baseItemSize}
             label={item.label}
+            active={item.active}
           >
             <DockIcon>{item.icon}</DockIcon>
-            <DockLabel>{item.label}</DockLabel>
+            <DockLabel active={item.active}>{item.label}</DockLabel>
           </DockItem>
         ))}
       </motion.div>

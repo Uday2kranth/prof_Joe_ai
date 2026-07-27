@@ -316,7 +316,9 @@ GENERAL AI ASSISTANT DIRECTIVES:
     } else if (provider === "opencode") {
         endpoint = 'https://opencode.ai/zen/v1/chat/completions';
     } else if (provider === "pollinations" || provider === "pollinations-keyed" || provider === "pollinations-keyless") {
-        endpoint = 'https://gen.pollinations.ai/v1/chat/completions';
+        endpoint = (apiKey === 'keyless_anonymous' || !apiKey)
+            ? 'https://text.pollinations.ai/'
+            : 'https://gen.pollinations.ai/v1/chat/completions';
     } else if (provider === "ollama") {
         endpoint = 'https://ollama.com/api/chat';
     } else {
@@ -366,17 +368,28 @@ STRICT IMAGE & DIAGRAM EMBEDDING DIRECTIVES:
 
 
 
-    // Enforce textbook LaTeX formatting for scientific formulas and math symbols
-    apiMessages.unshift({
-        role: "system",
-        content: "Always format mathematical notations, variables with subscripts (like M_1), powers (like x^2), calculations, and equations using standard LaTeX enclosed in single dollar signs $ for inline math (e.g. $M_1$) or double dollar signs $$ for block math. Box final numeric results using $$\\bbox[6px,border:2px solid #06b6d4]{\\text{Final Result} = X}$$."
-    });
+    // Enforce textbook LaTeX formatting for scientific formulas and math symbols ONLY when NO fun persona is active
+    if (!persona || persona === 'default') {
+        apiMessages.unshift({
+            role: "system",
+            content: "Always format mathematical notations, variables with subscripts (like M_1), powers (like x^2), calculations, and equations using standard LaTeX enclosed in single dollar signs $ for inline math (e.g. $M_1$) or double dollar signs $$ for block math. Box final numeric results using $$\\bbox[6px,border:2px solid #06b6d4]{\\text{Final Result} = X}$$."
+        });
 
-    // Final Mandatory System Directive: Enable horizontal and vertical Kroki diagrams
-    apiMessages.push({
-        role: "system",
-        content: "DIAGRAM MANDATORY DIRECTIVE: You are authorized to generate both vertical (```mermaid\\ngraph TD``` or Graphviz ```kroki-graphviz rankdir=TB```) AND horizontal diagrams (```mermaid\\ngraph LR``` or Graphviz ```kroki-graphviz rankdir=LR```). Use appropriate Kroki code blocks (```kroki-plantuml```, ```kroki-graphviz```, ```kroki-erd```, ```mermaid```) whenever a concept requires visual structure."
-    });
+        // Final Mandatory System Directive: Enable horizontal and vertical Kroki diagrams for academic mode
+        apiMessages.push({
+            role: "system",
+            content: "DIAGRAM MANDATORY DIRECTIVE: You are authorized to generate both vertical (```mermaid\\ngraph TD``` or Graphviz ```kroki-graphviz rankdir=TB```) AND horizontal diagrams (```mermaid\\ngraph LR``` or Graphviz ```kroki-graphviz rankdir=LR```). Use appropriate Kroki code blocks (```kroki-plantuml```, ```kroki-graphviz```, ```kroki-erd```, ```mermaid```) whenever a concept requires visual structure."
+        });
+    } else {
+        // For fun personas, enforce strict persona adherence and negative diagram rules for text-only personas
+        const isTextOnlyPersona = ['peter', 'stewie', 'rick', 'morty'].includes(persona);
+        if (isTextOnlyPersona) {
+            apiMessages.push({
+                role: "system",
+                content: `STRICT CHARACTER MANDATE: You are ${persona.toUpperCase()}. Respond 100% in your authentic character voice. DO NOT output any Kroki, Mermaid, or PlantUML code blocks under any circumstances. Respond strictly in text.`
+            });
+        }
+    }
 
     try {
         // Support API Key rotation by splitting comma-separated keys
@@ -394,7 +407,7 @@ STRICT IMAGE & DIAGRAM EMBEDDING DIRECTIVES:
                 "Content-Type": "application/json"
             };
 
-            if (provider === "pollinations-keyless") {
+            if (provider === "pollinations-keyless" || currentKey === 'keyless_anonymous') {
                 delete headers["Authorization"];
             } else if (provider === "pollinations-keyed" || provider === "pollinations") {
                 if (currentKey && currentKey !== 'keyless_anonymous') {
@@ -476,51 +489,28 @@ STRICT IMAGE & DIAGRAM EMBEDDING DIRECTIVES:
                             break;
                         }
                     } else if (isPollinationsKeyless) {
-                        // Keyless Pollinations mode: Use free endpoints directly with clean payload
-                        const keylessMessages = apiMessages.filter(m => m.role !== "system");
+                        // Keyless Pollinations mode: Use 100% free anonymous GET endpoint with system prompt
+                        const systemMsg = apiMessages.find(m => m.role === 'system')?.content || '';
+                        const userMsg = apiMessages.filter(m => m.role === 'user').pop()?.content || prompt;
+                        const pollUrl = `https://text.pollinations.ai/${encodeURIComponent(userMsg)}?system=${encodeURIComponent(systemMsg)}&model=${encodeURIComponent(targetModel)}`;
                         
-                        // 1. Try text.pollinations.ai
-                        response = await fetch("https://text.pollinations.ai/", {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                                messages: keylessMessages.length > 0 ? keylessMessages : [{ role: "user", content: prompt }],
-                                model: targetModel
-                            })
-                        });
-
-                        // 2. Fallback to gen.pollinations.ai/v1/chat/completions (NO Authorization header sent)
-                        if (!response.ok) {
-                            response = await fetch("https://gen.pollinations.ai/v1/chat/completions", {
-                                method: "POST",
-                                headers: { "Content-Type": "application/json" },
-                                body: JSON.stringify({
-                                    messages: apiMessages,
-                                    model: targetModel
-                                })
-                            });
-                        }
+                        response = await fetch(pollUrl, { method: "GET" });
 
                         if (response.ok) {
-                            const contentType = response.headers.get("content-type") || "";
-                            if (contentType.includes("application/json")) {
-                                responsePayload = await response.json();
-                            } else {
-                                const rawText = await response.text();
-                                responsePayload = {
-                                    id: `chatcmpl-pollinations-${Date.now()}`,
-                                    object: 'chat.completion',
-                                    created: Math.floor(Date.now() / 1000),
-                                    model: targetModel,
-                                    choices: [
-                                        {
-                                            index: 0,
-                                            message: { role: 'assistant', content: rawText },
-                                            finish_reason: 'stop'
-                                        }
-                                    ]
-                                };
-                            }
+                            const rawText = await response.text();
+                            responsePayload = {
+                                id: `chatcmpl-pollinations-${Date.now()}`,
+                                object: 'chat.completion',
+                                created: Math.floor(Date.now() / 1000),
+                                model: targetModel,
+                                choices: [
+                                    {
+                                        index: 0,
+                                        message: { role: 'assistant', content: rawText },
+                                        finish_reason: 'stop'
+                                    }
+                                ]
+                            };
                             successfulModel = targetModel;
                             break;
                         }
