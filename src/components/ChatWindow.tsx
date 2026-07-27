@@ -170,51 +170,51 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       <div className="input-bar-container">
         {/* System Prompt & Exam Mode Selector Pill Nav Bar */}
         <div className="input-modes-bar flex items-center justify-between gap-2 overflow-x-auto py-1 px-2">
-          <div className="flex items-center gap-1.5 overflow-x-auto">
+          <div className="kokonut-mode-dock flex items-center gap-1.5 overflow-x-auto">
             <button
               type="button"
               onClick={() => setPromptMode('auto')}
-              className={`mode-pill ${promptMode === 'auto' ? 'active' : ''}`}
+              className={`kokonut-mode-pill ${promptMode === 'auto' ? 'active' : ''}`}
               title="Automatic OU Exam Intelligence Engine"
             >
-              <Zap size={12} /> Auto
+              <Zap size={13} /> <span>Auto</span>
             </button>
 
             <button
               type="button"
               onClick={() => setPromptMode('12marks')}
-              className={`mode-pill ${promptMode === '12marks' ? 'active' : ''}`}
+              className={`kokonut-mode-pill ${promptMode === '12marks' ? 'active' : ''}`}
               title="12 Marks Essay Evaluator"
             >
-              <FileText size={12} /> 12 Marks
+              <FileText size={13} /> <span>12 Marks</span>
             </button>
 
             <button
               type="button"
               onClick={() => setPromptMode('2marks')}
-              className={`mode-pill ${promptMode === '2marks' ? 'active' : ''}`}
+              className={`kokonut-mode-pill ${promptMode === '2marks' ? 'active' : ''}`}
               title="3-4 Marks Short Answer"
             >
-              <CheckSquare size={12} /> 3–4 Marks
+              <CheckSquare size={13} /> <span>3–4 Marks</span>
             </button>
 
             <button
               type="button"
               onClick={() => setPromptMode('general')}
-              className={`mode-pill ${promptMode === 'general' ? 'active' : ''}`}
+              className={`kokonut-mode-pill ${promptMode === 'general' ? 'active' : ''}`}
               title="General AI Mode"
             >
-              <MessageSquare size={12} /> General
+              <MessageSquare size={13} /> <span>General</span>
             </button>
           </div>
 
           <button
             type="button"
             onClick={() => setWebSearch(!webSearch)}
-            className={`web-search-toggle-pill ${webSearch ? 'active' : ''}`}
+            className={`kokonut-mode-pill web-search-toggle-pill ${webSearch ? 'active' : ''}`}
             title="Toggle Web Search RAG"
           >
-            <Globe size={12} />
+            <Globe size={13} />
             <span>RAG {webSearch ? 'ON' : 'OFF'}</span>
           </button>
 

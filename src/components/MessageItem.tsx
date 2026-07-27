@@ -199,36 +199,68 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
           />
         </div>
 
-        <div className="bubble-actions">
-          <button onClick={handleCopy} className="icon-action-btn" title="Copy Text">
-            {copied ? <Check size={14} className="text-green-400" /> : <Copy size={14} />}
+        <div className="kokonut-msg-actions-container">
+          <button
+            onClick={handleCopy}
+            className={`kokonut-msg-btn ${copied ? 'active-action' : ''}`}
+            title="Copy Text"
+          >
+            {copied ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
+            <span>{copied ? 'Copied!' : 'Copy'}</span>
           </button>
-          <button onClick={handleExportImage} disabled={exportingImage} className="icon-action-btn" title="Save PNG Image">
-            <Download size={14} />
+
+          <button
+            onClick={handleExportImage}
+            disabled={exportingImage}
+            className="kokonut-msg-btn"
+            title="Save PNG Image"
+          >
+            <Download size={13} />
+            <span>Download</span>
           </button>
-          <button onClick={handleExportPdf} className="icon-action-btn text-cyan-400" title="Interactive Document Preview Modal">
-            <Eye size={14} />
+
+          <button
+            onClick={handleExportPdf}
+            className="kokonut-msg-btn"
+            title="Interactive Document Preview Modal"
+          >
+            <Eye size={13} />
+            <span>Preview</span>
           </button>
-          <button onClick={handleDirectPrint} className="icon-action-btn text-blue-400" title="Direct System Print Preview">
-            <Printer size={14} />
+
+          <button
+            onClick={handleDirectPrint}
+            className="kokonut-msg-btn"
+            title="Direct System Print Preview"
+          >
+            <Printer size={13} />
+            <span>Print</span>
           </button>
+
           {!isUser && (
-            <button onClick={handleSpeak} className="icon-action-btn" title="Read Aloud">
-              <Volume2 size={14} />
+            <button onClick={handleSpeak} className="kokonut-msg-btn" title="Read Aloud">
+              <Volume2 size={13} />
+              <span>Listen</span>
             </button>
           )}
 
           {/* Edit User Message Button */}
           {isUser && isLast && onEditUserMessage && (
-            <button onClick={() => onEditUserMessage(message.content)} className="icon-action-btn text-cyan-400" title="Edit Prompt Text">
-              <Edit3 size={14} />
+            <button
+              onClick={() => onEditUserMessage(message.content)}
+              className="kokonut-msg-btn"
+              title="Edit Prompt Text"
+            >
+              <Edit3 size={13} />
+              <span>Edit</span>
             </button>
           )}
 
           {/* Retry Response Button */}
           {!isUser && isLast && onRetry && (
-            <button onClick={onRetry} className="icon-action-btn text-amber-400" title="Regenerate / Retry Answer">
-              <RotateCcw size={14} />
+            <button onClick={onRetry} className="kokonut-msg-btn" title="Regenerate / Retry Answer">
+              <RotateCcw size={13} />
+              <span>Retry</span>
             </button>
           )}
         </div>

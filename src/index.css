@@ -428,8 +428,137 @@ body {
   border-radius: 9999px !important;
   box-shadow: 0 8px 32px rgba(0, 0, 0, 0.45) !important;
   width: max-content;
-  max-width: calc(100vw - 32px);
-  box-sizing: border-box;
+}
+
+/* Message Bubble KokonutUI Animated Action Dock */
+.kokonut-msg-actions-container {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.25rem 0.5rem;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(6, 182, 212, 0.2);
+  border-radius: 9999px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-top: 6px;
+}
+
+.kokonut-msg-actions-container::-webkit-scrollbar {
+  display: none;
+}
+
+.kokonut-msg-btn {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  border-radius: 9999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(30, 41, 59, 0.65) !important;
+  color: #94a3b8 !important;
+  padding: 0.35rem 0.6rem !important;
+  font-size: 0.78rem;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  white-space: nowrap;
+  transition: all 0.22s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+}
+
+.kokonut-msg-btn span {
+  display: inline-block;
+  max-width: 0;
+  opacity: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  transition: max-width 0.22s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.18s ease;
+}
+
+.kokonut-msg-btn:hover {
+  background: rgba(6, 182, 212, 0.2) !important;
+  border-color: rgba(6, 182, 212, 0.45) !important;
+  color: #ffffff !important;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.3) !important;
+}
+
+.kokonut-msg-btn:hover span {
+  max-width: 100px;
+  opacity: 1;
+}
+
+.kokonut-msg-btn.active-action {
+  background: linear-gradient(135deg, #06b6d4, #3b82f6) !important;
+  color: #ffffff !important;
+  border-color: rgba(255, 255, 255, 0.25) !important;
+  box-shadow: 0 0 14px rgba(6, 182, 212, 0.45) !important;
+}
+
+.kokonut-msg-btn.active-action span {
+  max-width: 100px;
+  opacity: 1;
+}
+
+/* Exam Mode Selector KokonutUI Pill Dock */
+.kokonut-mode-dock {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.55rem;
+  background: rgba(15, 23, 42, 0.88);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  border-radius: 9999px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.35);
+  width: max-content;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.kokonut-mode-dock::-webkit-scrollbar {
+  display: none;
+}
+
+.kokonut-mode-pill {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  border-radius: 9999px !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: rgba(30, 41, 59, 0.65) !important;
+  color: #94a3b8 !important;
+  padding: 0.35rem 0.7rem !important;
+  font-size: 0.8rem;
+  font-weight: 500;
+  cursor: pointer;
+  outline: none;
+  white-space: nowrap;
+  transition: all 0.22s ease;
+  flex-shrink: 0;
+}
+
+.kokonut-mode-pill:hover {
+  background: rgba(6, 182, 212, 0.15) !important;
+  border-color: rgba(6, 182, 212, 0.4) !important;
+  color: #ffffff !important;
+}
+
+.kokonut-mode-pill.active {
+  background: linear-gradient(135deg, #06b6d4, #3b82f6) !important;
+  border: 1px solid rgba(255, 255, 255, 0.2) !important;
+  color: #ffffff !important;
+  font-weight: 600 !important;
+  box-shadow: 0 0 14px rgba(6, 182, 212, 0.45) !important;
 }
 
 .kokonut-toolbar-inner {
