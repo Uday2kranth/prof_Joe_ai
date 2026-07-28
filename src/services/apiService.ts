@@ -61,7 +61,11 @@ export async function sendChatMessage(
       resData = { error: `Server returned invalid response (${response.status}): ${resText.substring(0, 150)}` };
     }
   } else {
-    resData = { error: `Server returned empty response (HTTP ${response.status}). Please verify API key configuration.` };
+    resData = {
+      error: response.status === 502
+        ? '❌ Local API Server Offline (HTTP 502). Please start `node local-server.js` or run `npm run dev`.'
+        : `Server returned empty response (HTTP ${response.status}). Please verify API key configuration.`
+    };
   }
 
   if (!response.ok) {

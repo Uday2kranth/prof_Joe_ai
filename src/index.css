@@ -3580,6 +3580,62 @@ body {
   box-shadow: 0 30px 60px rgba(0, 0, 0, 0.5), 0 0 40px rgba(6, 182, 212, 0.4);
 }
 
+/* 📱 Mobile Table Horizontal Scroll & Responsive Document Preview Adjustments */
+@media (max-width: 768px) {
+  .pdf-modal-body {
+    padding: 12px 8px !important;
+  }
+
+  .pdf-page-wave-card {
+    padding: 16px 12px !important;
+    border-radius: 10px !important;
+  }
+
+  /* Table horizontal scroll wrapper */
+  .pdf-page-wave-card table,
+  .markdown-content table {
+    display: block !important;
+    width: 100% !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    margin: 14px 0 !important;
+    border-radius: 8px !important;
+  }
+
+  .pdf-page-wave-card th,
+  .pdf-page-wave-card td,
+  .markdown-content th,
+  .markdown-content td {
+    min-width: 125px !important;
+    padding: 8px 10px !important;
+    font-size: 0.82rem !important;
+    white-space: normal !important;
+    word-break: normal !important;
+  }
+
+  /* Enlarge Kroki Diagrams in Mobile Preview Modal */
+  .pdf-page-wave-card .kroki-container,
+  .pdf-page-wave-card .svg-display-area {
+    width: 100% !important;
+    max-width: 100% !important;
+    min-height: 220px !important;
+    height: auto !important;
+    overflow-x: auto !important;
+    padding: 10px !important;
+    box-sizing: border-box !important;
+  }
+
+  .pdf-page-wave-card .kroki-container svg,
+  .pdf-page-wave-card .svg-display-area svg {
+    width: 100% !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 200px !important;
+    display: block !important;
+    margin: 0 auto !important;
+  }
+}
+
 .pdf-modal-footer {
   padding: 16px 24px;
   border-top: 1px solid rgba(255, 255, 255, 0.08);

@@ -2,35 +2,23 @@ import { toPng } from 'html-to-image';
 import jsPDF from 'jspdf';
 
 /**
- * Pre-processes Kroki SVG text nodes to hardcode high-contrast dark fill (#0f172a) on light node boxes
+ * Pre-processes Kroki SVG text nodes and dimensions for pixel-perfect PNG canvas export
  */
 function fixSvgTextContrast(container: HTMLElement) {
   const svgs = container.querySelectorAll('svg');
   svgs.forEach((svg) => {
-    svg.style.maxWidth = 'none';
+    svg.style.maxWidth = '100%';
     svg.style.maxHeight = 'none';
-    svg.style.overflow = 'visible';
+    svg.style.overflow = 'hidden';
     svg.style.display = 'block';
+    svg.style.margin = '0 auto';
+    svg.style.width = '100%';
+    svg.style.height = 'auto';
 
     const viewBox = svg.getAttribute('viewBox');
-    if (viewBox) {
-      const parts = viewBox.split(/[\s,]+/).map(Number);
-      if (parts.length === 4 && parts[2] > 0 && parts[3] > 0) {
-        svg.setAttribute('width', `${parts[2]}px`);
-        svg.setAttribute('height', `${parts[3]}px`);
-      }
+    if (!viewBox && !svg.getAttribute('width')) {
+      svg.setAttribute('viewBox', '0 0 800 600');
     }
-
-    // Force SVG text elements to have explicit fill color so canvas rasterizer doesn't render white-on-white text
-    const textNodes = svg.querySelectorAll('text, tspan');
-    textNodes.forEach((t) => {
-      const currentFill = t.getAttribute('fill') || getComputedStyle(t).fill;
-      // If current fill is white/light or unset, override with dark color for light background nodes
-      if (!currentFill || currentFill === 'rgb(255, 255, 255)' || currentFill === '#ffffff' || currentFill === 'white' || currentFill === 'none') {
-        t.setAttribute('fill', '#0f172a');
-        (t as HTMLElement).style.fill = '#0f172a';
-      }
-    });
   });
 }
 
@@ -45,11 +33,11 @@ function createOffscreenClone(bubbleElement: HTMLElement): HTMLElement {
   cloneWrapper.style.zIndex = '-9999';
   cloneWrapper.style.opacity = '0.99';
   cloneWrapper.style.pointerEvents = 'none';
-  cloneWrapper.style.width = '800px'; // Standard container width
-  cloneWrapper.style.maxWidth = 'none';
+  cloneWrapper.style.width = '840px'; // Standard container width
+  cloneWrapper.style.maxWidth = '840px';
   cloneWrapper.style.height = 'auto';
   cloneWrapper.style.maxHeight = 'none';
-  cloneWrapper.style.overflow = 'visible';
+  cloneWrapper.style.overflow = 'hidden';
 
   const isLight = document.documentElement.getAttribute('data-theme') === 'light';
   const bgColor = isLight ? '#ffffff' : '#0b0f19';
@@ -62,10 +50,10 @@ function createOffscreenClone(bubbleElement: HTMLElement): HTMLElement {
   cloneWrapper.style.boxSizing = 'border-box';
 
   const clone = bubbleElement.cloneNode(true) as HTMLElement;
-  clone.style.maxWidth = 'none';
+  clone.style.maxWidth = '100%';
   clone.style.width = '100%';
   clone.style.height = 'auto';
-  clone.style.overflow = 'visible';
+  clone.style.overflow = 'hidden';
   clone.style.boxShadow = 'none';
   clone.style.transform = 'none';
   clone.style.background = bgColor;
@@ -75,10 +63,11 @@ function createOffscreenClone(bubbleElement: HTMLElement): HTMLElement {
 
   const diagramContainers = clone.querySelectorAll<HTMLElement>('.kroki-container');
   diagramContainers.forEach((container) => {
-    container.style.maxWidth = 'none';
+    container.style.maxWidth = '100%';
     container.style.maxHeight = 'none';
-    container.style.overflow = 'visible';
-    container.style.width = 'auto';
+    container.style.overflow = 'hidden';
+    container.style.width = '100%';
+    container.style.borderRadius = '12px';
     container.style.background = isLight ? '#f8fafc' : '#090d16';
   });
 

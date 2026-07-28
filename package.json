@@ -4,7 +4,8 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
+    "server": "node local-server.js",
+    "dev": "node -e \"require('child_process').spawn('node', ['local-server.js'], {stdio:'inherit'}); require('child_process').spawn('npx', ['vite'], {stdio:'inherit', shell:true});\"",
     "build": "tsc -b && vite build",
     "lint": "oxlint",
     "preview": "vite preview"
