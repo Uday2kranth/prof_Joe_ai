@@ -40,10 +40,23 @@ update_mode_provider_info.md
 media/
 media/*
 
-# Internal Agent Audit Logs & Specification Markdown Files
+# Internal Agent Audit Logs, Agent Skills, Secrets & Private Markdown Files (PC Local Only)
 changes/
 changes/*
+secrets/
+secrets/*
+.agents/
+.claude/
+.codex/
+.gemini/
+.opencode/
+.impeccable/
 PRODUCT.md
 PROMPTS_GENERIC.md
 PROMPTS_12MARKS.md
+MODEL_PROVIDERS_GUIDE.md
+Gemini_Generated_Image_*
+*.png
+*.jpg
+*.jpeg
 
