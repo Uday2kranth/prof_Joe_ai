@@ -4347,6 +4347,21 @@ body {
   transform: translateY(-1px) !important;
 }
 
+/* 📐 Kroki Diagram Studio 2-Column Split Grid View */
+.studio-content-grid {
+  display: grid !important;
+  grid-template-columns: 1fr !important;
+  gap: 20px !important;
+  width: 100% !important;
+  align-items: stretch !important;
+}
+
+@media (min-width: 1025px) {
+  .studio-content-grid {
+    grid-template-columns: 1fr 1fr !important; /* 👈 DESKTOP 2-COLUMN SPLIT GRID */
+  }
+}
+
 
 
 

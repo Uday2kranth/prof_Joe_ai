@@ -317,7 +317,7 @@ export const DiagramStudioView: React.FC = () => {
 
       <div className="studio-content-grid grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Editor Box */}
-        <div className="editor-box card-box" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        <div className="editor-box card-box" style={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
           <div className="editor-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Code2 size={16} className="text-cyan-400" />
@@ -333,11 +333,11 @@ export const DiagramStudioView: React.FC = () => {
           <textarea
             value={diagramSource}
             onChange={(e) => setDiagramSource(e.target.value)}
-            rows={20}
             className="code-editor-textarea"
             style={{
               width: '100%',
-              minHeight: '380px',
+              height: '480px',
+              minHeight: '400px',
               fontFamily: 'var(--font-mono)',
               fontSize: '0.84rem',
               background: 'var(--bg-tertiary)',
@@ -351,7 +351,7 @@ export const DiagramStudioView: React.FC = () => {
         </div>
 
         {/* Preview Box */}
-        <div className="preview-box card-box" style={{ display: 'flex', flexDirection: 'column', gap: '10px', minHeight: '440px' }}>
+        <div className="preview-box card-box" style={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
           <div className="preview-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Sparkles size={16} className="text-amber-400" />
@@ -381,7 +381,8 @@ export const DiagramStudioView: React.FC = () => {
               borderRadius: '12px',
               padding: '16px',
               overflow: 'auto',
-              minHeight: '360px'
+              height: '480px',
+              minHeight: '400px'
             }}
           >
             {isLoading ? (
