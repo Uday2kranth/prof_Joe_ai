@@ -122,79 +122,51 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
 
   return (
     <div className="chat-window-container fun-persona-lounge-container">
-      {/* Dual-Mode Adaptive Persona Header Strip */}
-      <div className="persona-selector-header-strip p-2 flex items-center justify-between gap-2" style={{ background: 'rgba(15, 23, 42, 0.92)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(6, 182, 212, 0.25)', minHeight: '48px', flexShrink: 0 }}>
-        <div className="flex items-center gap-2 flex-shrink-0">
-          <span style={{ fontSize: '1.2rem' }}>🎭</span>
-          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--accent-cyan)' }} className="hidden sm:inline">Fun AI Personas</span>
-        </div>
+      {/* Single Unified Glassmorphic Persona Dropdown Header */}
+      <div className="persona-selector-header-strip px-4 py-2 flex items-center justify-between gap-3" style={{ background: 'rgba(15, 23, 42, 0.94)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(6, 182, 212, 0.25)', minHeight: '48px', flexShrink: 0 }}>
+        <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
+            <span style={{ fontSize: '1.2rem' }}>🎭</span>
+            <span style={{ fontWeight: 700, fontSize: '0.88rem', color: 'var(--accent-cyan)' }} className="hidden sm:inline">Fun AI Personas</span>
+          </div>
 
-        {/* Mobile View: Custom Glass Persona Dropdown */}
-        <div className="relative inline-block sm:hidden" ref={personaMenuRef}>
-          <button
-            type="button"
-            onClick={() => setIsPersonaMenuOpen(!isPersonaMenuOpen)}
-            className="custom-dropdown-pill"
-            title="Select AI Persona"
-          >
-            <span className="picker-icon">{activePersonaObj.icon}</span>
-            <span className="font-semibold text-xs text-slate-100">{activePersonaObj.name}</span>
-            <ChevronDown size={13} className={`transition-transform duration-200 ${isPersonaMenuOpen ? 'rotate-180' : ''}`} />
-          </button>
+          {/* Custom Glass Persona Dropdown */}
+          <div className="relative inline-block" ref={personaMenuRef}>
+            <button
+              type="button"
+              onClick={() => setIsPersonaMenuOpen(!isPersonaMenuOpen)}
+              className="custom-dropdown-pill"
+              title="Select AI Persona"
+            >
+              <span className="picker-icon">{activePersonaObj.icon}</span>
+              <span className="font-semibold text-xs text-slate-100">{activePersonaObj.name}</span>
+              <ChevronDown size={13} className={`transition-transform duration-200 ${isPersonaMenuOpen ? 'rotate-180' : ''}`} />
+            </button>
 
-          {isPersonaMenuOpen && (
-            <div className="custom-dropdown-menu persona-menu">
-              <div className="dropdown-header">Select AI Persona</div>
-              {PERSONAS.filter(p => p.id !== 'default').map(p => {
-                const isSelected = p.id === selectedPersona;
-                return (
-                  <button
-                    key={p.id}
-                    type="button"
-                    onClick={() => {
-                      onPersonaChange(p.id);
-                      setIsPersonaMenuOpen(false);
-                    }}
-                    className={`dropdown-item ${isSelected ? 'selected' : ''}`}
-                  >
-                    <span className="text-base mr-2">{p.icon}</span>
-                    <span>{p.name}</span>
-                    {isSelected && <Check size={13} className="text-cyan-400 ml-auto" />}
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-
-        {/* Desktop View: Sleek 36px Single-Row Avatar Strip */}
-        <div className="hidden sm:flex items-center gap-1.5 overflow-x-auto py-0.5 scrollbar-none flex-grow">
-          {PERSONAS.filter(p => p.id !== 'default').map(p => {
-            const isActive = selectedPersona === p.id;
-            return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => onPersonaChange(p.id)}
-                className={`persona-avatar-chip flex items-center gap-1.5 px-3 py-1 rounded-full transition-all ${isActive ? 'active-chip' : ''}`}
-                style={{
-                  background: isActive ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.35), rgba(99, 102, 241, 0.35))' : 'rgba(30, 41, 59, 0.65)',
-                  border: isActive ? '1.5px solid #06b6d4' : '1px solid rgba(148, 163, 184, 0.2)',
-                  color: isActive ? '#ffffff' : '#cbd5e1',
-                  boxShadow: isActive ? '0 0 14px rgba(6, 182, 212, 0.5)' : 'none',
-                  cursor: 'pointer',
-                  whiteSpace: 'nowrap',
-                  fontSize: '0.8rem'
-                }}
-                title={p.name}
-              >
-                <span style={{ fontSize: '1.05rem' }}>{p.icon}</span>
-                <span style={{ fontSize: '0.78rem', fontWeight: isActive ? 700 : 500 }}>
-                  {p.name.replace('-Inspired', '')}
-                </span>
-              </button>
-            );
-          })}
+            {isPersonaMenuOpen && (
+              <div className="custom-dropdown-menu persona-menu">
+                <div className="dropdown-header">Select AI Persona</div>
+                {PERSONAS.filter(p => p.id !== 'default').map(p => {
+                  const isSelected = p.id === selectedPersona;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        onPersonaChange(p.id);
+                        setIsPersonaMenuOpen(false);
+                      }}
+                      className={`dropdown-item ${isSelected ? 'selected' : ''}`}
+                    >
+                      <span className="text-base mr-2">{p.icon}</span>
+                      <span>{p.name}</span>
+                      {isSelected && <Check size={13} className="text-cyan-400 ml-auto" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-2 flex-shrink-0">
