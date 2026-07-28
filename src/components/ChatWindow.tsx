@@ -168,42 +168,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
   return (
     <div className="chat-window-modern">
-      <div className="chat-messages-container relative" style={{ position: 'relative' }}>
-        {/* ChatGPT-Style Floating Query Minimap & Outline */}
-        {userQueries.length > 0 && (
-          <div className="chat-query-minimap-rail" ref={minimapRef}>
-            <button
-              type="button"
-              onClick={() => setIsMinimapOpen(!isMinimapOpen)}
-              className="minimap-toggle-btn"
-              title="Jump to User Question (ChatGPT Minimap)"
-            >
-              <ListFilter size={14} />
-              <span className="hidden sm:inline">Outline ({userQueries.length})</span>
-            </button>
-
-            {isMinimapOpen && (
-              <div className="query-popover-menu">
-                <div className="popover-header">📌 Questions Outline ({userQueries.length})</div>
-                <div className="popover-scroll-area">
-                  {userQueries.map((q, idx) => (
-                    <button
-                      key={q.id}
-                      type="button"
-                      onClick={() => handleJumpToQuery(q.id)}
-                      className="query-popover-item"
-                      title={q.content}
-                    >
-                      <span className="query-badge">Q{idx + 1}</span>
-                      <span className="query-text truncate">{q.content}</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-          </div>
-        )}
-
+      <div className="chat-messages-container">
         <div className="messages-inner">
         {messages.length === 0 ? (
           <div className="chat-welcome-box text-center py-12 px-4">
@@ -270,14 +235,50 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               <button type="button" onClick={() => handleModeClick('general')} className={`kokonut-mode-pill ${promptMode === 'general' ? 'active' : ''}`} aria-label="General Mode"><MessageSquare size={13} /> <span>General</span></button>
             </div>
 
-            {activeSystemPromptTitle && (
-              <div className="system-prompt-active-badge">
-                <span>📌 {activeSystemPromptTitle}</span>
-                {onClearSystemPrompt && (
-                  <button type="button" onClick={onClearSystemPrompt} className="clear-prompt-btn"><X size={13} /></button>
-                )}
-              </div>
-            )}
+            <div className="input-bar-right-controls flex items-center gap-2 relative" ref={minimapRef}>
+              {activeSystemPromptTitle && (
+                <div className="system-prompt-active-badge">
+                  <span>📌 {activeSystemPromptTitle}</span>
+                  {onClearSystemPrompt && (
+                    <button type="button" onClick={onClearSystemPrompt} className="clear-prompt-btn"><X size={13} /></button>
+                  )}
+                </div>
+              )}
+
+              {userQueries.length > 0 && (
+                <div className="relative inline-block">
+                  <button
+                    type="button"
+                    onClick={() => setIsMinimapOpen(!isMinimapOpen)}
+                    className="input-dock-outline-btn"
+                    title="Jump to Question (Query Outline)"
+                  >
+                    <ListFilter size={13} />
+                    <span>Outline ({userQueries.length})</span>
+                  </button>
+
+                  {isMinimapOpen && (
+                    <div className="input-dock-popover">
+                      <div className="popover-header">📌 Questions Outline ({userQueries.length})</div>
+                      <div className="popover-scroll-area">
+                        {userQueries.map((q, idx) => (
+                          <button
+                            key={q.id}
+                            type="button"
+                            onClick={() => handleJumpToQuery(q.id)}
+                            className="query-popover-item"
+                            title={q.content}
+                          >
+                            <span className="query-badge">Q{idx + 1}</span>
+                            <span className="query-text truncate">{q.content}</span>
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </div>
         )}
 
