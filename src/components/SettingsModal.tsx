@@ -98,7 +98,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
 
   return (
     <div className="modal-overlay">
-      <div className="modal-content kokonut-drawer-card" style={{ maxWidth: '680px', width: '92%' }}>
+      <div className="modal-content kokonut-drawer-card" style={{ maxWidth: '680px', width: '92%', maxHeight: 'min(85vh, 740px)' }}>
         <div className="modal-header" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div className="modal-title">
