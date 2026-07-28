@@ -22,7 +22,7 @@ export const ExamPrepView: React.FC<ExamPrepViewProps> = ({ onLoadQuestionToChat
   const [selectedSubject, setSelectedSubject] = useState<string>(subjectKeys[0] || 'crypto');
   const [activeTab, setActiveTab] = useState<'syllabus' | 'bank' | 'sets'>('bank');
   const [selectedPaperSet, setSelectedPaperSet] = useState<'all' | 'set-a' | 'set-b' | 'set-c' | 'set-d'>('all');
-  const [bankSubTab, setBankSubTab] = useState<'standard' | 'gagan' | 'sentiment' | 'webmining'>('standard');
+  const [bankSubTab, setBankSubTab] = useState<'standard' | 'gagan'>('standard');
 
   const [isPaperMenuOpen, setIsPaperMenuOpen] = useState<boolean>(false);
   const paperMenuRef = React.useRef<HTMLDivElement>(null);
@@ -156,46 +156,43 @@ export const ExamPrepView: React.FC<ExamPrepViewProps> = ({ onLoadQuestionToChat
 
         {activeTab === 'bank' && (
           <div className="question-bank-content card-box">
-            {/* Sub-tab toggle bar for Standard, Gagan, Sentiment Analysis & Web Mining */}
-            <div
-              className="subtabs-toggle-bar"
-              style={{
-                display: 'flex',
-                gap: '8px',
-                marginBottom: '16px',
-                background: 'var(--bg-tertiary)',
-                padding: '6px',
-                borderRadius: '12px',
-                border: '1px solid var(--border-color)',
-                overflowX: 'auto'
-              }}
-            >
-              <button
-                type="button"
-                onClick={() => setBankSubTab('standard')}
+            {/* Sub-tab toggle bar for Gagan's High-Yield Topics when available */}
+            {currentSubjectData['gagan-important-topics'] && (
+              <div
+                className="subtabs-toggle-bar"
                 style={{
-                  flex: '1 0 auto',
-                  padding: '8px 14px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: bankSubTab === 'standard' ? 'var(--accent-cyan)' : 'transparent',
-                  color: bankSubTab === 'standard' ? '#ffffff' : 'var(--text-primary)',
-                  fontWeight: 600,
-                  fontSize: '0.82rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  whiteSpace: 'nowrap'
+                  display: 'flex',
+                  gap: '8px',
+                  marginBottom: '16px',
+                  background: 'var(--bg-tertiary)',
+                  padding: '6px',
+                  borderRadius: '12px',
+                  border: '1px solid var(--border-color)'
                 }}
               >
-                🎯 Standard Question Bank
-              </button>
-
-              {currentSubjectData['gagan-important-topics'] && (
+                <button
+                  type="button"
+                  onClick={() => setBankSubTab('standard')}
+                  style={{
+                    flex: 1,
+                    padding: '8px 14px',
+                    borderRadius: '8px',
+                    border: 'none',
+                    background: bankSubTab === 'standard' ? 'var(--accent-cyan)' : 'transparent',
+                    color: bankSubTab === 'standard' ? '#ffffff' : 'var(--text-primary)',
+                    fontWeight: 600,
+                    fontSize: '0.82rem',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  🎯 Standard Question Bank
+                </button>
                 <button
                   type="button"
                   onClick={() => setBankSubTab('gagan')}
                   style={{
-                    flex: '1 0 auto',
+                    flex: 1,
                     padding: '8px 14px',
                     borderRadius: '8px',
                     border: 'none',
@@ -204,54 +201,13 @@ export const ExamPrepView: React.FC<ExamPrepViewProps> = ({ onLoadQuestionToChat
                     fontWeight: 600,
                     fontSize: '0.82rem',
                     cursor: 'pointer',
-                    transition: 'all 0.2s ease',
-                    whiteSpace: 'nowrap'
+                    transition: 'all 0.2s ease'
                   }}
                 >
                   🔥 Gagan's High-Yield Topics
                 </button>
-              )}
-
-              <button
-                type="button"
-                onClick={() => setBankSubTab('sentiment')}
-                style={{
-                  flex: '1 0 auto',
-                  padding: '8px 14px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: bankSubTab === 'sentiment' ? '#818cf8' : 'transparent',
-                  color: bankSubTab === 'sentiment' ? '#ffffff' : 'var(--text-primary)',
-                  fontWeight: 600,
-                  fontSize: '0.82rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                💬 Sentiment Analysis Topics
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setBankSubTab('webmining')}
-                style={{
-                  flex: '1 0 auto',
-                  padding: '8px 14px',
-                  borderRadius: '8px',
-                  border: 'none',
-                  background: bankSubTab === 'webmining' ? '#10b981' : 'transparent',
-                  color: bankSubTab === 'webmining' ? '#ffffff' : 'var(--text-primary)',
-                  fontWeight: 600,
-                  fontSize: '0.82rem',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  whiteSpace: 'nowrap'
-                }}
-              >
-                🌐 Web Mining Topics
-              </button>
-            </div>
+              </div>
+            )}
 
             <div
               className="formatted-content markdown-body"
@@ -259,36 +215,6 @@ export const ExamPrepView: React.FC<ExamPrepViewProps> = ({ onLoadQuestionToChat
                 __html: renderFormattedContent(
                   bankSubTab === 'gagan' && currentSubjectData['gagan-important-topics']
                     ? currentSubjectData['gagan-important-topics']
-                    : bankSubTab === 'sentiment'
-                    ? `<h3 style="color: #818cf8; margin-bottom: 1rem; border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem;">💬 Sentiment Analysis Preparation Status (Exam Focus)</h3>
-                       <div class="unit-box" style="background: rgba(99, 102, 241, 0.06); border: 1px solid #818cf8; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                         <h4 style="margin: 0 0 12px; color: #818cf8; font-size: 1.05rem;">UNIT-I: Foundations & Document-Level Classification</h4>
-                         <ul style="margin: 0; padding-left: 1.2rem; color: var(--text-primary); line-height: 1.8; font-size: 0.92rem;">
-                           <li><strong>✅ Introduction to Sentiment Analysis</strong> <em>(revise)</em></li>
-                           <li><strong>✅ Document-Level Sentiment Classification</strong> ⭐⭐⭐⭐⭐</li>
-                         </ul>
-                       </div>
-                       <div class="unit-box" style="background: rgba(99, 102, 241, 0.06); border: 1px solid #818cf8; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                         <h4 style="margin: 0 0 12px; color: #818cf8; font-size: 1.05rem;">UNIT-II: Subjectivity & Lexicon Generation</h4>
-                         <ul style="margin: 0; padding-left: 1.2rem; color: var(--text-primary); line-height: 1.8; font-size: 0.92rem;">
-                           <li><strong>✅ Subjectivity & Sentence-Level Sentiment Classification</strong> ⭐⭐⭐⭐⭐</li>
-                           <li><strong>✅ Sentiment Lexicon Generation</strong> ⭐⭐⭐⭐⭐</li>
-                         </ul>
-                       </div>
-                       <div class="unit-box" style="background: rgba(99, 102, 241, 0.06); border: 1px solid #818cf8; border-radius: 12px; padding: 16px; margin-bottom: 16px;">
-                         <h4 style="margin: 0 0 12px; color: #818cf8; font-size: 1.05rem;">UNIT-III: Comparative Opinions, Summarization & Opinion Quality</h4>
-                         <ul style="margin: 0; padding-left: 1.2rem; color: var(--text-primary); line-height: 1.8; font-size: 0.92rem;">
-                           <li><strong>✅ Comparative Opinion Analysis</strong> ⭐⭐⭐⭐⭐</li>
-                           <li><strong>✅ Opinion Summarization & Opinion Search</strong> ⭐⭐⭐⭐⭐</li>
-                           <li><strong>✅ Fake & Low-Quality Opinion Detection</strong> ⭐⭐⭐⭐⭐</li>
-                         </ul>
-                       </div>`
-                    : bankSubTab === 'webmining'
-                    ? `<h3 style="color: #10b981; margin-bottom: 1rem; border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem;">🌐 Web Mining & Search High-Yield Topics (Paper IV-C)</h3>
-                       <div class="unit-box" style="background: rgba(16, 185, 129, 0.06); border: 1px solid #10b981; border-radius: 12px; padding: 24px; text-align: center;">
-                         <h4 style="margin: 0 0 8px; color: #10b981; font-size: 1.1rem;">🌐 Web Mining Operable Section Active</h4>
-                         <p style="color: var(--text-secondary); font-size: 0.9rem; margin: 0;">This section is fully operable and ready for your Web Mining question inputs.</p>
-                       </div>`
                     : (currentSubjectData['question-bank'] || 'No question bank available.')
                 )
               }}
