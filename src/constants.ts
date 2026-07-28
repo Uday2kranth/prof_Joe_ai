@@ -65,6 +65,16 @@ export const PROVIDERS: ProviderGroup[] = [
     ]
   },
   {
+    id: 'cerebras',
+    name: 'Cerebras Cloud (Ultra-Fast)',
+    models: [
+      { value: 'llama-3.3-70b', name: 'Llama 3.3 70B (Ultra-Fast 2000+ t/s) [WS]' },
+      { value: 'llama3.1-70b', name: 'Llama 3.1 70B (Ultra-Fast 1800+ t/s) [WS]' },
+      { value: 'llama3.1-8b', name: 'Llama 3.1 8B (Instant 2000+ t/s)' },
+      { value: 'deepseek-r1-distill-llama-70b', name: 'DeepSeek R1 Distill 70B (Reasoning)' }
+    ]
+  },
+  {
     id: 'sambanova',
     name: 'SambaNova Cloud',
     models: [
