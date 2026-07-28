@@ -4258,6 +4258,10 @@ body {
   overflow: visible !important;
 }
 
+.studio-controls .relative {
+  position: relative !important;
+}
+
 .custom-dropdown-menu.diagram-menu {
   position: absolute !important;
   top: calc(100% + 6px) !important;

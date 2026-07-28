@@ -266,7 +266,7 @@ export const DiagramStudioView: React.FC = () => {
 
         <div className="studio-controls flex items-center gap-3 relative" style={{ overflow: 'visible', zIndex: 100 }}>
           {/* Custom Glass Diagram Dropdown */}
-          <div className="relative inline-block" ref={diagramMenuRef}>
+          <div className="relative inline-block" style={{ position: 'relative' }} ref={diagramMenuRef}>
             <button
               type="button"
               onClick={() => setIsDiagramMenuOpen(!isDiagramMenuOpen)}
