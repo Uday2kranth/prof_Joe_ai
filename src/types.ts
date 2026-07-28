@@ -62,3 +62,16 @@ export interface UserKeys {
 }
 
 export type ActiveViewType = 'chat' | 'prompts' | 'examprep' | 'system_prompts' | 'diagrams' | 'cubes' | 'fun_personas';
+
+export interface CustomModel {
+  id: string;
+  name: string;
+  enabled: boolean;
+  isFree?: boolean;
+  contextLength?: number;
+}
+
+export interface UserCustomModels {
+  [providerId: string]: CustomModel[];
+}
+

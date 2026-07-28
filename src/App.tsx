@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import type { ChatSession, Message, UserKeys, ActiveViewType } from './types';
+import type { ChatSession, Message, UserKeys, ActiveViewType, UserCustomModels } from './types';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { ChatWindow } from './components/ChatWindow';
@@ -83,6 +83,28 @@ export const App: React.FC = () => {
     }
     return DEFAULT_KEYS;
   });
+
+  const [customModels, setCustomModels] = useState<UserCustomModels>(() => {
+    const activeUser = localStorage.getItem('chatterbot_username');
+    if (activeUser) {
+      const savedModels = localStorage.getItem(`chatterbot_user_models_${activeUser}`);
+      if (savedModels) {
+        try {
+          return JSON.parse(savedModels);
+        } catch (e) {
+          console.error('Failed to parse custom models', e);
+        }
+      }
+    }
+    return {};
+  });
+
+  const handleSaveCustomModels = (newCustomModels: UserCustomModels) => {
+    setCustomModels(newCustomModels);
+    if (currentUser) {
+      localStorage.setItem(`chatterbot_user_models_${currentUser}`, JSON.stringify(newCustomModels));
+    }
+  };
 
   const DEFAULT_FREE_PROVIDER = 'Pollinations AI (Free Keyless)';
   const DEFAULT_FREE_MODEL = 'openai-fast';
@@ -722,6 +744,8 @@ export const App: React.FC = () => {
         onClose={() => setIsSettingsOpen(false)}
         userKeys={userKeys}
         onSaveKeys={handleSaveUserKeys}
+        customModels={customModels}
+        onSaveCustomModels={handleSaveCustomModels}
       />
 
       <UserProfileModal

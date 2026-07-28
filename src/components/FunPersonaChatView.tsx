@@ -130,15 +130,45 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
               <button
                 type="button"
                 onClick={onTogglePersonaEnabled}
-                className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
-                  isPersonaEnabled
-                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-md shadow-cyan-500/20'
-                    : 'bg-slate-800 text-slate-400 border border-slate-700'
-                }`}
-                title={isPersonaEnabled ? "Click to Disable Personas" : "Click to Enable Personas"}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '20px',
+                  fontSize: '12px',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                  background: isPersonaEnabled
+                    ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(168, 85, 247, 0.25))'
+                    : 'rgba(30, 41, 59, 0.6)',
+                  border: isPersonaEnabled
+                    ? '1px solid rgba(56, 189, 248, 0.6)'
+                    : '1px solid rgba(255, 255, 255, 0.12)',
+                  color: isPersonaEnabled ? '#38bdf8' : 'var(--text-muted)',
+                  boxShadow: isPersonaEnabled
+                    ? '0 0 16px rgba(56, 189, 248, 0.35), inset 0 0 8px rgba(168, 85, 247, 0.2)'
+                    : 'none',
+                  transform: 'translateY(0)'
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.03)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                }}
+                title={isPersonaEnabled ? "Click to Disable Personas (Switch to Academic Mode)" : "Click to Enable Personas"}
               >
-                <span className={`w-2 h-2 rounded-full ${isPersonaEnabled ? 'bg-cyan-400 animate-pulse' : 'bg-slate-500'}`} />
-                <span>{isPersonaEnabled ? '🎭 Personas ACTIVE' : '⏹️ Personas DISABLED'}</span>
+                <span style={{
+                  width: '8px',
+                  height: '8px',
+                  borderRadius: '50%',
+                  background: isPersonaEnabled ? '#38bdf8' : '#64748b',
+                  boxShadow: isPersonaEnabled ? '0 0 8px #38bdf8' : 'none',
+                  display: 'inline-block'
+                }} className={isPersonaEnabled ? 'animate-pulse' : ''} />
+                <span>{isPersonaEnabled ? '✨ Persona Mode Active' : '🔒 Personas Disabled (Academic)'}</span>
               </button>
             )}
 
