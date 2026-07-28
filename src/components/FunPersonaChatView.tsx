@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Send, Globe, Paperclip, Eye, Printer } from 'lucide-react';
+import { Send, Globe, Paperclip, Eye, Printer, ChevronDown, Check } from 'lucide-react';
 // @ts-ignore
 import TextType from './TextType';
 import type { Message } from '../types';
@@ -15,6 +15,8 @@ interface FunPersonaChatViewProps {
   selectedProvider?: string;
   selectedModel: string;
   selectedPersona: string;
+  isPersonaEnabled?: boolean;
+  onTogglePersonaEnabled?: () => void;
   onProviderChange?: (provider: string) => void;
   onModelChange?: (model: string) => void;
   onPersonaChange: (persona: string) => void;
@@ -29,6 +31,8 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
   selectedProvider = 'Pollinations AI (Free Keyless)',
   selectedModel,
   selectedPersona,
+  isPersonaEnabled = true,
+  onTogglePersonaEnabled,
   onProviderChange,
   onModelChange,
   onPersonaChange,
@@ -39,9 +43,28 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
   const [webSearch, setWebSearch] = useState(false);
   const [isSessionPreviewOpen, setIsSessionPreviewOpen] = useState(false);
 
+  // Custom Glass Dropdown States
+  const [isProviderOpen, setIsProviderOpen] = useState(false);
+  const [isModelOpen, setIsModelOpen] = useState(false);
+  const providerRef = useRef<HTMLDivElement>(null);
+  const modelRef = useRef<HTMLDivElement>(null);
+
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (providerRef.current && !providerRef.current.contains(e.target as Node)) {
+        setIsProviderOpen(false);
+      }
+      if (modelRef.current && !modelRef.current.contains(e.target as Node)) {
+        setIsModelOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const currentProviderGroup = PROVIDERS.find(p => p.id === selectedProvider) || PROVIDERS[0];
   const activePersonaObj = PERSONAS.find(p => p.id === selectedPersona) || PERSONAS[1];
@@ -96,14 +119,33 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
     <div className="chat-window-container fun-persona-lounge-container">
       {/* Top Character Selector Strip */}
       <div className="persona-selector-header-strip flex flex-col gap-2 p-3" style={{ background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(6, 182, 212, 0.2)' }}>
-        <div className="flex items-center justify-between">
+        <div className="flex items-center justify-between flex-wrap gap-2">
           <div className="flex items-center gap-2">
             <span style={{ fontSize: '1.4rem' }}>🎭</span>
             <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--accent-cyan)' }}>Fun AI Personas Lounge</span>
           </div>
-          <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '12px', background: activePersonaObj.allowDiagrams ? 'rgba(6, 182, 212, 0.15)' : 'rgba(148, 163, 184, 0.15)', color: activePersonaObj.allowDiagrams ? '#06b6d4' : '#94a3b8', border: '1px solid rgba(6, 182, 212, 0.3)' }}>
-            {activePersonaObj.allowDiagrams ? '📊 Kroki Diagrams Supported' : '📝 Text-Only Roleplay Mode'}
-          </span>
+
+          <div className="flex items-center gap-2">
+            {onTogglePersonaEnabled && (
+              <button
+                type="button"
+                onClick={onTogglePersonaEnabled}
+                className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer ${
+                  isPersonaEnabled
+                    ? 'bg-cyan-500/20 text-cyan-400 border border-cyan-500/50 shadow-md shadow-cyan-500/20'
+                    : 'bg-slate-800 text-slate-400 border border-slate-700'
+                }`}
+                title={isPersonaEnabled ? "Click to Disable Personas" : "Click to Enable Personas"}
+              >
+                <span className={`w-2 h-2 rounded-full ${isPersonaEnabled ? 'bg-cyan-400 animate-pulse' : 'bg-slate-500'}`} />
+                <span>{isPersonaEnabled ? '🎭 Personas ACTIVE' : '⏹️ Personas DISABLED'}</span>
+              </button>
+            )}
+
+            <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '12px', background: activePersonaObj.allowDiagrams ? 'rgba(6, 182, 212, 0.15)' : 'rgba(148, 163, 184, 0.15)', color: activePersonaObj.allowDiagrams ? '#06b6d4' : '#94a3b8', border: '1px solid rgba(6, 182, 212, 0.3)' }}>
+              {activePersonaObj.allowDiagrams ? '📊 Kroki Diagrams Supported' : '📝 Text-Only Roleplay Mode'}
+            </span>
+          </div>
         </div>
 
         {/* Character Card Pills Slider */}
@@ -216,40 +258,92 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
           />
 
           <div className="kokonut-bottom-row">
-            <div className="kokonut-left-actions flex items-center gap-2">
+            <div className="kokonut-left-actions flex items-center gap-2 flex-wrap">
               {onProviderChange && onModelChange && (
                 <>
-                  <div className="kokonut-model-picker-pill provider-pill flex items-center gap-1">
-                    <span className="picker-icon">⚡</span>
-                    <select
-                      value={selectedProvider}
-                      onChange={(e) => {
-                        const newProvider = e.target.value;
-                        onProviderChange(newProvider);
-                        const group = PROVIDERS.find(p => p.id === newProvider);
-                        if (group && group.models.length > 0) {
-                          onModelChange(group.models[0].value);
-                        }
+                  {/* Custom Glassmorphic Provider Dropdown */}
+                  <div className="relative inline-block" style={{ position: 'relative' }} ref={providerRef}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsProviderOpen(!isProviderOpen);
+                        setIsModelOpen(false);
                       }}
-                      className="kokonut-bottom-model-select"
+                      className="custom-dropdown-pill"
+                      title="Select AI Provider"
                     >
-                      {PROVIDERS.map(p => (
-                        <option key={p.id} value={p.id}>{p.name}</option>
-                      ))}
-                    </select>
+                      <span className="picker-icon">⚡</span>
+                      <span>{currentProviderGroup.name}</span>
+                      <ChevronDown size={13} className={`transition-transform duration-200 ${isProviderOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {isProviderOpen && (
+                      <div className="custom-dropdown-menu provider-menu">
+                        <div className="dropdown-header">AI Providers</div>
+                        {PROVIDERS.map(p => {
+                          const isSelected = p.id === selectedProvider;
+                          return (
+                            <button
+                              key={p.id}
+                              type="button"
+                              onClick={() => {
+                                onProviderChange(p.id);
+                                if (p.models.length > 0) {
+                                  onModelChange(p.models[0].value);
+                                }
+                                setIsProviderOpen(false);
+                              }}
+                              className={`dropdown-item ${isSelected ? 'selected' : ''}`}
+                            >
+                              <span>{p.name}</span>
+                              {isSelected && <Check size={13} className="text-cyan-400" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
 
-                  <div className="kokonut-model-picker-pill model-pill flex items-center gap-1">
-                    <span className="picker-icon">🤖</span>
-                    <select
-                      value={selectedModel}
-                      onChange={(e) => onModelChange(e.target.value)}
-                      className="kokonut-bottom-model-select"
+                  {/* Custom Glassmorphic Model Dropdown */}
+                  <div className="relative inline-block" style={{ position: 'relative' }} ref={modelRef}>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setIsModelOpen(!isModelOpen);
+                        setIsProviderOpen(false);
+                      }}
+                      className="custom-dropdown-pill"
+                      title="Select AI Model"
                     >
-                      {currentProviderGroup.models.map(m => (
-                        <option key={m.value} value={m.value}>{m.name}</option>
-                      ))}
-                    </select>
+                      <span className="picker-icon">🤖</span>
+                      <span className="truncate max-w-[130px] sm:max-w-[190px]">
+                        {currentProviderGroup.models.find(m => m.value === selectedModel)?.name || selectedModel}
+                      </span>
+                      <ChevronDown size={13} className={`transition-transform duration-200 ${isModelOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
+                    {isModelOpen && (
+                      <div className="custom-dropdown-menu model-menu">
+                        <div className="dropdown-header">{currentProviderGroup.name} Models</div>
+                        {currentProviderGroup.models.map(m => {
+                          const isSelected = m.value === selectedModel;
+                          return (
+                            <button
+                              key={m.value}
+                              type="button"
+                              onClick={() => {
+                                onModelChange(m.value);
+                                setIsModelOpen(false);
+                              }}
+                              className={`dropdown-item ${isSelected ? 'selected' : ''}`}
+                            >
+                              <span>{m.name}</span>
+                              {isSelected && <Check size={13} className="text-cyan-400" />}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    )}
                   </div>
                 </>
               )}

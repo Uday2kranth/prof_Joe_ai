@@ -43,6 +43,18 @@ export const PROVIDERS: ProviderGroup[] = [
     ]
   },
   {
+    id: 'pollinations-keyed',
+    name: 'Pollinations AI (Priority Keyed)',
+    models: [
+      { value: 'openai-fast', name: 'GPT-5 Nano (Priority Keyed) [WS]' },
+      { value: 'openai', name: 'GPT-4o Mini (Priority Keyed) [WS]' },
+      { value: 'deepseek', name: 'DeepSeek V4 Flash (Priority Keyed) [WS]' },
+      { value: 'llama', name: 'Meta Llama 3.3 70B (Priority Keyed) [WS]' },
+      { value: 'qwen-coder', name: 'Qwen3 Coder 30B (Priority Keyed) [WS]' },
+      { value: 'mistral', name: 'Mistral Small 4 (Priority Keyed) [WS]' }
+    ]
+  },
+  {
     id: 'groq',
     name: 'Groq Cloud',
     models: [

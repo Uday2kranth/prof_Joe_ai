@@ -4,6 +4,7 @@ export interface Message {
   content: string;
   timestamp: number;
   modelUsed?: string;
+  personaTag?: string;
   usage?: {
     prompt_tokens?: number;
     completion_tokens?: number;
