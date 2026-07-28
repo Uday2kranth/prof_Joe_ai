@@ -280,7 +280,7 @@ export const DiagramStudioView: React.FC = () => {
             </button>
 
             {isDiagramMenuOpen && (
-              <div className="custom-dropdown-menu diagram-menu" style={{ minWidth: '280px', maxHeight: '320px', overflowY: 'auto' }}>
+              <div className="custom-dropdown-menu diagram-menu" style={{ minWidth: '340px', width: '340px', maxHeight: '360px', overflowY: 'auto' }}>
                 <div className="dropdown-header">Diagram Types</div>
                 {TEMPLATES.map(t => {
                   const isSelected = t.id === selectedTemplate.id;
@@ -293,10 +293,10 @@ export const DiagramStudioView: React.FC = () => {
                         setDiagramSource(t.code);
                         setIsDiagramMenuOpen(false);
                       }}
-                      className={`dropdown-item ${isSelected ? 'selected' : ''}`}
+                      className={`dropdown-item flex items-center justify-between gap-3 w-full ${isSelected ? 'selected' : ''}`}
                     >
-                      <span className="text-xs text-cyan-400 mr-2 font-mono">[{t.engine}]</span>
-                      <span>{t.name}</span>
+                      <span className="text-xs text-cyan-400 font-mono flex-shrink-0">[{t.engine}]</span>
+                      <span className="text-right truncate">{t.name}</span>
                     </button>
                   );
                 })}
