@@ -2953,7 +2953,7 @@ body {
   border-radius: 4px;
 }
 
-/* User Profile Drawer Modal High-Contrast Styling */
+/* User Profile Drawer Modal High-Contrast Impeccable Styling */
 .profile-drawer-modal {
   max-width: 440px !important;
   width: 92% !important;
@@ -2975,23 +2975,61 @@ body {
 
 /* User Card Header */
 [data-theme='dark'] .profile-user-card {
-  background: rgba(30, 41, 59, 0.7);
-  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: linear-gradient(135deg, rgba(30, 41, 59, 0.8), rgba(15, 23, 42, 0.9));
+  border: 1px solid rgba(6, 182, 212, 0.25);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 [data-theme='light'] .profile-user-card {
-  background: #f1f5f9;
+  background: linear-gradient(135deg, #f8fafc, #f1f5f9);
   border: 1px solid #cbd5e1;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
 }
 
 .profile-name-text {
   color: var(--text-primary) !important;
 }
 
-/* Profile Action Items */
+/* Profile Icon Squircles */
+.profile-icon-squircle {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.profile-icon-squircle.cyan-squircle {
+  background: rgba(6, 182, 212, 0.15);
+  border: 1px solid rgba(6, 182, 212, 0.3);
+  color: #06b6d4;
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.15);
+}
+
+.profile-icon-squircle.purple-squircle {
+  background: rgba(168, 85, 247, 0.15);
+  border: 1px solid rgba(168, 85, 247, 0.3);
+  color: #a855f7;
+  box-shadow: 0 0 12px rgba(168, 85, 247, 0.15);
+}
+
+.profile-icon-squircle.rose-squircle {
+  background: rgba(244, 63, 94, 0.15);
+  border: 1px solid rgba(244, 63, 94, 0.3);
+  color: #f43f5e;
+  box-shadow: 0 0 12px rgba(244, 63, 94, 0.15);
+}
+
+/* Profile Action Items with Left-Border Glow Accent */
 .profile-action-item {
   border: 1px solid transparent;
   cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
 }
 
 [data-theme='dark'] .profile-action-item {
@@ -3000,8 +3038,14 @@ body {
 }
 
 [data-theme='dark'] .profile-action-item:hover {
-  background: rgba(6, 182, 212, 0.15);
+  background: rgba(6, 182, 212, 0.12);
   border-color: rgba(6, 182, 212, 0.4);
+  transform: translateX(3px);
+}
+
+[data-theme='dark'] .profile-action-item.danger-item:hover {
+  background: rgba(244, 63, 94, 0.12);
+  border-color: rgba(244, 63, 94, 0.4);
 }
 
 [data-theme='light'] .profile-action-item {
@@ -3010,8 +3054,14 @@ body {
 }
 
 [data-theme='light'] .profile-action-item:hover {
-  background: #e0f2fe;
+  background: #f0f9ff;
   border-color: #0284c7;
+  transform: translateX(3px);
+}
+
+[data-theme='light'] .profile-action-item.danger-item:hover {
+  background: #fff1f2;
+  border-color: #f43f5e;
 }
 
 .action-title {
@@ -3038,15 +3088,45 @@ body {
   border-color: rgba(244, 63, 94, 0.3);
 }
 
-/* Logout Button */
+/* Glass Theme Toggle Button */
+.glass-theme-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+[data-theme='dark'] .glass-theme-switch {
+  background: rgba(168, 85, 247, 0.18);
+  border: 1px solid rgba(168, 85, 247, 0.4);
+  color: #d8b4fe;
+  box-shadow: 0 0 10px rgba(168, 85, 247, 0.2);
+}
+
+[data-theme='light'] .glass-theme-switch {
+  background: rgba(245, 158, 11, 0.15);
+  border: 1px solid rgba(245, 158, 11, 0.4);
+  color: #b45309;
+}
+
+/* Logout Button Impeccable Glass */
 .profile-logout-btn {
-  background: rgba(244, 63, 94, 0.15) !important;
+  background: rgba(244, 63, 94, 0.12) !important;
   color: #f43f5e !important;
   border: 1px solid rgba(244, 63, 94, 0.3) !important;
+  transition: all 0.25s ease !important;
 }
 
 .profile-logout-btn:hover {
   background: rgba(244, 63, 94, 0.25) !important;
+  border-color: rgba(244, 63, 94, 0.6) !important;
+  box-shadow: 0 0 20px rgba(244, 63, 94, 0.25) !important;
+  transform: translateY(-1px);
 }
 
 .kokonut-left-actions {

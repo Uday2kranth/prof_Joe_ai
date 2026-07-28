@@ -66,31 +66,53 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
             <div
               onClick={() => { onClose(); onOpenSettings(); }}
               className="profile-action-item"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: '14px', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: '16px', cursor: 'pointer' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Key size={18} className="text-cyan-400" style={{ flexShrink: 0 }} />
+                <div className="profile-icon-squircle cyan-squircle">
+                  <Key size={18} />
+                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                   <span className="action-title" style={{ fontWeight: 600, fontSize: '0.88rem' }}>API Key Credentials</span>
                   <span className="text-muted-custom" style={{ fontSize: '0.72rem' }}>Configure cloud provider keys</span>
                 </div>
               </div>
-              <ChevronRight size={16} className="text-slate-400" style={{ flexShrink: 0 }} />
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span className="action-pill-badge" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                  <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#10b981', boxShadow: '0 0 6px #10b981' }}></span>
+                  Configured
+                </span>
+                <ChevronRight size={16} className="text-slate-400" style={{ flexShrink: 0 }} />
+              </div>
             </div>
 
             <div
               onClick={onToggleTheme}
               className="profile-action-item"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: '14px', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: '16px', cursor: 'pointer' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                {theme === 'dark' ? <Sun size={18} className="text-amber-400" style={{ flexShrink: 0 }} /> : <Moon size={18} className="text-purple-400" style={{ flexShrink: 0 }} />}
+                <div className={`profile-icon-squircle ${theme === 'dark' ? 'purple-squircle' : 'cyan-squircle'}`}>
+                  {theme === 'dark' ? <Moon size={18} /> : <Sun size={18} />}
+                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                   <span className="action-title" style={{ fontWeight: 600, fontSize: '0.88rem' }}>Color Theme Mode</span>
                   <span className="text-muted-custom" style={{ fontSize: '0.72rem' }}>Currently in {theme.toUpperCase()} mode</span>
                 </div>
               </div>
-              <span className="action-pill-badge" style={{ textTransform: 'capitalize', flexShrink: 0 }}>{theme} Mode</span>
+              <button type="button" className="glass-theme-switch" aria-label="Toggle Theme Mode">
+                {theme === 'dark' ? (
+                  <>
+                    <Moon size={12} />
+                    <span>Dark</span>
+                  </>
+                ) : (
+                  <>
+                    <Sun size={12} />
+                    <span>Light</span>
+                  </>
+                )}
+              </button>
             </div>
 
             <div
@@ -101,10 +123,12 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                 }
               }}
               className="profile-action-item danger-item"
-              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: '14px', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 14px', borderRadius: '16px', cursor: 'pointer' }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <Trash2 size={18} className="text-rose-400" style={{ flexShrink: 0 }} />
+                <div className="profile-icon-squircle rose-squircle">
+                  <Trash2 size={18} />
+                </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
                   <span className="action-title text-rose-400" style={{ fontWeight: 600, fontSize: '0.88rem' }}>Clear Active Chat History</span>
                   <span className="text-muted-custom" style={{ fontSize: '0.72rem' }}>Wipe session history</span>
