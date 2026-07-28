@@ -415,6 +415,10 @@ STRICT IMAGE & DIAGRAM EMBEDDING DIRECTIVES:
                 } else {
                     delete headers["Authorization"];
                 }
+            } else if (provider === "opencode") {
+                headers["Authorization"] = `Bearer ${currentKey}`;
+                headers["x-api-key"] = currentKey;
+                headers["api-key"] = currentKey;
             } else {
                 headers["Authorization"] = `Bearer ${currentKey}`;
             }

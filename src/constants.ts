@@ -121,7 +121,7 @@ export const PROVIDERS: ProviderGroup[] = [
     name: 'OpenCode AI (Free Tier)',
     models: [
       { value: 'deepseek-v4-flash-free', name: 'DeepSeek V4 Flash (OpenCode) [WS]' },
-      { value: 'laguna-s-2.1-free', name: 'Laguna S 2.1 Agent (OpenCode)' },
+      { value: 'opencode/laguna-s-2.1-free', name: 'Laguna S 2.1 Agent (OpenCode)' },
       { value: 'ling-3.0-flash-free', name: 'Ling 3.0 Flash (OpenCode) [WS]' },
       { value: 'mimo-v2.5-free', name: 'Mimo V2.5 Reasoning (OpenCode)' },
       { value: 'nemotron-3-ultra-free', name: 'Nemotron 3 Ultra 550B (OpenCode) [WS]' },
