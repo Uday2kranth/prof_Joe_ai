@@ -7,6 +7,7 @@ import chatHandler from './api/chat.js';
 import loginHandler from './api/login.js';
 import userKeysHandler from './api/user-keys.js';
 import sessionsHandler from './api/sessions.js';
+import modelsHandler from './api/models.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -108,6 +109,8 @@ const server = http.createServer((req, res) => {
           await userKeysHandler(mockReq, mockRes);
         } else if (pathname === '/api/sessions') {
           await sessionsHandler(mockReq, mockRes);
+        } else if (pathname === '/api/models') {
+          await modelsHandler(mockReq, mockRes);
         } else {
           mockRes.status(404).json({ error: `API route ${pathname} not found.` });
         }
