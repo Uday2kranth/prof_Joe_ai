@@ -307,12 +307,7 @@ export const DiagramStudioView: React.FC = () => {
           <button
             onClick={handleRender}
             disabled={isLoading}
-            className="flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs text-white transition-all"
-            style={{
-              background: 'linear-gradient(135deg, #06b6d4, #3b82f6)',
-              boxShadow: '0 0 16px rgba(6, 182, 212, 0.4)',
-              cursor: isLoading ? 'wait' : 'pointer'
-            }}
+            className="kroki-render-btn"
           >
             <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
             <span>{isLoading ? 'Rendering...' : 'Render Diagram'}</span>
@@ -366,8 +361,7 @@ export const DiagramStudioView: React.FC = () => {
             {renderedSvg && (
               <button
                 onClick={handleDownloadSvg}
-                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-semibold text-xs text-cyan-400 border border-cyan-500/40 bg-slate-800/80 hover:bg-cyan-950/40 transition-all"
-                style={{ boxShadow: '0 0 12px rgba(6, 182, 212, 0.2)' }}
+                className="kroki-export-btn"
               >
                 <Download size={14} />
                 <span>Export SVG</span>
