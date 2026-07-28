@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { Layers, Download, RefreshCw, Code2, Sparkles } from 'lucide-react';
+import { Layers, Download, RefreshCw, Code2, Sparkles, Image as ImageIcon, FileImage } from 'lucide-react';
 import { fetchKrokiSvg } from '../services/krokiService';
 
 interface DiagramTemplate {
@@ -253,6 +253,39 @@ export const DiagramStudioView: React.FC = () => {
     URL.revokeObjectURL(url);
   };
 
+  const handleExportImage = (format: 'png' | 'jpeg') => {
+    if (!renderedSvg) return;
+    const svgBlob = new Blob([renderedSvg], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(svgBlob);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      const scale = 2; // 2x High-DPI for crisp text
+      const width = (img.width || 800) * scale;
+      const height = (img.height || 600) * scale;
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) return;
+
+      if (format === 'jpeg') {
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+      }
+
+      ctx.scale(scale, scale);
+      ctx.drawImage(img, 0, 0);
+      const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
+      const imgUrl = canvas.toDataURL(mimeType, 0.95);
+      const a = document.createElement('a');
+      a.href = imgUrl;
+      a.download = `diagram-${selectedTemplate.id}-${Date.now()}.${format}`;
+      a.click();
+      URL.revokeObjectURL(url);
+    };
+    img.src = url;
+  };
+
   return (
     <div className="diagram-studio-container p-4">
       <div className="studio-header flex flex-wrap items-center justify-between gap-4 mb-6" style={{ overflow: 'visible', zIndex: 100 }}>
@@ -359,13 +392,32 @@ export const DiagramStudioView: React.FC = () => {
             </div>
 
             {renderedSvg && (
-              <button
-                onClick={handleDownloadSvg}
-                className="kroki-export-btn"
-              >
-                <Download size={14} />
-                <span>Export SVG</span>
-              </button>
+              <div className="flex items-center gap-1.5 flex-wrap">
+                <button
+                  onClick={handleDownloadSvg}
+                  className="kroki-export-pill"
+                  title="Export Vector SVG"
+                >
+                  <Download size={13} />
+                  <span>SVG</span>
+                </button>
+                <button
+                  onClick={() => handleExportImage('png')}
+                  className="kroki-export-pill"
+                  title="Export High-Res PNG Image"
+                >
+                  <ImageIcon size={13} />
+                  <span>PNG</span>
+                </button>
+                <button
+                  onClick={() => handleExportImage('jpeg')}
+                  className="kroki-export-pill"
+                  title="Export High-Res JPEG Image"
+                >
+                  <FileImage size={13} />
+                  <span>JPEG</span>
+                </button>
+              </div>
             )}
           </div>
 
