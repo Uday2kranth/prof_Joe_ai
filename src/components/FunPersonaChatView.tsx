@@ -174,31 +174,36 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
             <button
               type="button"
               onClick={onTogglePersonaEnabled}
+              className="persona-status-toggle-pill"
               style={{
-                padding: '4px 10px',
-                borderRadius: '16px',
+                padding: '5px 12px',
+                borderRadius: '20px',
                 fontSize: '11px',
                 fontWeight: 700,
                 cursor: 'pointer',
-                display: 'flex',
+                display: 'inline-flex',
                 alignItems: 'center',
                 gap: '6px',
                 background: isPersonaEnabled
                   ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(168, 85, 247, 0.25))'
-                  : 'rgba(30, 41, 59, 0.6)',
+                  : 'rgba(30, 41, 59, 0.7)',
                 border: isPersonaEnabled
-                  ? '1px solid rgba(56, 189, 248, 0.6)'
-                  : '1px solid rgba(255, 255, 255, 0.12)',
-                color: isPersonaEnabled ? '#38bdf8' : 'var(--text-muted)'
+                  ? '1.5px solid rgba(56, 189, 248, 0.6)'
+                  : '1px solid rgba(255, 255, 255, 0.15)',
+                color: isPersonaEnabled ? '#38bdf8' : '#94a3b8',
+                boxShadow: isPersonaEnabled ? '0 0 14px rgba(6, 182, 212, 0.4)' : 'none',
+                transition: 'all 0.2s ease'
               }}
+              title="Toggle Persona System Prompt Activation"
             >
               <span style={{
-                width: '6px',
-                height: '6px',
+                width: '7px',
+                height: '7px',
                 borderRadius: '50%',
-                background: isPersonaEnabled ? '#38bdf8' : '#64748b'
+                background: isPersonaEnabled ? '#38bdf8' : '#64748b',
+                boxShadow: isPersonaEnabled ? '0 0 8px #38bdf8' : 'none'
               }} className={isPersonaEnabled ? 'animate-pulse' : ''} />
-              <span className="hidden sm:inline">{isPersonaEnabled ? 'Active' : 'Disabled'}</span>
+              <span>{isPersonaEnabled ? 'Active' : 'Disabled'}</span>
             </button>
           )}
         </div>

@@ -3850,18 +3850,23 @@ body {
 }
 
 .input-dock-popover {
-  position: absolute;
-  bottom: 34px;
-  right: 0;
-  width: 280px;
-  background: rgba(15, 23, 42, 0.96);
-  border: 1px solid rgba(6, 182, 212, 0.4);
-  border-radius: 14px;
-  padding: 10px;
-  box-shadow: 0 -12px 36px rgba(0, 0, 0, 0.6), 0 0 20px rgba(6, 182, 212, 0.25);
-  backdrop-filter: blur(16px);
-  z-index: 60;
-  animation: fadeInUp 0.2s ease-out;
+  position: absolute !important;
+  bottom: calc(100% + 10px) !important;
+  top: auto !important;
+  right: 0 !important;
+  left: auto !important;
+  width: 300px !important;
+  max-width: 90vw !important;
+  max-height: 300px !important;
+  overflow-y: auto !important;
+  background: rgba(15, 23, 42, 0.98) !important;
+  border: 1px solid rgba(6, 182, 212, 0.5) !important;
+  border-radius: 14px !important;
+  padding: 10px !important;
+  box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.85), 0 0 24px rgba(6, 182, 212, 0.3) !important;
+  backdrop-filter: blur(20px) !important;
+  z-index: 99999 !important;
+  animation: dropdownUpwardFade 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
 }
 
 @keyframes fadeInUp {
@@ -3958,6 +3963,31 @@ body {
   from { opacity: 0; transform: translateY(-6px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
+
+/* ⬆️ Smart Upward Floating Glass Dropdown for Bottom Bar Controls */
+.bottom-upward-menu {
+  position: absolute !important;
+  bottom: calc(100% + 8px) !important;
+  top: auto !important;
+  left: 0 !important;
+  min-width: 240px !important;
+  max-height: 260px !important;
+  overflow-y: auto !important;
+  background: rgba(15, 23, 42, 0.98) !important;
+  border: 1px solid rgba(6, 182, 212, 0.5) !important;
+  border-radius: 14px !important;
+  padding: 8px !important;
+  box-shadow: 0 -16px 48px rgba(0, 0, 0, 0.85), 0 0 24px rgba(6, 182, 212, 0.3) !important;
+  backdrop-filter: blur(20px) !important;
+  z-index: 99999 !important;
+  animation: dropdownUpwardFade 0.2s cubic-bezier(0.16, 1, 0.3, 1) !important;
+}
+
+@keyframes dropdownUpwardFade {
+  from { opacity: 0; transform: translateY(8px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
 
 
 
