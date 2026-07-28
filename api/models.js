@@ -38,6 +38,9 @@ export default async function handler(req, res) {
             case 'gemini':
                 const gKey = keyStr ? keyStr.split(',')[0].trim() : '';
                 fetchUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${gKey}`;
+                delete headers['Authorization'];
+                delete headers['x-api-key'];
+                delete headers['api-key'];
                 break;
             case 'groq':
                 fetchUrl = 'https://api.groq.com/openai/v1/models';
@@ -98,9 +101,17 @@ export default async function handler(req, res) {
         }
 
         const normalizedModels = rawModels.map(m => {
-            const id = typeof m === 'string' ? m : (m.id || m.name || m.model || '');
-            const name = typeof m === 'string' ? m : (m.name || m.id || m.model || id);
-            const contextLength = m.context_length || m.context_window || m.input_token_limit || undefined;
+            let id = typeof m === 'string' ? m : (m.id || m.name || m.model || '');
+            let name = typeof m === 'string' ? m : (m.displayName || m.name || m.id || m.model || id);
+            
+            if (provider === 'gemini' && id.startsWith('models/')) {
+                id = id.replace(/^models\//, '');
+            }
+            if (provider === 'gemini' && name.startsWith('models/')) {
+                name = name.replace(/^models\//, '');
+            }
+
+            const contextLength = m.context_length || m.context_window || m.input_token_limit || m.inputTokenLimit || undefined;
             const isFree = id.includes('free') || id.includes('keyless') || m.pricing?.prompt === '0';
 
             return {
