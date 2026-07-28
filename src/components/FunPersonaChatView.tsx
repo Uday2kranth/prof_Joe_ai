@@ -321,7 +321,7 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
                     </button>
 
                     {isProviderOpen && (
-                      <div className="custom-dropdown-menu provider-menu">
+                      <div className="custom-dropdown-menu bottom-upward-menu provider-menu">
                         <div className="dropdown-header">AI Providers</div>
                         {PROVIDERS.map(p => {
                           const isSelected = p.id === selectedProvider;
@@ -366,7 +366,7 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
                     </button>
 
                     {isModelOpen && (
-                      <div className="custom-dropdown-menu model-menu">
+                      <div className="custom-dropdown-menu bottom-upward-menu model-menu">
                         <div className="dropdown-header">{currentProviderGroup.name} Models</div>
                         {currentProviderGroup.models.map(m => {
                           const isSelected = m.value === selectedModel;

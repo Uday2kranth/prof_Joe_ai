@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BookOpen, FileText, Send, Award } from 'lucide-react';
 import { marked } from 'marked';
 import examData from '../data/examPrepData.json';
@@ -24,6 +24,19 @@ export const ExamPrepView: React.FC<ExamPrepViewProps> = ({ onLoadQuestionToChat
   const [selectedPaperSet, setSelectedPaperSet] = useState<'all' | 'set-a' | 'set-b' | 'set-c' | 'set-d'>('all');
   const [bankSubTab, setBankSubTab] = useState<'standard' | 'gagan'>('standard');
 
+  const [isPaperMenuOpen, setIsPaperMenuOpen] = useState<boolean>(false);
+  const paperMenuRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (paperMenuRef.current && !paperMenuRef.current.contains(e.target as Node)) {
+        setIsPaperMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const currentSubjectData = (examData as any)[selectedSubject] || {};
 
   const handleBentoCardClick = (card: any) => {
@@ -40,30 +53,53 @@ export const ExamPrepView: React.FC<ExamPrepViewProps> = ({ onLoadQuestionToChat
   };
 
   return (
-    <div className="exam-prep-container">
-      <div className="exam-prep-header">
-        <div className="subject-selector-area">
-          <BookOpen className="text-cyan-400" size={24} />
+    <div className="exam-prep-container p-4">
+      <div className="exam-prep-header flex flex-wrap items-center justify-between gap-4 mb-6" style={{ overflow: 'visible', zIndex: 100 }}>
+        <div className="subject-selector-area flex items-center gap-3">
+          <BookOpen className="text-cyan-400" size={26} />
           <div>
-            <h2>Exam Prep & Syllabus Hub</h2>
-            <p className="subtitle">Osmania University M.Sc (CBCS) Final Examination Prep</p>
+            <h2 className="text-xl font-bold text-slate-100">Exam Prep & Syllabus Hub</h2>
+            <p className="subtitle text-xs text-slate-400">Osmania University M.Sc (CBCS) Final Examination Prep</p>
           </div>
         </div>
 
-        <select
-          value={selectedSubject}
-          onChange={(e) => setSelectedSubject(e.target.value)}
-          className="select-input subject-select"
-        >
-          {subjectKeys.map((key) => {
-            const item = (examData as any)[key];
-            return (
-              <option key={key} value={key}>
-                {item.title || key.toUpperCase()}
-              </option>
-            );
-          })}
-        </select>
+        {/* Custom Glassmorphic Paper Dropdown */}
+        <div className="relative inline-block" style={{ overflow: 'visible', zIndex: 100 }} ref={paperMenuRef}>
+          <button
+            type="button"
+            onClick={() => setIsPaperMenuOpen(!isPaperMenuOpen)}
+            className="custom-dropdown-pill"
+            title="Select Paper / Subject"
+            style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+          >
+            <span className="picker-icon">📖</span>
+            <span className="font-semibold text-slate-100">{currentSubjectData.title || selectedSubject.toUpperCase()}</span>
+            <span className="text-slate-400 text-xs ml-1">▾</span>
+          </button>
+
+          {isPaperMenuOpen && (
+            <div className="custom-dropdown-menu paper-menu" style={{ minWidth: '280px', maxHeight: '300px', overflowY: 'auto' }}>
+              <div className="dropdown-header">Select Examination Paper</div>
+              {subjectKeys.map((key) => {
+                const item = (examData as any)[key];
+                const isSelected = key === selectedSubject;
+                return (
+                  <button
+                    key={key}
+                    type="button"
+                    onClick={() => {
+                      setSelectedSubject(key);
+                      setIsPaperMenuOpen(false);
+                    }}
+                    className={`dropdown-item ${isSelected ? 'selected' : ''}`}
+                  >
+                    <span>{item.title || key.toUpperCase()}</span>
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
       </div>
 
       {/* React Bits MagicBento Interactive Grid */}
