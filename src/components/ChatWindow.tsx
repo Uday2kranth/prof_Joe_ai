@@ -1,5 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, Globe, X, Zap, FileText, CheckSquare, MessageSquare, Paperclip, Eye, Printer, ChevronDown, Check } from 'lucide-react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
+import { Send, Globe, X, Zap, FileText, CheckSquare, MessageSquare, Paperclip, Eye, Printer, ChevronDown, Check, ListFilter } from 'lucide-react';
 // @ts-ignore
 import TextType from './TextType';
 import type { Message, UserCustomModels } from '../types';
@@ -46,19 +46,22 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const [inputPrompt, setInputPrompt] = useState('');
   const [webSearch, setWebSearch] = useState(false);
   const [isSessionPreviewOpen, setIsSessionPreviewOpen] = useState(false);
+  const [isMinimapOpen, setIsMinimapOpen] = useState(false);
 
   // Custom Glass Dropdown States
   const [isProviderOpen, setIsProviderOpen] = useState(false);
   const [isModelOpen, setIsModelOpen] = useState(false);
   const providerRef = useRef<HTMLDivElement>(null);
   const modelRef = useRef<HTMLDivElement>(null);
+  const minimapRef = useRef<HTMLDivElement>(null);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Instant scroll to latest message on session load / new messages
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'auto' });
   }, [messages, isLoading]);
 
   useEffect(() => {
@@ -69,10 +72,27 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       if (modelRef.current && !modelRef.current.contains(e.target as Node)) {
         setIsModelOpen(false);
       }
+      if (minimapRef.current && !minimapRef.current.contains(e.target as Node)) {
+        setIsMinimapOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  const userQueries = useMemo(() => {
+    return messages.filter(m => m.role === 'user');
+  }, [messages]);
+
+  const handleJumpToQuery = (msgId: string) => {
+    const el = document.getElementById(`msg-${msgId}`);
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      el.classList.add('highlight-query');
+      setTimeout(() => el.classList.remove('highlight-query'), 2000);
+    }
+    setIsMinimapOpen(false);
+  };
 
   const currentProviderGroup = PROVIDERS.find(p => p.id === selectedProvider) || PROVIDERS[0];
 
@@ -148,12 +168,47 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
   return (
     <div className="chat-window-modern">
-      <div className="chat-messages-container">
+      <div className="chat-messages-container relative" style={{ position: 'relative' }}>
+        {/* ChatGPT-Style Floating Query Minimap & Outline */}
+        {userQueries.length > 0 && (
+          <div className="chat-query-minimap-rail" ref={minimapRef}>
+            <button
+              type="button"
+              onClick={() => setIsMinimapOpen(!isMinimapOpen)}
+              className="minimap-toggle-btn"
+              title="Jump to User Question (ChatGPT Minimap)"
+            >
+              <ListFilter size={14} />
+              <span className="hidden sm:inline">Outline ({userQueries.length})</span>
+            </button>
+
+            {isMinimapOpen && (
+              <div className="query-popover-menu">
+                <div className="popover-header">📌 Questions Outline ({userQueries.length})</div>
+                <div className="popover-scroll-area">
+                  {userQueries.map((q, idx) => (
+                    <button
+                      key={q.id}
+                      type="button"
+                      onClick={() => handleJumpToQuery(q.id)}
+                      className="query-popover-item"
+                      title={q.content}
+                    >
+                      <span className="query-badge">Q{idx + 1}</span>
+                      <span className="query-text truncate">{q.content}</span>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="messages-inner">
         {messages.length === 0 ? (
           <div className="chat-welcome-box text-center py-12 px-4">
-            <div className="welcome-avatar-wrapper mb-4">
-              <img src="/joe-avatar.png" alt="Prof. Joe" className="welcome-avatar spinning-dog" />
+            <div className="welcome-avatar-wrapper mb-4" style={{ width: '76px', height: '76px', margin: '0 auto 16px auto', borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--accent-cyan)', boxShadow: '0 0 20px rgba(6, 182, 212, 0.4)' }}>
+              <img src="/joe-avatar.png" alt="Prof. Joe" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
             <h2 className="welcome-title text-2xl font-bold text-slate-100 mb-2">
               <TextType
@@ -215,17 +270,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               <button type="button" onClick={() => handleModeClick('general')} className={`kokonut-mode-pill ${promptMode === 'general' ? 'active' : ''}`} aria-label="General Mode"><MessageSquare size={13} /> <span>General</span></button>
             </div>
 
-            <div className="right-controls-group">
-              {activeSystemPromptTitle && (
-                <div className="system-prompt-active-badge">
-                  <span>📌 {activeSystemPromptTitle}</span>
-                  {onClearSystemPrompt && (
-                    <button type="button" onClick={onClearSystemPrompt} className="clear-prompt-btn"><X size={13} /></button>
-                  )}
-                </div>
-              )}
-              <button type="button" onClick={() => setWebSearch(!webSearch)} className={`kokonut-mode-pill web-search-toggle-pill ${webSearch ? 'active' : ''}`}><Globe size={13} /><span>RAG {webSearch ? 'ON' : 'OFF'}</span></button>
-            </div>
+            {activeSystemPromptTitle && (
+              <div className="system-prompt-active-badge">
+                <span>📌 {activeSystemPromptTitle}</span>
+                {onClearSystemPrompt && (
+                  <button type="button" onClick={onClearSystemPrompt} className="clear-prompt-btn"><X size={13} /></button>
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -340,6 +392,17 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 title="Attach Document or Image"
               >
                 <Paperclip size={14} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setWebSearch(!webSearch)}
+                className={`kokonut-mode-pill web-search-toggle-pill ${webSearch ? 'active' : ''}`}
+                style={{ height: '32px', borderRadius: '16px', padding: '0 10px', fontSize: '11px' }}
+                title="Toggle Web Search / RAG Knowledge Retrieval"
+              >
+                <Globe size={13} />
+                <span>RAG {webSearch ? 'ON' : 'OFF'}</span>
               </button>
 
               {messages.length > 0 && (

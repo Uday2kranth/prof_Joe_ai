@@ -172,7 +172,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
   };
 
   return (
-    <div className={`message-row ${isUser ? 'user-row' : 'assistant-row'}`}>
+    <div id={`msg-${message.id}`} className={`message-row ${isUser ? 'user-row' : 'assistant-row'}`}>
       <div className="avatar" style={{ overflow: 'hidden', border: !isUser ? '1px solid rgba(6, 182, 212, 0.4)' : 'none' }}>
         {isUser ? (
           <User size={16} />
