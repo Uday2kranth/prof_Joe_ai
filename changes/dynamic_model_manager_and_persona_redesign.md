@@ -57,4 +57,4 @@ export interface UserCustomModels {
 - [x] Executed browser subagent visual audit across PC and Mobile viewports.
 - [x] Verified Model Manager tab screenshot: `model_manager_tab_1785241974305.png`.
 - [x] Verified Persona toggle redesign screenshot: `personas_lounge_view_1785241998025.png`.
-- [ ] Commit to `staging` branch and push to `origin staging`.
+- [x] Commit to `staging` branch and push to `origin staging` (Commit: `e3e0a8d`).

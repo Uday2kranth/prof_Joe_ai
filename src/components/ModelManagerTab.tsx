@@ -28,7 +28,8 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
   const activeApiKey = useMemo(() => {
     if (selectedProviderId === 'pollinations-keyless') return 'keyless_anonymous';
     const keyProp = selectedProviderId.replace('-keyed', '') as keyof UserKeys;
-    return userKeys[keyProp] || '';
+    const rawVal = userKeys ? userKeys[keyProp] : '';
+    return typeof rawVal === 'string' ? rawVal : (rawVal ? String(rawVal) : '');
   }, [selectedProviderId, userKeys]);
 
   const hasApiKey = Boolean(activeApiKey);

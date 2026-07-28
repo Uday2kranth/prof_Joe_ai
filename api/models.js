@@ -13,8 +13,10 @@ export default async function handler(req, res) {
         let fetchUrl = '';
         const headers = { 'Content-Type': 'application/json' };
 
-        if (apiKey && apiKey !== 'keyless_anonymous') {
-            const firstKey = apiKey.split(',')[0].trim();
+        const keyStr = typeof apiKey === 'string' ? apiKey : (apiKey ? String(apiKey) : '');
+
+        if (keyStr && keyStr !== 'keyless_anonymous') {
+            const firstKey = keyStr.split(',')[0].trim();
             headers['Authorization'] = `Bearer ${firstKey}`;
             headers['x-api-key'] = firstKey;
             headers['api-key'] = firstKey;
@@ -34,7 +36,8 @@ export default async function handler(req, res) {
                 fetchUrl = customEndpoint || 'http://localhost:11434/api/tags';
                 break;
             case 'gemini':
-                fetchUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${apiKey || ''}`;
+                const gKey = keyStr ? keyStr.split(',')[0].trim() : '';
+                fetchUrl = `https://generativelanguage.googleapis.com/v1beta/models?key=${gKey}`;
                 break;
             case 'groq':
                 fetchUrl = 'https://api.groq.com/openai/v1/models';
