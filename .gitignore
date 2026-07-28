@@ -40,3 +40,10 @@ update_mode_provider_info.md
 media/
 media/*
 
+# Internal Agent Audit Logs & Specification Markdown Files
+changes/
+changes/*
+PRODUCT.md
+PROMPTS_GENERIC.md
+PROMPTS_12MARKS.md
+

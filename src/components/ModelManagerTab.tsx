@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { RefreshCw, Search, CheckSquare, Square, RotateCcw, Cpu, Check, AlertCircle } from 'lucide-react';
+import { RefreshCw, Search, CheckSquare, Square, RotateCcw, Cpu, Check, AlertCircle, Save } from 'lucide-react';
 import type { UserKeys, UserCustomModels, CustomModel } from '../types';
 import { PROVIDERS } from '../constants';
 
@@ -221,6 +221,37 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
           >
             <RefreshCw size={14} className={isFetching ? 'animate-spin' : ''} />
             <span>{isFetching ? 'Fetching...' : '⚡ Fetch Models'}</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              onSaveCustomModels({
+                ...customModels,
+                [selectedProviderId]: currentModelList
+              });
+              const enabledCount = currentModelList.filter(m => m.enabled).length;
+              setFetchSuccessMsg(`Saved & applied ${enabledCount} enabled model(s) to Model Picker!`);
+              setTimeout(() => setFetchSuccessMsg(null), 3000);
+            }}
+            className="btn btn-secondary"
+            style={{
+              padding: '6px 14px',
+              fontSize: '12px',
+              borderRadius: '8px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(59, 130, 246, 0.25))',
+              border: '1px solid rgba(6, 182, 212, 0.5)',
+              color: '#38bdf8',
+              fontWeight: 600,
+              boxShadow: '0 0 12px rgba(6, 182, 212, 0.25)',
+              cursor: 'pointer'
+            }}
+          >
+            <Save size={14} />
+            <span>💾 Apply to Model Picker</span>
           </button>
         </div>
       </div>

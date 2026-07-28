@@ -75,3 +75,6 @@ export interface UserCustomModels {
   [providerId: string]: CustomModel[];
 }
 
+export type PromptMode = 'auto' | '12marks' | '2marks' | '1marks' | 'general';
+
+

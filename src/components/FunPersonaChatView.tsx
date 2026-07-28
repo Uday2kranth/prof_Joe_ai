@@ -117,69 +117,15 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
 
   return (
     <div className="chat-window-container fun-persona-lounge-container">
-      {/* Top Character Selector Strip */}
-      <div className="persona-selector-header-strip flex flex-col gap-2 p-3" style={{ background: 'rgba(15, 23, 42, 0.85)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(6, 182, 212, 0.2)' }}>
-        <div className="flex items-center justify-between flex-wrap gap-2">
-          <div className="flex items-center gap-2">
-            <span style={{ fontSize: '1.4rem' }}>🎭</span>
-            <span style={{ fontWeight: 700, fontSize: '0.95rem', color: 'var(--accent-cyan)' }}>Fun AI Personas Lounge</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {onTogglePersonaEnabled && (
-              <button
-                type="button"
-                onClick={onTogglePersonaEnabled}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: '20px',
-                  fontSize: '12px',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  transition: 'all 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                  background: isPersonaEnabled
-                    ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(168, 85, 247, 0.25))'
-                    : 'rgba(30, 41, 59, 0.6)',
-                  border: isPersonaEnabled
-                    ? '1px solid rgba(56, 189, 248, 0.6)'
-                    : '1px solid rgba(255, 255, 255, 0.12)',
-                  color: isPersonaEnabled ? '#38bdf8' : 'var(--text-muted)',
-                  boxShadow: isPersonaEnabled
-                    ? '0 0 16px rgba(56, 189, 248, 0.35), inset 0 0 8px rgba(168, 85, 247, 0.2)'
-                    : 'none',
-                  transform: 'translateY(0)'
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'scale(1.03)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'scale(1)';
-                }}
-                title={isPersonaEnabled ? "Click to Disable Personas (Switch to Academic Mode)" : "Click to Enable Personas"}
-              >
-                <span style={{
-                  width: '8px',
-                  height: '8px',
-                  borderRadius: '50%',
-                  background: isPersonaEnabled ? '#38bdf8' : '#64748b',
-                  boxShadow: isPersonaEnabled ? '0 0 8px #38bdf8' : 'none',
-                  display: 'inline-block'
-                }} className={isPersonaEnabled ? 'animate-pulse' : ''} />
-                <span>{isPersonaEnabled ? '✨ Persona Mode Active' : '🔒 Personas Disabled (Academic)'}</span>
-              </button>
-            )}
-
-            <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '12px', background: activePersonaObj.allowDiagrams ? 'rgba(6, 182, 212, 0.15)' : 'rgba(148, 163, 184, 0.15)', color: activePersonaObj.allowDiagrams ? '#06b6d4' : '#94a3b8', border: '1px solid rgba(6, 182, 212, 0.3)' }}>
-              {activePersonaObj.allowDiagrams ? '📊 Kroki Diagrams Supported' : '📝 Text-Only Roleplay Mode'}
-            </span>
-          </div>
+      {/* 42px Neon Glass Avatar Scroll Strip */}
+      <div className="persona-selector-header-strip p-2 flex items-center justify-between gap-2 overflow-x-auto" style={{ background: 'rgba(15, 23, 42, 0.92)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(6, 182, 212, 0.25)', minHeight: '48px', flexShrink: 0 }}>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          <span style={{ fontSize: '1.2rem' }}>🎭</span>
+          <span style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--accent-cyan)' }} className="hidden sm:inline">Fun AI Personas</span>
         </div>
 
-        {/* Character Card Pills Slider */}
-        <div className="persona-pills-scroll-row flex items-center gap-2 overflow-x-auto py-1">
+        {/* Avatar Strip */}
+        <div className="flex items-center gap-1.5 overflow-x-auto py-0.5 scrollbar-none flex-grow justify-center sm:justify-start">
           {PERSONAS.filter(p => p.id !== 'default').map(p => {
             const isActive = selectedPersona === p.id;
             return (
@@ -187,23 +133,59 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
                 key={p.id}
                 type="button"
                 onClick={() => onPersonaChange(p.id)}
-                className={`persona-card-pill flex items-center gap-2 px-3 py-1.5 rounded-xl transition-all ${isActive ? 'active-pill' : ''}`}
+                className={`persona-avatar-chip flex items-center gap-1.5 px-2.5 py-1 rounded-full transition-all ${isActive ? 'active-chip' : ''}`}
                 style={{
-                  background: isActive ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(99, 102, 241, 0.25))' : 'rgba(30, 41, 59, 0.6)',
-                  border: isActive ? '1.5px solid var(--accent-cyan)' : '1px solid rgba(148, 163, 184, 0.2)',
+                  background: isActive ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.35), rgba(99, 102, 241, 0.35))' : 'rgba(30, 41, 59, 0.65)',
+                  border: isActive ? '1.5px solid #06b6d4' : '1px solid rgba(148, 163, 184, 0.2)',
                   color: isActive ? '#ffffff' : '#cbd5e1',
-                  boxShadow: isActive ? '0 0 14px rgba(6, 182, 212, 0.3)' : 'none',
+                  boxShadow: isActive ? '0 0 14px rgba(6, 182, 212, 0.5)' : 'none',
                   cursor: 'pointer',
-                  whiteSpace: 'nowrap'
+                  whiteSpace: 'nowrap',
+                  fontSize: '0.8rem'
                 }}
+                title={p.name}
               >
-                <span style={{ fontSize: '1.1rem' }}>{p.icon}</span>
-                <div className="text-left">
-                  <div style={{ fontSize: '0.82rem', fontWeight: isActive ? 700 : 500 }}>{p.name}</div>
-                </div>
+                <span style={{ fontSize: '1.05rem' }}>{p.icon}</span>
+                <span style={{ fontSize: '0.78rem', fontWeight: isActive ? 700 : 500 }} className={isActive ? 'inline' : 'hidden md:inline'}>
+                  {p.name.replace('-Inspired', '')}
+                </span>
               </button>
             );
           })}
+        </div>
+
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {onTogglePersonaEnabled && (
+            <button
+              type="button"
+              onClick={onTogglePersonaEnabled}
+              style={{
+                padding: '4px 10px',
+                borderRadius: '16px',
+                fontSize: '11px',
+                fontWeight: 700,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: isPersonaEnabled
+                  ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(168, 85, 247, 0.25))'
+                  : 'rgba(30, 41, 59, 0.6)',
+                border: isPersonaEnabled
+                  ? '1px solid rgba(56, 189, 248, 0.6)'
+                  : '1px solid rgba(255, 255, 255, 0.12)',
+                color: isPersonaEnabled ? '#38bdf8' : 'var(--text-muted)'
+              }}
+            >
+              <span style={{
+                width: '6px',
+                height: '6px',
+                borderRadius: '50%',
+                background: isPersonaEnabled ? '#38bdf8' : '#64748b'
+              }} className={isPersonaEnabled ? 'animate-pulse' : ''} />
+              <span className="hidden sm:inline">{isPersonaEnabled ? 'Active' : 'Disabled'}</span>
+            </button>
+          )}
         </div>
       </div>
 

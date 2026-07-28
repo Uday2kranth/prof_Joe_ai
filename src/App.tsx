@@ -142,6 +142,24 @@ export const App: React.FC = () => {
     return 'default';
   });
 
+  const [promptMode, setPromptModeState] = useState<any>(() => {
+    const activeUser = localStorage.getItem('chatterbot_username');
+    if (activeUser) {
+      const saved = localStorage.getItem(`chatterbot_prompt_mode_${activeUser}`);
+      if (saved && ['auto', '12marks', '2marks', '1marks', 'general'].includes(saved)) {
+        return saved;
+      }
+    }
+    return 'auto';
+  });
+
+  const handlePromptModeChange = (newMode: string) => {
+    setPromptModeState(newMode);
+    if (currentUser) {
+      localStorage.setItem(`chatterbot_prompt_mode_${currentUser}`, newMode);
+    }
+  };
+
   const [isPersonaEnabled, setIsPersonaEnabled] = useState<boolean>(true);
 
   const handleTogglePersonaEnabled = () => {
@@ -693,6 +711,9 @@ export const App: React.FC = () => {
               onEditUserMessage={handleEditLastUserMessage}
               activeSystemPromptTitle={activeSession?.systemPromptTitle}
               onClearSystemPrompt={handleClearSystemPrompt}
+              customModels={customModels}
+              promptMode={promptMode}
+              onPromptModeChange={handlePromptModeChange}
             />
           )}
 

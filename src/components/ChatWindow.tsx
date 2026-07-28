@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Send, Globe, X, Zap, FileText, CheckSquare, MessageSquare, Paperclip, Eye, Printer, ChevronDown, Check } from 'lucide-react';
 // @ts-ignore
 import TextType from './TextType';
-import type { Message } from '../types';
+import type { Message, UserCustomModels } from '../types';
 import { MessageItem, renderMarkdownWithMathAndDiagrams } from './MessageItem';
 import { PROVIDERS } from '../constants';
 import { PdfPreviewModal } from './PdfPreviewModal';
@@ -11,7 +11,7 @@ import { printSessionToPdf } from '../services/printPdfService';
 interface ChatWindowProps {
   messages: Message[];
   isLoading: boolean;
-  onSendMessage: (prompt: string, webSearch: boolean, mode: 'auto' | '12marks' | '2marks' | 'general' | 'none') => void;
+  onSendMessage: (prompt: string, webSearch: boolean, mode: string) => void;
   selectedProvider?: string;
   selectedModel: string;
   onProviderChange?: (provider: string) => void;
@@ -20,6 +20,10 @@ interface ChatWindowProps {
   onEditUserMessage?: (oldText: string) => void;
   activeSystemPromptTitle?: string;
   onClearSystemPrompt?: () => void;
+  customModels?: UserCustomModels;
+  promptMode?: string;
+  onPromptModeChange?: (mode: string) => void;
+  isPersonaView?: boolean;
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -33,11 +37,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   onRetry,
   onEditUserMessage,
   activeSystemPromptTitle,
-  onClearSystemPrompt
+  onClearSystemPrompt,
+  customModels,
+  promptMode = 'auto',
+  onPromptModeChange,
+  isPersonaView = false
 }) => {
   const [inputPrompt, setInputPrompt] = useState('');
   const [webSearch, setWebSearch] = useState(false);
-  const [promptMode, setPromptMode] = useState<'auto' | '12marks' | '2marks' | 'general' | 'none'>('auto');
   const [isSessionPreviewOpen, setIsSessionPreviewOpen] = useState(false);
 
   // Custom Glass Dropdown States
@@ -68,7 +75,26 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   }, []);
 
   const currentProviderGroup = PROVIDERS.find(p => p.id === selectedProvider) || PROVIDERS[0];
-  const currentModelName = currentProviderGroup.models.find(m => m.value === selectedModel)?.name || selectedModel;
+
+  const availableModels = React.useMemo(() => {
+    const customList = customModels ? customModels[selectedProvider] : undefined;
+    if (Array.isArray(customList) && customList.length > 0) {
+      const enabledCustom = customList.filter(m => m.enabled).map(m => ({
+        value: m.id,
+        name: m.name
+      }));
+      if (enabledCustom.length > 0) return enabledCustom;
+    }
+    return currentProviderGroup.models;
+  }, [selectedProvider, customModels, currentProviderGroup]);
+
+  const currentModelName = availableModels.find(m => m.value === selectedModel)?.name || selectedModel;
+
+  const handleModeClick = (modeKey: string) => {
+    if (onPromptModeChange) {
+      onPromptModeChange(modeKey);
+    }
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -101,10 +127,14 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
-    if (files && files.length > 0) {
-      const file = files[0];
-      setInputPrompt(prev => `${prev}\n\n[Attached File: ${file.name} (${Math.round(file.size / 1024)} KB)]`);
-    }
+    if (!files || files.length === 0) return;
+    const file = files[0];
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const content = event.target?.result as string;
+      setInputPrompt(prev => `${prev}\n\n[Uploaded File: ${file.name}]\n${content}`);
+    };
+    reader.readAsText(file);
   };
 
   const handleExportFullChatPdf = () => {
@@ -117,26 +147,21 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   return (
-    <div className="chat-window-container">
-      <div className="messages-viewport">
-        <div className="messages-scroll-area">
+    <div className="chat-window-modern">
+      <div className="chat-messages-container">
+        <div className="messages-inner">
         {messages.length === 0 ? (
-          <div className="empty-state-hero kokonut-hero-card">
-            <div className="kokonut-dots-overlay" />
-            <div className="hero-icon-box" style={{ padding: 0, overflow: 'hidden', borderRadius: '50%', width: '76px', height: '76px', margin: '0 auto 16px auto', border: '3px solid var(--accent-cyan)', boxShadow: '0 0 20px rgba(6, 182, 212, 0.4)' }}>
-              <img src="/joe-avatar.png" alt="Prof. Joe" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          <div className="chat-welcome-box text-center py-12 px-4">
+            <div className="welcome-avatar-wrapper mb-4">
+              <img src="/joe-avatar.png" alt="Prof. Joe" className="welcome-avatar spinning-dog" />
             </div>
-            <h2 style={{ minHeight: '38px', margin: '0 0 8px 0' }}>
+            <h2 className="welcome-title text-2xl font-bold text-slate-100 mb-2">
               <TextType
-                text={[
-                  "Welcome to Prof. Joe AI Engine 🚀",
-                  "Osmania University M.Sc Exam Prep 🎓",
-                  "Generate Mermaid Diagrams & High-Yield Banks 📊",
-                  "Multi-Model Intelligence with RAG & System Prompts ⚡"
-                ]}
-                typingSpeed={60}
-                pauseDuration={2200}
-                showCursor={true}
+                text={["Welcome to Prof. Joe AI Exam Mentor", "OU M.Sc. Academic Specialist", "Multi-Model Intelligence Engine"]}
+                typingSpeed={50}
+                deletingSpeed={30}
+                pauseTime={2500}
+                loop={true}
                 cursorCharacter="|"
               />
             </h2>
@@ -180,26 +205,29 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
       </div>
 
       <div className="input-bar-container">
-        <div className="input-modes-bar">
-          <div className="kokonut-mode-dock">
-            <button type="button" onClick={() => setPromptMode('auto')} className={`kokonut-mode-pill ${promptMode === 'auto' ? 'active' : ''}`}><Zap size={13} /> <span>Auto</span></button>
-            <button type="button" onClick={() => setPromptMode('12marks')} className={`kokonut-mode-pill ${promptMode === '12marks' ? 'active' : ''}`}><FileText size={13} /> <span>12 Marks</span></button>
-            <button type="button" onClick={() => setPromptMode('2marks')} className={`kokonut-mode-pill ${promptMode === '2marks' ? 'active' : ''}`}><CheckSquare size={13} /> <span>3–4 Marks</span></button>
-            <button type="button" onClick={() => setPromptMode('general')} className={`kokonut-mode-pill ${promptMode === 'general' ? 'active' : ''}`}><MessageSquare size={13} /> <span>General</span></button>
-          </div>
+        {!isPersonaView && (
+          <div className="input-modes-bar">
+            <div className="kokonut-mode-dock">
+              <button type="button" onClick={() => handleModeClick('auto')} className={`kokonut-mode-pill ${promptMode === 'auto' ? 'active' : ''}`} aria-label="Auto Mode"><Zap size={13} /> <span>Auto</span></button>
+              <button type="button" onClick={() => handleModeClick('12marks')} className={`kokonut-mode-pill ${promptMode === '12marks' ? 'active' : ''}`} aria-label="12 Marks Mode"><FileText size={13} /> <span>12 Marks</span></button>
+              <button type="button" onClick={() => handleModeClick('2marks')} className={`kokonut-mode-pill ${promptMode === '2marks' ? 'active' : ''}`} aria-label="3-4 Marks Mode"><CheckSquare size={13} /> <span>3–4 Marks</span></button>
+              <button type="button" onClick={() => handleModeClick('1marks')} className={`kokonut-mode-pill ${promptMode === '1marks' ? 'active' : ''}`} aria-label="1-2 Marks Mode"><Zap size={13} /> <span>1–2 Marks</span></button>
+              <button type="button" onClick={() => handleModeClick('general')} className={`kokonut-mode-pill ${promptMode === 'general' ? 'active' : ''}`} aria-label="General Mode"><MessageSquare size={13} /> <span>General</span></button>
+            </div>
 
-          <div className="right-controls-group">
-            {activeSystemPromptTitle && (
-              <div className="system-prompt-active-badge">
-                <span>📌 {activeSystemPromptTitle}</span>
-                {onClearSystemPrompt && (
-                  <button type="button" onClick={onClearSystemPrompt} className="clear-prompt-btn"><X size={13} /></button>
-                )}
-              </div>
-            )}
-            <button type="button" onClick={() => setWebSearch(!webSearch)} className={`kokonut-mode-pill web-search-toggle-pill ${webSearch ? 'active' : ''}`}><Globe size={13} /><span>RAG {webSearch ? 'ON' : 'OFF'}</span></button>
+            <div className="right-controls-group">
+              {activeSystemPromptTitle && (
+                <div className="system-prompt-active-badge">
+                  <span>📌 {activeSystemPromptTitle}</span>
+                  {onClearSystemPrompt && (
+                    <button type="button" onClick={onClearSystemPrompt} className="clear-prompt-btn"><X size={13} /></button>
+                  )}
+                </div>
+              )}
+              <button type="button" onClick={() => setWebSearch(!webSearch)} className={`kokonut-mode-pill web-search-toggle-pill ${webSearch ? 'active' : ''}`}><Globe size={13} /><span>RAG {webSearch ? 'ON' : 'OFF'}</span></button>
+            </div>
           </div>
-        </div>
+        )}
 
         <form onSubmit={handleSubmit} className="chat-form-modern kokonut-form">
           <input type="file" ref={fileInputRef} onChange={handleFileUpload} style={{ display: 'none' }} />
@@ -282,7 +310,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     {isModelOpen && (
                       <div className="custom-dropdown-menu model-menu">
                         <div className="dropdown-header">{currentProviderGroup.name} Models</div>
-                        {currentProviderGroup.models.map(m => {
+                        {availableModels.map(m => {
                           const isSelected = m.value === selectedModel;
                           return (
                             <button

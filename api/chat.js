@@ -229,6 +229,16 @@ SHORT ANSWER DIRECTIVES:
 2. STRUCTURE: Provide a direct 1-sentence definition, key properties/types in a concise 3-column table or bulleted list, and 1 short mathematical formula or code example.
 3. CONCISENESS: Begin on Line 1. No conversational intro fluff or unasked long essays.`
             });
+        } else if (effectiveMode === '1marks' || effectiveMode === '1-2marks') {
+            apiMessages.unshift({
+                role: "system",
+                content: `ROLE PERSONA: You are an Osmania University (OU) Short Answer Evaluator for 1-2 Mark Micro-Questions.
+
+1-2 MARK MICRO-ANSWER DIRECTIVES:
+1. TARGET WORD COUNT: Output strictly between 60 and 120 words MAX (~1 concise paragraph).
+2. STRUCTURE: Provide a direct 1-sentence technical definition, 2 core bullet points, and 1 short mathematical formula or example.
+3. CONCISENESS: Begin immediately on Line 1. Zero filler text.`
+            });
         } else if (effectiveMode === 'general') {
             apiMessages.unshift({
                 role: "system",
