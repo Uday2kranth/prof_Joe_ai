@@ -178,17 +178,17 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     <div className="chat-window-modern flex flex-col h-full relative">
       {/* Top Banner: Active System Prompt Notification */}
       {activeSystemPromptTitle && (
-        <div className="top-system-prompt-banner px-4 py-1.5 flex items-center justify-between gap-2" style={{ background: 'linear-gradient(135deg, rgba(6, 182, 212, 0.2), rgba(99, 102, 241, 0.2))', borderBottom: '1px solid rgba(6, 182, 212, 0.4)', backdropFilter: 'blur(12px)', zIndex: 40 }}>
-          <div className="flex items-center gap-2 text-xs font-semibold text-cyan-300">
+        <div className="top-system-prompt-banner">
+          <div className="system-prompt-banner-text">
             <span>📌 Active Prompt Mode:</span>
-            <span className="text-white font-bold">{activeSystemPromptTitle}</span>
+            <span className="system-prompt-banner-title">{activeSystemPromptTitle}</span>
           </div>
           {onClearSystemPrompt && (
             <button
               type="button"
               onClick={onClearSystemPrompt}
-              className="flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-bold bg-cyan-950/60 text-cyan-400 border border-cyan-500/40 hover:bg-rose-950/60 hover:text-rose-400 hover:border-rose-500/40 transition-all"
-              title="Disable System Prompt"
+              className="disable-prompt-btn"
+              title="Disable Active System Prompt"
             >
               <span>Disable</span>
               <X size={12} />

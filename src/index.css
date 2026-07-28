@@ -4197,6 +4197,60 @@ body {
   }
 }
 
+/* 📌 Active System Prompt Banner & Neon Glass Disable Pill */
+.top-system-prompt-banner {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  padding: 6px 16px !important;
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.22), rgba(99, 102, 241, 0.22)) !important;
+  border-bottom: 1px solid rgba(6, 182, 212, 0.45) !important;
+  backdrop-filter: blur(16px) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
+  z-index: 40 !important;
+}
+
+.system-prompt-banner-text {
+  display: flex !important;
+  align-items: center !important;
+  gap: 6px !important;
+  font-size: 0.8rem !important;
+  font-weight: 600 !important;
+  color: #38bdf8 !important;
+}
+
+.system-prompt-banner-title {
+  color: #ffffff !important;
+  font-weight: 700 !important;
+  background: linear-gradient(135deg, #ffffff, #a5f3fc);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.disable-prompt-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 4px !important;
+  padding: 4px 12px !important;
+  border-radius: 20px !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  cursor: pointer !important;
+  background: rgba(15, 23, 42, 0.85) !important;
+  border: 1.5px solid rgba(6, 182, 212, 0.6) !important;
+  color: #38bdf8 !important;
+  box-shadow: 0 0 10px rgba(6, 182, 212, 0.3) !important;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important;
+}
+
+.disable-prompt-btn:hover {
+  background: rgba(244, 63, 94, 0.25) !important;
+  border-color: #f43f5e !important;
+  color: #fb7185 !important;
+  box-shadow: 0 0 14px rgba(244, 63, 94, 0.5) !important;
+  transform: translateY(-1px) !important;
+}
+
 
 
 
