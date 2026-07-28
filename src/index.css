@@ -4083,7 +4083,58 @@ body {
   padding: 8px !important;
 }
 
-/* 📱 MOBILE COMPACT 2-ROW INPUT DOCK WITH 40%/60% PICKER SPLIT */
+/* 💻 DESKTOP 1-ROW INPUT DOCK (> 768px) */
+@media (min-width: 769px) {
+  .kokonut-bottom-row {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+  }
+
+  .kokonut-left-actions {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 10px !important;
+    flex: 1 !important;
+    justify-content: space-between !important;
+  }
+
+  .kokonut-pickers-row {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .kokonut-actions-row {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex: 1 !important;
+    justify-content: space-between !important;
+  }
+
+  .kokonut-actions-row > div {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 8px !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .provider-picker-wrapper,
+  .model-picker-wrapper {
+    width: auto !important;
+    flex: none !important;
+  }
+}
+
+/* 📱 MOBILE COMPACT 2-ROW INPUT DOCK (<= 768px) WITH 40%/60% PICKER SPLIT */
 @media (max-width: 768px) {
   .kokonut-bottom-row {
     display: flex !important;
@@ -4101,6 +4152,7 @@ body {
 
   .kokonut-pickers-row {
     display: flex !important;
+    flex-direction: row !important;
     align-items: center !important;
     gap: 8px !important;
     width: 100% !important;
@@ -4129,10 +4181,19 @@ body {
 
   .kokonut-actions-row {
     display: flex !important;
+    flex-direction: row !important;
     align-items: center !important;
     justify-content: space-between !important;
     width: 100% !important;
     gap: 6px !important;
+  }
+
+  .kokonut-actions-row > div {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 6px !important;
+    flex-wrap: nowrap !important;
   }
 }
 
