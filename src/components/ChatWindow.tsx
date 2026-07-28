@@ -321,151 +321,155 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           />
 
           <div className="kokonut-bottom-row">
-            <div className="kokonut-left-actions flex items-center gap-2 flex-wrap">
-              {onProviderChange && onModelChange && (
-                <>
-                  {/* Custom Glassmorphic Provider Dropdown */}
-                  <div className="relative inline-block" style={{ position: 'relative' }} ref={providerRef}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsProviderOpen(!isProviderOpen);
-                        setIsModelOpen(false);
-                      }}
-                      className="custom-dropdown-pill"
-                      title="Select AI Provider"
-                    >
-                      <span className="picker-icon">⚡</span>
-                      <span>{currentProviderGroup.name}</span>
-                      <ChevronDown size={13} className={`transition-transform duration-200 ${isProviderOpen ? 'rotate-180' : ''}`} />
-                    </button>
+            <div className="kokonut-left-actions">
+              {/* Row 1: 40% Provider Picker + 60% Model Picker */}
+              <div className="kokonut-pickers-row">
+                {onProviderChange && onModelChange && (
+                  <>
+                    <div className="relative inline-block provider-picker-wrapper" ref={providerRef}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsProviderOpen(!isProviderOpen);
+                          setIsModelOpen(false);
+                        }}
+                        className="custom-dropdown-pill"
+                        title="Select AI Provider"
+                      >
+                        <span className="picker-icon">⚡</span>
+                        <span className="truncate">{currentProviderGroup.name}</span>
+                        <ChevronDown size={13} className={`transition-transform duration-200 ${isProviderOpen ? 'rotate-180' : ''}`} />
+                      </button>
 
-                    {isProviderOpen && (
-                      <div className="custom-dropdown-menu bottom-upward-menu provider-menu">
-                        <div className="dropdown-header">AI Providers</div>
-                        {PROVIDERS.map(p => {
-                          const isSelected = p.id === selectedProvider;
-                          return (
-                            <button
-                              key={p.id}
-                              type="button"
-                              onClick={() => {
-                                onProviderChange(p.id);
-                                if (p.models.length > 0) {
-                                  onModelChange(p.models[0].value);
-                                }
-                                setIsProviderOpen(false);
-                              }}
-                              className={`dropdown-item ${isSelected ? 'selected' : ''}`}
-                            >
-                              <span>{p.name}</span>
-                              {isSelected && <Check size={13} className="text-cyan-400" />}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
+                      {isProviderOpen && (
+                        <div className="custom-dropdown-menu bottom-upward-menu provider-menu">
+                          <div className="dropdown-header">AI Providers</div>
+                          {PROVIDERS.map(p => {
+                            const isSelected = p.id === selectedProvider;
+                            return (
+                              <button
+                                key={p.id}
+                                type="button"
+                                onClick={() => {
+                                  onProviderChange(p.id);
+                                  if (p.models.length > 0) {
+                                    onModelChange(p.models[0].value);
+                                  }
+                                  setIsProviderOpen(false);
+                                }}
+                                className={`dropdown-item ${isSelected ? 'selected' : ''}`}
+                              >
+                                <span>{p.name}</span>
+                                {isSelected && <Check size={13} className="text-cyan-400" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
 
-                  {/* Custom Glassmorphic Model Dropdown */}
-                  <div className="relative inline-block" style={{ position: 'relative' }} ref={modelRef}>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setIsModelOpen(!isModelOpen);
-                        setIsProviderOpen(false);
-                      }}
-                      className="custom-dropdown-pill"
-                      title="Select AI Model"
-                    >
-                      <span className="picker-icon">🤖</span>
-                      <span className="truncate max-w-[130px] sm:max-w-[190px]">
-                        {currentModelName}
-                      </span>
-                      <ChevronDown size={13} className={`transition-transform duration-200 ${isModelOpen ? 'rotate-180' : ''}`} />
-                    </button>
+                    <div className="relative inline-block model-picker-wrapper" ref={modelRef}>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setIsModelOpen(!isModelOpen);
+                          setIsProviderOpen(false);
+                        }}
+                        className="custom-dropdown-pill"
+                        title="Select AI Model"
+                      >
+                        <span className="picker-icon">🤖</span>
+                        <span className="truncate">
+                          {currentModelName}
+                        </span>
+                        <ChevronDown size={13} className={`transition-transform duration-200 ${isModelOpen ? 'rotate-180' : ''}`} />
+                      </button>
 
-                    {isModelOpen && (
-                      <div className="custom-dropdown-menu bottom-upward-menu model-menu">
-                        <div className="dropdown-header">{currentProviderGroup.name} Models</div>
-                        {availableModels.map(m => {
-                          const isSelected = m.value === selectedModel;
-                          return (
-                            <button
-                              key={m.value}
-                              type="button"
-                              onClick={() => {
-                                onModelChange(m.value);
-                                setIsModelOpen(false);
-                              }}
-                              className={`dropdown-item ${isSelected ? 'selected' : ''}`}
-                            >
-                              <span>{m.name}</span>
-                              {isSelected && <Check size={13} className="text-cyan-400" />}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
+                      {isModelOpen && (
+                        <div className="custom-dropdown-menu bottom-upward-menu model-menu">
+                          <div className="dropdown-header">{currentProviderGroup.name} Models</div>
+                          {availableModels.map(m => {
+                            const isSelected = m.value === selectedModel;
+                            return (
+                              <button
+                                key={m.value}
+                                type="button"
+                                onClick={() => {
+                                  onModelChange(m.value);
+                                  setIsModelOpen(false);
+                                }}
+                                className={`dropdown-item ${isSelected ? 'selected' : ''}`}
+                              >
+                                <span>{m.name}</span>
+                                {isSelected && <Check size={13} className="text-cyan-400" />}
+                              </button>
+                            );
+                          })}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
 
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="kokonut-action-btn file-attach-btn"
-                title="Attach Document or Image"
-              >
-                <Paperclip size={14} />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => setWebSearch(!webSearch)}
-                className={`kokonut-mode-pill web-search-toggle-pill ${webSearch ? 'active' : ''}`}
-                style={{ height: '32px', borderRadius: '16px', padding: '0 10px', fontSize: '11px' }}
-                title="Toggle Web Search / RAG Knowledge Retrieval"
-              >
-                <Globe size={13} />
-                <span>RAG {webSearch ? 'ON' : 'OFF'}</span>
-              </button>
-
-              {messages.length > 0 && (
-                <>
+              {/* Row 2: Action Tools (Attach, RAG, Preview, Print) + Send Button */}
+              <div className="kokonut-actions-row">
+                <div className="flex items-center gap-2">
                   <button
                     type="button"
-                    onClick={handleExportFullChatPdf}
-                    className="kokonut-action-btn export-pdf-action text-cyan-400"
-                    style={{ marginRight: '4px' }}
-                    title="Interactive Full Session Document Preview Modal"
+                    onClick={() => fileInputRef.current?.click()}
+                    className="kokonut-action-btn file-attach-btn"
+                    title="Attach Document or Image"
                   >
-                    <Eye size={14} />
-                    <span>Preview</span>
+                    <Paperclip size={14} />
                   </button>
 
                   <button
                     type="button"
-                    onClick={handleDirectSessionPrint}
-                    className="kokonut-action-btn export-pdf-action text-blue-400"
-                    style={{ marginRight: '10px' }}
-                    title="Direct Full Session System Print Preview"
+                    onClick={() => setWebSearch(!webSearch)}
+                    className={`kokonut-mode-pill web-search-toggle-pill ${webSearch ? 'active' : ''}`}
+                    style={{ height: '32px', borderRadius: '16px', padding: '0 10px', fontSize: '11px' }}
+                    title="Toggle Web Search / RAG Knowledge Retrieval"
                   >
-                    <Printer size={14} />
-                    <span>Print</span>
+                    <Globe size={13} />
+                    <span>RAG {webSearch ? 'ON' : 'OFF'}</span>
                   </button>
-                </>
-              )}
+
+                  {messages.length > 0 && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleExportFullChatPdf}
+                        className="kokonut-action-btn export-pdf-action text-cyan-400"
+                        title="Interactive Full Session Document Preview Modal"
+                      >
+                        <Eye size={14} />
+                        <span>Preview</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={handleDirectSessionPrint}
+                        className="kokonut-action-btn export-pdf-action text-blue-400"
+                        title="Direct Full Session System Print Preview"
+                      >
+                        <Printer size={14} />
+                        <span>Print</span>
+                      </button>
+                    </>
+                  )}
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={isLoading || !inputPrompt.trim()}
+                  className="kokonut-send-btn attract-btn"
+                  title="Send Message"
+                >
+                  <Send size={16} />
+                </button>
+              </div>
             </div>
-
-            <button
-              type="submit"
-              disabled={isLoading || !inputPrompt.trim()}
-              className="kokonut-send-btn attract-btn"
-              title="Send Message"
-            >
-              <Send size={16} />
-            </button>
           </div>
         </form>
       </div>

@@ -4083,7 +4083,7 @@ body {
   padding: 8px !important;
 }
 
-/* 📱 MOBILE COMPACT 2-ROW INPUT DOCK */
+/* 📱 MOBILE COMPACT 2-ROW INPUT DOCK WITH 40%/60% PICKER SPLIT */
 @media (max-width: 768px) {
   .kokonut-bottom-row {
     display: flex !important;
@@ -4094,33 +4094,45 @@ body {
 
   .kokonut-left-actions {
     display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
+    flex-direction: column !important;
+    gap: 8px !important;
     width: 100% !important;
-    gap: 6px !important;
-    flex-wrap: nowrap !important;
   }
 
-  .mobile-picker-row {
+  .kokonut-pickers-row {
     display: flex !important;
     align-items: center !important;
-    gap: 6px !important;
+    gap: 8px !important;
     width: 100% !important;
   }
 
-  .mobile-action-row {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    width: 100% !important;
-    gap: 6px !important;
-  }
-
-  .custom-dropdown-pill {
-    flex: 1 1 auto !important;
+  .provider-picker-wrapper {
+    flex: 0 0 calc(40% - 4px) !important;
+    width: calc(40% - 4px) !important;
     min-width: 0 !important;
+  }
+
+  .model-picker-wrapper {
+    flex: 0 0 calc(60% - 4px) !important;
+    width: calc(60% - 4px) !important;
+    min-width: 0 !important;
+  }
+
+  .provider-picker-wrapper .custom-dropdown-pill,
+  .model-picker-wrapper .custom-dropdown-pill {
+    width: 100% !important;
+    justify-content: space-between !important;
+    box-sizing: border-box !important;
     padding: 5px 8px !important;
     font-size: 0.78rem !important;
+  }
+
+  .kokonut-actions-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    gap: 6px !important;
   }
 }
 
