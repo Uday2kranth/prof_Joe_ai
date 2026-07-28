@@ -4403,6 +4403,42 @@ body {
   }
 }
 
+/* 📖 Exam Prep & Syllabus Paper Dropdown */
+.exam-prep-container,
+.exam-prep-header {
+  overflow: visible !important;
+}
+
+.custom-dropdown-menu.paper-menu {
+  position: absolute !important;
+  top: calc(100% + 6px) !important;
+  bottom: auto !important;
+  right: 0 !important;
+  left: auto !important;
+  width: 320px !important;
+  min-width: 280px !important;
+  height: auto !important;
+  max-height: 320px !important;
+  overflow-y: auto !important;
+  z-index: 999999 !important;
+  background: rgba(15, 23, 42, 0.98) !important;
+  border: 1.5px solid rgba(6, 182, 212, 0.6) !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.85), 0 0 24px rgba(6, 182, 212, 0.3) !important;
+  backdrop-filter: blur(20px) !important;
+  padding: 8px !important;
+}
+
+@media (max-width: 768px) {
+  .custom-dropdown-menu.paper-menu {
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    width: calc(100vw - 32px) !important;
+    max-width: 320px !important;
+    min-width: 0 !important;
+  }
+}
+
 
 
 

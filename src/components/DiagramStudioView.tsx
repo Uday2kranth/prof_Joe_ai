@@ -255,35 +255,69 @@ export const DiagramStudioView: React.FC = () => {
 
   const handleExportImage = (format: 'png' | 'jpeg') => {
     if (!renderedSvg) return;
-    const svgBlob = new Blob([renderedSvg], { type: 'image/svg+xml;charset=utf-8' });
-    const url = URL.createObjectURL(svgBlob);
-    const img = new Image();
-    img.onload = () => {
-      const canvas = document.createElement('canvas');
-      const scale = 2; // 2x High-DPI for crisp text
-      const width = (img.width || 800) * scale;
-      const height = (img.height || 600) * scale;
-      canvas.width = width;
-      canvas.height = height;
-      const ctx = canvas.getContext('2d');
-      if (!ctx) return;
 
-      if (format === 'jpeg') {
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(renderedSvg, 'image/svg+xml');
+      const svgEl = doc.querySelector('svg');
+      if (!svgEl) return;
+
+      let width = parseFloat(svgEl.getAttribute('width') || '0');
+      let height = parseFloat(svgEl.getAttribute('height') || '0');
+
+      if (!width || !height) {
+        const viewBox = svgEl.getAttribute('viewBox');
+        if (viewBox) {
+          const parts = viewBox.split(/[\s,]+/).map(Number);
+          if (parts.length === 4 && parts[2] > 0 && parts[3] > 0) {
+            width = parts[2];
+            height = parts[3];
+          }
+        }
       }
 
-      ctx.scale(scale, scale);
-      ctx.drawImage(img, 0, 0);
-      const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
-      const imgUrl = canvas.toDataURL(mimeType, 0.95);
-      const a = document.createElement('a');
-      a.href = imgUrl;
-      a.download = `diagram-${selectedTemplate.id}-${Date.now()}.${format}`;
-      a.click();
-      URL.revokeObjectURL(url);
-    };
-    img.src = url;
+      if (!width || isNaN(width)) width = 800;
+      if (!height || isNaN(height)) height = 600;
+
+      svgEl.setAttribute('width', `${width}px`);
+      svgEl.setAttribute('height', `${height}px`);
+      const cleanSvg = new XMLSerializer().serializeToString(svgEl);
+
+      const dataUrl = `data:image/svg+xml;charset=utf-8,${encodeURIComponent(cleanSvg)}`;
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+
+      img.onload = () => {
+        const canvas = document.createElement('canvas');
+        const scale = 2; // 2x High-DPI for crisp text
+        canvas.width = Math.round(width * scale);
+        canvas.height = Math.round(height * scale);
+        const ctx = canvas.getContext('2d');
+        if (!ctx) return;
+
+        if (format === 'jpeg') {
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+        }
+
+        ctx.scale(scale, scale);
+        ctx.drawImage(img, 0, 0, width, height);
+
+        const mimeType = format === 'png' ? 'image/png' : 'image/jpeg';
+        const imgUrl = canvas.toDataURL(mimeType, 0.95);
+
+        const a = document.createElement('a');
+        a.href = imgUrl;
+        a.download = `diagram-${selectedTemplate.id}-${Date.now()}.${format}`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+      };
+
+      img.src = dataUrl;
+    } catch (err) {
+      console.error('Failed to export image:', err);
+    }
   };
 
   return (

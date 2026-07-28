@@ -64,7 +64,7 @@ export const ExamPrepView: React.FC<ExamPrepViewProps> = ({ onLoadQuestionToChat
         </div>
 
         {/* Custom Glassmorphic Paper Dropdown */}
-        <div className="relative inline-block" style={{ overflow: 'visible', zIndex: 100 }} ref={paperMenuRef}>
+        <div className="relative inline-block" style={{ position: 'relative', overflow: 'visible', zIndex: 100 }} ref={paperMenuRef}>
           <button
             type="button"
             onClick={() => setIsPaperMenuOpen(!isPaperMenuOpen)}
