@@ -174,6 +174,21 @@ export const App: React.FC = () => {
     updatedAt: Date.now()
   });
 
+  const mergeSessions = (local: ChatSession[], cloud: ChatSession[]): ChatSession[] => {
+    const map = new Map<string, ChatSession>();
+    for (const s of local) {
+      if (s.id) map.set(s.id, s);
+    }
+    for (const s of cloud) {
+      if (!s.id) continue;
+      const existing = map.get(s.id);
+      if (!existing || (s.updatedAt && s.updatedAt > existing.updatedAt)) {
+        map.set(s.id, s);
+      }
+    }
+    return Array.from(map.values()).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+  };
+
   const handleLoginSuccess = async (username: string, token: string, role: string) => {
     setIsCloudSessionsLoaded(false);
     setCurrentUser(username);
@@ -189,15 +204,28 @@ export const App: React.FC = () => {
     setSelectedProvider(savedProv);
     setSelectedModel(savedMod);
 
+    // Restore saved local sessions for this user first
+    let localSaved: ChatSession[] = [];
+    const savedLocalStr = localStorage.getItem(`chatterbot_sessions_${username}`);
+    if (savedLocalStr) {
+      try {
+        const parsed = JSON.parse(savedLocalStr);
+        if (Array.isArray(parsed) && parsed.length > 0) localSaved = parsed;
+      } catch (e) {
+        console.error('Failed to parse saved local sessions on login', e);
+      }
+    }
+
     // Fetch user-isolated cloud sessions immediately on login
     try {
       const response = await fetch(`/api/sessions?username=${encodeURIComponent(username)}&token=${encodeURIComponent(token)}`);
       if (response.ok) {
         const data = await response.json();
         if (data.success && Array.isArray(data.sessions) && data.sessions.length > 0) {
-          setSessions(data.sessions);
-          localStorage.setItem(`chatterbot_sessions_${username}`, JSON.stringify(data.sessions));
-          setActiveSessionIdState(data.sessions[0].id);
+          const merged = localSaved.length > 0 ? mergeSessions(localSaved, data.sessions) : data.sessions;
+          setSessions(merged);
+          localStorage.setItem(`chatterbot_sessions_${username}`, JSON.stringify(merged));
+          setActiveSessionIdState(merged[0].id);
           setIsCloudSessionsLoaded(true);
           return;
         }
@@ -206,27 +234,22 @@ export const App: React.FC = () => {
       console.warn('Could not fetch cloud sessions on login:', err);
     }
 
-    // Default fresh session if user has no cloud sessions
-    const fresh = [createFreshDefaultSession()];
-    setSessions(fresh);
-    localStorage.setItem(`chatterbot_sessions_${username}`, JSON.stringify(fresh));
-    setActiveSessionIdState(fresh[0].id);
+    // Fallback: If cloud returned 0 sessions, use localSaved if available, otherwise fresh default
+    const finalSessions = localSaved.length > 0 ? localSaved : [createFreshDefaultSession()];
+    setSessions(finalSessions);
+    localStorage.setItem(`chatterbot_sessions_${username}`, JSON.stringify(finalSessions));
+    setActiveSessionIdState(finalSessions[0].id);
     setIsCloudSessionsLoaded(true);
   };
 
   const handleLogout = () => {
     setIsCloudSessionsLoaded(false);
-    if (currentUser) {
-      localStorage.removeItem(`chatterbot_sessions_${currentUser}`);
-      localStorage.removeItem(`chatterbot_user_keys_${currentUser}`);
-    }
+    // Keep chatterbot_sessions_${currentUser} intact in localStorage so offline history is NEVER lost!
     setCurrentUser('');
     setAuthToken('');
     localStorage.removeItem('chatterbot_username');
     localStorage.removeItem('chatterbot_token');
     localStorage.removeItem('chatterbot_role');
-    localStorage.removeItem('chatterbot_sessions');
-    localStorage.removeItem('chatterbot_user_keys');
     const fresh = [createFreshDefaultSession()];
     setSessions(fresh);
     setActiveSessionIdState(fresh[0].id);
@@ -274,10 +297,10 @@ export const App: React.FC = () => {
             return;
           }
           if (data.success && Array.isArray(data.sessions) && data.sessions.length > 0) {
-            setSessions(data.sessions);
+            setSessions(prev => mergeSessions(prev, data.sessions));
             localStorage.setItem(`chatterbot_sessions_${currentUser}`, JSON.stringify(data.sessions));
             if (data.sessions[0]?.id) {
-              setActiveSessionIdState(data.sessions[0].id);
+              setActiveSessionIdState(prev => prev || data.sessions[0].id);
             }
           }
         }

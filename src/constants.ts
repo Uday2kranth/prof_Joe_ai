@@ -120,9 +120,12 @@ export const PROVIDERS: ProviderGroup[] = [
     id: 'opencode',
     name: 'OpenCode AI (Free Tier)',
     models: [
-      { value: 'opencode-zen/auto', name: 'Zen Auto Free Router (OpenCode) [WS]' },
-      { value: 'opencode-zen/fast', name: 'Zen Fast Low-Latency (OpenCode)' },
-      { value: 'opencode-zen/coder', name: 'Zen Coder Specialist (OpenCode)' }
+      { value: 'deepseek-v4-flash-free', name: 'DeepSeek V4 Flash (OpenCode) [WS]' },
+      { value: 'laguna-s-2.1-free', name: 'Laguna S 2.1 Agent (OpenCode)' },
+      { value: 'ling-3.0-flash-free', name: 'Ling 3.0 Flash (OpenCode) [WS]' },
+      { value: 'mimo-v2.5-free', name: 'Mimo V2.5 Reasoning (OpenCode)' },
+      { value: 'nemotron-3-ultra-free', name: 'Nemotron 3 Ultra 550B (OpenCode) [WS]' },
+      { value: 'north-mini-code-free', name: 'North Mini Code Specialist (OpenCode)' }
     ]
   }
 ];
