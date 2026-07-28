@@ -131,7 +131,7 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
   return (
     <div className="chat-window-container fun-persona-lounge-container">
       {/* Single Unified Glassmorphic Persona Dropdown Header */}
-      <div className="persona-selector-header-strip px-4 py-2 flex items-center justify-between gap-3" style={{ background: 'rgba(15, 23, 42, 0.94)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(6, 182, 212, 0.25)', minHeight: '48px', flexShrink: 0 }}>
+      <div className="persona-selector-header-strip w-full px-4 py-2 flex items-center justify-between gap-3 flex-nowrap" style={{ background: 'rgba(15, 23, 42, 0.94)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(6, 182, 212, 0.25)', minHeight: '48px', flexShrink: 0, width: '100%' }}>
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2">
             <span style={{ fontSize: '1.2rem' }}>🎭</span>
