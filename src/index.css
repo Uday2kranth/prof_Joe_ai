@@ -4290,6 +4290,18 @@ body {
   padding: 10px 14px !important;
 }
 
+/* 📱 MOBILE RESPONSIVE DIAGRAM DROPDOWN (<= 768px) */
+@media (max-width: 768px) {
+  .custom-dropdown-menu.diagram-menu {
+    left: 50% !important;
+    right: auto !important;
+    transform: translateX(-50%) !important;
+    width: calc(100vw - 32px) !important;
+    max-width: 340px !important;
+    min-width: 0 !important;
+  }
+}
+
 .kroki-render-btn {
   display: inline-flex !important;
   align-items: center !important;
