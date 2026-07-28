@@ -293,14 +293,6 @@ GENERAL AI ASSISTANT DIRECTIVES:
         });
     }
 
-    // Load-balance across multiple comma-separated API keys if configured
-    if (apiKey && apiKey.includes(',')) {
-        const keyList = apiKey.split(',').map(k => k.trim()).filter(k => k.length > 0);
-        if (keyList.length > 0) {
-            apiKey = keyList[Math.floor(Math.random() * keyList.length)];
-        }
-    }
-
     // 2. Resolve API Endpoint
     let endpoint = '';
     if (provider === "openrouter") {
@@ -553,7 +545,15 @@ STRICT IMAGE & DIAGRAM EMBEDDING DIRECTIVES:
 
                     console.warn(`Key rotation: Key index ${i} failed for model "${targetModel}" with status ${response.status}: ${lastErrorText}`);
 
-                    if (response.status === 429) {
+                    if (response.status === 402) {
+                        if (provider === "openrouter") {
+                            lastErrorText = `OpenRouter key has 0 credit balance for paid model '${targetModel}'. Please select a free model (e.g. Qwen 3 Coder, Gemma 4, Nemotron 3) or top up credits in OpenRouter settings.`;
+                        } else {
+                            lastErrorText = `Payment required for model '${targetModel}'. Please select a free model or check provider account balance.`;
+                        }
+                    } else if (response.status === 503) {
+                        lastErrorText = `Provider '${provider.toUpperCase()}' is temporarily overloaded (HTTP 503). Please try again in 5s or select Pollinations AI (Free Keyless).`;
+                    } else if (response.status === 429) {
                         if (provider === "gemini") {
                             lastErrorText = "Google Free Tier Rate Limit Exceeded (15 RPM / 1500 RPD quota). Please try again in 15s or switch provider.";
                         } else if (provider === "pollinations") {
