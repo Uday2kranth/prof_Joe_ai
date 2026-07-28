@@ -212,6 +212,18 @@ export const DiagramStudioView: React.FC = () => {
   const [renderedSvg, setRenderedSvg] = useState<string>('');
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [isDiagramMenuOpen, setIsDiagramMenuOpen] = useState<boolean>(false);
+  const diagramMenuRef = React.useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (diagramMenuRef.current && !diagramMenuRef.current.contains(e.target as Node)) {
+        setIsDiagramMenuOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleRender = async () => {
     setIsLoading(true);
@@ -242,47 +254,73 @@ export const DiagramStudioView: React.FC = () => {
   };
 
   return (
-    <div className="diagram-studio-container">
-      <div className="studio-header">
-        <div className="studio-title-area">
-          <Layers className="text-cyan-400" size={24} />
+    <div className="diagram-studio-container p-4">
+      <div className="studio-header flex flex-wrap items-center justify-between gap-4 mb-6" style={{ overflow: 'visible', zIndex: 100 }}>
+        <div className="studio-title-area flex items-center gap-3">
+          <Layers className="text-cyan-400" size={26} />
           <div>
-            <h2>Kroki Diagram Studio Engine</h2>
-            <p className="subtitle">Live interactive visual diagram builder & vector SVG exporter</p>
+            <h2 className="text-xl font-bold text-slate-100">Kroki Diagram Studio Engine</h2>
+            <p className="subtitle text-xs text-slate-400">Live interactive visual diagram builder & vector SVG exporter</p>
           </div>
         </div>
 
-        <div className="studio-controls" style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <select
-            value={selectedTemplate.id}
-            onChange={(e) => {
-              const tmpl = TEMPLATES.find(t => t.id === e.target.value) || TEMPLATES[0];
-              setSelectedTemplate(tmpl);
-              setDiagramSource(tmpl.code);
-            }}
-            className="select-input engine-select"
-            style={{ minWidth: '260px' }}
-          >
-            {TEMPLATES.map((t) => (
-              <option key={t.id} value={t.id}>
-                {t.name}
-              </option>
-            ))}
-          </select>
+        <div className="studio-controls flex items-center gap-3 relative" style={{ overflow: 'visible', zIndex: 100 }}>
+          {/* Custom Glass Diagram Dropdown */}
+          <div className="relative inline-block" ref={diagramMenuRef}>
+            <button
+              type="button"
+              onClick={() => setIsDiagramMenuOpen(!isDiagramMenuOpen)}
+              className="custom-dropdown-pill"
+              title="Select Diagram Engine & Type"
+              style={{ padding: '8px 16px', fontSize: '0.85rem' }}
+            >
+              <span className="picker-icon">📐</span>
+              <span className="font-semibold text-slate-100">{selectedTemplate.name}</span>
+              <span className="text-slate-400 text-xs">▾</span>
+            </button>
+
+            {isDiagramMenuOpen && (
+              <div className="custom-dropdown-menu diagram-menu" style={{ minWidth: '280px', maxHeight: '320px', overflowY: 'auto' }}>
+                <div className="dropdown-header">Diagram Types</div>
+                {TEMPLATES.map(t => {
+                  const isSelected = t.id === selectedTemplate.id;
+                  return (
+                    <button
+                      key={t.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedTemplate(t);
+                        setDiagramSource(t.code);
+                        setIsDiagramMenuOpen(false);
+                      }}
+                      className={`dropdown-item ${isSelected ? 'selected' : ''}`}
+                    >
+                      <span className="text-xs text-cyan-400 mr-2 font-mono">[{t.engine}]</span>
+                      <span>{t.name}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
 
           <button
             onClick={handleRender}
             disabled={isLoading}
-            className="btn btn-primary"
-            style={{ display: 'flex', alignItems: 'center', gap: '6px', whiteSpace: 'nowrap' }}
+            className="flex items-center gap-2 px-4 py-2 rounded-full font-bold text-xs text-white transition-all"
+            style={{
+              background: 'linear-gradient(135deg, #06b6d4, #3b82f6)',
+              boxShadow: '0 0 16px rgba(6, 182, 212, 0.4)',
+              cursor: isLoading ? 'wait' : 'pointer'
+            }}
           >
-            <RefreshCw size={15} className={isLoading ? 'animate-spin' : ''} />
+            <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
             <span>{isLoading ? 'Rendering...' : 'Render Diagram'}</span>
           </button>
         </div>
       </div>
 
-      <div className="studio-content-grid" style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px' }}>
+      <div className="studio-content-grid grid grid-cols-1 lg:grid-cols-2 gap-5">
         {/* Editor Box */}
         <div className="editor-box card-box" style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           <div className="editor-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
@@ -326,7 +364,11 @@ export const DiagramStudioView: React.FC = () => {
             </div>
 
             {renderedSvg && (
-              <button onClick={handleDownloadSvg} className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.8rem' }}>
+              <button
+                onClick={handleDownloadSvg}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full font-semibold text-xs text-cyan-400 border border-cyan-500/40 bg-slate-800/80 hover:bg-cyan-950/40 transition-all"
+                style={{ boxShadow: '0 0 12px rgba(6, 182, 212, 0.2)' }}
+              >
                 <Download size={14} />
                 <span>Export SVG</span>
               </button>

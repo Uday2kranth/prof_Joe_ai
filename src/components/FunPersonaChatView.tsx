@@ -120,6 +120,14 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
     await printSessionToPdf(messages, docTitle);
   };
 
+  const handleCardMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    e.currentTarget.style.setProperty('--mouse-x', `${x}px`);
+    e.currentTarget.style.setProperty('--mouse-y', `${y}px`);
+  };
+
   return (
     <div className="chat-window-container fun-persona-lounge-container">
       {/* Single Unified Glassmorphic Persona Dropdown Header */}
@@ -209,18 +217,19 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
         </div>
       </div>
 
-      {/* Messages Viewport */}
-      <div className="messages-viewport">
-        <div className="messages-scroll-area">
+      <div className="chat-messages-container" style={{ position: 'relative' }}>
+        <div className="messages-inner">
           {messages.length === 0 ? (
-            <div className="empty-state-hero kokonut-hero-card">
-              <div className="kokonut-dots-overlay" />
-              <div className="hero-icon-box" style={{ padding: 0, overflow: 'hidden', borderRadius: '50%', width: '80px', height: '80px', margin: '0 auto 16px auto', border: '3px solid var(--accent-cyan)', boxShadow: '0 0 24px rgba(6, 182, 212, 0.5)' }}>
+            <div
+              className="welcome-hero-card text-center my-auto max-w-2xl"
+              onMouseMove={handleCardMouseMove}
+            >
+              <div className="hero-icon-box" style={{ padding: 0, overflow: 'hidden', borderRadius: '50%', width: '80px', height: '80px', margin: '0 auto 20px auto', border: '3px solid var(--accent-cyan)', boxShadow: '0 0 24px rgba(6, 182, 212, 0.5)' }}>
                 <span style={{ fontSize: '2.5rem', display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
                   {activePersonaObj.icon}
                 </span>
               </div>
-              <h2 style={{ minHeight: '38px', margin: '0 0 8px 0' }}>
+              <h2 className="welcome-title text-2xl sm:text-3xl font-bold text-slate-100 mb-3 relative z-10">
                 <TextType
                   text={[
                     `Welcome to ${activePersonaObj.name} 🎭`,
@@ -229,7 +238,9 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
                   ]}
                 />
               </h2>
-              <p style={{ color: '#94a3b8', fontSize: '0.88rem' }}>{activePersonaObj.description}</p>
+              <p className="text-slate-300 text-sm sm:text-base max-w-xl mx-auto leading-relaxed relative z-10">
+                {activePersonaObj.description}
+              </p>
             </div>
           ) : (
             messages.map((m, idx) => (

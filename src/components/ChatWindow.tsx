@@ -166,16 +166,27 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     await printSessionToPdf(messages, docTitle);
   };
 
+  const handleCardMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    e.currentTarget.style.setProperty('--mouse-x', `${x}px`);
+    e.currentTarget.style.setProperty('--mouse-y', `${y}px`);
+  };
+
   return (
     <div className="chat-window-modern">
       <div className="chat-messages-container">
         <div className="messages-inner">
         {messages.length === 0 ? (
-          <div className="chat-welcome-box text-center py-12 px-4">
-            <div className="welcome-avatar-wrapper mb-4" style={{ width: '76px', height: '76px', margin: '0 auto 16px auto', borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--accent-cyan)', boxShadow: '0 0 20px rgba(6, 182, 212, 0.4)' }}>
+          <div
+            className="welcome-hero-card text-center my-auto max-w-2xl"
+            onMouseMove={handleCardMouseMove}
+          >
+            <div className="welcome-avatar-wrapper mb-4" style={{ width: '80px', height: '80px', margin: '0 auto 20px auto', borderRadius: '50%', overflow: 'hidden', border: '3px solid var(--accent-cyan)', boxShadow: '0 0 24px rgba(6, 182, 212, 0.45)' }}>
               <img src="/joe-avatar.png" alt="Prof. Joe" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
             </div>
-            <h2 className="welcome-title text-2xl font-bold text-slate-100 mb-2">
+            <h2 className="welcome-title text-2xl sm:text-3xl font-bold text-slate-100 mb-3 relative z-10">
               <TextType
                 text={["Welcome to Prof. Joe AI Exam Mentor", "OU M.Sc. Academic Specialist", "Multi-Model Intelligence Engine"]}
                 typingSpeed={50}
@@ -185,7 +196,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 cursorCharacter="|"
               />
             </h2>
-            <p>Select a model, enter your exam query or syllabus topic, and let Prof. Joe structure high-scoring answers!</p>
+            <p className="text-slate-300 text-sm sm:text-base max-w-xl mx-auto leading-relaxed relative z-10">
+              Select a model, enter your exam query or syllabus topic, and let Prof. Joe structure high-scoring answers!
+            </p>
           </div>
         ) : (
           messages.map((m, idx) => (
