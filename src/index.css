@@ -285,6 +285,9 @@ body {
     bottom: 0;
     transform: translateX(-100%);
     margin-left: 0 !important;
+    z-index: 9999 !important;
+    background: var(--bg-secondary) !important;
+    box-shadow: 8px 0 32px rgba(0, 0, 0, 0.6) !important;
   }
 
   .app-sidebar.open {
@@ -302,9 +305,9 @@ body {
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    backdrop-filter: blur(4px);
-    z-index: 90;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(6px);
+    z-index: 9998 !important;
     opacity: 0;
     pointer-events: none;
     transition: opacity 0.25s ease;
