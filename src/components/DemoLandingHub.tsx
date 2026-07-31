@@ -167,9 +167,6 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
             className="my-3"
           />
 
-          <p className="demo-hero-description">
-            Experience 100% full-bleed dedicated workspaces designed to eliminate visual clutter and maximize learning focus.
-          </p>
         </div>
 
         {/* Workspace Cards Grid */}
