@@ -7997,41 +7997,22 @@ body {
   }
 
   .demo-home-breadcrumb-btn span,
+  .demo-view-toggle-btn span,
   .demo-status-pill span {
     display: none !important;
   }
 
-  .demo-view-toggle-btn span {
-    display: inline-block !important;
-    font-size: 0.74rem !important;
-    font-weight: 600 !important;
-    white-space: nowrap !important;
-  }
-
-  .demo-home-breadcrumb-btn {
+  .demo-home-breadcrumb-btn,
+  .demo-status-pill,
+  .demo-view-toggle-btn {
     padding: 6px 8px !important;
-    min-width: unset !important;
-    border-radius: 10px !important;
-    gap: 0 !important;
-  }
-
-  .demo-status-pill {
-    padding: 6px 8px !important;
-    min-width: unset !important;
+    min-width: 34px !important;
+    height: 34px !important;
     border-radius: 10px !important;
     gap: 0 !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
-  }
-
-  .demo-view-toggle-btn {
-    padding: 6px 10px !important;
-    min-width: unset !important;
-    border-radius: 10px !important;
-    gap: 5px !important;
-    display: inline-flex !important;
-    align-items: center !important;
   }
 
   .demo-hub-header {

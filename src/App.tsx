@@ -19,7 +19,7 @@ import { DemoLandingHub } from './components/DemoLandingHub';
 import { DemoChatHistoryDrawer } from './components/DemoChatHistoryDrawer';
 import { PdfPreviewModal } from './components/PdfPreviewModal';
 import { printSessionToPdf } from './services/printPdfService';
-import { Home, Layout, Key, Moon, Sun, User, Clock, Menu } from 'lucide-react';
+import { Home, Layout, Key, Moon, Sun, User, Menu } from 'lucide-react';
 import { sendChatMessage } from './services/apiService';
 import { fetchCloudCodeLabPresetSessions, syncCodeLabPresetSessions } from './services/codelabSyncService';
 
@@ -997,10 +997,10 @@ export const App: React.FC = () => {
                   type="button"
                   onClick={() => setIsDemoChatDrawerOpen(true)}
                   className="demo-view-toggle-btn cyan-toggle-btn"
-                  title="Open Chat History Drawer"
+                  title="Open Control Deck"
                 >
-                  <Clock size={14} />
-                  <span>📜 Chat History</span>
+                  <Menu size={16} />
+                  <span>Control Deck</span>
                 </button>
               )}
 
