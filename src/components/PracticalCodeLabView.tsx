@@ -16,8 +16,8 @@ import {
   ChevronLeft,
   ChevronRight,
   Zap,
-  History,
-  Package
+  Package,
+  Menu
 } from 'lucide-react';
 import { QuickExtractionModal } from './QuickExtractionModal';
 import { CodeLabPresetDrawer, ACADEMIC_PRESETS } from './CodeLabPresetDrawer';
@@ -371,7 +371,17 @@ export function PracticalCodeLabView({
     <div className="code-lab-view-container">
       {/* Header Bar */}
       <div className="code-lab-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <button 
+            type="button" 
+            onClick={() => setIsHistoryDrawerOpen(true)} 
+            className="extractor-btn-secondary"
+            style={{ padding: '7px 10px', borderRadius: '10px' }}
+            title="Open Code Lab Deck (Menu & History)"
+          >
+            <Menu size={18} style={{ color: '#06b6d4' }} />
+          </button>
+
           <button 
             type="button" 
             onClick={onBackToHub} 
@@ -486,30 +496,6 @@ export function PracticalCodeLabView({
               <span>💻 Full IDE</span>
             </button>
           </div>
-
-          {/* Lab History Drawer Button */}
-          <button
-            type="button"
-            onClick={() => setIsHistoryDrawerOpen(true)}
-            className="extractor-btn-secondary"
-            style={{ fontSize: '0.78rem', padding: '6px 12px' }}
-            title="Open Code Lab session history"
-          >
-            <History size={14} style={{ color: '#06b6d4' }} />
-            <span>Lab History</span>
-          </button>
-
-          {onResetPresetChat && activePreset && (
-            <button
-              type="button"
-              onClick={() => setIsResetModalOpen(true)}
-              className="extractor-btn-secondary"
-              style={{ fontSize: '0.78rem', padding: '6px 12px' }}
-              title="Clear chat and start fresh for this preset"
-            >
-              <span>🔄 Reset Session</span>
-            </button>
-          )}
 
           <button
             type="button"
