@@ -8035,6 +8035,10 @@ body {
     white-space: nowrap !important;
   }
 
+  .demo-control-deck-text {
+    display: none !important;
+  }
+
   .demo-hub-header {
     padding: 10px 14px !important;
     flex-wrap: wrap !important;

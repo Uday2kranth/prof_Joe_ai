@@ -1000,7 +1000,7 @@ export const App: React.FC = () => {
                   title="Open Control Deck"
                 >
                   <Menu size={16} />
-                  <span>Control Deck</span>
+                  <span className="demo-control-deck-text">Control Deck</span>
                 </button>
               )}
 
@@ -1012,7 +1012,7 @@ export const App: React.FC = () => {
                   title="Open Fun Persona Deck & Character Selector"
                 >
                   <Menu size={16} />
-                  <span>Control Deck</span>
+                  <span className="demo-control-deck-text">Control Deck</span>
                 </button>
               )}
 
@@ -1024,7 +1024,7 @@ export const App: React.FC = () => {
                   title="Open Code Lab Control Deck"
                 >
                   <Menu size={16} />
-                  <span>Control Deck</span>
+                  <span className="demo-control-deck-text">Control Deck</span>
                 </button>
               )}
             </div>
