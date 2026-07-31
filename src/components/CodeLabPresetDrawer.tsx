@@ -95,6 +95,33 @@ export const ACADEMIC_PRESETS: CodeLabPreset[] = [
     libraries: ['C++20 STL', 'Java OOP', 'Pointers', 'Graph Algorithms', 'DP'],
     description: 'Competitive programming DSA, time/space complexity analysis (O(N log N)), dynamic programming, and OOP classes.',
     systemInstruction: 'You are a Competitive Programming & DSA Coach. Generate clean C++/Java code for data structures, algorithms, and pointer management with time complexity annotations.'
+  },
+  {
+    id: 'rust_learner',
+    name: 'Rust Learner & Pathfinder 🦀',
+    badge: 'RUST & CARGO',
+    icon: Terminal,
+    libraries: ['Cargo', 'Ownership', 'Borrow Checker', 'Traits', 'Option/Result', 'Pattern Matching'],
+    description: 'Step-by-step guidance for Rust beginners. Teaches memory ownership, borrowing rules, lifetimes, pattern matching, Option/Result, and Cargo project structures with beginner-friendly mental models.',
+    systemInstruction: 'You are an expert Rust Mentor. Guide Rust beginners step-by-step. Focus on ownership, borrowing rules, lifetimes, Option/Result error handling, and Cargo project structure. Provide clean, well-commented Rust code files.'
+  },
+  {
+    id: 'rust_architect',
+    name: 'Rust Code Architect & Explainer 🦀',
+    badge: 'SYSTEMS ARCHITECTURE',
+    icon: Cpu,
+    libraries: ['Tokio', 'Serde', 'Anyhow', 'Unsafe Rust', 'Concurrency', 'Rayon'],
+    description: 'In-depth Rust code analysis, zero-cost abstractions, lifetime debugging, async tokio runtime, unsafe Rust safety checks, AND provides full production-ready runnable Rust files when requested.',
+    systemInstruction: 'You are a Senior Rust Systems Architect. Explain complex Rust code, lifetimes, async tokio runtime, unsafe blocks, and performance profiling. Always output complete, production-grade runnable Rust source files.'
+  },
+  {
+    id: 'shell_commands',
+    name: 'OS & Shell Command Navigator 💻',
+    badge: 'BASH & POWERSHELL',
+    icon: Terminal,
+    libraries: ['Bash', 'PowerShell 7', 'Zsh', 'Windows CMD', 'Linux CLI', 'macOS Terminal'],
+    description: 'Teaches OS terminal & shell commands (Linux, Windows PowerShell, macOS Zsh). Focuses on practical, highly useful everyday & advanced commands, environment setup, and automation scripts.',
+    systemInstruction: 'You are a Senior Systems Administrator and Shell Command Specialist. Focus primarily on Windows PowerShell and Linux Bash commands. OS Clarification Protocol: If a user prompt does not specify their OS or shell, ask the user for their OS (Windows, Linux, macOS) and version/shell environment before providing exact, version-accurate commands. Provide copy-pasteable script blocks (.ps1, .sh) with clear line-by-line explanations.'
   }
 ];
 

@@ -19,7 +19,7 @@ import { DemoLandingHub } from './components/DemoLandingHub';
 import { DemoChatHistoryDrawer } from './components/DemoChatHistoryDrawer';
 import { PdfPreviewModal } from './components/PdfPreviewModal';
 import { printSessionToPdf } from './services/printPdfService';
-import { Home, Layout, Key, Moon, Sun, User, Clock } from 'lucide-react';
+import { Home, Layout, Key, Moon, Sun, User, Clock, Menu } from 'lucide-react';
 import { sendChatMessage } from './services/apiService';
 import { fetchCloudCodeLabPresetSessions, syncCodeLabPresetSessions } from './services/codelabSyncService';
 
@@ -104,6 +104,8 @@ export const App: React.FC = () => {
   });
 
   const [isDemoChatDrawerOpen, setIsDemoChatDrawerOpen] = useState<boolean>(false);
+  const [isPersonaDrawerOpen, setIsPersonaDrawerOpen] = useState<boolean>(false);
+  const [isCodeLabDrawerOpen, setIsCodeLabDrawerOpen] = useState<boolean>(false);
   const [isDemoPdfPreviewOpen, setIsDemoPdfPreviewOpen] = useState<boolean>(false);
   const [isPersistentWebSearch, setIsPersistentWebSearch] = useState<boolean>(() => {
     return localStorage.getItem('chatterbot_persistent_websearch') === 'true';
@@ -1001,11 +1003,39 @@ export const App: React.FC = () => {
                   <span>📜 Chat History</span>
                 </button>
               )}
+
+              {activeHubWorkspace === 'fun_personas' && (
+                <button
+                  type="button"
+                  onClick={() => setIsPersonaDrawerOpen(true)}
+                  className="demo-view-toggle-btn rose-toggle-btn"
+                  title="Open Fun Persona Deck & Character Selector"
+                >
+                  <Menu size={16} />
+                  <span>Control Deck</span>
+                </button>
+              )}
+
+              {activeHubWorkspace === 'code_lab' && (
+                <button
+                  type="button"
+                  onClick={() => setIsCodeLabDrawerOpen(true)}
+                  className="demo-view-toggle-btn cyan-toggle-btn"
+                  title="Open Code Lab Control Deck"
+                >
+                  <Menu size={16} />
+                  <span>Control Deck</span>
+                </button>
+              )}
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div className="demo-header-middle-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span className="portal-tag cyan-tag" style={{ textTransform: 'uppercase' }}>
-                {activeHubWorkspace} Workspace
+                {activeHubWorkspace === 'code_lab'
+                  ? 'CODE DUNGEON WORKSPACE 🏰'
+                  : activeHubWorkspace === 'extractor_studio'
+                  ? 'TEXTRACTOR WORKSPACE ⚡'
+                  : `${activeHubWorkspace} Workspace`}
               </span>
             </div>
 
@@ -1149,6 +1179,8 @@ export const App: React.FC = () => {
                 onNewPersonaSession={handleNewPersonaSession}
                 onDeletePersonaSession={handleDeletePersonaSession}
                 isDemoView={true}
+                isExternalDrawerOpen={isPersonaDrawerOpen}
+                onCloseExternalDrawer={() => setIsPersonaDrawerOpen(false)}
               />
             )}
             {activeHubWorkspace === 'extractor_studio' && (
@@ -1185,6 +1217,8 @@ export const App: React.FC = () => {
                 }}
                 onNewSession={() => handleNewCodeLabSession(activeCodeLabPresetId)}
                 onDeleteSession={(sessionId) => handleDeleteCodeLabSession(activeCodeLabPresetId, sessionId)}
+                isExternalDrawerOpen={isCodeLabDrawerOpen}
+                onCloseExternalDrawer={() => setIsCodeLabDrawerOpen(false)}
               />
             )}
           </main>

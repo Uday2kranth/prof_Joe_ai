@@ -39,10 +39,15 @@ const MIME_TYPES = {
   '.html': 'text/html',
   '.css': 'text/css',
   '.js': 'text/javascript',
+  '.mjs': 'text/javascript',
   '.json': 'application/json',
   '.png': 'image/png',
   '.jpg': 'image/jpeg',
-  '.svg': 'image/svg+xml'
+  '.svg': 'image/svg+xml',
+  '.wasm': 'application/wasm',
+  '.woff2': 'font/woff2',
+  '.woff': 'font/woff',
+  '.ttf': 'font/ttf'
 };
 
 const server = http.createServer((req, res) => {
@@ -138,13 +143,13 @@ const server = http.createServer((req, res) => {
 
   // 2. Serve Static Build Files (dist/)
   let filePath = path.join(__dirname, 'dist', pathname === '/' ? 'index.html' : pathname);
-  const ext = path.extname(filePath).toLowerCase();
 
   fs.stat(filePath, (err, stats) => {
     if (err || !stats.isFile()) {
       filePath = path.join(__dirname, 'dist', 'index.html');
     }
 
+    const ext = path.extname(filePath).toLowerCase();
     const contentType = MIME_TYPES[ext] || 'text/html';
     fs.readFile(filePath, (readErr, content) => {
       if (readErr) {

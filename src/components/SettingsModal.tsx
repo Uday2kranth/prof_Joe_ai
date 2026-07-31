@@ -109,13 +109,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           </div>
 
           {/* Tab Navigation Header */}
-          <div style={{
+          <div className="settings-tab-nav" style={{
             display: 'flex',
             gap: '8px',
-            background: 'rgba(15, 23, 42, 0.7)',
             padding: '4px',
-            borderRadius: '10px',
-            border: '1px solid rgba(56, 189, 248, 0.2)'
+            borderRadius: '10px'
           }}>
             <button
               type="button"

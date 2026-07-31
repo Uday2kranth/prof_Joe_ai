@@ -16,8 +16,11 @@ import {
   ChevronRight,
   Zap,
   Package,
-  Menu
+  MessageSquare
 } from 'lucide-react';
+import 'katex/dist/katex.min.css';
+import { extractDiagrams, fetchKrokiSvg } from '../services/krokiService';
+import { renderMarkdownWithMathAndDiagrams } from './MessageItem';
 import { QuickExtractionModal } from './QuickExtractionModal';
 import { CodeLabPresetDrawer, ACADEMIC_PRESETS } from './CodeLabPresetDrawer';
 import { MonacoEditorWrapper } from './MonacoEditorWrapper';
@@ -26,6 +29,116 @@ import { ResetSessionModal } from './ResetSessionModal';
 import { saveCodeLabSession } from '../services/indexedDbService';
 import { PROVIDERS } from '../constants';
 import type { UserCustomModels, ChatSession } from '../types';
+
+interface GeneratedFile {
+  fileName: string;
+  language: string;
+  codeContent: string;
+}
+
+interface CodeDungeonMessageBubbleProps {
+  msg: { role: 'user' | 'assistant'; content: string };
+  extractCodeBlocksFromMessage: (content: string) => GeneratedFile[];
+  handleOpenInIde: (file: GeneratedFile) => void;
+}
+
+const CodeDungeonMessageBubble: React.FC<CodeDungeonMessageBubbleProps> = ({
+  msg,
+  extractCodeBlocksFromMessage,
+  handleOpenInIde
+}) => {
+  const isUser = msg.role === 'user';
+  const [renderedHtml, setRenderedHtml] = useState<string>('');
+
+  useEffect(() => {
+    let isMounted = true;
+    if (isUser) {
+      setRenderedHtml('');
+      return;
+    }
+
+    async function processMessage() {
+      const rawContent = msg.content || '';
+      const diagrams = extractDiagrams(rawContent);
+      const diagramMap = new Map<string, string>();
+
+      for (let index = 0; index < diagrams.length; index++) {
+        const diag = diagrams[index];
+        const token = `KROKIDIAGRAMTOKEN${index}ENDTOKEN`;
+        const svgHtml = await fetchKrokiSvg(diag.type, diag.source);
+        const ctaNoteHtml = `<div class="codelab-kroki-cta-note" style="display: block; width: 100%; margin-top: 6px; font-size: 0.72rem; color: #06b6d4; opacity: 0.9; font-weight: 600;">📊 Diagram generated via Kroki. Check this diagram out in Diagram Studio for full editing.</div>`;
+        diagramMap.set(token, `<div class="kroki-container" data-type="${diag.type}" style="display: flex; flex-direction: column; align-items: flex-start; gap: 6px; width: 100%; margin: 12px 0;"><div class="kroki-svg-wrapper" style="width: 100%; overflow-x: auto;">${svgHtml}</div>${ctaNoteHtml}</div>`);
+      }
+
+      let markdownToParse = rawContent;
+      let tokenIndex = 0;
+      diagrams.forEach(diag => {
+        const token = `KROKIDIAGRAMTOKEN${tokenIndex++}ENDTOKEN`;
+        markdownToParse = markdownToParse.replace(diag.fullMatch, token);
+      });
+
+      const parsedHtml = renderMarkdownWithMathAndDiagrams(markdownToParse, diagramMap);
+
+      if (isMounted) {
+        setRenderedHtml(parsedHtml);
+      }
+    }
+
+    processMessage();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [msg.content, isUser]);
+
+  return (
+    <div
+      className={isUser ? 'user-bubble' : 'assistant-bubble'}
+      style={{
+        alignSelf: isUser ? 'flex-end' : 'flex-start',
+        maxWidth: '90%',
+        padding: '12px 16px',
+        borderRadius: '16px',
+        fontSize: '0.84rem',
+        lineHeight: 1.5
+      }}
+    >
+      <div style={{ fontSize: '0.7rem', fontWeight: 700, opacity: 0.7, marginBottom: '4px' }}>
+        {isUser ? 'Student Prompt' : 'Prof. Joe AI'}
+      </div>
+
+      {isUser ? (
+        <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+      ) : (
+        <div
+          className="formatted-content markdown-body"
+          dangerouslySetInnerHTML={{ __html: renderedHtml }}
+        />
+      )}
+
+      {!isUser && (() => {
+        const blocks = extractCodeBlocksFromMessage(msg.content);
+        if (blocks.length === 0) return null;
+        return (
+          <div style={{ marginTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+            {blocks.map((block, bIdx) => (
+              <button
+                key={bIdx}
+                type="button"
+                onClick={() => handleOpenInIde(block)}
+                className="code-lab-view-in-ide-btn"
+                title="Open snippet in IDE viewer"
+              >
+                <Eye size={13} />
+                <span>View {block.fileName} in IDE</span>
+              </button>
+            ))}
+          </div>
+        );
+      })()}
+    </div>
+  );
+};
 
 interface PracticalCodeLabViewProps {
   onBackToHub?: () => void;
@@ -45,6 +158,8 @@ interface PracticalCodeLabViewProps {
   onSelectSession?: (sessionId: string) => void;
   onNewSession?: () => void;
   onDeleteSession?: (sessionId: string) => void;
+  isExternalDrawerOpen?: boolean;
+  onCloseExternalDrawer?: () => void;
 }
 
 interface GeneratedFile {
@@ -70,12 +185,20 @@ export function PracticalCodeLabView({
   activeSessionId = '',
   onSelectSession,
   onNewSession,
-  onDeleteSession
+  onDeleteSession,
+  isExternalDrawerOpen,
+  onCloseExternalDrawer
 }: PracticalCodeLabViewProps) {
   const [inputPrompt, setInputPrompt] = useState('');
   const activePreset = ACADEMIC_PRESETS.find(p => p.id === activePresetId) || ACADEMIC_PRESETS[0];
   const [isPresetDrawerOpen, setIsPresetDrawerOpen] = useState(false);
   const [isHistoryDrawerOpen, setIsHistoryDrawerOpen] = useState(false);
+
+  const effectiveDrawerOpen = isExternalDrawerOpen ?? isHistoryDrawerOpen;
+  const handleCloseDrawer = () => {
+    setIsHistoryDrawerOpen(false);
+    if (onCloseExternalDrawer) onCloseExternalDrawer();
+  };
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [isQuickExtractionOpen, setIsQuickExtractionOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
@@ -123,6 +246,7 @@ export function PracticalCodeLabView({
   // Parsed Files & Tabs
   const [files, setFiles] = useState<GeneratedFile[]>([]);
   const [activeFileIndex, setActiveFileIndex] = useState(0);
+  const [mobileActiveTab, setMobileActiveTab] = useState<'chat' | 'code'>('chat');
 
   const handleScrollTabs = (direction: 'left' | 'right') => {
     if (tabListRef.current) {
@@ -154,6 +278,27 @@ export function PracticalCodeLabView({
       window.removeEventListener('mouseup', handleMouseUp);
     };
   }, [isResizing]);
+
+  const CODE_DUNGEON_BASE_SYSTEM_PROMPT = `
+You are Prof. Joe AI operating inside Code Dungeon (Split-Screen IDE).
+Follow these mandatory formatting rules for all responses:
+1. CONCISE & DIRECT: Provide concise, high-impact technical explanations and clean code blocks. Do not write long conversational essays or filler text.
+2. STRICT CODE BLOCK & FILE NAMING RULES:
+   - EVERY code snippet, diagram, or dataset file MUST start with an explicit language tag (e.g. \`\`\`python, \`\`\`erd, \`\`\`plantuml, \`\`\`text).
+   - EVERY code block header MUST include a filename hint following this exact pattern:
+     \`\`\`[lang] filename: [model_name]_[dataset_name].[ext]
+     Examples:
+     - \`\`\`python filename: logistic_regression_iris.py
+     - \`\`\`erd filename: logistic_regression_iris_architecture.erd
+     - \`\`\`text filename: logistic_regression_iris_requirements.txt
+   - NEVER output untagged \`\`\` code blocks.
+3. DIAGRAM PREFERENCE HIERARCHY:
+   - Primary: Use ERD (Entity-Relationship Diagrams in \`\`\`erd blocks) for database schemas, data pipelines, or architecture relations.
+   - Fallback 1: Use PlantUML diagrams (\`\`\`plantuml).
+   - Fallback 2: Use ASCII File Trees (\`\`\`text or \`\`\`tree).
+   - STRICT RULE: Do NOT output mermaid diagrams.
+4. LATEX MATHEMATICS: Format mathematical equations using standard LaTeX syntax ($...$ for inline, $$...$$ for block formulas).
+`;
 
   // Helper for Smart Topic & Code-Aware File Naming
   const determineSmartFileName = (
@@ -278,11 +423,16 @@ export function PracticalCodeLabView({
 
   const handleSend = () => {
     if (!inputPrompt.trim()) return;
+    const combinedSystemPrompt = [
+      CODE_DUNGEON_BASE_SYSTEM_PROMPT,
+      activePreset ? activePreset.systemInstruction : ''
+    ].filter(Boolean).join('\n\n');
+
     onSendMessage(
       inputPrompt, 
       isWebSearch, 
       'general', 
-      activePreset ? activePreset.systemInstruction : undefined
+      combinedSystemPrompt
     );
     setInputPrompt('');
   };
@@ -337,6 +487,7 @@ export function PracticalCodeLabView({
   };
 
   const handleOpenInIde = (file: GeneratedFile) => {
+    setMobileActiveTab('code');
     setFiles(prev => {
       const existingIdx = prev.findIndex(f => f.fileName === file.fileName || f.codeContent.trim() === file.codeContent.trim());
       if (existingIdx >= 0) {
@@ -370,200 +521,172 @@ export function PracticalCodeLabView({
     <div className="code-lab-view-container">
       {/* Header Bar */}
       <div className="code-lab-header">
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <button 
-            type="button" 
-            onClick={() => setIsHistoryDrawerOpen(true)} 
-            className="extractor-btn-secondary"
-            style={{ padding: '7px 10px', borderRadius: '10px' }}
-            title="Open Code Lab Deck (Menu & History)"
-          >
-            <Menu size={18} style={{ color: '#06b6d4' }} />
-          </button>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <h1 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#f8fafc', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span>Practical Academic Code Lab</span>
-              <span className="extractor-studio-tag">SPLIT-SCREEN IDE</span>
-            </h1>
-          </div>
-        </div>
-
-        {/* Active Preset & Model Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          {/* Provider Dropdown */}
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <select
-              value={selectedProvider}
-              onChange={(e) => onProviderChange && onProviderChange(e.target.value)}
-              style={{
-                appearance: 'none',
-                background: 'rgba(15, 23, 42, 0.9)',
-                border: '1px solid rgba(6, 182, 212, 0.4)',
-                borderRadius: '12px',
-                padding: '6px 28px 6px 12px',
-                color: '#38bdf8',
-                fontSize: '0.78rem',
-                fontWeight: 700,
-                outline: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              {PROVIDERS.map((p) => (
-                <option key={p.name} value={p.name} style={{ background: '#0f172a', color: '#f8fafc' }}>
-                  {p.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={14} style={{ position: 'absolute', right: '8px', color: '#38bdf8', pointerEvents: 'none' }} />
-          </div>
-
-          {/* Model Dropdown */}
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <select
-              value={selectedModel}
-              onChange={(e) => onModelChange && onModelChange(e.target.value)}
-              style={{
-                appearance: 'none',
-                background: 'rgba(15, 23, 42, 0.9)',
-                border: '1px solid rgba(168, 85, 247, 0.4)',
-                borderRadius: '12px',
-                padding: '6px 28px 6px 12px',
-                color: '#c084fc',
-                fontSize: '0.78rem',
-                fontWeight: 700,
-                outline: 'none',
-                cursor: 'pointer'
-              }}
-            >
-              {availableModels.map((m) => (
-                <option key={m.value} value={m.value} style={{ background: '#0f172a', color: '#f8fafc' }}>
-                  {m.name}
-                </option>
-              ))}
-            </select>
-            <ChevronDown size={14} style={{ position: 'absolute', right: '8px', color: '#c084fc', pointerEvents: 'none' }} />
-          </div>
-
-          {activePreset && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 12px', borderRadius: '16px', background: 'rgba(6, 182, 212, 0.15)', border: '1px solid rgba(6, 182, 212, 0.4)', color: '#06b6d4', fontSize: '0.78rem', fontWeight: 700 }}>
-              <Sparkles size={14} />
-              <span>Mode: {activePreset.name}</span>
-            </div>
-          )}
-
-          {/* Editor Mode Switcher Pill */}
-          <div style={{ display: 'flex', alignItems: 'center', background: 'rgba(15, 23, 42, 0.9)', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '20px', padding: '2px' }}>
-            <button
-              type="button"
-              onClick={() => setEditorMode('fast')}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '4px',
-                padding: '4px 10px', borderRadius: '16px', border: 'none',
-                background: editorMode === 'fast' ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(168, 85, 247, 0.25))' : 'transparent',
-                color: editorMode === 'fast' ? '#38bdf8' : '#94a3b8',
-                fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer'
-              }}
-              title="Fast Preview Mode (Instant Load)"
-            >
-              <Zap size={12} />
-              <span>⚡ Fast Preview</span>
-            </button>
-            <button
-              type="button"
-              onClick={() => setEditorMode('monaco')}
-              style={{
-                display: 'flex', alignItems: 'center', gap: '4px',
-                padding: '4px 10px', borderRadius: '16px', border: 'none',
-                background: editorMode === 'monaco' ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(168, 85, 247, 0.25))' : 'transparent',
-                color: editorMode === 'monaco' ? '#38bdf8' : '#94a3b8',
-                fontSize: '0.74rem', fontWeight: 700, cursor: 'pointer'
-              }}
-              title="Full Interactive VS Code Monaco Editor"
-            >
-              <Code size={12} />
-              <span>💻 Full IDE</span>
-            </button>
-          </div>
+        <div className="code-lab-header-left" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
+          <h1 style={{ fontSize: '1.1rem', fontWeight: 800, color: '#f8fafc', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span>Code Dungeon 🏰</span>
+            <span className="extractor-studio-tag">SPLIT-SCREEN IDE</span>
+          </h1>
 
           <button
             type="button"
             onClick={() => setIsPresetDrawerOpen(true)}
-            className="extractor-btn-primary"
-            style={{ fontSize: '0.78rem', padding: '6px 14px' }}
+            className="extractor-btn-primary codelab-mobile-preset-btn"
+            style={{ fontSize: '0.74rem', padding: '4px 10px', borderRadius: '10px' }}
+            title={activePreset ? 'Change Lab Preset' : 'Select Lab Preset'}
           >
-            <Sliders size={14} />
-            <span>{activePreset ? 'Change Lab Preset' : 'Select Lab Preset'}</span>
+            <Sliders size={13} />
+            <span className="codelab-preset-btn-text">{activePreset ? 'Change Preset' : 'Select Preset'}</span>
           </button>
         </div>
+
+        {/* Active Preset & Model Controls */}
+        <div className="code-lab-header-right" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div className="codelab-dropdowns-row" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {/* Provider Dropdown */}
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1 }}>
+              <select
+                value={selectedProvider}
+                onChange={(e) => onProviderChange && onProviderChange(e.target.value)}
+                className="custom-dropdown-pill"
+                style={{ fontSize: '0.76rem', width: '100%' }}
+              >
+                {PROVIDERS.map((p) => (
+                  <option key={p.name} value={p.name}>
+                    {p.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={14} style={{ position: 'absolute', right: '8px', color: 'var(--accent-cyan)', pointerEvents: 'none' }} />
+            </div>
+
+            {/* Model Dropdown */}
+            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1 }}>
+              <select
+                value={selectedModel}
+                onChange={(e) => onModelChange && onModelChange(e.target.value)}
+                className="custom-dropdown-pill"
+                style={{ fontSize: '0.76rem', width: '100%' }}
+              >
+                {availableModels.map((m) => (
+                  <option key={m.value} value={m.value}>
+                    {m.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown size={14} style={{ position: 'absolute', right: '8px', color: '#c084fc', pointerEvents: 'none' }} />
+            </div>
+          </div>
+
+          <div className="codelab-controls-row" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            {activePreset && (
+              <div className="codelab-preset-badge" style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '16px', background: 'rgba(6, 182, 212, 0.15)', border: '1px solid rgba(6, 182, 212, 0.4)', color: '#06b6d4', fontSize: '0.74rem', fontWeight: 700 }}>
+                <Sparkles size={13} />
+                <span className="codelab-preset-badge-text">{activePreset.name}</span>
+              </div>
+            )}
+
+            {/* Editor Mode Switcher Pill */}
+            <div className="codelab-editor-mode-toggle" style={{ display: 'flex', alignItems: 'center', borderRadius: '20px', padding: '2px' }}>
+              <button
+                type="button"
+                onClick={() => setEditorMode('fast')}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '4px',
+                  padding: '4px 8px', borderRadius: '16px', border: 'none',
+                  background: editorMode === 'fast' ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(168, 85, 247, 0.25))' : 'transparent',
+                  color: editorMode === 'fast' ? 'var(--accent-cyan)' : 'var(--text-muted)',
+                  fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer'
+                }}
+                title="Fast Preview Mode (Instant Load)"
+              >
+                <Zap size={12} />
+                <span>⚡ Fast</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setEditorMode('monaco')}
+                style={{
+                  display: 'flex', alignItems: 'center', gap: '4px',
+                  padding: '4px 8px', borderRadius: '16px', border: 'none',
+                  background: editorMode === 'monaco' ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(168, 85, 247, 0.25))' : 'transparent',
+                  color: editorMode === 'monaco' ? 'var(--accent-cyan)' : 'var(--text-muted)',
+                  fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer'
+                }}
+                title="Full Interactive VS Code Monaco Editor"
+              >
+                <Code size={12} />
+                <span>💻 Full IDE</span>
+              </button>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setIsPresetDrawerOpen(true)}
+              className="extractor-btn-primary codelab-desktop-preset-btn"
+              style={{ fontSize: '0.78rem', padding: '6px 14px' }}
+            >
+              <Sliders size={14} />
+              <span>{activePreset ? 'Change Lab Preset' : 'Select Lab Preset'}</span>
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Mobile Navigation Tabs (Only visible on screens <= 768px) */}
+      <div className="codelab-mobile-tab-nav">
+        <button
+          type="button"
+          onClick={() => setMobileActiveTab('chat')}
+          className={`codelab-mobile-tab-btn ${mobileActiveTab === 'chat' ? 'active' : ''}`}
+        >
+          <MessageSquare size={15} />
+          <span>Chat & Prompts</span>
+          {messages.length > 0 && <span className="codelab-tab-badge">{messages.length}</span>}
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileActiveTab('code')}
+          className={`codelab-mobile-tab-btn ${mobileActiveTab === 'code' ? 'active' : ''}`}
+        >
+          <Code size={15} />
+          <span>Code & Workspace</span>
+          {files.length > 0 && <span className="codelab-tab-badge accent">{files.length}</span>}
+        </button>
       </div>
 
       {/* Split Pane */}
       <div ref={containerRef} className="code-lab-split-pane">
         {/* Left Panel: Chat & Prompt OCR */}
-        <div className="code-lab-chat-panel" style={{ width: `${leftPaneWidthPercent}%` }}>
+        <div className={`code-lab-chat-panel ${mobileActiveTab === 'chat' ? 'mobile-active' : 'mobile-hidden'}`} style={{ width: `${leftPaneWidthPercent}%` }}>
           {/* Chat Messages */}
           <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
             {messages.length === 0 ? (
-              <div style={{ margin: 'auto', textAlign: 'center', color: '#64748b', maxWidth: '340px' }}>
+              <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--text-muted)', maxWidth: '340px' }}>
                 <Code size={40} style={{ marginBottom: '12px', opacity: 0.4 }} />
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: '#94a3b8', marginBottom: '4px' }}>Practical Code & ML Lab Ready</h3>
-                <p style={{ fontSize: '0.78rem', lineHeight: 1.5 }}>
+                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>Practical Code & ML Lab Ready</h3>
+                <p style={{ fontSize: '0.78rem', lineHeight: 1.5, color: 'var(--text-secondary)' }}>
                   Ask Prof. Joe AI to write lab code, train ML models, process paper dataset tables, or generate multi-file web apps.
                 </p>
               </div>
             ) : (
               messages.map((msg, idx) => (
-                <div
+                <CodeDungeonMessageBubble
                   key={idx}
-                  style={{
-                    alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
-                    maxWidth: '90%',
-                    padding: '12px 16px',
-                    borderRadius: '16px',
-                    background: msg.role === 'user' ? 'linear-gradient(135deg, #06b6d4, #3b82f6)' : 'rgba(30, 41, 59, 0.8)',
-                    color: '#f8fafc',
-                    fontSize: '0.84rem',
-                    lineHeight: 1.5,
-                    border: '1px solid rgba(255, 255, 255, 0.08)'
-                  }}
-                >
-                  <div style={{ fontSize: '0.7rem', fontWeight: 700, opacity: 0.7, marginBottom: '4px' }}>
-                    {msg.role === 'user' ? 'Student Prompt' : 'Prof. Joe AI'}
-                  </div>
-                  {msg.content}
-                  {msg.role === 'assistant' && (() => {
-                    const blocks = extractCodeBlocksFromMessage(msg.content);
-                    if (blocks.length === 0) return null;
-                    return (
-                      <div style={{ marginTop: '10px', display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
-                        {blocks.map((block, bIdx) => (
-                          <button
-                            key={bIdx}
-                            type="button"
-                            onClick={() => handleOpenInIde(block)}
-                            className="code-lab-view-in-ide-btn"
-                            title="Open snippet in IDE viewer"
-                          >
-                            <Eye size={13} />
-                            <span>View {block.fileName} in IDE</span>
-                          </button>
-                        ))}
-                      </div>
-                    );
-                  })()}
-                </div>
+                  msg={msg}
+                  extractCodeBlocksFromMessage={extractCodeBlocksFromMessage}
+                  handleOpenInIde={handleOpenInIde}
+                />
               ))
             )}
           </div>
 
           {/* Prompt Input Box with Quick Extractor OCR */}
-          <div style={{ padding: '14px', background: 'rgba(2, 6, 23, 0.9)', borderTop: '1px solid rgba(255, 255, 255, 0.08)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: '#0f172a', border: '1px solid rgba(255, 255, 255, 0.1)', borderRadius: '14px', padding: '8px 12px' }}>
+          <div className="codelab-bottom-input-bar" style={{ padding: '14px' }}>
+            <div className="codelab-input-wrapper" style={{ display: 'flex', alignItems: 'center', gap: '8px', borderRadius: '14px', padding: '8px 12px' }}>
               <button
                 type="button"
                 onClick={() => setIsQuickExtractionOpen(true)}
-                style={{ background: 'none', border: 'none', color: '#06b6d4', cursor: 'pointer', padding: '4px' }}
+                style={{ background: 'none', border: 'none', color: 'var(--accent-cyan)', cursor: 'pointer', padding: '4px' }}
                 title="Paper Dataset & Image OCR Extractor"
               >
                 <Paperclip size={18} />
@@ -579,7 +702,8 @@ export function PracticalCodeLabView({
                   }
                 }}
                 placeholder={activePreset ? `Ask for ${activePreset.name} lab code...` : "Ask for lab code or dataset analysis..."}
-                style={{ flex: 1, background: 'none', border: 'none', outline: 'none', color: '#f8fafc', fontSize: '0.84rem', resize: 'none', height: '40px', fontFamily: 'inherit' }}
+                className="codelab-textarea"
+                style={{ flex: 1, background: 'none', border: 'none', outline: 'none', fontSize: '0.84rem', resize: 'none', height: '40px', fontFamily: 'inherit' }}
               />
 
               <button
@@ -597,17 +721,16 @@ export function PracticalCodeLabView({
 
         {/* Resizable Handle Divider */}
         <div 
-          className="code-lab-resize-handle"
+          className="code-lab-resize-handle desktop-only"
           onMouseDown={() => setIsResizing(true)}
           title="Drag to resize panels"
         />
 
         {/* Right Panel: Resizable Code Viewer IDE */}
-        <div className="code-lab-ide-panel">
+        <div className={`code-lab-ide-panel ${mobileActiveTab === 'code' ? 'mobile-active' : 'mobile-hidden'}`}>
           {/* File Tab Bar */}
           <div className="code-lab-tab-bar">
             <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
-              <div className="code-lab-tab-edge-left" />
               <div ref={tabListRef} className="code-lab-tabs-list">
                 {files.length === 0 ? (
                   <span style={{ fontSize: '0.78rem', color: '#64748b', fontFamily: 'monospace' }}>No files generated yet</span>
@@ -632,7 +755,6 @@ export function PracticalCodeLabView({
                   ))
                 )}
               </div>
-              <div className="code-lab-tab-edge-right" />
               {files.length > 2 && (
                 <div style={{ display: 'flex', gap: '2px', marginLeft: '6px', zIndex: 3 }}>
                   <button
@@ -657,25 +779,27 @@ export function PracticalCodeLabView({
 
             {/* Action Tools */}
             {activeFile && (
-              <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ display: 'flex', gap: '6px', flexShrink: 0, marginLeft: '6px' }}>
                 <button
                   type="button"
                   onClick={() => handleCopyCode(activeFile.codeContent)}
                   className="extractor-btn-secondary"
-                  style={{ fontSize: '0.74rem', padding: '4px 10px' }}
+                  style={{ fontSize: '0.74rem', padding: '4px 8px' }}
+                  title={isCopied ? 'Copied to clipboard' : 'Copy code to clipboard'}
                 >
                   {isCopied ? <Check size={13} style={{ color: '#34d399' }} /> : <Copy size={13} />}
-                  <span>{isCopied ? 'Copied!' : 'Copy'}</span>
+                  <span className="codelab-action-btn-text">{isCopied ? 'Copied!' : 'Copy'}</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleDownloadSingleFile(activeFile)}
                   className="extractor-btn-primary"
-                  style={{ fontSize: '0.74rem', padding: '4px 12px' }}
+                  style={{ fontSize: '0.74rem', padding: '4px 8px' }}
+                  title={`Download ${activeFile.fileName}`}
                 >
                   <Download size={13} />
-                  <span>Download {activeFile.fileName}</span>
+                  <span className="codelab-action-btn-text">Download</span>
                 </button>
 
                 {files.length > 0 && (
@@ -683,10 +807,11 @@ export function PracticalCodeLabView({
                     type="button"
                     onClick={handleDownloadZip}
                     className="code-lab-zip-btn"
+                    style={{ fontSize: '0.74rem', padding: '4px 10px' }}
                     title="Download all open code files as ZIP archive"
                   >
                     <Package size={13} />
-                    <span>Download All (.zip)</span>
+                    <span>ZIP</span>
                   </button>
                 )}
               </div>
@@ -727,15 +852,15 @@ export function PracticalCodeLabView({
       <QuickExtractionModal
         isOpen={isQuickExtractionOpen}
         onClose={() => setIsQuickExtractionOpen(false)}
-        onSendToChat={(extractedText, fileName) => {
+        onSendToChat={(extractedText: string, fileName: string) => {
           setInputPrompt(prev => `${prev}\n\n[Lab Paper Dataset: ${fileName}]\n${extractedText}`);
         }}
       />
 
       {/* Native Code Lab Control Deck Sidebar */}
       <CodeLabControlDeck
-        isOpen={isHistoryDrawerOpen}
-        onClose={() => setIsHistoryDrawerOpen(false)}
+        isOpen={effectiveDrawerOpen}
+        onClose={handleCloseDrawer}
         presetName={activePreset?.name || 'Code Lab'}
         presetId={activePresetId}
         selectedModel={selectedModel}
@@ -743,18 +868,18 @@ export function PracticalCodeLabView({
         activeSessionId={activeSessionId}
         onSelectSession={(sessionId) => {
           if (onSelectSession) onSelectSession(sessionId);
-          setIsHistoryDrawerOpen(false);
+          handleCloseDrawer();
         }}
         onNewSession={() => {
           if (onNewSession) onNewSession();
-          setIsHistoryDrawerOpen(false);
+          handleCloseDrawer();
         }}
         onDeleteSession={(sessionId) => {
           if (onDeleteSession) onDeleteSession(sessionId);
         }}
         onResetSession={() => {
           setIsResetModalOpen(true);
-          setIsHistoryDrawerOpen(false);
+          handleCloseDrawer();
         }}
         webSearch={isWebSearch}
         onToggleWebSearch={() => setIsWebSearch(prev => !prev)}

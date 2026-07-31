@@ -150,16 +150,14 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
   return (
     <div className="model-manager-container" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
       {/* Top Provider Selection Bar */}
-      <div style={{
+      <div className="model-manager-header-bar" style={{
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: '12px',
-        background: 'rgba(15, 23, 42, 0.6)',
         padding: '12px 16px',
-        borderRadius: '12px',
-        border: '1px solid rgba(56, 189, 248, 0.2)'
+        borderRadius: '12px'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '220px' }}>
           <Cpu className="text-cyan-400" size={18} />
@@ -173,13 +171,10 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
               setSearchQuery('');
               setFetchError(null);
             }}
-            className="key-input"
+            className="key-input model-provider-select"
             style={{
               padding: '6px 12px',
               borderRadius: '8px',
-              background: 'rgba(30, 41, 59, 0.8)',
-              border: '1px solid rgba(56, 189, 248, 0.3)',
-              color: '#38bdf8',
               fontWeight: 600,
               cursor: 'pointer'
             }}
@@ -397,14 +392,13 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
             <div
               key={model.id}
               onClick={() => handleToggleModel(model.id)}
+              className={`model-catalog-item ${model.enabled ? 'enabled' : ''}`}
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '10px 14px',
                 borderRadius: '8px',
-                background: model.enabled ? 'rgba(30, 41, 59, 0.8)' : 'rgba(15, 23, 42, 0.4)',
-                border: `1px solid ${model.enabled ? 'rgba(56, 189, 248, 0.3)' : 'rgba(255, 255, 255, 0.05)'}`,
                 cursor: 'pointer',
                 transition: 'all 0.15s ease'
               }}

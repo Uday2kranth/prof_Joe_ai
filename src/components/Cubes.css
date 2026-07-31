@@ -6,6 +6,11 @@
   --cube-face-bg: #0f172a;
 }
 
+[data-theme="light"] {
+  --cube-face-bg: #ffffff;
+  --cube-face-border: 1px solid rgba(6, 182, 212, 0.45);
+}
+
 .default-animation {
   position: relative;
   width: 100%;

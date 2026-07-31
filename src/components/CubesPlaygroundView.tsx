@@ -35,7 +35,7 @@ export const CubesPlaygroundView: React.FC = () => {
 
       <div className="playground-content-grid">
         {/* 3D Cubes Stage (Renders First on Mobile) */}
-        <div className="stage-card card-box" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px', background: 'rgba(15, 23, 42, 0.8)', border: '1px solid var(--border-color)', borderRadius: '16px', minHeight: '440px', position: 'relative' }}>
+        <div className="stage-card card-box" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '30px', border: '1px solid var(--border-color)', borderRadius: '16px', minHeight: '440px', position: 'relative' }}>
           <div className="stage-card-hint" style={{ position: 'absolute', top: '16px', left: '16px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
             <Zap size={14} className="text-cyan-400" />
             <span>Hover cursor or drag touch over grid to tilt 3D cubes. Click to trigger ripple pulse!</span>
@@ -46,8 +46,8 @@ export const CubesPlaygroundView: React.FC = () => {
             gridSize={gridSize}
             maxAngle={maxAngle}
             radius={4}
-            faceColor="#0f172a"
-            borderStyle="1px solid rgba(6, 182, 212, 0.35)"
+            faceColor="var(--cube-face-bg)"
+            borderStyle="var(--cube-face-border)"
             rippleColor={rippleColor}
             rippleSpeed={rippleSpeed}
             autoAnimate={autoAnimate}

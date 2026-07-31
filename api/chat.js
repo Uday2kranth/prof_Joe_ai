@@ -270,34 +270,34 @@ GENERAL AI ASSISTANT DIRECTIVES:
     const isAdmin = (user && user.toLowerCase() === "admin@uday");
 
     if (targetProvider === "openrouter") {
-        apiKey = req.headers['x-user-openrouter-key'] || (isAdmin ? (process.env.OPENROUTER_API_KEY || DEFAULT_OPENROUTER_KEY) : '');
+        apiKey = req.headers['x-user-openrouter-key'] || process.env.OPENROUTER_API_KEY || DEFAULT_OPENROUTER_KEY || '';
     } else if (targetProvider === "nvidia") {
-        apiKey = req.headers['x-user-nvidia-key'] || (isAdmin ? (process.env.NVIDIA_API_KEY || DEFAULT_NVIDIA_KEY) : '');
+        apiKey = req.headers['x-user-nvidia-key'] || process.env.NVIDIA_API_KEY || DEFAULT_NVIDIA_KEY || '';
     } else if (targetProvider === "omnirouter") {
-        apiKey = req.headers['x-user-omnirouter-key'] || (isAdmin ? (process.env.OMNIROUTER_API_KEY || '') : '');
+        apiKey = req.headers['x-user-omnirouter-key'] || process.env.OMNIROUTER_API_KEY || '';
     } else if (targetProvider === "mistral") {
-        apiKey = req.headers['x-user-mistral-key'] || (isAdmin ? (process.env.MISTRAL_API_KEY || DEFAULT_MISTRAL_KEY) : '');
+        apiKey = req.headers['x-user-mistral-key'] || process.env.MISTRAL_API_KEY || DEFAULT_MISTRAL_KEY || '';
     } else if (targetProvider === "cerebras") {
-        apiKey = req.headers['x-user-cerebras-key'] || (isAdmin ? (process.env.CEREBRAS_API_KEY || DEFAULT_CEREBRAS_KEY) : '');
+        apiKey = req.headers['x-user-cerebras-key'] || process.env.CEREBRAS_API_KEY || DEFAULT_CEREBRAS_KEY || '';
     } else if (targetProvider === "groq") {
-        apiKey = req.headers['x-user-groq-key'] || (isAdmin ? (process.env.GROQ_API_KEY || DEFAULT_GROQ_KEY) : '');
+        apiKey = req.headers['x-user-groq-key'] || process.env.GROQ_API_KEY || DEFAULT_GROQ_KEY || '';
     } else if (targetProvider === "sambanova") {
-        apiKey = req.headers['x-user-sambanova-key'] || (isAdmin ? (process.env.SAMBANOVA_API_KEY || DEFAULT_SAMBANOVA_KEY) : '');
+        apiKey = req.headers['x-user-sambanova-key'] || process.env.SAMBANOVA_API_KEY || DEFAULT_SAMBANOVA_KEY || '';
     } else if (targetProvider === "gemini") {
-        apiKey = req.headers['x-user-gemini-key'] || (isAdmin ? (process.env.GEMINI_API_KEY || '') : '');
+        apiKey = req.headers['x-user-gemini-key'] || process.env.GEMINI_API_KEY || '';
     } else if (targetProvider === "nararouter") {
-        apiKey = req.headers['x-user-nararouter-key'] || (isAdmin ? (process.env.NARAROUTER_API_KEY || DEFAULT_NARAROUTER_KEY) : '');
+        apiKey = req.headers['x-user-nararouter-key'] || process.env.NARAROUTER_API_KEY || DEFAULT_NARAROUTER_KEY || '';
     } else if (targetProvider === "huggingface") {
         apiKey = req.headers['x-user-huggingface-key'] || process.env.HUGGINGFACE_API_KEY || '';
     } else if (targetProvider === "opencode") {
-        apiKey = req.headers['x-user-opencode-key'] || (isAdmin ? (process.env.OPENCODE_API_KEY || '') : '');
+        apiKey = req.headers['x-user-opencode-key'] || process.env.OPENCODE_API_KEY || '';
     } else if (targetProvider === "pollinations-keyless") {
         apiKey = 'keyless_anonymous';
     } else if (targetProvider === "pollinations-keyed" || targetProvider === "pollinations") {
         const isKeylessReq = req.headers['x-pollinations-subtype'] === 'keyless' || ['openai-fast', 'openai', 'deepseek', 'llama', 'qwen-coder', 'mistral'].includes(model);
         apiKey = req.headers['x-user-pollinations-key'] || process.env.POLLINATIONS_API_KEY || (isKeylessReq ? 'keyless_anonymous' : '');
     } else if (targetProvider === "ollama") {
-        apiKey = req.headers['x-user-ollama-key'] || process.env.OLLAMA_API_KEY || DEFAULT_OLLAMA_KEY || (isAdmin ? 'ollama_cloud_default' : '');
+        apiKey = req.headers['x-user-ollama-key'] || process.env.OLLAMA_API_KEY || DEFAULT_OLLAMA_KEY || 'ollama_cloud_default';
     }
 
     if (!apiKey) {

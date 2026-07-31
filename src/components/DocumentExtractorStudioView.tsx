@@ -8,33 +8,37 @@ import {
   Check, 
   Sparkles, 
   Cpu,
-  ArrowLeft,
-  FileText
+  FileText,
+  AlertTriangle
 } from 'lucide-react';
 import { extractFileContent, type ExtractedResult } from '../services/unifiedExtractorService';
 
 interface DocumentExtractorStudioViewProps {
-  onBackToHub: () => void;
+  onBackToHub?: () => void;
   onSendToChat: (extractedText: string, fileName: string) => void;
 }
 
-export function DocumentExtractorStudioView({ onBackToHub, onSendToChat }: DocumentExtractorStudioViewProps) {
+export function DocumentExtractorStudioView({ onSendToChat }: DocumentExtractorStudioViewProps) {
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [processingStatus, setProcessingStatus] = useState('');
   const [parsedDoc, setParsedDoc] = useState<ExtractedResult | null>(null);
   const [isCopied, setIsCopied] = useState(false);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileParsing = async (file: File) => {
     setIsProcessing(true);
+    setErrorMsg(null);
+    setParsedDoc(null);
     setProcessingStatus(`Parsing ${file.name}...`);
     try {
       const result = await extractFileContent(file);
       setParsedDoc(result);
-    } catch (err) {
+    } catch (err: any) {
       console.error('File extraction error:', err);
+      setErrorMsg(`Failed to extract "${file.name}": ${err?.message || 'Unknown error occurred'}`);
     } finally {
       setIsProcessing(false);
       setProcessingStatus('');
@@ -72,20 +76,12 @@ export function DocumentExtractorStudioView({ onBackToHub, onSendToChat }: Docum
       {/* Header Bar */}
       <div className="extractor-header-bar">
         <div className="extractor-brand-title">
-          <button 
-            onClick={onBackToHub} 
-            className="extractor-btn-secondary"
-            title="Return to Home Hub"
-          >
-            <ArrowLeft size={16} />
-            <span>Home Hub</span>
-          </button>
           <div className="extractor-brand-icon">
             <Cpu size={22} />
           </div>
           <div>
             <h1 className="extractor-title-text">
-              <span>Document & Code Text Extractor Studio</span>
+              <span>Textractor ⚡</span>
               <span className="extractor-studio-tag">STANDALONE STUDIO</span>
             </h1>
             <p className="extractor-subtitle">Client-Side Text Extraction & Parsing Engine (PDF, DOCX, IPYNB, Code & Images)</p>
@@ -144,6 +140,17 @@ export function DocumentExtractorStudioView({ onBackToHub, onSendToChat }: Docum
               <span>{processingStatus}</span>
             </div>
           )}
+
+          {/* Error Display */}
+          {errorMsg && !isProcessing && (
+            <div className="extractor-error-card" style={{ padding: '14px', borderRadius: '12px', background: 'rgba(244, 63, 94, 0.12)', border: '1px solid rgba(244, 63, 94, 0.4)', color: '#f43f5e', fontSize: '0.8rem', fontWeight: 600, display: 'flex', alignItems: 'flex-start', gap: '10px' }}>
+              <AlertTriangle size={18} style={{ flexShrink: 0, marginTop: '1px' }} />
+              <div>
+                <p style={{ margin: '0 0 4px', fontWeight: 700, fontSize: '0.85rem' }}>⚠️ Extraction Error</p>
+                <p style={{ margin: 0, fontWeight: 500, opacity: 0.9 }}>{errorMsg}</p>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* Viewer Panel */}
@@ -194,6 +201,17 @@ export function DocumentExtractorStudioView({ onBackToHub, onSendToChat }: Docum
                 </button>
               </div>
             </>
+          ) : errorMsg ? (
+            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px', textAlign: 'center' }}>
+              <AlertTriangle size={48} style={{ marginBottom: '16px', color: '#f43f5e', opacity: 0.7 }} />
+              <h3 style={{ fontSize: '1rem', fontWeight: 700, color: '#f43f5e', marginBottom: '6px' }}>Extraction Failed</h3>
+              <p style={{ fontSize: '0.82rem', maxWidth: '420px', margin: '0 0 12px', color: '#94a3b8' }}>
+                {errorMsg}
+              </p>
+              <p style={{ fontSize: '0.75rem', maxWidth: '360px', margin: 0, color: '#64748b' }}>
+                Try uploading a different file or check the console for detailed error logs.
+              </p>
+            </div>
           ) : (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '60px', color: '#64748b', textAlign: 'center' }}>
               <FileText size={48} style={{ marginBottom: '16px', opacity: 0.4 }} />

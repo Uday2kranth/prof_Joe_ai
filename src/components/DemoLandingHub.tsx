@@ -363,7 +363,7 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
             </div>
           </div>
 
-          {/* Card 7: Document & Code Text Extractor Studio */}
+          {/* Card 7: Textractor */}
           <div 
             className="hub-portal-card diagram-portal text-extractor-portal"
             onClick={() => onSelectWorkspace('extractor_studio')}
@@ -376,7 +376,7 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
               <span className="portal-tag cyan-tag" style={{ backgroundColor: 'rgba(6, 182, 212, 0.15)', color: '#06b6d4', borderColor: 'rgba(6, 182, 212, 0.3)' }}>Client-Side Parser</span>
             </div>
             <div className="portal-card-body">
-              <h3>Document & Code Extractor Studio</h3>
+              <h3>Textractor ⚡</h3>
               <p>Extract text, inspect code, and parse PDF, DOCX, IPYNB & Images 100% locally in browser without token limits!</p>
             </div>
             <div className="portal-card-footer">
@@ -385,13 +385,13 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
                 <span>⚡ 0 Server Fee</span>
               </div>
               <button type="button" className="launch-portal-btn cyan-btn">
-                <span>Open Extractor Studio</span>
+                <span>Open Textractor</span>
                 <ArrowRight size={14} />
               </button>
             </div>
           </div>
 
-          {/* Card 8: Practical Academic Code Lab */}
+          {/* Card 8: Code Dungeon */}
           <div 
             className="hub-portal-card diagram-portal"
             onClick={() => onSelectWorkspace('code_lab')}
@@ -404,7 +404,7 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
               <span className="portal-tag purple-tag" style={{ backgroundColor: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', borderColor: 'rgba(168, 85, 247, 0.3)' }}>Split IDE Workspace</span>
             </div>
             <div className="portal-card-body">
-              <h3>Practical Academic Code Lab</h3>
+              <h3>Code Dungeon 🏰</h3>
               <p>Split-screen resizable IDE for ML, Web Dev & Systems labs with paper dataset OCR, 8 Bento presets, and .zip exports!</p>
             </div>
             <div className="portal-card-footer">
@@ -413,7 +413,7 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
                 <span>📦 .zip Project Export</span>
               </div>
               <button type="button" className="launch-portal-btn purple-btn">
-                <span>Open Code Lab</span>
+                <span>Open Code Dungeon</span>
                 <ArrowRight size={14} />
               </button>
             </div>

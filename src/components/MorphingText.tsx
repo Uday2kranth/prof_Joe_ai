@@ -97,12 +97,32 @@ const Texts: React.FC<Pick<MorphingTextProps, 'texts'>> = ({ texts }) => {
   return (
     <>
       <span
-        className="absolute inset-x-0 top-0 m-auto inline-block w-full text-cyan-400"
         ref={text1Ref}
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: 0,
+          margin: 'auto',
+          display: 'inline-block',
+          width: '100%',
+          color: '#38bdf8',
+          fontWeight: 700
+        }}
       />
       <span
-        className="absolute inset-x-0 top-0 m-auto inline-block w-full text-cyan-400"
         ref={text2Ref}
+        style={{
+          position: 'absolute',
+          left: 0,
+          right: 0,
+          top: 0,
+          margin: 'auto',
+          display: 'inline-block',
+          width: '100%',
+          color: '#38bdf8',
+          fontWeight: 700
+        }}
       />
     </>
   );
@@ -111,7 +131,7 @@ const Texts: React.FC<Pick<MorphingTextProps, 'texts'>> = ({ texts }) => {
 const SvgFilters: React.FC = () => (
   <svg
     id="filters"
-    className="fixed h-0 w-0"
+    style={{ position: 'fixed', height: 0, width: 0, pointerEvents: 'none' }}
     preserveAspectRatio="xMidYMid slice"
   >
     <defs>
@@ -134,7 +154,18 @@ export const MorphingText: React.FC<MorphingTextProps> = ({
   className = '',
 }) => (
   <div
-    className={`relative mx-auto h-12 w-full max-w-2xl text-center font-bold text-lg sm:text-xl text-cyan-400 filter-[url(#threshold)_blur(0.6px)] ${className}`}
+    className={`demo-morphing-text-container ${className}`}
+    style={{
+      position: 'relative',
+      margin: '6px auto 12px auto',
+      height: '32px',
+      width: '100%',
+      maxWidth: '600px',
+      textAlign: 'center',
+      fontWeight: 700,
+      fontSize: '0.92rem',
+      color: '#38bdf8'
+    }}
   >
     <Texts texts={texts} />
     <SvgFilters />

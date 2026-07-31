@@ -88,7 +88,7 @@ export const CodeLabHistoryDrawer: React.FC<CodeLabHistoryDrawerProps> = ({
             <History size={18} style={{ color: '#06b6d4' }} />
             <div>
               <h3 style={{ fontSize: '0.92rem', fontWeight: 800, margin: 0, color: '#f8fafc' }}>Lab History</h3>
-              <p style={{ fontSize: '0.7rem', color: '#38bdf8', margin: 0 }}>Mode: {presetName}</p>
+              <p style={{ fontSize: '0.7rem', color: '#38bdf8', margin: 0 }}>{presetName}</p>
             </div>
           </div>
 

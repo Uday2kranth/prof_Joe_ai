@@ -1,10 +1,24 @@
 import mammoth from 'mammoth';
 import * as pdfjsLib from 'pdfjs-dist';
-// Vite URL import for local PDF.js worker bundling (100% offline, zero CDN dependency)
-import pdfWorker from 'pdfjs-dist/build/pdf.worker.mjs?url';
+import Tesseract from 'tesseract.js';
 
-// Configure local PDF.js worker
-pdfjsLib.GlobalWorkerOptions.workerSrc = pdfWorker;
+// ─── PDF.js Worker Configuration ───
+// Use /pdf.worker.js (with .js extension) to guarantee servers return 
+// Content-Type: text/javascript instead of text/html on legacy/custom servers.
+pdfjsLib.GlobalWorkerOptions.workerSrc = '/pdf.worker.js';
+
+async function loadPdfDocument(uint8Array: Uint8Array): Promise<pdfjsLib.PDFDocumentProxy> {
+  try {
+    const task = pdfjsLib.getDocument({ data: uint8Array });
+    return await task.promise;
+  } catch (err) {
+    console.warn('PDF Loader (Local worker) failed, attempting Main Thread fallback:', err);
+    // Disable worker completely → Run 100% in-memory on main thread
+    pdfjsLib.GlobalWorkerOptions.workerSrc = '';
+    const fallbackTask = pdfjsLib.getDocument({ data: uint8Array, disableWorker: true } as any);
+    return await fallbackTask.promise;
+  }
+}
 
 export interface ExtractedResult {
   fileName: string;
@@ -14,6 +28,108 @@ export interface ExtractedResult {
   charCount: number;
   extractedText: string;
   embeddedImages: string[]; // Array of Base64 image data URLs
+}
+
+// ─── Canvas Preprocessing Helper (Grayscale + Binarisation) ───
+// Improves Tesseract OCR accuracy on noisy / low-contrast images.
+// Pipeline: Upscale small images → Grayscale → Contrast stretch → Binarise
+function preprocessCanvas(sourceCanvas: HTMLCanvasElement): HTMLCanvasElement {
+  let w = sourceCanvas.width;
+  let h = sourceCanvas.height;
+
+  // ── Step 1: Upscale small images (< 1000px wide) for better OCR ──
+  // Tesseract works best with ~300 DPI equivalent; upscale small sources.
+  const MIN_OCR_WIDTH = 1000;
+  let scale = 1;
+  if (w < MIN_OCR_WIDTH) {
+    scale = Math.min(MIN_OCR_WIDTH / w, 3); // Cap at 3x to avoid huge canvases
+  }
+  const scaledW = Math.round(w * scale);
+  const scaledH = Math.round(h * scale);
+
+  const out = document.createElement('canvas');
+  out.width = scaledW;
+  out.height = scaledH;
+  const ctx = out.getContext('2d')!;
+
+  // Use high-quality interpolation for upscaling
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = 'high';
+  ctx.drawImage(sourceCanvas, 0, 0, scaledW, scaledH);
+
+  // ── Step 2: Grayscale + Contrast Stretch + Binarisation ──
+  const imageData = ctx.getImageData(0, 0, scaledW, scaledH);
+  const data = imageData.data;
+
+  // First pass: find min/max gray values for contrast stretching
+  let minGray = 255;
+  let maxGray = 0;
+  for (let i = 0; i < data.length; i += 4) {
+    const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+    if (gray < minGray) minGray = gray;
+    if (gray > maxGray) maxGray = gray;
+  }
+
+  // Second pass: contrast stretch to full 0-255 range, then binarise
+  const range = maxGray - minGray || 1; // Avoid division by zero
+  for (let i = 0; i < data.length; i += 4) {
+    const gray = 0.299 * data[i] + 0.587 * data[i + 1] + 0.114 * data[i + 2];
+    // Stretch contrast to full 0-255 range
+    const stretched = ((gray - minGray) / range) * 255;
+    // Adaptive binarisation threshold at midpoint
+    const bin = stretched > 128 ? 255 : 0;
+    data[i] = bin;
+    data[i + 1] = bin;
+    data[i + 2] = bin;
+  }
+
+  ctx.putImageData(imageData, 0, 0);
+  return out;
+}
+
+// ─── Tesseract OCR Wrapper ───
+// Accepts either a canvas element or a base64 data URL string.
+// Returns recognised text or empty string on failure.
+async function ocrFromSource(source: HTMLCanvasElement | string): Promise<string> {
+  try {
+    let input: string;
+    if (typeof source === 'string') {
+      // base64 data URL – load into an image, draw onto canvas, preprocess
+      const img = await loadImage(source);
+      const canvas = document.createElement('canvas');
+      canvas.width = img.naturalWidth;
+      canvas.height = img.naturalHeight;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0);
+      const processed = preprocessCanvas(canvas);
+      input = processed.toDataURL('image/png');
+    } else {
+      // HTMLCanvasElement – preprocess directly
+      const processed = preprocessCanvas(source);
+      input = processed.toDataURL('image/png');
+    }
+
+    const result = await Tesseract.recognize(input, 'eng', {
+      logger: (_m: any) => {
+        // Silent – no console spam
+      }
+    });
+
+    return (result.data.text || '').trim();
+  } catch (err) {
+    console.warn('Tesseract OCR failed:', err);
+    return '';
+  }
+}
+
+// ─── Image Loader Utility ───
+function loadImage(src: string): Promise<HTMLImageElement> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => resolve(img);
+    img.onerror = reject;
+    img.src = src;
+  });
 }
 
 /**
@@ -51,6 +167,15 @@ function convertHtmlTablesToMarkdown(htmlDoc: Document): void {
 
 /**
  * Main Unified Extraction Pipeline
+ *
+ * Decision flow:
+ *   .ipynb        → JSON parse cells
+ *   .doc/.docx    → HTML check → mammoth or DOMParser
+ *   .pdf          → pdfjs getDocument()
+ *       page has text (>10 chars) → getTextContent() directly
+ *       page has no text (scanned) → render to canvas → preprocess → Tesseract OCR
+ *   image/*       → load to canvas → preprocess → Tesseract OCR
+ *   other         → file.text() (plain text)
  */
 export async function extractFileContent(file: File): Promise<ExtractedResult> {
   const sizeKb = Math.round(file.size / 1024);
@@ -62,7 +187,7 @@ export async function extractFileContent(file: File): Promise<ExtractedResult> {
   const embeddedImages: string[] = [];
 
   try {
-    // 1. Jupyter Notebook (.ipynb)
+    // ── 1. Jupyter Notebook (.ipynb) ──
     if (ext === 'ipynb') {
       formatType = 'JUPYTER NOTEBOOK';
       const rawJson = await file.text();
@@ -94,7 +219,7 @@ export async function extractFileContent(file: File): Promise<ExtractedResult> {
         extractedText = rawJson;
       }
     }
-    // 2. Word Documents (.doc or .docx)
+    // ── 2. Word Documents (.doc or .docx) ──
     else if (ext === 'doc' || ext === 'docx') {
       formatType = ext === 'doc' ? 'WORD DOC' : 'WORD DOCX';
       const rawText = await file.text();
@@ -146,12 +271,14 @@ export async function extractFileContent(file: File): Promise<ExtractedResult> {
           .trim();
       }
     }
-    // 3. PDF Documents (.pdf)
+    // ── 3. PDF Documents (.pdf) ──
     else if (ext === 'pdf') {
       formatType = 'PDF DOCUMENT';
       const arrayBuffer = await file.arrayBuffer();
-      const loadingTask = pdfjsLib.getDocument({ data: arrayBuffer });
-      const pdf = await loadingTask.promise;
+      // pdfjs-dist v6 prefers Uint8Array over raw ArrayBuffer
+      const uint8Array = new Uint8Array(arrayBuffer);
+      // Use local /pdf.worker.mjs with Main Thread fallback
+      const pdf = await loadPdfDocument(uint8Array);
       const pdfTexts: string[] = [`# PDF: ${fileName} (${pdf.numPages} Pages)\n`];
 
       for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
@@ -160,32 +287,41 @@ export async function extractFileContent(file: File): Promise<ExtractedResult> {
         const pageStrings = textContent.items.map((item: any) => item.str || '').join(' ');
 
         if (pageStrings.trim().length > 10) {
+          // ─ Normal text page (HTML-to-PDF, digital PDF, etc.) ─
           pdfTexts.push(`--- Page ${pageNum} ---\n${pageStrings}\n`);
         } else {
-          // Offscreen HTML5 Canvas Rendering for Scanned PDF Page
+          // ─ Scanned / image-only page → Canvas render → OCR ─
           try {
-            const viewport = page.getViewport({ scale: 1.5 });
+            const viewport = page.getViewport({ scale: 2.0 }); // Higher scale for better OCR
             const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
             canvas.height = viewport.height;
             canvas.width = viewport.width;
+            const ctx = canvas.getContext('2d')!;
 
-            if (context) {
-              await page.render({ canvasContext: context, viewport, canvas } as any).promise;
-              const pageImageDataUrl = canvas.toDataURL('image/png');
-              embeddedImages.push(pageImageDataUrl);
-              pdfTexts.push(`--- Page ${pageNum} (Scanned Image Page) ---\n[Scanned PDF Page image rendered to canvas for Vision AI Analysis]\n`);
+            // pdfjs-dist v6 requires `canvas` in RenderParameters
+            await page.render({ canvas, canvasContext: ctx, viewport } as any).promise;
+
+            // Store the page image
+            const pageImageDataUrl = canvas.toDataURL('image/png');
+            embeddedImages.push(pageImageDataUrl);
+
+            // Run Tesseract OCR on the rendered canvas
+            const ocrText = await ocrFromSource(canvas);
+
+            if (ocrText.length > 10) {
+              pdfTexts.push(`--- Page ${pageNum} (OCR Extracted) ---\n${ocrText}\n`);
             } else {
-              pdfTexts.push(`--- Page ${pageNum} (Scanned Image Page) ---\n[Scanned PDF Page image ready for AI analysis]\n`);
+              pdfTexts.push(`--- Page ${pageNum} (Scanned Image Page) ---\n[Scanned PDF Page — OCR found minimal text. Image stored for AI analysis.]\n`);
             }
-          } catch {
-            pdfTexts.push(`--- Page ${pageNum} (Scanned Image Page) ---\n[Scanned PDF Page image ready for AI analysis]\n`);
+          } catch (renderErr) {
+            console.warn(`PDF page ${pageNum} canvas render failed:`, renderErr);
+            pdfTexts.push(`--- Page ${pageNum} (Scanned Image Page) ---\n[Scanned PDF Page — canvas render unavailable, image ready for AI analysis]\n`);
           }
         }
       }
       extractedText = pdfTexts.join('\n');
     }
-    // 4. Image Files (.png, .jpg, .jpeg, .webp)
+    // ── 4. Image Files (.png, .jpg, .jpeg, .webp) ──
     else if (file.type.startsWith('image/')) {
       formatType = 'IMAGE FILE';
       const reader = new FileReader();
@@ -196,9 +332,17 @@ export async function extractFileContent(file: File): Promise<ExtractedResult> {
       const dataUrl = await base64Promise;
       embeddedImages.push(dataUrl);
 
-      extractedText = `[Image File: ${fileName} (${sizeKb} KB)]\nImage data ready for AI Vision Analysis & OCR Extraction.`;
+      // Run Canvas preprocessing + Tesseract OCR on the image
+      const ocrText = await ocrFromSource(dataUrl);
+
+      if (ocrText.length > 10) {
+        formatType = 'IMAGE FILE (OCR)';
+        extractedText = `# OCR Extracted from: ${fileName}\n\n${ocrText}`;
+      } else {
+        extractedText = `[Image File: ${fileName} (${sizeKb} KB)]\nImage data ready for AI Vision Analysis.\n(OCR found minimal readable text in this image)`;
+      }
     }
-    // 5. Code & Plain Text Files
+    // ── 5. Code & Plain Text Files ──
     else {
       extractedText = await file.text();
     }

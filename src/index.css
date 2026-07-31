@@ -4,6 +4,14 @@
   --bg-primary: #0b0f19;
   --bg-secondary: #111827;
   --bg-tertiary: #1f2937;
+  --header-bg: rgba(15, 23, 42, 0.95);
+  --header-border: rgba(255, 255, 255, 0.08);
+  --card-bg: rgba(15, 23, 42, 0.85);
+  --card-border: rgba(255, 255, 255, 0.08);
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  --dropdown-bg: rgba(30, 41, 59, 0.85);
+  --dropdown-border: rgba(6, 182, 212, 0.4);
+  --dropdown-text: #f8fafc;
   --accent-cyan: #06b6d4;
   --accent-cyan-hover: #0891b2;
   --accent-blue: #3b82f6;
@@ -21,18 +29,26 @@
 }
 
 [data-theme="light"] {
-  --bg-primary: #f1f5f9;
+  --bg-primary: #f8fafc;
   --bg-secondary: #ffffff;
-  --bg-tertiary: #e2e8f0;
+  --bg-tertiary: #f1f5f9;
+  --header-bg: rgba(255, 255, 255, 0.92);
+  --header-border: rgba(0, 0, 0, 0.08);
+  --card-bg: rgba(255, 255, 255, 0.95);
+  --card-border: rgba(0, 0, 0, 0.08);
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.06);
+  --dropdown-bg: rgba(241, 245, 249, 0.95);
+  --dropdown-border: rgba(6, 182, 212, 0.4);
+  --dropdown-text: #0f172a;
   --accent-cyan: #0284c7;
   --accent-cyan-hover: #0369a1;
   --accent-blue: #2563eb;
   --text-primary: #0f172a;
   --text-secondary: #334155;
   --text-muted: #64748b;
-  --border-color: rgba(0, 0, 0, 0.12);
-  --glass-bg: rgba(255, 255, 255, 0.85);
-  --glass-border: rgba(0, 0, 0, 0.15);
+  --border-color: rgba(0, 0, 0, 0.1);
+  --glass-bg: rgba(255, 255, 255, 0.9);
+  --glass-border: rgba(0, 0, 0, 0.12);
 }
 
 * {
@@ -5331,13 +5347,16 @@ body {
   background: rgba(30, 41, 59, 0.5);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-radius: 12px;
-  padding: 10px;
+  padding: 8px 10px;
   display: flex;
   align-items: center;
   gap: 8px;
   cursor: pointer;
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   user-select: none;
+  min-width: 0;
+  overflow: hidden;
+  box-sizing: border-box;
 }
 
 .bento-card-tile:hover {
@@ -5383,10 +5402,12 @@ body {
   display: flex;
   flex-direction: column;
   min-width: 0;
+  flex: 1;
+  overflow: hidden;
 }
 
 .bento-tile-title {
-  font-size: 0.76rem;
+  font-size: 0.74rem;
   font-weight: 700;
   color: #f1f5f9;
   white-space: nowrap;
@@ -5395,8 +5416,11 @@ body {
 }
 
 .bento-tile-status, .bento-tile-sub {
-  font-size: 0.68rem;
+  font-size: 0.67rem;
   color: #94a3b8;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 /* 🎭 PERSONA 3-COLUMN MICRO MATRIX */
@@ -6284,19 +6308,21 @@ body {
   align-items: center;
   gap: 4px;
   overflow-x: auto;
-  scrollbar-width: thin;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
   scroll-behavior: smooth;
   white-space: nowrap;
   flex: 1;
 }
 
 .code-lab-tabs-list::-webkit-scrollbar {
-  height: 3px;
+  display: none;
+  height: 0;
+  width: 0;
 }
 
 .code-lab-tabs-list::-webkit-scrollbar-thumb {
-  background: rgba(6, 182, 212, 0.3);
-  border-radius: 4px;
+  display: none;
 }
 
 .code-lab-scroll-btn {
@@ -6492,13 +6518,1692 @@ body {
   box-shadow: 0 0 24px rgba(6, 182, 212, 0.2);
 }
 
+/* ----------------------------------------------------
+   GLOBAL THEME ADAPTATION & BUTTON STYLING SYSTEM
+   ---------------------------------------------------- */
 
+.demo-workspace-header {
+  background: var(--header-bg) !important;
+  border-bottom: 1px solid var(--header-border) !important;
+  backdrop-filter: blur(16px);
+  color: var(--text-primary) !important;
+}
 
+.custom-dropdown-pill {
+  background: var(--dropdown-bg) !important;
+  border: 1px solid var(--dropdown-border) !important;
+  color: var(--dropdown-text) !important;
+  border-radius: 12px;
+  padding: 6px 28px 6px 12px;
+  font-weight: 700;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+}
 
+[data-theme="light"] .custom-dropdown-pill option {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
 
+[data-theme="dark"] .custom-dropdown-pill option {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+}
 
+.glass-card-bento,
+.hub-portal-card {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--card-border) !important;
+  box-shadow: var(--card-shadow) !important;
+  color: var(--text-primary) !important;
+}
 
+[data-theme="light"] .hub-portal-card h3,
+[data-theme="light"] .glass-card-bento h3 {
+  color: #0f172a !important;
+}
 
+[data-theme="light"] .hub-portal-card p,
+[data-theme="light"] .glass-card-bento p {
+  color: #475569 !important;
+}
 
+/* OU Exam Prep Active Tab */
+.tab-btn.active {
+  background: linear-gradient(135deg, #06b6d4, #a855f7) !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 700;
+  box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+}
 
+[data-theme="light"] .tab-btn:not(.active) {
+  background: rgba(0, 0, 0, 0.05) !important;
+  color: #334155 !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
 
+/* Kroki Diagram Studio Render Button */
+.kroki-render-btn {
+  background: linear-gradient(135deg, #06b6d4, #a855f7) !important;
+  color: #ffffff !important;
+  border: none !important;
+  font-weight: 700;
+  border-radius: 12px;
+  padding: 8px 16px;
+  box-shadow: 0 4px 15px rgba(6, 182, 212, 0.3);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.kroki-render-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(6, 182, 212, 0.45);
+}
+
+/* Document Extractor Upload Dropzone */
+[data-theme="light"] .extractor-dropzone {
+  background: rgba(241, 245, 249, 0.85) !important;
+  border: 2px dashed rgba(6, 182, 212, 0.5) !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .extractor-dropzone h3,
+[data-theme="light"] .extractor-dropzone p {
+  color: #0f172a !important;
+}
+
+/* Personas Lounge Pill Buttons */
+[data-theme="light"] .select-persona-pill-btn {
+  background: rgba(241, 245, 249, 0.9) !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+[data-theme="light"] .rose-toggle-btn {
+  background: rgba(225, 29, 72, 0.12) !important;
+  color: #e11d48 !important;
+  border: 1px solid rgba(225, 29, 72, 0.3) !important;
+}
+
+/* ----------------------------------------------------
+   LIGHT MODE SPECIFIC FIXES (SCREENSHOTS 1 & 2)
+   ---------------------------------------------------- */
+
+/* Fix Landing Page Header & Background (Screenshot 2) */
+[data-theme="light"] .demo-landing-container {
+  background: radial-gradient(circle at 50% 10%, #f8fafc 0%, #e2e8f0 85%),
+              radial-gradient(circle at 85% 85%, rgba(6, 182, 212, 0.12) 0%, transparent 60%) !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .demo-hub-header {
+  background: rgba(255, 255, 255, 0.88) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .demo-brand-title {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .demo-hero-title {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .demo-hero-description {
+  color: #475569 !important;
+}
+
+/* Fix Assistant Message Bubbles (Screenshot 1) */
+[data-theme="light"] .assistant-bubble {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .assistant-bubble .markdown-body,
+[data-theme="light"] .assistant-bubble .markdown-body p,
+[data-theme="light"] .assistant-bubble .markdown-body li,
+[data-theme="light"] .assistant-bubble .markdown-body span {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .user-bubble {
+  background: linear-gradient(135deg, #0284c7, #2563eb) !important;
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .user-bubble .markdown-body,
+[data-theme="light"] .user-bubble .markdown-body p,
+[data-theme="light"] .user-bubble .markdown-body li,
+[data-theme="light"] .user-bubble .markdown-body span {
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .role-label {
+  color: #334155 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .model-badge {
+  background: rgba(6, 182, 212, 0.12) !important;
+  border: 1px solid rgba(6, 182, 212, 0.35) !important;
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .time-stamp {
+  color: #64748b !important;
+}
+
+/* Fix Message Action Bar (Screenshot 1) */
+[data-theme="light"] .kokonut-msg-actions-container {
+  background: rgba(241, 245, 249, 0.95) !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .kokonut-msg-btn {
+  background: rgba(6, 182, 212, 0.08) !important;
+  border: 1px solid rgba(6, 182, 212, 0.4) !important;
+  color: #0284c7 !important;
+  box-shadow: 0 2px 6px rgba(6, 182, 212, 0.12) !important;
+}
+
+[data-theme="light"] .kokonut-msg-btn:hover {
+  background: rgba(6, 182, 212, 0.18) !important;
+  border-color: #0284c7 !important;
+  color: #0369a1 !important;
+}
+
+/* Fix Chat Textarea & Bottom Bar (Screenshot 1) */
+[data-theme="light"] .chat-textarea,
+[data-theme="light"] textarea.kokonut-textarea {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.15) !important;
+  color: #0f172a !important;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .chat-textarea::placeholder,
+[data-theme="light"] textarea.kokonut-textarea::placeholder {
+  color: #64748b !important;
+}
+
+/* ----------------------------------------------------
+   PRACTICAL CODE LAB & EXTRACTOR STUDIO THEME FIXES
+   ---------------------------------------------------- */
+
+/* 1. Practical Code Lab Container & Header */
+.code-lab-view-container {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  width: 100%;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.code-lab-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 16px;
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--header-border);
+  backdrop-filter: blur(16px);
+}
+
+[data-theme="light"] .code-lab-header h1 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .code-lab-view-container {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+/* Light mode for Code Lab Panes (Chat side & IDE side) */
+[data-theme="light"] .code-lab-view-container > div:last-child,
+[data-theme="light"] .code-lab-view-container [scrollable="true"] {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .code-lab-tab-bar {
+  background: #f1f5f9 !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .code-lab-tab {
+  background: #ffffff !important;
+  color: #334155 !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .code-lab-tab.active {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+}
+
+/* 2. Document & Code Extractor Studio Container & Header */
+.extractor-studio-view-container {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  width: 100%;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.extractor-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 24px;
+  background: var(--header-bg);
+  border-bottom: 1px solid var(--header-border);
+  backdrop-filter: blur(16px);
+}
+
+[data-theme="light"] .extractor-studio-view-container {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .extractor-header-bar {
+  background: rgba(255, 255, 255, 0.92) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .extractor-title-text {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .extractor-subtitle {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .extractor-grid-layout > div {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .extractor-grid-layout h3,
+[data-theme="light"] .extractor-grid-layout h2,
+[data-theme="light"] .extractor-grid-layout p,
+[data-theme="light"] .extractor-grid-layout span {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .extractor-btn-secondary {
+  background: #f1f5f9 !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .extractor-btn-secondary:hover {
+  background: #e2e8f0 !important;
+}
+
+/* ----------------------------------------------------
+   CODELAB CONTROL DECK & SPLIT-SCREEN LIGHT MODE FIXES
+   ---------------------------------------------------- */
+
+.codelab-editor-mode-toggle {
+  background: var(--bg-tertiary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.codelab-bottom-input-bar {
+  background: var(--bg-secondary) !important;
+  border-top: 1px solid var(--border-color) !important;
+}
+
+.codelab-input-wrapper {
+  background: var(--bg-tertiary) !important;
+  border: 1px solid var(--border-color) !important;
+}
+
+.codelab-textarea {
+  color: var(--text-primary) !important;
+}
+
+/* Control Deck Drawer (Left Sidebar) */
+.codelab-control-deck-drawer {
+  background: var(--bg-secondary) !important;
+  color: var(--text-primary) !important;
+}
+
+.codelab-command-controls-card {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--card-border) !important;
+  box-shadow: var(--card-shadow) !important;
+}
+
+.codelab-search-input {
+  background: var(--bg-tertiary) !important;
+  border: 1px solid var(--border-color) !important;
+  color: var(--text-primary) !important;
+}
+
+[data-theme="light"] .code-lab-ide-panel {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* ----------------------------------------------------
+   HEADER BUTTON OUTLINES & IDE LIGHT MODE CANVAS FIXES
+   ---------------------------------------------------- */
+
+[data-theme="light"] .code-lab-tab-bar {
+  background: #f8fafc !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .code-lab-tab-item {
+  background: #ffffff !important;
+  color: #334155 !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+[data-theme="light"] .code-lab-tab-item.active {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.25) !important;
+}
+
+[data-theme="light"] .code-lab-tab-item.active span,
+[data-theme="light"] .code-lab-tab-item.active svg {
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .code-lab-zip-btn {
+  background: rgba(147, 51, 234, 0.1) !important;
+  border: 1px solid rgba(147, 51, 234, 0.3) !important;
+  color: #7e22ce !important;
+}
+
+/* ----------------------------------------------------
+   HEADER SIGNATURE CYAN/BLUE BUTTON OUTLINES IN LIGHT MODE
+   ---------------------------------------------------- */
+
+[data-theme="light"] .demo-view-toggle-btn {
+  background: rgba(6, 182, 212, 0.08) !important;
+  border: 1px solid rgba(6, 182, 212, 0.4) !important;
+  color: #0284c7 !important;
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.12) !important;
+}
+
+[data-theme="light"] .demo-view-toggle-btn:hover {
+  background: rgba(6, 182, 212, 0.16) !important;
+  border-color: #0284c7 !important;
+  color: #0369a1 !important;
+}
+
+[data-theme="light"] .demo-icon-btn,
+[data-theme="light"] .demo-profile-avatar-btn {
+  background: rgba(6, 182, 212, 0.08) !important;
+  border: 1px solid rgba(6, 182, 212, 0.4) !important;
+  color: #0284c7 !important;
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.12) !important;
+}
+
+[data-theme="light"] .demo-icon-btn:hover,
+[data-theme="light"] .demo-profile-avatar-btn:hover {
+  background: rgba(6, 182, 212, 0.16) !important;
+  border-color: #0284c7 !important;
+  color: #0369a1 !important;
+}
+
+/* ----------------------------------------------------
+   MAIN CHAT LIGHT MODE DRAWER & MODE BAR OVERRIDES
+   ---------------------------------------------------- */
+
+/* Chat Control Deck Drawer (Screenshot 1) */
+[data-theme="light"] .demo-chat-history-drawer,
+[data-theme="light"] .persona-selection-drawer {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 10px 0 40px rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .demo-drawer-title h3 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .demo-bento-deck {
+  background: #f8fafc !important;
+  border: 1px solid rgba(6, 182, 212, 0.25) !important;
+  box-shadow: none !important;
+}
+
+[data-theme="light"] .bento-card-tile {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="light"] .bento-card-tile:hover {
+  background: #f1f5f9 !important;
+  border-color: rgba(6, 182, 212, 0.5) !important;
+}
+
+[data-theme="light"] .bento-tile-title {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .bento-tile-sub {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .demo-drawer-search-bar {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+[data-theme="light"] .demo-search-input {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .demo-search-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+[data-theme="light"] .demo-session-item {
+  background: #f8fafc !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .demo-session-item:hover {
+  background: #f1f5f9 !important;
+  border-color: rgba(6, 182, 212, 0.4) !important;
+}
+
+[data-theme="light"] .demo-session-item.active {
+  background: rgba(6, 182, 212, 0.12) !important;
+  border-color: rgba(6, 182, 212, 0.5) !important;
+}
+
+[data-theme="light"] .demo-session-title {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .demo-msg-badge {
+  background: rgba(0, 0, 0, 0.06) !important;
+  color: #64748b !important;
+}
+
+/* Floating Mode Bar & Input Controls (Screenshot 2) */
+[data-theme="light"] .kokonut-mode-dock {
+  background: rgba(248, 250, 252, 0.95) !important;
+  border: 1px solid rgba(6, 182, 212, 0.3) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06) !important;
+}
+
+[data-theme="light"] .kokonut-mode-pill {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  color: #334155 !important;
+}
+
+[data-theme="light"] .kokonut-mode-pill.active {
+  background: linear-gradient(135deg, #0284c7, #2563eb) !important;
+  color: #ffffff !important;
+  border-color: #0284c7 !important;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3) !important;
+}
+
+[data-theme="light"] .kokonut-mode-pill.active span,
+[data-theme="light"] .kokonut-mode-pill.active svg {
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .input-dock-outline-btn {
+  background: rgba(6, 182, 212, 0.08) !important;
+  border: 1px solid rgba(6, 182, 212, 0.4) !important;
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .input-dock-popover {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.1) !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .query-popover-item {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .query-popover-item:hover {
+  background: #f1f5f9 !important;
+  color: #0284c7 !important;
+}
+
+/* ----------------------------------------------------
+   FUN AI PERSONAS LOUNGE LIGHT MODE OVERRIDES
+   ---------------------------------------------------- */
+
+[data-theme="light"] .persona-selector-header-strip {
+  background: #ffffff !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .select-persona-pill-btn {
+  background: rgba(244, 63, 94, 0.08) !important;
+  border: 1px solid rgba(244, 63, 94, 0.4) !important;
+  color: #e11d48 !important;
+  font-weight: 700 !important;
+  padding: 6px 14px !important;
+  border-radius: 999px !important;
+  font-size: 0.78rem !important;
+  box-shadow: 0 2px 8px rgba(244, 63, 94, 0.12) !important;
+}
+
+[data-theme="light"] .select-persona-pill-btn:hover {
+  background: rgba(244, 63, 94, 0.16) !important;
+  border-color: #e11d48 !important;
+}
+
+[data-theme="light"] .persona-bento-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+}
+
+[data-theme="light"] .persona-bento-card {
+  background: #f8fafc !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  border-radius: 12px !important;
+  padding: 8px 10px !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+}
+
+[data-theme="light"] .persona-bento-card:hover {
+  background: #f1f5f9 !important;
+  border-color: rgba(244, 63, 94, 0.4) !important;
+}
+
+[data-theme="light"] .persona-bento-card.selected {
+  background: rgba(244, 63, 94, 0.12) !important;
+  border-color: rgba(244, 63, 94, 0.7) !important;
+  box-shadow: 0 0 12px rgba(244, 63, 94, 0.2) !important;
+}
+
+[data-theme="light"] .persona-micro-name {
+  color: #0f172a !important;
+  font-weight: 600 !important;
+  font-size: 0.8rem !important;
+}
+
+[data-theme="light"] .persona-card-item {
+  background: #f8fafc !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .persona-card-item:hover {
+  background: #f1f5f9 !important;
+  border-color: rgba(244, 63, 94, 0.4) !important;
+}
+
+[data-theme="light"] .persona-card-name {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .persona-card-desc {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .section-label {
+  color: #e11d48 !important;
+}
+
+[data-theme="light"] .fun-persona-lounge-container {
+  background: #ffffff !important;
+}
+
+[data-theme="light"] .empty-chat-hero h2 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .empty-chat-hero p {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .chat-input-sticky-footer {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+/* ----------------------------------------------------
+   OU EXAM PREP & QUESTION BANK LIGHT MODE OVERRIDES
+   ---------------------------------------------------- */
+
+[data-theme="light"] .exam-prep-header h2 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .exam-prep-header .subtitle {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .custom-dropdown-pill {
+  background: rgba(6, 182, 212, 0.08) !important;
+  border: 1px solid rgba(6, 182, 212, 0.4) !important;
+  color: #0284c7 !important;
+  border-radius: 999px !important;
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.12) !important;
+}
+
+[data-theme="light"] .custom-dropdown-pill span {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .custom-dropdown-pill:hover {
+  background: rgba(6, 182, 212, 0.16) !important;
+  border-color: #0284c7 !important;
+}
+
+[data-theme="light"] .custom-dropdown-menu.paper-menu {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="light"] .paper-menu .dropdown-header {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .paper-menu .dropdown-item {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .paper-menu .dropdown-item:hover {
+  background: #f1f5f9 !important;
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .paper-menu .dropdown-item.selected {
+  background: rgba(6, 182, 212, 0.12) !important;
+  color: #0284c7 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .exam-tabs-container {
+  background: transparent !important;
+  border: none !important;
+  margin-bottom: 20px !important;
+}
+
+[data-theme="light"] .exam-tabs {
+  display: flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  background: rgba(248, 250, 252, 0.95) !important;
+  border: 1px solid rgba(6, 182, 212, 0.35) !important;
+  border-radius: 9999px !important;
+  padding: 6px !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.05) !important;
+}
+
+[data-theme="light"] .tab-btn {
+  background: transparent !important;
+  border: none !important;
+  color: #475569 !important;
+  padding: 8px 18px !important;
+  border-radius: 9999px !important;
+  font-weight: 600 !important;
+  font-size: 0.88rem !important;
+  display: inline-flex !important;
+  align-items: center !important;
+  gap: 8px !important;
+  cursor: pointer !important;
+  transition: all 0.2s ease !important;
+}
+
+[data-theme="light"] .tab-btn:hover {
+  background: rgba(6, 182, 212, 0.12) !important;
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .tab-btn.active {
+  background: #0284c7 !important;
+  color: #ffffff !important;
+  border-radius: 9999px !important;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.3) !important;
+}
+
+[data-theme="light"] .tab-btn.active span,
+[data-theme="light"] .tab-btn.active svg {
+  color: #ffffff !important;
+}
+
+[data-theme="light"] .card-box,
+[data-theme="light"] .paper-set-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  border-radius: 16px !important;
+  padding: 20px !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .card-box .markdown-body,
+[data-theme="light"] .card-box .markdown-body p,
+[data-theme="light"] .card-box .markdown-body li,
+[data-theme="light"] .card-box .markdown-body h1,
+[data-theme="light"] .card-box .markdown-body h2,
+[data-theme="light"] .card-box .markdown-body h3,
+[data-theme="light"] .card-box .markdown-body strong {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .code-lab-editor-area {
+  background: #ffffff !important;
+  color: #0f172a !important;
+  border-left: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .code-lab-tab-edge-left,
+[data-theme="light"] .code-lab-tab-edge-right {
+  display: none !important;
+}
+
+/* ----------------------------------------------------
+   KROKI DIAGRAM STUDIO LIGHT MODE OVERRIDES
+   ---------------------------------------------------- */
+
+[data-theme="light"] .diagram-studio-container {
+  background: #ffffff !important;
+}
+
+[data-theme="light"] .studio-header h2,
+[data-theme="light"] .studio-title-area h2 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .studio-header .subtitle,
+[data-theme="light"] .studio-title-area .subtitle {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .custom-dropdown-menu {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="light"] .custom-dropdown-menu .dropdown-header {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .custom-dropdown-menu .dropdown-item {
+  color: #334155 !important;
+}
+
+[data-theme="light"] .custom-dropdown-menu .dropdown-item:hover {
+  background: #f1f5f9 !important;
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .custom-dropdown-menu .dropdown-item.selected {
+  background: rgba(6, 182, 212, 0.12) !important;
+  color: #0284c7 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .custom-dropdown-menu.diagram-menu {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="light"] .diagram-menu .dropdown-item span.text-cyan-400 {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .kroki-export-pill {
+  background: rgba(6, 182, 212, 0.08) !important;
+  border: 1px solid rgba(6, 182, 212, 0.4) !important;
+  color: #0284c7 !important;
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.12) !important;
+}
+
+[data-theme="light"] .kroki-export-pill:hover {
+  background: rgba(6, 182, 212, 0.16) !important;
+  border-color: #0284c7 !important;
+  color: #0284c7 !important;
+  box-shadow: 0 4px 12px rgba(6, 182, 212, 0.25) !important;
+}
+
+[data-theme="light"] .editor-box .editor-header span {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .preview-box .preview-header span {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .code-editor-textarea {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+[data-theme="light"] .svg-display-area {
+  background: #f8fafc !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+/* ----------------------------------------------------
+   DOCUMENT & CODE EXTRACTOR STUDIO LIGHT MODE OVERRIDES
+   ---------------------------------------------------- */
+
+[data-theme="light"] .extractor-format-chip {
+  background: rgba(6, 182, 212, 0.1) !important;
+  color: #0284c7 !important;
+  border: 1px solid rgba(6, 182, 212, 0.3) !important;
+}
+
+[data-theme="light"] .extractor-viewer-panel {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06) !important;
+}
+
+[data-theme="light"] .extractor-stats-bar {
+  background: #f8fafc !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .extractor-file-name {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .extractor-stats-group {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .extractor-stat-item strong {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .extractor-code-box {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.06) !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.06) !important;
+}
+
+[data-theme="light"] .extractor-action-bar {
+  background: #ffffff !important;
+  border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .extractor-brand-icon {
+  background: rgba(6, 182, 212, 0.12) !important;
+  border-color: rgba(6, 182, 212, 0.3) !important;
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .extractor-studio-tag {
+  background: rgba(6, 182, 212, 0.12) !important;
+  color: #0284c7 !important;
+  border-color: rgba(6, 182, 212, 0.3) !important;
+}
+
+[data-theme="light"] .extractor-drop-icon {
+  background: rgba(6, 182, 212, 0.12) !important;
+  border-color: rgba(6, 182, 212, 0.3) !important;
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .extractor-dropzone h3 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .extractor-dropzone p {
+  color: #64748b !important;
+}
+
+/* ----------------------------------------------------
+   3D PHYSICS LAB LIGHT MODE OVERRIDES
+   ---------------------------------------------------- */
+
+[data-theme="light"] .cubes-playground-container {
+  background: #ffffff !important;
+}
+
+[data-theme="light"] .playground-header h2 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .playground-header .subtitle {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .stage-card.card-box {
+  background: #f8fafc !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .stage-card-hint {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .control-panel.card-box {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04) !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .control-panel h3,
+[data-theme="light"] .control-panel label,
+[data-theme="light"] .control-panel span {
+  color: #0f172a !important;
+}
+
+/* ----------------------------------------------------
+   USER PROMPTS & TEMPLATES LIGHT MODE OVERRIDES
+   ---------------------------------------------------- */
+
+[data-theme="light"] .prompt-library-container {
+  background: #ffffff !important;
+}
+
+[data-theme="light"] .library-title-area h2 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .library-title-area .subtitle {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .search-bar-wrapper {
+  background: #f8fafc !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+[data-theme="light"] .search-input {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .search-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+[data-theme="light"] .category-filter-tabs .filter-btn {
+  background: #f1f5f9 !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  color: #475569 !important;
+}
+
+[data-theme="light"] .category-filter-tabs .filter-btn:hover {
+  background: #e2e8f0 !important;
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .category-filter-tabs .filter-btn.active {
+  background: rgba(6, 182, 212, 0.12) !important;
+  border-color: rgba(6, 182, 212, 0.5) !important;
+  color: #0284c7 !important;
+  font-weight: 700 !important;
+}
+
+[data-theme="light"] .prompt-card.card-box {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04) !important;
+}
+
+[data-theme="light"] .prompt-card-header h3 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .prompt-desc {
+  color: #475569 !important;
+}
+
+[data-theme="light"] .prompt-code-preview {
+  background: #f8fafc !important;
+  color: #334155 !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .prompt-icon-box {
+  background: rgba(6, 182, 212, 0.12) !important;
+}
+
+/* ----------------------------------------------------
+   SETTINGS & MODEL MANAGER BASE & LIGHT MODE RULES
+   ---------------------------------------------------- */
+
+.settings-tab-nav {
+  background: rgba(15, 23, 42, 0.7);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+.model-manager-header-bar {
+  background: rgba(15, 23, 42, 0.6);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+}
+
+.model-provider-select {
+  background: rgba(30, 41, 59, 0.8) !important;
+  border: 1px solid rgba(56, 189, 248, 0.3) !important;
+  color: #38bdf8 !important;
+}
+
+.model-catalog-item {
+  background: rgba(15, 23, 42, 0.4);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.model-catalog-item.enabled {
+  background: rgba(30, 41, 59, 0.8);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+/* ⚙️ LIGHT MODE OVERRIDES FOR SETTINGS & MODEL MANAGER */
+
+[data-theme="light"] .modal-overlay {
+  background: rgba(15, 23, 42, 0.4) !important;
+  backdrop-filter: blur(12px) !important;
+}
+
+[data-theme="light"] .modal-content,
+[data-theme="light"] .kokonut-drawer-card {
+  background: #ffffff !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15) !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .modal-header {
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .modal-title h2 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .settings-tab-nav {
+  background: #f1f5f9 !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .json-sync-bar {
+  background: #ffffff !important;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .key-field label {
+  color: #334155 !important;
+  font-weight: 600 !important;
+}
+
+[data-theme="light"] .key-input {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+[data-theme="light"] .key-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+[data-theme="light"] .model-manager-header-bar {
+  background: #f8fafc !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .model-provider-select {
+  background: #ffffff !important;
+  border: 1px solid rgba(6, 182, 212, 0.4) !important;
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .model-catalog-item {
+  background: #f8fafc !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .model-catalog-item.enabled {
+  background: rgba(6, 182, 212, 0.08) !important;
+  border: 1px solid rgba(6, 182, 212, 0.35) !important;
+}
+
+[data-theme="light"] .model-catalog-item span {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .model-catalog-item span[style*="monospace"] {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .modal-footer {
+  border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+/* ----------------------------------------------------
+   NATIVE SELECT DROPDOWN OPTION THEME STYLING
+   ---------------------------------------------------- */
+
+.custom-dropdown-pill option {
+  background: #0f172a !important;
+  color: #f8fafc !important;
+}
+
+[data-theme="light"] .custom-dropdown-pill option,
+[data-theme="light"] select.custom-dropdown-pill option {
+  background: #ffffff !important;
+  color: #0f172a !important;
+}
+
+/* ----------------------------------------------------
+   CODE LAB DECK, SIDE MENU & BENTO DRAWER LIGHT MODE OVERRIDES
+   ---------------------------------------------------- */
+
+.codelab-deck-backdrop {
+  background: rgba(2, 6, 23, 0.75);
+}
+
+.codelab-session-item {
+  background: rgba(15, 23, 42, 0.75);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.codelab-session-item.active {
+  background: rgba(6, 182, 212, 0.16);
+  border-color: rgba(6, 182, 212, 0.4);
+}
+
+[data-theme="light"] .codelab-deck-backdrop {
+  background: rgba(15, 23, 42, 0.35) !important;
+}
+
+[data-theme="light"] .codelab-control-deck-drawer {
+  background: #ffffff !important;
+  border-right: 1px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: 0 0 35px rgba(0, 0, 0, 0.12) !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .codelab-control-deck-drawer h3 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .codelab-command-controls-card {
+  background: #f8fafc !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .codelab-control-pill {
+  background: #f1f5f9 !important;
+  color: #0284c7 !important;
+  border: 1px solid rgba(0, 0, 0, 0.1) !important;
+}
+
+[data-theme="light"] .codelab-search-input {
+  background: #f8fafc !important;
+  color: #0f172a !important;
+  border: 1px solid rgba(0, 0, 0, 0.12) !important;
+}
+
+[data-theme="light"] .codelab-search-input::placeholder {
+  color: #94a3b8 !important;
+}
+
+[data-theme="light"] .codelab-session-item {
+  background: #f8fafc !important;
+  border-color: rgba(0, 0, 0, 0.08) !important;
+}
+
+[data-theme="light"] .codelab-session-item:hover {
+  background: #f1f5f9 !important;
+}
+
+[data-theme="light"] .codelab-session-item.active {
+  background: rgba(6, 182, 212, 0.12) !important;
+  border-color: rgba(6, 182, 212, 0.4) !important;
+}
+
+[data-theme="light"] .codelab-session-item div[style*="fontWeight: 700"],
+[data-theme="light"] .codelab-session-item div[style*="font-weight: 700"] {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .codelab-session-item.active div[style*="fontWeight: 700"],
+[data-theme="light"] .codelab-session-item.active div[style*="font-weight: 700"] {
+  color: #0284c7 !important;
+}
+
+[data-theme="light"] .preset-drawer-overlay {
+  background: rgba(15, 23, 42, 0.4) !important;
+  backdrop-filter: blur(16px) !important;
+}
+
+[data-theme="light"] .preset-drawer-content {
+  background: #ffffff !important;
+  border-left: 1px solid rgba(0, 0, 0, 0.12) !important;
+  box-shadow: -20px 0 60px rgba(0, 0, 0, 0.12) !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .preset-drawer-content h2 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .preset-drawer-content p {
+  color: #64748b !important;
+}
+
+[data-theme="light"] .preset-bento-card {
+  background: #f8fafc !important;
+  border: 1px solid rgba(0, 0, 0, 0.08) !important;
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .preset-bento-card:hover {
+  background: #f1f5f9 !important;
+  border-color: rgba(6, 182, 212, 0.5) !important;
+}
+
+[data-theme="light"] .preset-bento-card.active-preset {
+  background: rgba(6, 182, 212, 0.12) !important;
+  border-color: rgba(6, 182, 212, 0.6) !important;
+  box-shadow: 0 0 24px rgba(6, 182, 212, 0.15) !important;
+}
+
+[data-theme="light"] .preset-bento-card h3,
+[data-theme="light"] .preset-bento-card h4 {
+  color: #0f172a !important;
+}
+
+[data-theme="light"] .preset-bento-card p {
+  color: #475569 !important;
+}
+
+/* ----------------------------------------------------
+   📱 IPHONE 14 PRO MAX & MOBILE RESPONSIVENESS RULES
+   ---------------------------------------------------- */
+
+@media (max-width: 768px) {
+  /* 🎭 FUN AI PERSONAS LOUNGE: 3 BENTO CARDS PER ROW ON MOBILE */
+  .persona-bento-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+
+  .persona-bento-card {
+    padding: 8px 4px !important;
+    border-radius: 10px !important;
+    gap: 2px !important;
+  }
+
+  .persona-bento-card .persona-micro-icon {
+    font-size: 1.15rem !important;
+  }
+
+  .persona-bento-card .persona-micro-name {
+    font-size: 0.65rem !important;
+    font-weight: 700 !important;
+    line-height: 1.15 !important;
+  }
+
+  /* 🚀 LANDING HUB: COMPACT HERO & RESPONSIVE GRID FOR MOBILE */
+  .demo-hero-section {
+    margin-bottom: 16px !important;
+  }
+
+  .demo-hero-title {
+    font-size: 1.35rem !important;
+    line-height: 1.25 !important;
+    margin-bottom: 6px !important;
+  }
+
+  .demo-hero-description {
+    font-size: 0.78rem !important;
+    line-height: 1.35 !important;
+    max-width: 95% !important;
+  }
+
+  .demo-portals-grid {
+    display: grid !important;
+    grid-template-columns: repeat(3, 1fr) !important;
+    gap: 8px !important;
+    width: 100% !important;
+  }
+
+  .hub-portal-card {
+    padding: 10px 8px !important;
+    border-radius: 14px !important;
+  }
+
+  .portal-icon-badge {
+    width: 32px !important;
+    height: 32px !important;
+    border-radius: 8px !important;
+  }
+
+  .portal-icon-badge svg {
+    width: 16px !important;
+    height: 16px !important;
+  }
+
+  .portal-card-header {
+    margin-bottom: 6px !important;
+  }
+
+  .portal-card-body h3 {
+    font-size: 0.74rem !important;
+    font-weight: 700 !important;
+    line-height: 1.15 !important;
+    margin: 2px 0 !important;
+  }
+
+  .portal-card-body p {
+    font-size: 0.6rem !important;
+    line-height: 1.25 !important;
+    display: -webkit-box !important;
+    -webkit-line-clamp: 2 !important;
+    -webkit-box-orient: vertical !important;
+    overflow: hidden !important;
+    margin: 0 !important;
+    color: var(--text-muted) !important;
+  }
+
+  .portal-tag {
+    font-size: 0.58rem !important;
+    padding: 2px 4px !important;
+    border-radius: 4px !important;
+  }
+
+  .portal-meta-features {
+    display: none !important;
+  }
+
+  .portal-card-footer {
+    margin-top: 6px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .launch-portal-btn {
+    width: 100% !important;
+    padding: 4px 6px !important;
+    font-size: 0.65rem !important;
+    justify-content: center !important;
+    border-radius: 8px !important;
+  }
+
+  /* 🧭 WORKSPACE HEADER MOBILE OPTIMIZATION (ICON-ONLY BUTTONS & TITLE HIDING) */
+  .demo-workspace-header {
+    padding: 8px 12px !important;
+    justify-content: space-between !important;
+  }
+
+  .demo-header-middle-title {
+    display: none !important;
+  }
+
+  .demo-home-breadcrumb-btn span,
+  .demo-view-toggle-btn span,
+  .demo-status-pill span {
+    display: none !important;
+  }
+
+  .demo-home-breadcrumb-btn,
+  .demo-view-toggle-btn,
+  .demo-status-pill {
+    padding: 6px 8px !important;
+    min-width: unset !important;
+    border-radius: 10px !important;
+    gap: 0 !important;
+  }
+
+  .demo-hub-header {
+    padding: 10px 14px !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+
+  .demo-brand-logo {
+    gap: 8px !important;
+  }
+
+  .demo-app-title {
+    font-size: 1.1rem !important;
+  }
+
+  .demo-app-subtitle {
+    font-size: 0.68rem !important;
+  }
+
+  .demo-header-actions {
+    gap: 6px !important;
+    flex-wrap: wrap !important;
+  }
+
+  /* 🎓 OU EXAM PREP HUB MOBILE RESPONSIVENESS */
+  .exam-prep-view-container {
+    padding: 12px !important;
+  }
+
+  .exam-header-bar {
+    padding: 12px 14px !important;
+    flex-wrap: wrap !important;
+    gap: 10px !important;
+  }
+
+  .exam-title-text {
+    font-size: 1.1rem !important;
+  }
+
+  .exam-subtitle {
+    font-size: 0.74rem !important;
+  }
+
+  .exam-subject-tabs {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    padding-bottom: 6px !important;
+    gap: 6px !important;
+  }
+
+  .exam-subject-tab-btn {
+    padding: 6px 12px !important;
+    font-size: 0.76rem !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+  }
+
+  .paper-sets-grid {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+}
+
+/* ⚡ TEXTRACTOR COMPACT MOBILE HEADER STYLES */
+@media (max-width: 768px) {
+  .extractor-header-bar {
+    padding-bottom: 10px !important;
+    margin-bottom: 12px !important;
+  }
+  .extractor-brand-icon {
+    width: 34px !important;
+    height: 34px !important;
+    border-radius: 10px !important;
+  }
+  .extractor-title-text {
+    font-size: 0.98rem !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  .extractor-studio-tag {
+    display: none !important;
+  }
+  .extractor-subtitle {
+    display: none !important;
+  }
+}
+
+/* 🚀 CODE DUNGEON: RESPONSIVE MOBILE TABBED VIEW & HEADER (<=768px) */
+@media (max-width: 768px) {
+  .code-lab-header {
+    height: auto !important;
+    padding: 8px 12px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 6px !important;
+  }
+
+  .code-lab-header-left {
+    width: 100% !important;
+  }
+
+  .code-lab-header-right {
+    width: 100% !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 6px !important;
+  }
+
+  .codelab-dropdowns-row {
+    width: 100% !important;
+  }
+
+  .codelab-controls-row {
+    width: 100% !important;
+    justify-content: space-between !important;
+  }
+
+  .codelab-desktop-preset-btn {
+    display: none !important;
+  }
+
+  .codelab-mobile-preset-btn {
+    display: flex !important;
+  }
+
+  .code-lab-header select.custom-dropdown-pill {
+    font-size: 0.72rem !important;
+    padding: 4px 20px 4px 8px !important;
+    max-width: 100% !important;
+  }
+
+  .codelab-action-btn-text {
+    display: none !important;
+  }
+
+  /* Code File Tabs Truncation on Mobile */
+  .code-lab-tab-item {
+    max-width: 95px !important;
+    padding: 4px 6px !important;
+    font-size: 0.72rem !important;
+    flex-shrink: 0 !important;
+  }
+
+  .code-lab-tab-item.active {
+    max-width: 125px !important;
+  }
+
+  .code-lab-tab-item span {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+
+  /* Mobile Tab Navigation Bar */
+  .codelab-mobile-tab-nav {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.95);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    padding: 6px 12px;
+    gap: 8px;
+    flex-shrink: 0;
+  }
+
+  .codelab-mobile-tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 12px;
+    border: 1px solid transparent;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-secondary);
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .codelab-mobile-tab-btn.active {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(168, 85, 247, 0.25));
+    border-color: rgba(6, 182, 212, 0.5);
+    color: var(--accent-cyan);
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
+  }
+
+  .codelab-tab-badge {
+    padding: 1px 6px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    font-size: 0.68rem;
+  }
+
+  .codelab-tab-badge.accent {
+    background: rgba(168, 85, 247, 0.3);
+    color: #c084fc;
+  }
+
+  /* Panel toggling on Mobile */
+  .code-lab-split-pane {
+    flex-direction: column !important;
+  }
+
+  .code-lab-chat-panel,
+  .code-lab-ide-panel {
+    width: 100% !important;
+    height: 100% !important;
+  }
+
+  .code-lab-chat-panel.mobile-hidden,
+  .code-lab-ide-panel.mobile-hidden {
+    display: none !important;
+  }
+
+  .code-lab-resize-handle.desktop-only {
+    display: none !important;
+  }
+}
+
+/* Desktop default */
+@media (min-width: 769px) {
+  .codelab-mobile-tab-nav {
+    display: none !important;
+  }
+  .codelab-mobile-preset-btn {
+    display: none !important;
+  }
+}

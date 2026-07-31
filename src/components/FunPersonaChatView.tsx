@@ -4,12 +4,10 @@ import {
   Paperclip, 
   ChevronDown, 
   Check, 
-  Users, 
   Plus, 
   Trash2, 
   Clock, 
   X, 
-  Sparkles,
   Globe,
   Eye,
   Printer,
@@ -49,6 +47,8 @@ interface FunPersonaChatViewProps {
   onNewPersonaSession?: () => void;
   onDeletePersonaSession?: (id: string) => void;
   isDemoView?: boolean;
+  isExternalDrawerOpen?: boolean;
+  onCloseExternalDrawer?: () => void;
 }
 
 export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
@@ -70,7 +70,9 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
   onSelectPersonaSession,
   onNewPersonaSession,
   onDeletePersonaSession,
-  isDemoView = false
+  isDemoView = false,
+  isExternalDrawerOpen,
+  onCloseExternalDrawer
 }) => {
   const [inputPrompt, setInputPrompt] = useState('');
   const [isPersistentWebSearch, setIsPersistentWebSearch] = useState<boolean>(() => {
@@ -83,6 +85,15 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
   const [stagedPersona, setStagedPersona] = useState(selectedPersona);
   const [searchQuery, setSearchQuery] = useState('');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  const effectiveDrawerOpen = isExternalDrawerOpen !== undefined ? isExternalDrawerOpen : isPersonaDrawerOpen;
+
+  const handleCloseDrawer = () => {
+    if (onCloseExternalDrawer) {
+      onCloseExternalDrawer();
+    }
+    setIsPersonaDrawerOpen(false);
+  };
 
   // Custom Glass Dropdown States
   const [isProviderOpen, setIsProviderOpen] = useState(false);
@@ -215,43 +226,31 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
   });
 
   return (
-    <div className="chat-window-container fun-persona-lounge-container" style={{ position: 'relative' }}>
-      {/* Persona Header Bar with Drawer Toggle Button */}
-      <div className="persona-selector-header-strip w-full px-4 py-2 flex items-center justify-between gap-3 flex-nowrap" style={{ background: 'rgba(15, 23, 42, 0.94)', backdropFilter: 'blur(16px)', borderBottom: '1px solid rgba(6, 182, 212, 0.25)', minHeight: '48px', flexShrink: 0, width: '100%' }}>
-        <div className="flex items-center gap-3">
-          <button 
-            type="button" 
-            onClick={() => setIsPersonaDrawerOpen(true)}
-            className="select-persona-pill-btn flex items-center gap-2"
-            title={isDemoView ? "Open Persona Selection & Master Control Panel" : "Open Character Selection Grid"}
-          >
-            <Users size={15} />
-            <span>{isDemoView ? '🎭 Select Character & Control Deck' : '🎭 Select AI Character'}</span>
-          </button>
-
-          <div className="flex items-center gap-2">
-            <span className="picker-icon">{activePersonaObj.icon}</span>
-            <span className="font-semibold text-xs text-rose-300">{activePersonaObj.name}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* 📜 UNIFIED 400PX MASTER DRAWER */}
-      {isPersonaDrawerOpen && (
-        <div className="demo-drawer-overlay" onClick={() => setIsPersonaDrawerOpen(false)}>
+    <>
+      {/* 📜 UNIFIED CONTROL DECK SIDEBAR DRAWER (MATCHING MAIN CHAT HISTORY DRAWER 100%) */}
+      {effectiveDrawerOpen && (
+        <div className="demo-drawer-overlay" onClick={handleCloseDrawer} style={{ zIndex: 999999 }}>
           <aside 
-            className="persona-selection-drawer" 
+            className="demo-chat-history-drawer persona-selection-drawer" 
             onClick={(e) => e.stopPropagation()}
-            style={{ width: '400px', maxWidth: '92vw' }}
+            style={{ width: '380px', maxWidth: '90vw' }}
           >
+            {/* Drawer Header Bar */}
             <div className="demo-drawer-header">
               <div className="demo-drawer-title">
-                <Sparkles size={18} className="text-rose-400" />
-                <h3>{isDemoView ? 'Persona Controls & History' : 'Select AI Character'}</h3>
+                <Clock size={18} className="text-rose-400" />
+                <div>
+                  <h3 style={{ fontSize: '0.94rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                    Fun Persona Deck
+                  </h3>
+                  <div style={{ fontSize: '0.7rem', color: '#f43f5e', fontWeight: 600 }}>
+                    {activePersonaObj.name}
+                  </div>
+                </div>
               </div>
               <button 
                 type="button" 
-                onClick={() => setIsPersonaDrawerOpen(false)} 
+                onClick={handleCloseDrawer} 
                 className="demo-icon-btn"
                 aria-label="Close Persona Drawer"
               >
@@ -259,8 +258,129 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
               </button>
             </div>
 
-            {/* SECTION 1: 2-COLUMN CHARACTER BENTO GRID */}
-            <div className="persona-drawer-section">
+            {/* Primary Action Button */}
+            {onNewPersonaSession && (
+              <div className="demo-drawer-action" style={{ marginBottom: '14px' }}>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    onNewPersonaSession();
+                    handleCloseDrawer();
+                  }} 
+                  className="demo-new-chat-btn rose-new-chat-btn"
+                  style={{
+                    width: '100%',
+                    padding: '10px 16px',
+                    borderRadius: '12px',
+                    background: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)',
+                    color: '#ffffff',
+                    fontWeight: 700,
+                    fontSize: '0.85rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    boxShadow: '0 4px 14px rgba(244, 63, 94, 0.35)',
+                    border: 'none',
+                    cursor: 'pointer'
+                  }}
+                >
+                  <Plus size={16} />
+                  <span>New Persona Chat Session</span>
+                </button>
+              </div>
+            )}
+
+            {/* SECTION 1: BENTO COMMAND CONTROL DECK (TOP PRIORITY CONTROLS) */}
+            {isDemoView && (
+              <div className="demo-bento-deck" style={{ marginBottom: '14px' }}>
+                <div className="bento-deck-header">
+                  <Zap size={13} className="text-rose-400" />
+                  <span>COMMAND CONTROLS</span>
+                </div>
+
+                <div className="bento-grid-container">
+                  {/* Tile 1: Persistent Web Search */}
+                  <div 
+                    className={`bento-card-tile ${isPersistentWebSearch ? 'active-glow-cyan' : ''}`}
+                    onClick={handleTogglePersistentWebSearch}
+                    title="Toggle Persistent Internet Search across all messages"
+                  >
+                    <div className="bento-tile-icon cyan">
+                      <Globe size={16} />
+                    </div>
+                    <div className="bento-tile-content">
+                      <span className="bento-tile-title">Web Search</span>
+                      <span className="bento-tile-status">
+                        {isPersistentWebSearch ? '🟢 Always ON' : '⚪ OFF'}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Tile 2: Session Monitor */}
+                  <div className="bento-card-tile" title={`Model: ${selectedModel}`}>
+                    <div className="bento-tile-icon purple">
+                      <BarChart2 size={16} />
+                    </div>
+                    <div className="bento-tile-content">
+                      <span className="bento-tile-title">{selectedModel.slice(0, 12)}</span>
+                      <span className="bento-tile-sub font-mono">{messages.length} msgs</span>
+                    </div>
+                  </div>
+
+                  {/* Tile 3: Preview Chat (In-App Styled Modal) */}
+                  <div 
+                    className="bento-card-tile"
+                    onClick={() => {
+                      handleExportFullChatPdf();
+                      handleCloseDrawer();
+                    }}
+                    title="Open styled in-app Preview Modal with Save Image & Save PDF"
+                  >
+                    <div className="bento-tile-icon blue">
+                      <Eye size={16} />
+                    </div>
+                    <div className="bento-tile-content">
+                      <span className="bento-tile-title">Preview Chat</span>
+                      <span className="bento-tile-sub">In-App Pop-up</span>
+                    </div>
+                  </div>
+
+                  {/* Tile 4: Native Print / PDF (Chrome Native Window) */}
+                  <div 
+                    className="bento-card-tile"
+                    onClick={handleDirectSessionPrint}
+                    title="Open System Native Chrome Print Preview Dialog to print or save PDF"
+                  >
+                    <div className="bento-tile-icon emerald">
+                      <Printer size={16} />
+                    </div>
+                    <div className="bento-tile-content">
+                      <span className="bento-tile-title">Native Print / PDF</span>
+                      <span className="bento-tile-sub">System Chrome</span>
+                    </div>
+                  </div>
+
+                  {/* Tile 5 (Full Width Span 2): Clear Session Context */}
+                  <div 
+                    className="bento-card-tile span-2-tile danger-tile"
+                    onClick={() => setShowClearConfirm(true)}
+                    title="Clear messages in active persona session"
+                  >
+                    <div className="bento-tile-icon rose">
+                      <RotateCcw size={16} />
+                    </div>
+                    <div className="bento-tile-content" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                      <span className="bento-tile-title">Clear Session Context</span>
+                      <span className="bento-tile-sub">Reset Messages</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* SECTION 2: 3-COLUMN CHARACTER BENTO GRID */}
+            <div className="persona-drawer-section mb-3">
               <div className="section-label mb-2">
                 <span>SELECT AI CHARACTER</span>
               </div>
@@ -268,7 +388,6 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
               <div className="persona-bento-grid">
                 {PERSONAS.filter(p => p.id !== 'default').map(p => {
                   const isSelected = p.id === stagedPersona;
-                  // Strip out emojis, trailing "-Inspired", and abbreviate long titles for clean 1-line label
                   const cleanName = p.name
                     .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '')
                     .replace("Courage's Computer", 'C. Computer')
@@ -298,7 +417,7 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
                     if (!isPersonaEnabled && onTogglePersonaEnabled) {
                       onTogglePersonaEnabled();
                     }
-                    setIsPersonaDrawerOpen(false);
+                    handleCloseDrawer();
                   }}
                   title="Apply character and automatically enable persona prompt"
                 >
@@ -346,97 +465,9 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
               </div>
             </div>
 
-            {/* SECTION 2: BENTO COMMAND CONTROL DECK (Demo Mode Only) */}
-            {isDemoView && (
-              <div className="demo-bento-deck" style={{ margin: '12px 16px' }}>
-                <div className="bento-deck-header">
-                  <Zap size={13} className="text-rose-400" />
-                  <span>COMMAND CONTROLS</span>
-                </div>
-
-                <div className="bento-grid-container">
-                  {/* Tile 1: Persistent Web Search */}
-                  <div 
-                    className={`bento-card-tile ${isPersistentWebSearch ? 'active-glow-cyan' : ''}`}
-                    onClick={handleTogglePersistentWebSearch}
-                    title="Toggle Persistent Internet Search across all messages"
-                  >
-                    <div className="bento-tile-icon cyan">
-                      <Globe size={16} />
-                    </div>
-                    <div className="bento-tile-content">
-                      <span className="bento-tile-title">Web Search</span>
-                      <span className="bento-tile-status">
-                        {isPersistentWebSearch ? '🟢 Always ON' : '⚪ OFF'}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Tile 2: Session Monitor */}
-                  <div className="bento-card-tile" title={`Model: ${selectedModel}`}>
-                    <div className="bento-tile-icon purple">
-                      <BarChart2 size={16} />
-                    </div>
-                    <div className="bento-tile-content">
-                      <span className="bento-tile-title">{selectedModel.slice(0, 12)}</span>
-                      <span className="bento-tile-sub font-mono">{messages.length} msgs</span>
-                    </div>
-                  </div>
-
-                  {/* Tile 3: Preview Chat (In-App Styled Modal) */}
-                  <div 
-                    className="bento-card-tile"
-                    onClick={() => {
-                      handleExportFullChatPdf();
-                      setIsPersonaDrawerOpen(false);
-                    }}
-                    title="Open styled in-app Preview Modal with Save Image & Save PDF"
-                  >
-                    <div className="bento-tile-icon blue">
-                      <Eye size={16} />
-                    </div>
-                    <div className="bento-tile-content">
-                      <span className="bento-tile-title">Preview Chat</span>
-                      <span className="bento-tile-sub">In-App Pop-up</span>
-                    </div>
-                  </div>
-
-                  {/* Tile 4: Native Print / PDF (Chrome Native Window) */}
-                  <div 
-                    className="bento-card-tile"
-                    onClick={handleDirectSessionPrint}
-                    title="Open System Native Chrome Print Preview Dialog to print or save PDF"
-                  >
-                    <div className="bento-tile-icon emerald">
-                      <Printer size={16} />
-                    </div>
-                    <div className="bento-tile-content">
-                      <span className="bento-tile-title">Native Print / PDF</span>
-                      <span className="bento-tile-sub">System Chrome</span>
-                    </div>
-                  </div>
-
-                  {/* Tile 5 (Full Width Span 2): Clear Session Context */}
-                  <div 
-                    className="bento-card-tile span-2-tile danger-tile"
-                    onClick={() => setShowClearConfirm(true)}
-                    title="Clear messages in active persona session"
-                  >
-                    <div className="bento-tile-icon rose">
-                      <RotateCcw size={16} />
-                    </div>
-                    <div className="bento-tile-content" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                      <span className="bento-tile-title">Clear Session Context</span>
-                      <span className="bento-tile-sub">Reset Messages</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            )}
-
             {/* Clear Context Safety Confirmation */}
             {showClearConfirm && (
-              <div className="demo-clear-confirm-banner" style={{ margin: '0 16px 12px 16px' }}>
+              <div className="demo-clear-confirm-banner" style={{ marginBottom: '14px' }}>
                 <p>Clear all messages in active persona chat?</p>
                 <div className="flex items-center gap-2 mt-2">
                   <button 
@@ -460,24 +491,11 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
               </div>
             )}
 
-            {/* SECTION 3: SEARCH & PERSONA CHAT HISTORY (Demo Mode Only) */}
+            {/* SECTION 3: SEARCH & PERSONA CHAT HISTORY */}
             {isDemoView && (
-              <div className="persona-drawer-section persona-history-section">
+              <div className="persona-drawer-section persona-history-section" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
                 <div className="section-label flex justify-between items-center mb-2">
                   <span>PERSONA CHAT HISTORY</span>
-                  {onNewPersonaSession && (
-                    <button 
-                      type="button"
-                      onClick={() => {
-                        onNewPersonaSession();
-                        setIsPersonaDrawerOpen(false);
-                      }}
-                      className="demo-mini-new-btn"
-                    >
-                      <Plus size={13} />
-                      <span>New Chat</span>
-                    </button>
-                  )}
                 </div>
 
                 {/* Live Persona Search Bar */}
@@ -488,7 +506,7 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
                     placeholder="Search past persona chats..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    className="demo-search-input"
+                    className="demo-search-input codelab-search-input"
                   />
                   {searchQuery && (
                     <button 
@@ -501,7 +519,7 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
                   )}
                 </div>
 
-                <div className="demo-drawer-sessions-list">
+                <div className="demo-drawer-sessions-list" style={{ flex: 1, overflowY: 'auto' }}>
                   {filteredSessions.length === 0 ? (
                     <div className="demo-empty-sessions">
                       <Clock size={24} className="text-slate-500 mb-1" />
@@ -510,38 +528,53 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
                   ) : (
                     filteredSessions.map(session => {
                       const isActive = session.id === activePersonaSessionId;
+                      const msgCount = session.messages?.length || 0;
                       return (
                         <div
                           key={session.id}
-                          className={`demo-session-item ${isActive ? 'active' : ''}`}
+                          className={`codelab-session-item demo-session-item ${isActive ? 'active' : ''}`}
                           onClick={() => {
                             onSelectPersonaSession?.(session.id);
-                            setIsPersonaDrawerOpen(false);
+                            handleCloseDrawer();
+                          }}
+                          style={{
+                            padding: '10px 12px',
+                            borderRadius: '12px',
+                            borderLeft: isActive ? '3px solid #f43f5e' : undefined,
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            marginBottom: '6px',
+                            transition: 'all 0.18s ease'
                           }}
                         >
-                          <div className="demo-session-info">
-                            <Sparkles size={14} className={isActive ? 'text-rose-400' : 'text-slate-400'} />
-                            <span className="demo-session-title">
+                          <div style={{ overflow: 'hidden', flex: 1, marginRight: '8px' }}>
+                            <div className="demo-session-title" style={{ fontSize: '0.8rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                               {session.title || 'Persona Chat'}
-                            </span>
+                            </div>
+                            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                              <span className="demo-msg-badge">
+                                {msgCount} {msgCount === 1 ? 'msg' : 'msgs'}
+                              </span>
+                              <span>•</span>
+                              <span>{new Date(session.updatedAt || session.createdAt).toLocaleDateString()}</span>
+                            </div>
                           </div>
 
-                          <div className="demo-session-meta">
-                            <span className="demo-msg-badge">{session.messages.length} msgs</span>
-                            {onDeletePersonaSession && (
-                              <button
-                                type="button"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  onDeletePersonaSession(session.id);
-                                }}
-                                className="demo-delete-session-btn"
-                                title="Delete persona chat"
-                              >
-                                <Trash2 size={13} />
-                              </button>
-                            )}
-                          </div>
+                          {onDeletePersonaSession && (
+                            <button
+                              type="button"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onDeletePersonaSession(session.id);
+                              }}
+                              style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '4px' }}
+                              title="Delete session"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
                         </div>
                       );
                     })
@@ -553,9 +586,9 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
         </div>
       )}
 
-      {/* Main Messages Scroll Window */}
-      <div className="messages-viewport flex-1 overflow-y-auto p-4 space-y-4">
-        {messages.length === 0 ? (
+      <div className="chat-window-container fun-persona-lounge-container">
+        <div className="messages-viewport flex-1 overflow-y-auto p-4 space-y-4">
+          {messages.length === 0 ? (
           <div className="empty-chat-hero flex flex-col items-center justify-center h-full text-center p-6 space-y-4">
             <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-rose-500/20 to-purple-500/20 border border-rose-500/30 flex items-center justify-center text-4xl shadow-xl shadow-rose-500/10">
               {activePersonaObj.icon}
@@ -900,6 +933,7 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
         }}
       />
     </div>
+  </>
   );
 };
 

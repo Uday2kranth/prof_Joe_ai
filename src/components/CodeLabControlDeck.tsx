@@ -60,17 +60,18 @@ export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
       {/* Backdrop */}
       <div 
         onClick={onClose}
+        className="codelab-deck-backdrop"
         style={{
           position: 'fixed',
           inset: 0,
-          background: 'rgba(2, 6, 23, 0.75)',
           backdropFilter: 'blur(4px)',
-          zIndex: 1400
+          zIndex: 999998
         }}
       />
 
       {/* Control Deck Sidebar Container */}
       <div 
+        className="codelab-control-deck-drawer"
         style={{
           position: 'fixed',
           top: 0,
@@ -78,26 +79,24 @@ export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
           bottom: 0,
           width: '330px',
           maxWidth: '85vw',
-          background: 'rgba(2, 6, 23, 0.98)',
-          borderRight: '1px solid rgba(255, 255, 255, 0.1)',
+          borderRight: '1px solid var(--border-color)',
           backdropFilter: 'blur(16px)',
           boxShadow: '0 0 35px rgba(6, 182, 212, 0.25)',
-          zIndex: 1500,
+          zIndex: 999999,
           display: 'flex',
           flexDirection: 'column',
-          color: '#f8fafc',
           padding: '16px'
         }}
       >
         {/* Header Bar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', paddingBottom: '12px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', paddingBottom: '12px', borderBottom: '1px solid var(--border-color)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Clock size={18} style={{ color: '#06b6d4' }} />
+            <Clock size={18} style={{ color: 'var(--accent-cyan)' }} />
             <div>
-              <h3 style={{ fontSize: '0.94rem', fontWeight: 800, margin: 0, color: '#f8fafc' }}>
-                Code Lab Deck
+              <h3 style={{ fontSize: '0.94rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                Code Dungeon Deck 🏰
               </h3>
-              <div style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: 600 }}>
+              <div style={{ fontSize: '0.7rem', color: 'var(--accent-cyan)', fontWeight: 600 }}>
                 {presetName}
               </div>
             </div>
@@ -106,11 +105,9 @@ export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
           <button 
             type="button" 
             onClick={onClose}
+            className="extractor-btn-secondary"
             style={{
-              background: 'rgba(255, 255, 255, 0.05)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
               borderRadius: '8px',
-              color: '#cbd5e1',
               cursor: 'pointer',
               padding: '6px',
               display: 'flex',
@@ -136,8 +133,8 @@ export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
         </button>
 
         {/* Command Controls Card */}
-        <div style={{ background: 'rgba(15, 23, 42, 0.85)', border: '1px solid rgba(255, 255, 255, 0.08)', borderRadius: '14px', padding: '12px', marginBottom: '14px' }}>
-          <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', letterSpacing: '0.05em', marginBottom: '10px', textTransform: 'uppercase' }}>
+        <div className="codelab-command-controls-card" style={{ borderRadius: '14px', padding: '12px', marginBottom: '14px' }}>
+          <div style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.05em', marginBottom: '10px', textTransform: 'uppercase' }}>
             ⚡ Command Controls
           </div>
 
@@ -146,6 +143,7 @@ export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
             <button
               type="button"
               onClick={onToggleWebSearch}
+              className="codelab-control-pill"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -153,30 +151,31 @@ export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
                 padding: '8px 10px',
                 borderRadius: '10px',
                 border: '1px solid',
-                borderColor: webSearch ? 'rgba(52, 211, 153, 0.5)' : 'rgba(255, 255, 255, 0.08)',
-                background: webSearch ? 'rgba(52, 211, 153, 0.15)' : 'rgba(30, 41, 59, 0.6)',
-                color: webSearch ? '#34d399' : '#94a3b8',
+                borderColor: webSearch ? 'rgba(52, 211, 153, 0.5)' : 'var(--border-color)',
+                background: webSearch ? 'rgba(52, 211, 153, 0.15)' : 'var(--bg-tertiary)',
+                color: webSearch ? '#34d399' : 'var(--text-secondary)',
                 fontSize: '0.74rem',
                 fontWeight: 700,
                 cursor: 'pointer'
               }}
             >
-              <Globe size={14} style={{ color: webSearch ? '#34d399' : '#64748b' }} />
+              <Globe size={14} />
               <span>Search: {webSearch ? 'ON' : 'OFF'}</span>
             </button>
 
-            {/* Active Model Badge */}
+            {/* Selected Model Pill */}
             <div
+              className="codelab-control-pill"
               style={{
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
                 padding: '8px 10px',
                 borderRadius: '10px',
-                border: '1px solid rgba(168, 85, 247, 0.3)',
-                background: 'rgba(168, 85, 247, 0.12)',
-                color: '#c084fc',
-                fontSize: '0.72rem',
+                border: '1px solid var(--border-color)',
+                background: 'var(--bg-tertiary)',
+                color: 'var(--text-primary)',
+                fontSize: '0.74rem',
                 fontWeight: 700,
                 overflow: 'hidden',
                 textOverflow: 'ellipsis',
@@ -184,7 +183,7 @@ export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
               }}
               title={`Active Model: ${selectedModel}`}
             >
-              <Cpu size={14} style={{ color: '#c084fc', flexShrink: 0 }} />
+              <Cpu size={14} style={{ flexShrink: 0 }} />
               <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedModel}</span>
             </div>
           </div>
@@ -212,25 +211,23 @@ export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
               <RefreshCw size={13} />
               <span>Clear Session Context</span>
             </div>
-            <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Reset</span>
+            <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>Reset</span>
           </button>
         </div>
 
         {/* Search Input Filter */}
         <div style={{ position: 'relative', marginBottom: '12px' }}>
-          <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+          <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
           <input
             type="text"
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             placeholder={`Search past ${presetName} chats...`}
+            className="codelab-search-input"
             style={{
               width: '100%',
-              background: 'rgba(15, 23, 42, 0.8)',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
               borderRadius: '10px',
               padding: '8px 10px 8px 32px',
-              color: '#f8fafc',
               fontSize: '0.76rem',
               outline: 'none'
             }}
@@ -252,12 +249,10 @@ export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
                 <div
                   key={session.id}
                   onClick={() => onSelectSession(session.id)}
+                  className={`codelab-session-item demo-session-item ${isActive ? 'active' : ''}`}
                   style={{
                     padding: '10px 12px',
                     borderRadius: '12px',
-                    background: isActive ? 'rgba(6, 182, 212, 0.16)' : 'rgba(15, 23, 42, 0.75)',
-                    border: '1px solid',
-                    borderColor: isActive ? 'rgba(6, 182, 212, 0.4)' : 'rgba(255, 255, 255, 0.08)',
                     borderLeft: isActive ? '3px solid #06b6d4' : undefined,
                     cursor: 'pointer',
                     display: 'flex',
@@ -267,12 +262,12 @@ export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
                   }}
                 >
                   <div style={{ overflow: 'hidden', flex: 1, marginRight: '8px' }}>
-                    <div style={{ fontSize: '0.8rem', fontWeight: 700, color: isActive ? '#38bdf8' : '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div className="demo-session-title" style={{ fontSize: '0.8rem', fontWeight: 700, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {session.title || 'Code Lab Chat'}
                     </div>
-                    <div style={{ fontSize: '0.68rem', color: '#64748b', marginTop: '2px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <span style={{ background: 'rgba(255, 255, 255, 0.06)', padding: '1px 6px', borderRadius: '6px', color: '#cbd5e1' }}>
-                        {msgCount} {msgCount === 1 ? 'msg' : 'msgs'}
+                    <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span className="demo-msg-badge">
+                        {msgCount} msgs
                       </span>
                       <span>•</span>
                       <span>{new Date(session.updatedAt || session.createdAt).toLocaleDateString()}</span>
