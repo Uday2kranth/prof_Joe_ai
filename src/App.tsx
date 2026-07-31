@@ -9,10 +9,19 @@ import { PromptLibraryView } from './components/PromptLibraryView';
 import { DiagramStudioView } from './components/DiagramStudioView';
 import { CubesPlaygroundView } from './components/CubesPlaygroundView';
 import { FunPersonaChatView } from './components/FunPersonaChatView';
+import { DocumentExtractorStudioView } from './components/DocumentExtractorStudioView';
+import { PracticalCodeLabView } from './components/PracticalCodeLabView';
+import { ACADEMIC_PRESETS } from './components/CodeLabPresetDrawer';
 import { SettingsModal } from './components/SettingsModal';
 import { LoginModal } from './components/LoginModal';
 import { UserProfileModal } from './components/UserProfileModal';
+import { DemoLandingHub } from './components/DemoLandingHub';
+import { DemoChatHistoryDrawer } from './components/DemoChatHistoryDrawer';
+import { PdfPreviewModal } from './components/PdfPreviewModal';
+import { printSessionToPdf } from './services/printPdfService';
+import { Home, Layout, Key, Moon, Sun, User, Clock } from 'lucide-react';
 import { sendChatMessage } from './services/apiService';
+import { fetchCloudCodeLabPresetSessions, syncCodeLabPresetSessions } from './services/codelabSyncService';
 
 const DEFAULT_KEYS: UserKeys = {
   ollama: '',
@@ -62,6 +71,104 @@ export const App: React.FC = () => {
   const [activeSessionIdState, setActiveSessionIdState] = useState<string>(() => {
     return sessions[0]?.id || 'default-session-1';
   });
+
+  // 🎭 Isolated Persona Sessions State (Zero Bleed into Main Chat History)
+  const [personaSessions, setPersonaSessions] = useState<ChatSession[]>(() => {
+    const activeUser = localStorage.getItem('chatterbot_username');
+    if (activeUser) {
+      const saved = localStorage.getItem(`chatterbot_persona_sessions_${activeUser}`);
+      if (saved) {
+        try {
+          const parsed = JSON.parse(saved);
+          if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+        } catch (e) {
+          console.error('Failed to parse persona sessions', e);
+        }
+      }
+    }
+    return [
+      {
+        id: `persona-session-${Date.now()}`,
+        title: 'Fun Persona Chat',
+        provider: 'Pollinations AI (Free Keyless)',
+        model: 'openai-fast',
+        messages: [],
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      }
+    ];
+  });
+
+  const [activePersonaSessionIdState, setActivePersonaSessionIdState] = useState<string>(() => {
+    return personaSessions[0]?.id || 'default-persona-session-1';
+  });
+
+  const [isDemoChatDrawerOpen, setIsDemoChatDrawerOpen] = useState<boolean>(false);
+  const [isDemoPdfPreviewOpen, setIsDemoPdfPreviewOpen] = useState<boolean>(false);
+  const [isPersistentWebSearch, setIsPersistentWebSearch] = useState<boolean>(() => {
+    return localStorage.getItem('chatterbot_persistent_websearch') === 'true';
+  });
+
+  const handleTogglePersistentWebSearch = () => {
+    setIsPersistentWebSearch(prev => {
+      const next = !prev;
+      localStorage.setItem('chatterbot_persistent_websearch', String(next));
+      return next;
+    });
+  };
+
+  const handleClearActiveSession = () => {
+    if (!activeSession) return;
+    setSessions(prev => prev.map(s => {
+      if (s.id === activeSession.id) {
+        return { ...s, messages: [], updatedAt: Date.now() };
+      }
+      return s;
+    }));
+  };
+
+  const handleNativePrintPdf = () => {
+    if (!activeSession || activeSession.messages.length === 0) return;
+    printSessionToPdf(activeSession.messages, activeSession.title || 'Prof. Joe AI Chat Session');
+  };
+
+  const activePersonaSession = personaSessions.find(s => s.id === activePersonaSessionIdState) || personaSessions[0];
+
+  const handleNewPersonaSession = () => {
+    const newSession: ChatSession = {
+      id: `persona-session-${Date.now()}`,
+      title: 'New Persona Chat',
+      provider: selectedProvider,
+      model: selectedModel,
+      messages: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    const updated = [newSession, ...personaSessions];
+    setPersonaSessions(updated);
+    setActivePersonaSessionIdState(newSession.id);
+    if (currentUser) {
+      localStorage.setItem(`chatterbot_persona_sessions_${currentUser}`, JSON.stringify(updated));
+    }
+  };
+
+  const handleDeletePersonaSession = (id: string) => {
+    const filtered = personaSessions.filter(s => s.id !== id);
+    const final = filtered.length > 0 ? filtered : [{
+      id: `persona-session-${Date.now()}`,
+      title: 'Fun Persona Chat',
+      provider: selectedProvider,
+      model: selectedModel,
+      messages: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    }];
+    setPersonaSessions(final);
+    setActivePersonaSessionIdState(final[0].id);
+    if (currentUser) {
+      localStorage.setItem(`chatterbot_persona_sessions_${currentUser}`, JSON.stringify(final));
+    }
+  };
 
   // Perform hard legacy key cache wipe on app startup
   useEffect(() => {
@@ -133,6 +240,131 @@ export const App: React.FC = () => {
     return DEFAULT_FREE_MODEL;
   });
 
+  // Dedicated Preset-Segregated Multi-Sessions for Practical Code Lab Workspace
+  const [activeCodeLabPresetId, setActiveCodeLabPresetId] = useState<string>('ml_science');
+  const [activeCodeLabSessionIds, setActiveCodeLabSessionIds] = useState<Record<string, string>>({});
+  
+  const [codeLabPresetSessions, setCodeLabPresetSessions] = useState<Record<string, ChatSession[]>>(() => {
+    const activeUser = localStorage.getItem('chatterbot_username') || 'guest';
+    const saved = localStorage.getItem(`chatterbot_codelab_preset_sessions_v2_${activeUser}`);
+    if (saved) {
+      try {
+        return JSON.parse(saved);
+      } catch (e) {
+        console.error('Failed to parse local codeLabPresetSessions', e);
+      }
+    }
+    return {};
+  });
+
+  // Cloud Hydration from MongoDB on mount/login
+  useEffect(() => {
+    const activeUser = localStorage.getItem('chatterbot_username');
+    const token = localStorage.getItem('chatterbot_token') || undefined;
+    if (activeUser) {
+      fetchCloudCodeLabPresetSessions(activeUser, token).then(cloudPresetSessions => {
+        if (cloudPresetSessions && Object.keys(cloudPresetSessions).length > 0) {
+          setCodeLabPresetSessions(prev => ({
+            ...cloudPresetSessions,
+            ...prev
+          }));
+        }
+      });
+    }
+  }, [currentUser]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      `chatterbot_codelab_preset_sessions_v2_${currentUser || 'guest'}`, 
+      JSON.stringify(codeLabPresetSessions)
+    );
+  }, [codeLabPresetSessions, currentUser]);
+
+  // Derive active session for current preset
+  const presetSessionsList = codeLabPresetSessions[activeCodeLabPresetId] || [];
+  const currentActiveSessionId = activeCodeLabSessionIds[activeCodeLabPresetId] || (presetSessionsList[0]?.id || '');
+
+  const activeCodeLabSession = presetSessionsList.find(s => s.id === currentActiveSessionId) || presetSessionsList[0] || {
+    id: `codelab-session-${activeCodeLabPresetId}-${Date.now()}`,
+    title: `Code Lab Session`,
+    provider: selectedProvider,
+    model: selectedModel,
+    messages: [],
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    presetId: activeCodeLabPresetId
+  };
+
+  const handleSelectCodeLabPresetId = (newPresetId: string) => {
+    setActiveCodeLabPresetId(newPresetId);
+    const existingList = codeLabPresetSessions[newPresetId] || [];
+    if (existingList.length === 0) {
+      const initialSession: ChatSession = {
+        id: `codelab-session-${newPresetId}-${Date.now()}`,
+        title: `${ACADEMIC_PRESETS.find(p => p.id === newPresetId)?.name || 'Code Lab'} Session`,
+        provider: selectedProvider,
+        model: selectedModel,
+        messages: [],
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        presetId: newPresetId
+      };
+      setCodeLabPresetSessions(prev => {
+        const next = { ...prev, [newPresetId]: [initialSession] };
+        syncCodeLabPresetSessions(currentUser || 'guest', newPresetId, initialSession, next);
+        return next;
+      });
+      setActiveCodeLabSessionIds(prev => ({ ...prev, [newPresetId]: initialSession.id }));
+    } else if (!activeCodeLabSessionIds[newPresetId]) {
+      setActiveCodeLabSessionIds(prev => ({ ...prev, [newPresetId]: existingList[0].id }));
+    }
+  };
+
+  const handleNewCodeLabSession = (presetId: string) => {
+    const newSession: ChatSession = {
+      id: `codelab-session-${presetId}-${Date.now()}`,
+      title: `${ACADEMIC_PRESETS.find(p => p.id === presetId)?.name || 'Code Lab'} Session`,
+      provider: selectedProvider,
+      model: selectedModel,
+      messages: [],
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      presetId: presetId
+    };
+
+    setCodeLabPresetSessions(prev => {
+      const list = prev[presetId] || [];
+      const updatedList = [newSession, ...list];
+      const next = { ...prev, [presetId]: updatedList };
+      syncCodeLabPresetSessions(currentUser || 'guest', presetId, newSession, next);
+      return next;
+    });
+
+    setActiveCodeLabSessionIds(prev => ({ ...prev, [presetId]: newSession.id }));
+  };
+
+  const handleDeleteCodeLabSession = (presetId: string, sessionId: string) => {
+    setCodeLabPresetSessions(prev => {
+      const list = prev[presetId] || [];
+      const updatedList = list.filter(s => s.id !== sessionId);
+      const next = { ...prev, [presetId]: updatedList };
+      if (updatedList.length > 0) {
+        syncCodeLabPresetSessions(currentUser || 'guest', presetId, updatedList[0], next);
+      }
+      return next;
+    });
+
+    setActiveCodeLabSessionIds(prev => {
+      const list = codeLabPresetSessions[presetId] || [];
+      const remaining = list.filter(s => s.id !== sessionId);
+      return { ...prev, [presetId]: remaining[0]?.id || '' };
+    });
+  };
+
+  const handleResetCodeLabPresetSession = (presetId: string) => {
+    handleNewCodeLabSession(presetId);
+  };
+
   const [selectedPersona, setSelectedPersona] = useState<string>(() => {
     const activeUser = localStorage.getItem('chatterbot_username');
     if (activeUser) {
@@ -170,6 +402,8 @@ export const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
+  const [appLayoutMode, setAppLayoutMode] = useState<'standard' | 'hub-demo'>('hub-demo');
+  const [activeHubWorkspace, setActiveHubWorkspace] = useState<'landing' | ActiveViewType>('landing');
 
   const activeSession = sessions.find(s => s.id === activeSessionIdState) || sessions[0];
 
@@ -477,7 +711,12 @@ export const App: React.FC = () => {
     modeOrPersona: 'auto' | '12marks' | '2marks' | 'general' | 'none' | string = 'auto',
     personaArg?: string
   ) => {
-    const currentSess = activeSession || sessions[0];
+    const isCodeLabWorkspace = activeHubWorkspace === 'code_lab';
+    const isPersonaWorkspace = activeView === 'fun_personas' || activeHubWorkspace === 'fun_personas';
+    const currentSess = isCodeLabWorkspace
+      ? activeCodeLabSession
+      : (isPersonaWorkspace ? activePersonaSession : (activeSession || sessions[0]));
+
     if (!currentSess) return;
 
     let effectiveMode: 'auto' | '12marks' | '2marks' | 'general' | 'none' = 'auto';
@@ -487,8 +726,8 @@ export const App: React.FC = () => {
       effectiveMode = modeOrPersona as any;
     }
 
-    // Hard View Guard: Personas can ONLY be active when in 'fun_personas' view AND isPersonaEnabled is true
-    if (activeView === 'fun_personas' && isPersonaEnabled) {
+    // Personas are active when in 'fun_personas' view AND isPersonaEnabled is true
+    if (isPersonaWorkspace && isPersonaEnabled) {
       effectivePersona = personaArg || selectedPersona || 'default';
     }
 
@@ -505,20 +744,65 @@ export const App: React.FC = () => {
       ? (prompt.slice(0, 32) + (prompt.length > 32 ? '...' : ''))
       : currentSess.title;
 
-    setSessions(prev => prev.map(s => {
-      if (s.id === currentSess.id) {
-        return { ...s, title: newTitle, messages: updatedMessages, updatedAt: Date.now() };
+    const updateSessState = (msgList: Message[]) => {
+      if (isCodeLabWorkspace) {
+        setCodeLabPresetSessions(prev => {
+          const list = prev[activeCodeLabPresetId] || [];
+          let found = false;
+          const updatedList = list.map(s => {
+            if (s.id === activeCodeLabSession.id) {
+              found = true;
+              return { ...s, title: newTitle, messages: msgList, updatedAt: Date.now() };
+            }
+            return s;
+          });
+          if (!found) {
+            const updatedActive = { ...activeCodeLabSession, title: newTitle, messages: msgList, updatedAt: Date.now() };
+            updatedList.unshift(updatedActive);
+          }
+          const next = { ...prev, [activeCodeLabPresetId]: updatedList };
+          const activeSess = updatedList.find(s => s.id === activeCodeLabSession.id) || updatedList[0];
+          if (activeSess) {
+            syncCodeLabPresetSessions(currentUser || 'guest', activeCodeLabPresetId, activeSess, next);
+          }
+          return next;
+        });
+      } else if (isPersonaWorkspace) {
+        setPersonaSessions(prev => {
+          const next = prev.map(s => {
+            if (s.id === currentSess.id) {
+              return { ...s, title: newTitle, messages: msgList, updatedAt: Date.now() };
+            }
+            return s;
+          });
+          if (currentUser) {
+            localStorage.setItem(`chatterbot_persona_sessions_${currentUser}`, JSON.stringify(next));
+          }
+          return next;
+        });
+      } else {
+        setSessions(prev => prev.map(s => {
+          if (s.id === currentSess.id) {
+            return { ...s, title: newTitle, messages: msgList, updatedAt: Date.now() };
+          }
+          return s;
+        }));
       }
-      return s;
-    }));
+    };
 
+    updateSessState(updatedMessages);
     setIsLoading(true);
 
-    // One-Way Context Isolation:
-    // When in Main Chat (activeView === 'chat') or Exam Modes, filter out any assistant messages generated by personas
-    const apiPayloadMessages = (activeView === 'chat' || effectivePersona === 'default')
+    // Context Isolation for API payload
+    const apiPayloadMessages = (!isPersonaWorkspace || effectivePersona === 'default')
       ? updatedMessages.filter(m => !m.personaTag || m.personaTag === 'default')
       : updatedMessages;
+
+    // Injected system prompt calculation (preset system instruction for Code Lab)
+    const activePresetObj = ACADEMIC_PRESETS.find(p => p.id === activeCodeLabPresetId);
+    const effectiveSystemPrompt = isCodeLabWorkspace
+      ? (personaArg || activePresetObj?.systemInstruction)
+      : currentSess.systemPrompt;
 
     try {
       const response = await sendChatMessage(
@@ -528,7 +812,7 @@ export const App: React.FC = () => {
         userKeys,
         webSearch,
         effectiveMode,
-        currentSess.systemPrompt,
+        effectiveSystemPrompt,
         effectivePersona
       );
 
@@ -542,12 +826,7 @@ export const App: React.FC = () => {
         usage: response.usage
       };
 
-      setSessions(prev => prev.map(s => {
-        if (s.id === currentSess.id) {
-          return { ...s, messages: [...updatedMessages, assistantMsg], updatedAt: Date.now() };
-        }
-        return s;
-      }));
+      updateSessState([...updatedMessages, assistantMsg]);
     } catch (err: any) {
       const errorMsg: Message = {
         id: `msg-${Date.now() + 1}`,
@@ -555,12 +834,7 @@ export const App: React.FC = () => {
         content: `❌ **Failed to query model:** ${err.message || 'Unknown network error.'}`,
         timestamp: Date.now()
       };
-      setSessions(prev => prev.map(s => {
-        if (s.id === currentSess.id) {
-          return { ...s, messages: [...updatedMessages, errorMsg], updatedAt: Date.now() };
-        }
-        return s;
-      }));
+      updateSessState([...updatedMessages, errorMsg]);
     } finally {
       setIsLoading(false);
     }
@@ -659,22 +933,311 @@ export const App: React.FC = () => {
     );
   }
 
+  // Render Hub Demo Mode
+  if (appLayoutMode === 'hub-demo') {
+    if (activeHubWorkspace === 'landing') {
+      return (
+        <div className="app-container" data-theme={theme}>
+          <DemoLandingHub
+            onSelectWorkspace={(ws) => setActiveHubWorkspace(ws as ActiveViewType)}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onOpenProfile={() => setIsProfileModalOpen(true)}
+            theme={theme}
+            onToggleTheme={handleToggleTheme}
+            onSwitchToStandard={() => setAppLayoutMode('standard')}
+          />
+          <SettingsModal
+            isOpen={isSettingsOpen}
+            onClose={() => setIsSettingsOpen(false)}
+            userKeys={userKeys}
+            onSaveKeys={handleSaveUserKeys}
+            customModels={customModels}
+            onSaveCustomModels={handleSaveCustomModels}
+          />
+          <UserProfileModal
+            isOpen={isProfileModalOpen}
+            onClose={() => setIsProfileModalOpen(false)}
+            username={currentUser}
+            theme={theme}
+            onToggleTheme={handleToggleTheme}
+            onOpenSettings={() => setIsSettingsOpen(true)}
+            onClearHistory={() => setSessions([])}
+            onLogout={handleLogout}
+          />
+          <LoginModal
+            isOpen={isLoginOpen}
+            preventClose={false}
+            onClose={() => setIsLoginOpen(false)}
+            onLoginSuccess={handleLoginSuccess}
+          />
+        </div>
+      );
+    }
+
+    // Full-Bleed Dedicated Workspace View inside Hub Demo
+    return (
+      <div className="app-container" data-theme={theme}>
+        <div className="app-main-viewport" style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column' }}>
+          {/* Top Home Navigation Breadcrumb Bar */}
+          <div className="demo-workspace-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <button 
+                type="button" 
+                onClick={() => setActiveHubWorkspace('landing')}
+                className="demo-home-breadcrumb-btn"
+              >
+                <Home size={14} />
+                <span>Home Hub</span>
+              </button>
+
+              {activeHubWorkspace === 'chat' && (
+                <button
+                  type="button"
+                  onClick={() => setIsDemoChatDrawerOpen(true)}
+                  className="demo-view-toggle-btn cyan-toggle-btn"
+                  title="Open Chat History Drawer"
+                >
+                  <Clock size={14} />
+                  <span>📜 Chat History</span>
+                </button>
+              )}
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="portal-tag cyan-tag" style={{ textTransform: 'uppercase' }}>
+                {activeHubWorkspace} Workspace
+              </span>
+            </div>
+
+            <div className="demo-header-actions">
+              <button 
+                type="button" 
+                onClick={() => setAppLayoutMode('standard')}
+                className="demo-view-toggle-btn"
+              >
+                <Layout size={14} />
+                <span>Classic View</span>
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setIsSettingsOpen(true)} 
+                className="demo-status-pill cyan-pill"
+              >
+                <Key size={14} />
+                <span>Settings</span>
+              </button>
+              <button 
+                type="button" 
+                onClick={handleToggleTheme} 
+                className="demo-icon-btn"
+              >
+                {theme === 'dark' ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} className="text-purple-400" />}
+              </button>
+              <button 
+                type="button" 
+                onClick={() => setIsProfileModalOpen(true)} 
+                className="demo-profile-avatar-btn"
+              >
+                <User size={16} />
+              </button>
+            </div>
+          </div>
+
+          <main className="app-main" style={{ flex: 1, overflowY: 'auto', position: 'relative' }}>
+            {activeHubWorkspace === 'chat' && (
+              <>
+                <DemoChatHistoryDrawer
+                  isOpen={isDemoChatDrawerOpen}
+                  onClose={() => setIsDemoChatDrawerOpen(false)}
+                  sessions={sessions}
+                  activeSessionId={activeSessionIdState}
+                  onSelectSession={setActiveSessionIdState}
+                  onNewSession={handleNewSession}
+                  onDeleteSession={handleDeleteSession}
+                  isPersistentWebSearch={isPersistentWebSearch}
+                  onTogglePersistentWebSearch={handleTogglePersistentWebSearch}
+                  onOpenPdfPreview={() => setIsDemoPdfPreviewOpen(true)}
+                  onNativePrintPdf={handleNativePrintPdf}
+                  onClearActiveSession={handleClearActiveSession}
+                  activeProviderName={selectedProvider}
+                  activeModelName={selectedModel}
+                />
+                <ChatWindow
+                  messages={activeSession ? activeSession.messages : []}
+                  isLoading={isLoading}
+                  onSendMessage={handleSendMessage}
+                  selectedProvider={selectedProvider}
+                  selectedModel={selectedModel}
+                  onProviderChange={handleProviderChange}
+                  onModelChange={handleModelChange}
+                  onRetry={handleRetryLastAssistantMessage}
+                  onEditUserMessage={handleEditLastUserMessage}
+                  activeSystemPromptTitle={activeSession?.systemPromptTitle}
+                  onClearSystemPrompt={handleClearSystemPrompt}
+                  customModels={customModels}
+                  promptMode={promptMode}
+                  onPromptModeChange={handlePromptModeChange}
+                  isDemoView={true}
+                  onOpenCommandDeck={() => setIsDemoChatDrawerOpen(true)}
+                />
+
+                {isDemoPdfPreviewOpen && activeSession && (
+                  <PdfPreviewModal
+                    isOpen={isDemoPdfPreviewOpen}
+                    onClose={() => setIsDemoPdfPreviewOpen(false)}
+                    content={activeSession.messages.map(m => `### ${m.role === 'user' ? '👤 User' : `🎓 Prof. Joe (${m.modelUsed || selectedModel})`}\n${m.content}`).join('\n\n---\n\n')}
+                    modelUsed={selectedModel}
+                    docTitle={`ProfJoe_Chat_${activeSession.title ? activeSession.title.replace(/[^a-zA-Z0-9]/g, '_') : 'Session'}_${new Date().toISOString().split('T')[0]}`}
+                    renderedHtml={activeSession.messages.map(m => `<div class="msg-block"><h4>${m.role === 'user' ? '👤 User' : `🎓 Prof. Joe (${m.modelUsed || selectedModel})`}</h4><p>${m.content}</p></div>`).join('<hr/>')}
+                  />
+                )}
+              </>
+            )}
+
+            {activeHubWorkspace === 'examprep' && (
+              <ExamPrepView onLoadQuestionToChat={(prompt) => {
+                setActiveHubWorkspace('chat');
+                handleLoadPromptToChat(prompt);
+              }} />
+            )}
+
+            {activeHubWorkspace === 'system_prompts' && (
+              <SystemPromptLibraryView
+                onUsePrompt={(prompt) => {
+                  setActiveHubWorkspace('chat');
+                  handleLoadPromptToChat(prompt);
+                }}
+                onApplyPrompt={handleApplySystemPrompt}
+              />
+            )}
+
+            {activeHubWorkspace === 'prompts' && (
+              <PromptLibraryView onUsePrompt={(prompt) => {
+                setActiveHubWorkspace('chat');
+                handleLoadPromptToChat(prompt);
+              }} />
+            )}
+
+            {activeHubWorkspace === 'diagrams' && (
+              <DiagramStudioView />
+            )}
+
+            {activeHubWorkspace === 'cubes' && (
+              <CubesPlaygroundView />
+            )}
+
+            {activeHubWorkspace === 'fun_personas' && (
+              <FunPersonaChatView
+                messages={activePersonaSession ? activePersonaSession.messages : []}
+                isLoading={isLoading}
+                onSendMessage={(prompt, webSearch, mode, persona) => {
+                  handleSendMessage(prompt, webSearch, mode, persona);
+                }}
+                selectedProvider={selectedProvider}
+                selectedModel={selectedModel}
+                selectedPersona={selectedPersona}
+                isPersonaEnabled={isPersonaEnabled}
+                onTogglePersonaEnabled={handleTogglePersonaEnabled}
+                onProviderChange={handleProviderChange}
+                onModelChange={handleModelChange}
+                onPersonaChange={handlePersonaChange}
+                onRetry={handleRetryLastAssistantMessage}
+                onEditUserMessage={handleEditLastUserMessage}
+                personaSessions={personaSessions}
+                activePersonaSessionId={activePersonaSessionIdState}
+                onSelectPersonaSession={setActivePersonaSessionIdState}
+                onNewPersonaSession={handleNewPersonaSession}
+                onDeletePersonaSession={handleDeletePersonaSession}
+                isDemoView={true}
+              />
+            )}
+            {activeHubWorkspace === 'extractor_studio' && (
+              <DocumentExtractorStudioView
+                onBackToHub={() => setActiveHubWorkspace('chat')}
+                onSendToChat={() => {
+                  setActiveHubWorkspace('chat');
+                }}
+              />
+            )}
+            {activeHubWorkspace === 'code_lab' && (
+              <PracticalCodeLabView
+                onBackToHub={() => setActiveHubWorkspace('chat')}
+                onSendMessage={(prompt, webSearch, mode) => {
+                  handleSendMessage(prompt, webSearch, mode);
+                }}
+                isLoading={isLoading}
+                messages={activeCodeLabSession ? activeCodeLabSession.messages : []}
+                selectedProvider={selectedProvider}
+                selectedModel={selectedModel}
+                onProviderChange={handleProviderChange}
+                onModelChange={handleModelChange}
+                customModels={customModels}
+                activePresetId={activeCodeLabPresetId}
+                onSelectPresetId={handleSelectCodeLabPresetId}
+                onResetPresetChat={handleResetCodeLabPresetSession}
+                presetSessions={presetSessionsList}
+                activeSessionId={activeCodeLabSession.id}
+                onSelectSession={(sessionId) => {
+                  setActiveCodeLabSessionIds(prev => ({
+                    ...prev,
+                    [activeCodeLabPresetId]: sessionId
+                  }));
+                }}
+                onNewSession={() => handleNewCodeLabSession(activeCodeLabPresetId)}
+                onDeleteSession={(sessionId) => handleDeleteCodeLabSession(activeCodeLabPresetId, sessionId)}
+              />
+            )}
+          </main>
+        </div>
+
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          userKeys={userKeys}
+          onSaveKeys={handleSaveUserKeys}
+          customModels={customModels}
+          onSaveCustomModels={handleSaveCustomModels}
+        />
+        <UserProfileModal
+          isOpen={isProfileModalOpen}
+          onClose={() => setIsProfileModalOpen(false)}
+          username={currentUser}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onClearHistory={() => setSessions([])}
+          onLogout={handleLogout}
+        />
+        <LoginModal
+          isOpen={isLoginOpen}
+          preventClose={false}
+          onClose={() => setIsLoginOpen(false)}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      </div>
+    );
+  }
+
+  // Render Standard Classic View
   return (
-    <div className="app-container">
-      <div
-        className={`sidebar-overlay ${isSidebarOpen ? 'show' : ''}`}
-        onClick={() => setIsSidebarOpen(false)}
-      />
+    <div className="app-container" data-theme={theme}>
+      {/* Mobile Backdrop Overlay */}
+      {isSidebarOpen && (
+        <div
+          className="sidebar-overlay"
+          onClick={() => setIsSidebarOpen(false)}
+        />
+      )}
 
       <Sidebar
         isOpen={isSidebarOpen}
         onCloseMobile={() => setIsSidebarOpen(false)}
         onViewChange={setActiveView}
-        sessions={sessions}
-        activeSessionId={activeSession ? activeSession.id : activeSessionIdState}
-        onSelectSession={setActiveSessionIdState}
-        onNewSession={handleNewSession}
-        onDeleteSession={handleDeleteSession}
+        sessions={activeView === 'fun_personas' ? personaSessions : sessions}
+        activeSessionId={activeView === 'fun_personas' ? activePersonaSessionIdState : (activeSession ? activeSession.id : activeSessionIdState)}
+        onSelectSession={activeView === 'fun_personas' ? setActivePersonaSessionIdState : setActiveSessionIdState}
+        onNewSession={activeView === 'fun_personas' ? handleNewPersonaSession : handleNewSession}
+        onDeleteSession={activeView === 'fun_personas' ? handleDeletePersonaSession : handleDeleteSession}
         onOpenSettings={() => setIsSettingsOpen(true)}
         theme={theme}
         onToggleTheme={handleToggleTheme}
@@ -695,6 +1258,8 @@ export const App: React.FC = () => {
           username={currentUser}
           onLogout={handleLogout}
           onOpenProfileModal={() => setIsProfileModalOpen(true)}
+          appLayoutMode={appLayoutMode}
+          onToggleAppLayoutMode={() => setAppLayoutMode('hub-demo')}
         />
 
         <main className="app-main">
@@ -742,7 +1307,7 @@ export const App: React.FC = () => {
 
           {activeView === 'fun_personas' && (
             <FunPersonaChatView
-              messages={activeSession ? activeSession.messages : []}
+              messages={activePersonaSession ? activePersonaSession.messages : []}
               isLoading={isLoading}
               onSendMessage={handleSendMessage}
               selectedProvider={selectedProvider}
@@ -755,6 +1320,12 @@ export const App: React.FC = () => {
               onPersonaChange={handlePersonaChange}
               onRetry={handleRetryLastAssistantMessage}
               onEditUserMessage={handleEditLastUserMessage}
+              personaSessions={personaSessions}
+              activePersonaSessionId={activePersonaSessionIdState}
+              onSelectPersonaSession={setActivePersonaSessionIdState}
+              onNewPersonaSession={handleNewPersonaSession}
+              onDeletePersonaSession={handleDeletePersonaSession}
+              isDemoView={false}
             />
           )}
         </main>

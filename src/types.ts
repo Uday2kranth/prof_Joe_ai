@@ -22,6 +22,7 @@ export interface ChatSession {
   updatedAt: number;
   systemPrompt?: string;
   systemPromptTitle?: string;
+  presetId?: string;
 }
 
 export interface ModelOption {
@@ -61,7 +62,7 @@ export interface UserKeys {
   local_endpoint: string;
 }
 
-export type ActiveViewType = 'chat' | 'prompts' | 'examprep' | 'system_prompts' | 'diagrams' | 'cubes' | 'fun_personas';
+export type ActiveViewType = 'chat' | 'prompts' | 'examprep' | 'system_prompts' | 'diagrams' | 'cubes' | 'fun_personas' | 'extractor_studio' | 'code_lab';
 
 export interface CustomModel {
   id: string;

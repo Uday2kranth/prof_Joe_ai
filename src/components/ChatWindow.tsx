@@ -1,12 +1,15 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Send, Globe, X, Zap, FileText, CheckSquare, MessageSquare, Paperclip, Eye, Printer, ChevronDown, Check, ListFilter } from 'lucide-react';
+import { Send, Globe, X, Zap, FileText, FileCode, CheckSquare, MessageSquare, Paperclip, Eye, Printer, ChevronDown, Check, ListFilter } from 'lucide-react';
 // @ts-ignore
 import TextType from './TextType';
 import type { Message, UserCustomModels } from '../types';
 import { MessageItem, renderMarkdownWithMathAndDiagrams } from './MessageItem';
 import { PROVIDERS } from '../constants';
 import { PdfPreviewModal } from './PdfPreviewModal';
+import { QuickExtractionModal } from './QuickExtractionModal';
 import { printSessionToPdf } from '../services/printPdfService';
+import { useTypewriterPlaceholder } from '../hooks/useTypewriterPlaceholder';
+import { QuickActionsPopover, FilePreviewModal, type AttachedFileDetails } from './QuickActionsPopover';
 
 interface ChatWindowProps {
   messages: Message[];
@@ -24,6 +27,8 @@ interface ChatWindowProps {
   promptMode?: string;
   onPromptModeChange?: (mode: string) => void;
   isPersonaView?: boolean;
+  isDemoView?: boolean;
+  onOpenCommandDeck?: () => void;
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -41,7 +46,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   customModels,
   promptMode = 'auto',
   onPromptModeChange,
-  isPersonaView = false
+  isPersonaView = false,
+  isDemoView = false,
+  onOpenCommandDeck
 }) => {
   const [inputPrompt, setInputPrompt] = useState('');
   const [webSearch, setWebSearch] = useState(false);
@@ -51,6 +58,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   // Custom Glass Dropdown States
   const [isProviderOpen, setIsProviderOpen] = useState(false);
   const [isModelOpen, setIsModelOpen] = useState(false);
+  const [isQuickActionsOpen, setIsQuickActionsOpen] = useState(false);
+  const [attachedFiles, setAttachedFiles] = useState<AttachedFileDetails[]>([]);
+  const [selectedPreviewFile, setSelectedPreviewFile] = useState<AttachedFileDetails | null>(null);
+  const [isFilePreviewModalOpen, setIsFilePreviewModalOpen] = useState(false);
+  const [isExtractorStudioOpen, setIsExtractorStudioOpen] = useState(false);
+
   const providerRef = useRef<HTMLDivElement>(null);
   const modelRef = useRef<HTMLDivElement>(null);
   const minimapRef = useRef<HTMLDivElement>(null);
@@ -58,6 +71,15 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const dynamicPlaceholderPrompts = useMemo(() => [
+    `Ask ${selectedModel}... (Press Enter to Send)`,
+    `Ask a 12-mark Osmania exam question...`,
+    `Need quick revision notes for your exam?`,
+    `Attach a syllabus PDF or ask anything...`
+  ], [selectedModel]);
+
+  const animatedPlaceholder = useTypewriterPlaceholder(dynamicPlaceholderPrompts, 50, 25, 2000);
 
   // Instant scroll to latest message on session load / new messages
   useEffect(() => {
@@ -149,12 +171,34 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     const files = e.target.files;
     if (!files || files.length === 0) return;
     const file = files[0];
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const content = event.target?.result as string;
-      setInputPrompt(prev => `${prev}\n\n[Uploaded File: ${file.name}]\n${content}`);
-    };
-    reader.readAsText(file);
+    const sizeKb = Math.round(file.size / 1024);
+    const isImage = file.type.startsWith('image/');
+
+    if (isImage) {
+      const url = URL.createObjectURL(file);
+      const newFile: AttachedFileDetails = {
+        name: file.name,
+        sizeKb,
+        type: 'image',
+        previewUrl: url
+      };
+      setAttachedFiles(prev => [...prev, newFile]);
+      setInputPrompt(prev => prev ? prev : `Please analyze this image: ${file.name}`);
+    } else {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const content = event.target?.result as string;
+        const newFile: AttachedFileDetails = {
+          name: file.name,
+          sizeKb,
+          type: file.name.endsWith('.js') || file.name.endsWith('.ts') || file.name.endsWith('.py') ? 'code' : 'document',
+          textContent: content
+        };
+        setAttachedFiles(prev => [...prev, newFile]);
+        setInputPrompt(prev => `${prev}\n\n[Uploaded File: ${file.name}]\n${content}`);
+      };
+      reader.readAsText(file);
+    }
   };
 
   const handleExportFullChatPdf = () => {
@@ -309,16 +353,104 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
 
         <form onSubmit={handleSubmit} className="chat-form-modern kokonut-form">
           <input type="file" ref={fileInputRef} onChange={handleFileUpload} style={{ display: 'none' }} />
-          <textarea
-            ref={textareaRef}
-            value={inputPrompt}
-            onChange={(e) => setInputPrompt(e.target.value)}
-            onKeyDown={handleKeyDown}
-            placeholder={`Ask ${currentModelName}... (Press Enter to Send)`}
-            rows={3}
-            style={{ minHeight: '72px', fontSize: '0.92rem', padding: '12px 16px' }}
-            className="chat-textarea kokonut-textarea"
-          />
+          
+          <div style={{ position: 'relative', width: '100%' }}>
+            {/* Attached Files Visual Cards Deck (ChatGPT & Gemini Style INSIDE Text Field Container) */}
+            {attachedFiles.length > 0 && (
+              <div className="attachment-cards-deck">
+                {attachedFiles.map((file, idx) => (
+                  <React.Fragment key={idx}>
+                    {file.type === 'image' && file.previewUrl ? (
+                      <div
+                        onClick={() => {
+                          setSelectedPreviewFile(file);
+                          setIsFilePreviewModalOpen(true);
+                        }}
+                        className="attachment-card-image"
+                        title={`Click to preview ${file.name}`}
+                      >
+                        <img src={file.previewUrl} alt={file.name} />
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAttachedFiles(prev => prev.filter((_, i) => i !== idx));
+                          }}
+                          className="attachment-card-remove-badge"
+                          title="Remove Image"
+                        >
+                          <X size={11} />
+                        </button>
+                      </div>
+                    ) : (
+                      <div
+                        onClick={() => {
+                          setSelectedPreviewFile(file);
+                          setIsFilePreviewModalOpen(true);
+                        }}
+                        className="attachment-card-doc"
+                        title={`Click to preview ${file.name}`}
+                      >
+                        <div className={`doc-icon-box ${file.type === 'code' ? 'code-box' : 'pdf-box'}`}>
+                          {file.type === 'code' ? <FileCode size={18} /> : <FileText size={18} />}
+                        </div>
+                        <div className="doc-info">
+                          <span className="doc-title">{file.name}</span>
+                          <span className="doc-subtitle">{file.type} • {file.sizeKb} KB</span>
+                        </div>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setAttachedFiles(prev => prev.filter((_, i) => i !== idx));
+                          }}
+                          className="attachment-card-remove-badge"
+                          title="Remove Document"
+                        >
+                          <X size={11} />
+                        </button>
+                      </div>
+                    )}
+                  </React.Fragment>
+                ))}
+              </div>
+            )}
+            <textarea
+              ref={textareaRef}
+              value={inputPrompt}
+              onChange={(e) => setInputPrompt(e.target.value)}
+              onKeyDown={handleKeyDown}
+              placeholder={animatedPlaceholder || `Ask ${currentModelName}... (Press Enter to Send)`}
+              rows={3}
+              style={{ 
+                minHeight: '72px', 
+                fontSize: '0.92rem', 
+                padding: isDemoView ? '12px 56px 12px 16px' : '12px 16px' 
+              }}
+              className="chat-textarea kokonut-textarea"
+            />
+
+            {/* Floating Send Button Inside Input Box (Demo Mode ChatGPT/Claude Style) */}
+            {isDemoView && (
+              <button
+                type="submit"
+                disabled={isLoading || !inputPrompt.trim()}
+                className="kokonut-send-btn attract-btn"
+                style={{ 
+                  position: 'absolute', 
+                  right: '12px', 
+                  bottom: '12px', 
+                  zIndex: 10,
+                  width: '36px',
+                  height: '36px',
+                  borderRadius: '10px'
+                }}
+                title="Send Message"
+              >
+                <Send size={16} />
+              </button>
+            )}
+          </div>
 
           <div className="kokonut-bottom-row">
             <div className="kokonut-left-actions">
@@ -412,30 +544,65 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 )}
               </div>
 
-              {/* Row 2: Action Tools (Attach, RAG, Preview, Print) + Send Button */}
+              {/* Row 2: Action Tools */}
               <div className="kokonut-actions-row">
                 <div className="flex items-center gap-2">
+                <div className="relative">
                   <button
                     type="button"
-                    onClick={() => fileInputRef.current?.click()}
+                    onClick={() => setIsQuickActionsOpen(!isQuickActionsOpen)}
                     className="kokonut-action-btn file-attach-btn"
-                    title="Attach Document or Image"
+                    title="Open Quick Actions & Attachment Menu"
                   >
                     <Paperclip size={14} />
                   </button>
 
-                  <button
-                    type="button"
-                    onClick={() => setWebSearch(!webSearch)}
-                    className={`kokonut-mode-pill web-search-toggle-pill ${webSearch ? 'active' : ''}`}
-                    style={{ height: '32px', borderRadius: '16px', padding: '0 10px', fontSize: '11px' }}
-                    title="Toggle Web Search / RAG Knowledge Retrieval"
-                  >
-                    <Globe size={13} />
-                    <span>RAG {webSearch ? 'ON' : 'OFF'}</span>
-                  </button>
+                  <QuickActionsPopover
+                    isOpen={isQuickActionsOpen}
+                    onClose={() => setIsQuickActionsOpen(false)}
+                    onSelectUploadFile={() => fileInputRef.current?.click()}
+                    onSelectCodeSnippet={() => fileInputRef.current?.click()}
+                    attachedFile={attachedFiles.length > 0 ? attachedFiles[attachedFiles.length - 1] : null}
+                    onOpenPreviewModal={() => {
+                      if (attachedFiles.length > 0) {
+                        setSelectedPreviewFile(attachedFiles[attachedFiles.length - 1]);
+                        setIsFilePreviewModalOpen(true);
+                      }
+                    }}
+                    onOpenExtractorStudio={isDemoView ? () => setIsExtractorStudioOpen(true) : undefined}
+                  />
+                </div>
 
-                  {messages.length > 0 && (
+                  {/* Classic View Only: RAG Toggle Button */}
+                  {!isDemoView && (
+                    <button
+                      type="button"
+                      onClick={() => setWebSearch(!webSearch)}
+                      className={`kokonut-mode-pill web-search-toggle-pill ${webSearch ? 'active' : ''}`}
+                      style={{ height: '32px', borderRadius: '16px', padding: '0 10px', fontSize: '11px' }}
+                      title="Toggle Web Search / RAG Knowledge Retrieval"
+                    >
+                      <Globe size={13} />
+                      <span>RAG {webSearch ? 'ON' : 'OFF'}</span>
+                    </button>
+                  )}
+
+                  {/* Demo Mode Command Deck Shortcut Pill */}
+                  {isDemoView && onOpenCommandDeck && (
+                    <button
+                      type="button"
+                      onClick={onOpenCommandDeck}
+                      className="demo-view-toggle-btn"
+                      style={{ height: '32px', padding: '0 12px', fontSize: '11px', borderRadius: '16px' }}
+                      title="Open Side Drawer Command Deck & History"
+                    >
+                      <Zap size={13} className="text-cyan-400" />
+                      <span>📜 Command Deck</span>
+                    </button>
+                  )}
+
+                  {/* Classic View Only: Preview and Print Buttons */}
+                  {!isDemoView && messages.length > 0 && (
                     <>
                       <button
                         type="button"
@@ -460,14 +627,17 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                   )}
                 </div>
 
-                <button
-                  type="submit"
-                  disabled={isLoading || !inputPrompt.trim()}
-                  className="kokonut-send-btn attract-btn"
-                  title="Send Message"
-                >
-                  <Send size={16} />
-                </button>
+                {/* Classic View Only: Outer Send Button */}
+                {!isDemoView && (
+                  <button
+                    type="submit"
+                    disabled={isLoading || !inputPrompt.trim()}
+                    className="kokonut-send-btn attract-btn"
+                    title="Send Message"
+                  >
+                    <Send size={16} />
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -488,6 +658,20 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
           )}
         />
       )}
+      {/* Instant Attached File Preview Modal Card */}
+      <FilePreviewModal
+        isOpen={isFilePreviewModalOpen}
+        onClose={() => setIsFilePreviewModalOpen(false)}
+        attachedFile={selectedPreviewFile}
+      />
+      {/* Quick Extraction Engine Tool Modal */}
+      <QuickExtractionModal
+        isOpen={isExtractorStudioOpen}
+        onClose={() => setIsExtractorStudioOpen(false)}
+        onSendToChat={(extractedText, fileName) => {
+          setInputPrompt(prev => `${prev}\n\n[Extracted File Data: ${fileName}]\n${extractedText}`);
+        }}
+      />
     </div>
   );
 };

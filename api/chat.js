@@ -252,38 +252,51 @@ GENERAL AI ASSISTANT DIRECTIVES:
         }
     }
 
+    // Normalize incoming provider name string (e.g. "Google Gemini" -> "gemini", "Pollinations AI (Free Keyless)" -> "pollinations")
+    let targetProvider = (provider || '').toLowerCase().trim();
+    if (targetProvider.includes('gemini')) targetProvider = 'gemini';
+    else if (targetProvider.includes('pollinations')) targetProvider = 'pollinations';
+    else if (targetProvider.includes('ollama')) targetProvider = 'ollama';
+    else if (targetProvider.includes('openrouter')) targetProvider = 'openrouter';
+    else if (targetProvider.includes('groq')) targetProvider = 'groq';
+    else if (targetProvider.includes('cerebras')) targetProvider = 'cerebras';
+    else if (targetProvider.includes('mistral')) targetProvider = 'mistral';
+    else if (targetProvider.includes('nvidia')) targetProvider = 'nvidia';
+    else if (targetProvider.includes('sambanova')) targetProvider = 'sambanova';
+    else if (targetProvider.includes('huggingface')) targetProvider = 'huggingface';
+
     // 1. Resolve API Key: prioritizes client-submitted header keys.
     let apiKey = '';
     const isAdmin = (user && user.toLowerCase() === "admin@uday");
 
-    if (provider === "openrouter") {
+    if (targetProvider === "openrouter") {
         apiKey = req.headers['x-user-openrouter-key'] || (isAdmin ? (process.env.OPENROUTER_API_KEY || DEFAULT_OPENROUTER_KEY) : '');
-    } else if (provider === "nvidia") {
+    } else if (targetProvider === "nvidia") {
         apiKey = req.headers['x-user-nvidia-key'] || (isAdmin ? (process.env.NVIDIA_API_KEY || DEFAULT_NVIDIA_KEY) : '');
-    } else if (provider === "omnirouter") {
+    } else if (targetProvider === "omnirouter") {
         apiKey = req.headers['x-user-omnirouter-key'] || (isAdmin ? (process.env.OMNIROUTER_API_KEY || '') : '');
-    } else if (provider === "mistral") {
+    } else if (targetProvider === "mistral") {
         apiKey = req.headers['x-user-mistral-key'] || (isAdmin ? (process.env.MISTRAL_API_KEY || DEFAULT_MISTRAL_KEY) : '');
-    } else if (provider === "cerebras") {
+    } else if (targetProvider === "cerebras") {
         apiKey = req.headers['x-user-cerebras-key'] || (isAdmin ? (process.env.CEREBRAS_API_KEY || DEFAULT_CEREBRAS_KEY) : '');
-    } else if (provider === "groq") {
+    } else if (targetProvider === "groq") {
         apiKey = req.headers['x-user-groq-key'] || (isAdmin ? (process.env.GROQ_API_KEY || DEFAULT_GROQ_KEY) : '');
-    } else if (provider === "sambanova") {
+    } else if (targetProvider === "sambanova") {
         apiKey = req.headers['x-user-sambanova-key'] || (isAdmin ? (process.env.SAMBANOVA_API_KEY || DEFAULT_SAMBANOVA_KEY) : '');
-    } else if (provider === "gemini") {
+    } else if (targetProvider === "gemini") {
         apiKey = req.headers['x-user-gemini-key'] || (isAdmin ? (process.env.GEMINI_API_KEY || '') : '');
-    } else if (provider === "nararouter") {
+    } else if (targetProvider === "nararouter") {
         apiKey = req.headers['x-user-nararouter-key'] || (isAdmin ? (process.env.NARAROUTER_API_KEY || DEFAULT_NARAROUTER_KEY) : '');
-    } else if (provider === "huggingface") {
+    } else if (targetProvider === "huggingface") {
         apiKey = req.headers['x-user-huggingface-key'] || process.env.HUGGINGFACE_API_KEY || '';
-    } else if (provider === "opencode") {
+    } else if (targetProvider === "opencode") {
         apiKey = req.headers['x-user-opencode-key'] || (isAdmin ? (process.env.OPENCODE_API_KEY || '') : '');
-    } else if (provider === "pollinations-keyless") {
+    } else if (targetProvider === "pollinations-keyless") {
         apiKey = 'keyless_anonymous';
-    } else if (provider === "pollinations-keyed" || provider === "pollinations") {
+    } else if (targetProvider === "pollinations-keyed" || targetProvider === "pollinations") {
         const isKeylessReq = req.headers['x-pollinations-subtype'] === 'keyless' || ['openai-fast', 'openai', 'deepseek', 'llama', 'qwen-coder', 'mistral'].includes(model);
         apiKey = req.headers['x-user-pollinations-key'] || process.env.POLLINATIONS_API_KEY || (isKeylessReq ? 'keyless_anonymous' : '');
-    } else if (provider === "ollama") {
+    } else if (targetProvider === "ollama") {
         apiKey = req.headers['x-user-ollama-key'] || process.env.OLLAMA_API_KEY || DEFAULT_OLLAMA_KEY || (isAdmin ? 'ollama_cloud_default' : '');
     }
 
@@ -295,33 +308,33 @@ GENERAL AI ASSISTANT DIRECTIVES:
 
     // 2. Resolve API Endpoint
     let endpoint = '';
-    if (provider === "openrouter") {
+    if (targetProvider === "openrouter") {
         endpoint = 'https://openrouter.ai/api/v1/chat/completions';
-    } else if (provider === "nvidia") {
+    } else if (targetProvider === "nvidia") {
         endpoint = 'https://integrate.api.nvidia.com/v1/chat/completions';
-    } else if (provider === "omnirouter") {
+    } else if (targetProvider === "omnirouter") {
         endpoint = 'https://api.omnirouter.io/v1/chat/completions';
-    } else if (provider === "mistral") {
+    } else if (targetProvider === "mistral") {
         endpoint = 'https://api.mistral.ai/v1/chat/completions';
-    } else if (provider === "cerebras") {
+    } else if (targetProvider === "cerebras") {
         endpoint = 'https://api.cerebras.ai/v1/chat/completions';
-    } else if (provider === "groq") {
+    } else if (targetProvider === "groq") {
         endpoint = 'https://api.groq.com/openai/v1/chat/completions';
-    } else if (provider === "sambanova") {
+    } else if (targetProvider === "sambanova") {
         endpoint = 'https://api.sambanova.ai/v1/chat/completions';
-    } else if (provider === "gemini") {
+    } else if (targetProvider === "gemini") {
         endpoint = 'https://generativelanguage.googleapis.com/v1beta/openai/chat/completions';
-    } else if (provider === "nararouter") {
+    } else if (targetProvider === "nararouter") {
         endpoint = 'https://router.bynara.id/v1/chat/completions';
-    } else if (provider === "huggingface") {
+    } else if (targetProvider === "huggingface") {
         endpoint = 'https://router.huggingface.co/v1/chat/completions';
-    } else if (provider === "opencode") {
+    } else if (targetProvider === "opencode") {
         endpoint = 'https://opencode.ai/zen/v1/chat/completions';
-    } else if (provider === "pollinations" || provider === "pollinations-keyed" || provider === "pollinations-keyless") {
+    } else if (targetProvider === "pollinations" || targetProvider === "pollinations-keyed" || targetProvider === "pollinations-keyless") {
         endpoint = (apiKey === 'keyless_anonymous' || !apiKey)
             ? 'https://text.pollinations.ai/'
             : 'https://gen.pollinations.ai/v1/chat/completions';
-    } else if (provider === "ollama") {
+    } else if (targetProvider === "ollama") {
         endpoint = 'https://ollama.com/api/chat';
     } else {
         return res.status(400).json({ error: `Unknown provider specified: ${provider}` });
@@ -498,9 +511,24 @@ STRICT IMAGE & DIAGRAM EMBEDDING DIRECTIVES:
                         // Keyless Pollinations mode: Use 100% free anonymous GET endpoint with system prompt
                         const systemMsg = apiMessages.find(m => m.role === 'system')?.content || '';
                         const userMsg = apiMessages.filter(m => m.role === 'user').pop()?.content || prompt;
-                        const pollUrl = `https://text.pollinations.ai/${encodeURIComponent(userMsg)}?system=${encodeURIComponent(systemMsg)}&model=${encodeURIComponent(targetModel)}`;
+
+                        // Map targetModel to Pollinations supported keyless model names
+                        let pollModel = targetModel;
+                        if (pollModel === 'openai-fast' || pollModel === 'openai') pollModel = 'openai';
+                        else if (pollModel === 'deepseek') pollModel = 'mistral';
+                        else if (pollModel === 'qwen-coder') pollModel = 'qwen';
+                        else if (pollModel === 'llama') pollModel = 'llama';
+                        else pollModel = 'openai';
+                        
+                        let pollUrl = `https://text.pollinations.ai/${encodeURIComponent(userMsg)}?system=${encodeURIComponent(systemMsg)}&model=${encodeURIComponent(pollModel)}`;
                         
                         response = await fetch(pollUrl, { method: "GET" });
+
+                        if (!response.ok) {
+                            // Fallback to default Pollinations keyless text endpoint without model parameter
+                            const fallbackUrl = `https://text.pollinations.ai/${encodeURIComponent(userMsg)}?system=${encodeURIComponent(systemMsg)}`;
+                            response = await fetch(fallbackUrl, { method: "GET" });
+                        }
 
                         if (response.ok) {
                             const rawText = await response.text();

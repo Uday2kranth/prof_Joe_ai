@@ -14,12 +14,16 @@ interface HeaderProps {
   username?: string;
   onLogout?: () => void;
   onOpenProfileModal?: () => void;
+  appLayoutMode?: 'standard' | 'hub-demo';
+  onToggleAppLayoutMode?: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
   onToggleSidebar,
   activeView,
-  onViewChange
+  onViewChange,
+  appLayoutMode = 'standard',
+  onToggleAppLayoutMode
 }) => {
   const [isSpinning, setIsSpinning] = useState(false);
 
@@ -77,6 +81,19 @@ export const Header: React.FC<HeaderProps> = ({
             <h2 style={{ margin: 0, fontSize: '1.02rem', fontWeight: 700 }}>{viewTitles[activeView] || 'Prof. Joe AI Dashboard'}</h2>
           </div>
         </div>
+
+        {/* Demo Hub View Switcher Toggle Pill */}
+        {onToggleAppLayoutMode && (
+          <button 
+            type="button" 
+            onClick={onToggleAppLayoutMode} 
+            className="demo-view-toggle-btn"
+            style={{ marginLeft: 'auto' }}
+            title="Switch between Classic View and Landing Hub Architecture Demo"
+          >
+            <span>{appLayoutMode === 'hub-demo' ? '📱 Classic View' : '🚀 Try Hub Demo'}</span>
+          </button>
+        )}
       </div>
 
       {/* KokonutUI Figma-Inspired Animated Toolbar Navigation */}
