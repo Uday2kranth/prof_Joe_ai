@@ -1,6 +1,5 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { 
-  ArrowLeft, 
   Send, 
   Paperclip, 
   Code, 
@@ -29,7 +28,7 @@ import { PROVIDERS } from '../constants';
 import type { UserCustomModels, ChatSession } from '../types';
 
 interface PracticalCodeLabViewProps {
-  onBackToHub: () => void;
+  onBackToHub?: () => void;
   onSendMessage: (prompt: string, webSearch: boolean, mode: string, systemPrompt?: string) => void;
   isLoading: boolean;
   messages: any[];
@@ -55,7 +54,7 @@ interface GeneratedFile {
 }
 
 export function PracticalCodeLabView({
-  onBackToHub,
+  onBackToHub: _onBackToHub,
   onSendMessage,
   isLoading,
   messages,
@@ -380,16 +379,6 @@ export function PracticalCodeLabView({
             title="Open Code Lab Deck (Menu & History)"
           >
             <Menu size={18} style={{ color: '#06b6d4' }} />
-          </button>
-
-          <button 
-            type="button" 
-            onClick={onBackToHub} 
-            className="extractor-btn-secondary"
-            title="Return to Home Hub"
-          >
-            <ArrowLeft size={16} />
-            <span>Home Hub</span>
           </button>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>

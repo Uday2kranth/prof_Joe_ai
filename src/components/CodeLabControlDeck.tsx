@@ -65,7 +65,7 @@ export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
           inset: 0,
           background: 'rgba(2, 6, 23, 0.75)',
           backdropFilter: 'blur(4px)',
-          zIndex: 140
+          zIndex: 1400
         }}
       />
 
@@ -78,11 +78,11 @@ export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
           bottom: 0,
           width: '330px',
           maxWidth: '85vw',
-          background: 'rgba(2, 6, 23, 0.96)',
+          background: 'rgba(2, 6, 23, 0.98)',
           borderRight: '1px solid rgba(255, 255, 255, 0.1)',
           backdropFilter: 'blur(16px)',
           boxShadow: '0 0 35px rgba(6, 182, 212, 0.25)',
-          zIndex: 150,
+          zIndex: 1500,
           display: 'flex',
           flexDirection: 'column',
           color: '#f8fafc',
