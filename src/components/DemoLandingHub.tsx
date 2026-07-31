@@ -111,7 +111,7 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
             title="Switch back to classic sidebar & tab bar interface"
           >
             <Layout size={14} />
-            <span>Classic Layout</span>
+            <span>Classic View</span>
           </button>
 
           {/* Quick API Key Pill */}

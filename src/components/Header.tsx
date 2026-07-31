@@ -91,7 +91,7 @@ export const Header: React.FC<HeaderProps> = ({
             style={{ marginLeft: 'auto' }}
             title="Switch between Classic View and Landing Hub Architecture Demo"
           >
-            <span>{appLayoutMode === 'hub-demo' ? '📱 Classic View' : '🚀 Try Hub Demo'}</span>
+            <span>{appLayoutMode === 'hub-demo' ? '📱 Classic View' : '✨ New Version'}</span>
           </button>
         )}
       </div>
