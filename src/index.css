@@ -4717,9 +4717,19 @@ body {
   -webkit-text-fill-color: transparent;
 }
 
+[data-theme='light'] .demo-app-title {
+  background: linear-gradient(135deg, #0f172a, #0284c7) !important;
+  -webkit-background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+}
+
 .demo-app-subtitle {
   font-size: 0.72rem;
   color: var(--text-muted, #94a3b8);
+}
+
+[data-theme='light'] .demo-app-subtitle {
+  color: #475569 !important;
 }
 
 .demo-header-actions {
