@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu } from 'lucide-react';
+import { Menu, Sparkles, Layout } from 'lucide-react';
 import type { ActiveViewType } from '../types';
 import Toolbar from './Toolbar';
 
@@ -89,9 +89,10 @@ export const Header: React.FC<HeaderProps> = ({
             onClick={onToggleAppLayoutMode} 
             className="demo-view-toggle-btn"
             style={{ marginLeft: 'auto' }}
-            title="Switch between Classic View and Landing Hub Architecture Demo"
+            title="Switch between Classic View and New Version Hub"
           >
-            <span>{appLayoutMode === 'hub-demo' ? '📱 Classic View' : '✨ New Version'}</span>
+            {appLayoutMode === 'hub-demo' ? <Layout size={14} /> : <Sparkles size={14} className="text-amber-400" />}
+            <span className="demo-view-toggle-text">{appLayoutMode === 'hub-demo' ? 'Classic View' : 'New Version'}</span>
           </button>
         )}
       </div>

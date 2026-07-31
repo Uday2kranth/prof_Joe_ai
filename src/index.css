@@ -7997,14 +7997,12 @@ body {
   }
 
   .demo-home-breadcrumb-btn span,
-  .demo-view-toggle-btn span,
   .demo-status-pill span {
     display: none !important;
   }
 
   .demo-home-breadcrumb-btn,
-  .demo-status-pill,
-  .demo-view-toggle-btn {
+  .demo-status-pill {
     padding: 6px 8px !important;
     min-width: 34px !important;
     height: 34px !important;
@@ -8013,6 +8011,28 @@ body {
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
+  }
+
+  .demo-view-toggle-btn {
+    padding: 5px 10px !important;
+    height: 34px !important;
+    border-radius: 9999px !important;
+    gap: 5px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(6, 182, 212, 0.15) !important;
+    border: 1px solid rgba(6, 182, 212, 0.4) !important;
+    color: #38bdf8 !important;
+    font-size: 0.74rem !important;
+    font-weight: 600 !important;
+  }
+
+  .demo-view-toggle-text {
+    display: inline-block !important;
+    font-size: 0.74rem !important;
+    font-weight: 600 !important;
+    white-space: nowrap !important;
   }
 
   .demo-hub-header {
