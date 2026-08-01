@@ -8092,6 +8092,16 @@ body {
     gap: 10px !important;
   }
 
+  .demo-header-actions {
+    justify-content: center !important;
+    width: 100% !important;
+    margin: 4px 0 8px 0 !important;
+  }
+
+  .demo-hero-badge {
+    display: none !important;
+  }
+
   .demo-brand-logo {
     gap: 8px !important;
   }
