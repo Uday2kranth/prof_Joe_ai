@@ -8083,6 +8083,7 @@ body {
   }
 
   .demo-hero-section {
+    margin-top: 12px !important;
     margin-bottom: 14px !important;
   }
 
@@ -8095,7 +8096,7 @@ body {
   .demo-header-actions {
     justify-content: center !important;
     width: 100% !important;
-    margin: 4px 0 8px 0 !important;
+    margin: 4px 0 20px 0 !important;
   }
 
   .demo-hero-badge {
