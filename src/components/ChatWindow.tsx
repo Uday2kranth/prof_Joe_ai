@@ -116,10 +116,10 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     setIsMinimapOpen(false);
   };
 
-  const currentProviderGroup = PROVIDERS.find(p => p.id === selectedProvider) || PROVIDERS[0];
+  const currentProviderGroup = PROVIDERS.find(p => p.id === selectedProvider || p.name === selectedProvider) || PROVIDERS[0];
 
   const availableModels = React.useMemo(() => {
-    const customList = customModels ? customModels[selectedProvider] : undefined;
+    const customList = customModels ? (customModels[selectedProvider] || customModels[currentProviderGroup.id] || customModels[currentProviderGroup.name]) : undefined;
     if (Array.isArray(customList) && customList.length > 0) {
       const enabledCustom = customList.filter(m => m.enabled).map(m => ({
         value: m.id,

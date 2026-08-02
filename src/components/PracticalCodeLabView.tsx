@@ -222,11 +222,11 @@ export function PracticalCodeLabView({
 
   // Available models for selected provider
   const currentProviderGroup = useMemo(() => {
-    return PROVIDERS.find(p => p.name === selectedProvider) || PROVIDERS[0];
+    return PROVIDERS.find(p => p.id === selectedProvider || p.name === selectedProvider) || PROVIDERS[0];
   }, [selectedProvider]);
 
   const availableModels = useMemo(() => {
-    const customList = customModels ? customModels[selectedProvider] : undefined;
+    const customList = customModels ? (customModels[selectedProvider] || customModels[currentProviderGroup.id] || customModels[currentProviderGroup.name]) : undefined;
     if (Array.isArray(customList) && customList.length > 0) {
       const enabledCustom = customList.filter(m => m.enabled).map(m => ({
         value: m.id,

@@ -124,7 +124,7 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const currentProviderGroup = PROVIDERS.find(p => p.id === selectedProvider) || PROVIDERS[0];
+  const currentProviderGroup = PROVIDERS.find(p => p.id === selectedProvider || p.name === selectedProvider) || PROVIDERS[0];
   const activePersonaObj = PERSONAS.find(p => p.id === selectedPersona) || PERSONAS[1];
 
   const handleTogglePersistentWebSearch = () => {
