@@ -595,32 +595,31 @@ STRICT IMAGE & DIAGRAM EMBEDDING DIRECTIVES:
                         }
                     }
 
-                    const errData = response ? await response.json().catch(() => ({})) : {};
-                    lastErrorText = errData.error?.message || errData.message || errData.error || (response ? response.statusText : lastErrorText) || 'Unknown Provider Error';
-                    lastStatus = response ? response.status : 503;
+                    const currentStatus = response ? response.status : (lastStatus || 503);
+                    lastStatus = currentStatus;
 
-                    console.warn(`Key rotation: Key index ${i} failed for model "${targetModel}" with status ${response.status}: ${lastErrorText}`);
+                    console.warn(`Key rotation: Key index ${i} failed for model "${targetModel}" with status ${currentStatus}: ${lastErrorText}`);
 
-                    if (response.status === 402) {
+                    if (currentStatus === 402) {
                         if (provider === "openrouter") {
                             lastErrorText = `OpenRouter key has 0 credit balance for paid model '${targetModel}'. Please select a free model (e.g. Qwen 3 Coder, Gemma 4, Nemotron 3) or top up credits in OpenRouter settings.`;
                         } else {
                             lastErrorText = `Payment required for model '${targetModel}'. Please select a free model or check provider account balance.`;
                         }
-                    } else if (response.status === 503) {
+                    } else if (currentStatus === 503) {
                         lastErrorText = `Provider '${provider.toUpperCase()}' is temporarily overloaded (HTTP 503). Please try again in 5s or select Pollinations AI (Free Keyless).`;
-                    } else if (response.status === 429) {
+                    } else if (currentStatus === 429) {
                         if (provider === "gemini") {
                             lastErrorText = "Google Free Tier Rate Limit Exceeded (15 RPM / 1500 RPD quota). Please try again in 15s or switch provider.";
                         } else if (provider === "pollinations") {
                             lastErrorText = "Pollinations free queue busy. Please wait a few seconds and try again, or switch model.";
                         }
-                    } else if (response.status === 401 && provider === "pollinations") {
+                    } else if (currentStatus === 401 && provider === "pollinations") {
                         lastErrorText = "Authentication required for this model on Pollinations. Please switch to keyless model 'openai-fast' or 'openai', or enter a free Pollinations API key in Settings.";
-                    } else if (response.status === 403 && provider === "ollama") {
+                    } else if (currentStatus === 403 && provider === "ollama") {
                         lastErrorText = "This model requires an active paid Ollama Cloud subscription (https://ollama.com/upgrade). Please select a free Ollama Cloud model.";
-                    } else if (response.status === 404 && provider === "ollama") {
-                        lastErrorText = `Ollama Cloud model '${targetModel}' was not found. Please select a valid model.`;
+                    } else if (currentStatus === 404 && provider === "ollama") {
+                        lastErrorText = `Ollama model '${targetModel}' not found on active endpoint. Make sure local Ollama desktop app is running on port 11434, or configure a custom Ollama Cloud endpoint in Settings.`;
                     }
                 } catch (err) {
                     lastErrorText = err.message;
