@@ -21,6 +21,7 @@ import { DemoLandingHub } from './components/DemoLandingHub';
 import { DemoChatHistoryDrawer } from './components/DemoChatHistoryDrawer';
 import { PdfPreviewModal } from './components/PdfPreviewModal';
 import { printSessionToPdf } from './services/printPdfService';
+import { pruneOldRenderCache } from './services/renderCacheService';
 import { Home, Layout, Key, Moon, Sun, User, Menu } from 'lucide-react';
 import { sendChatMessage } from './services/apiService';
 import { fetchCloudCodeLabPresetSessions, syncCodeLabPresetSessions } from './services/codelabSyncService';
@@ -272,8 +273,9 @@ export const App: React.FC = () => {
     return {};
   });
 
-  // Cloud Hydration from MongoDB on mount/login
+  // Cloud Hydration from MongoDB & 14-day LRU Cache Pruning on mount
   useEffect(() => {
+    pruneOldRenderCache(14);
     const activeUser = localStorage.getItem('chatterbot_username');
     const token = localStorage.getItem('chatterbot_token') || undefined;
     if (activeUser) {

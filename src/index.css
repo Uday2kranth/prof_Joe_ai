@@ -1523,6 +1523,26 @@ body {
   contain: layout style paint;
 }
 
+/* Virtual Scrolling Height Containment & Deterministic Element Buffers */
+.message-row {
+  min-height: 80px;
+  contain: layout style;
+}
+
+.formatted-content {
+  contain: layout style;
+}
+
+.katex-display {
+  min-height: 44px;
+  contain: layout style;
+}
+
+.kroki-container {
+  min-height: 120px;
+  contain: layout style;
+}
+
 .img-skeleton-wrapper {
   position: relative;
   width: 100%;

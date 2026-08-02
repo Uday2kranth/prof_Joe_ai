@@ -112,3 +112,29 @@ export async function clearRenderCache(): Promise<void> {
     console.error('Failed to clear render cache', e);
   }
 }
+
+/**
+ * Automatically prunes HTML render cache entries older than 14 days (LRU Cleanup)
+ */
+export async function pruneOldRenderCache(maxAgeDays: number = 14): Promise<void> {
+  try {
+    const db = await getDB();
+    const cutoff = Date.now() - (maxAgeDays * 24 * 60 * 60 * 1000);
+    const transaction = db.transaction(STORE_NAME, 'readwrite');
+    const store = transaction.objectStore(STORE_NAME);
+    const request = store.openCursor();
+
+    request.onsuccess = (event: any) => {
+      const cursor = event.target.result as IDBCursorWithValue | null;
+      if (cursor) {
+        const entry = cursor.value as CacheEntry;
+        if (entry && entry.timestamp && entry.timestamp < cutoff) {
+          cursor.delete();
+        }
+        cursor.continue();
+      }
+    };
+  } catch (e) {
+    // Fail gracefully without breaking app execution
+  }
+}
