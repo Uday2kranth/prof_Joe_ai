@@ -8366,3 +8366,27 @@ body {
     display: none !important;
   }
 }
+
+/* Mobile Touch & Hardware Accelerated Scrolling Optimizations */
+@media (max-width: 768px) {
+  .chat-messages-container,
+  .messages-scroll-area,
+  .demo-hub-main,
+  .chat-scroll-container,
+  .fun-persona-messages-container,
+  .app-sidebar-content,
+  .code-lab-chat-panel,
+  .code-lab-ide-panel {
+    -webkit-overflow-scrolling: touch !important;
+    overscroll-behavior-y: contain !important;
+    scroll-behavior: smooth !important;
+  }
+
+  .message-item,
+  .chat-bubble,
+  .demo-workspace-card {
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+    transform: translateZ(0) !important;
+  }
+}
