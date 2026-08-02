@@ -18,6 +18,10 @@ export const PROVIDERS: ProviderGroup[] = [
     name: 'OpenRouter',
     models: [
       { value: 'openrouter/free', name: 'Free Automated Router [WS]' },
+      { value: 'deepseek/deepseek-r1:free', name: 'DeepSeek R1 (Reasoning) [WS]' },
+      { value: 'deepseek/deepseek-chat:free', name: 'DeepSeek V3 / V4 Flash [WS]' },
+      { value: 'qwen/qwen-2.5-coder-32b-instruct:free', name: 'Qwen 2.5 Coder 32B [WS]' },
+      { value: 'meta-llama/llama-3.3-70b-instruct:free', name: 'Llama 3.3 70B Free [WS]' },
       { value: 'nvidia/nemotron-3-ultra:free', name: 'Nemotron 3 Ultra (Frontier Logic) [WS]' },
       { value: 'nvidia/nemotron-3-super-120b-a12b:free', name: 'Nemotron 3 Super (Math/Logic) [WS]' },
       { value: 'openai/gpt-oss-20b:free', name: 'GPT-OSS 20B (Low-Latency)' },

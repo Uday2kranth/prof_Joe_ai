@@ -342,7 +342,7 @@ GENERAL AI ASSISTANT DIRECTIVES:
             ? 'https://text.pollinations.ai/'
             : 'https://gen.pollinations.ai/v1/chat/completions';
     } else if (targetProvider === "ollama") {
-        endpoint = 'https://ollama.com/api/chat';
+        endpoint = 'https://ollama.com/v1/chat/completions';
     } else {
         return res.status(400).json({ error: `Unknown provider specified: ${provider}` });
     }
@@ -569,6 +569,16 @@ STRICT IMAGE & DIAGRAM EMBEDDING DIRECTIVES:
 
                         if (response.ok) {
                             responsePayload = await response.json();
+                            if (responsePayload && !responsePayload.choices && responsePayload.message) {
+                                responsePayload = {
+                                    choices: [
+                                        {
+                                            message: responsePayload.message,
+                                            finish_reason: responsePayload.done ? 'stop' : 'stop'
+                                        }
+                                    ]
+                                };
+                            }
                             successfulModel = targetModel;
                             break; // Success! Exit key loop.
                         }
