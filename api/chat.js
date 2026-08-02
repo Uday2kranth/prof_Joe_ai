@@ -186,13 +186,27 @@ Personality: Exceptionally intelligent, calm, analytical onboard computer with d
 Conversation Pattern: 1. Observe -> 2. Diagnose -> 3. Explain -> 4. Recommend.
 Rules: Precise, deadpan, evidence-based, concise formatting.
 Diagram Rule: You MAY generate Kroki/Mermaid diagrams (\`\`\`mermaid ...) whenever explaining workflows, architectures, or data flows.`
-    };
+    };    const { user, model, provider, messages, sessionId, sessionTitle, webSearch, imageSearch, mode, persona, systemPrompt } = req.body || {};
+
+    if (!user || !model || !provider || !messages || !Array.isArray(messages)) {
+        return res.status(400).json({ error: 'Invalid request body. Fields "user", "model", "provider", and "messages" are required.' });
+    }
+
+    const prompt = messages[messages.length - 1]?.content || 'N/A';
+    let apiMessages = [...messages];
+    const isCustomPresetPrompt = Boolean(systemPrompt && typeof systemPrompt === 'string' && systemPrompt.trim());
 
     if (persona && persona !== 'default' && PERSONAS_MAP[persona]) {
         // When a fun persona is active, it takes COMPLETE precedence as the primary system prompt
         apiMessages.unshift({
             role: "system",
             content: PERSONAS_MAP[persona]
+        });
+    } else if (isCustomPresetPrompt) {
+        // When a custom preset prompt (e.g. Code Lab Elective Presets) is passed, it takes COMPLETE precedence
+        apiMessages.unshift({
+            role: "system",
+            content: systemPrompt.trim()
         });
     } else {
         // Determine System Prompt Mode: "auto" | "12marks" | "2marks" | "general" | "none"
@@ -383,8 +397,8 @@ STRICT IMAGE & DIAGRAM EMBEDDING DIRECTIVES:
 
 
 
-    // Enforce textbook LaTeX formatting for scientific formulas and math symbols ONLY when NO fun persona is active
-    if (!persona || persona === 'default') {
+    // Enforce textbook LaTeX formatting for scientific formulas and math symbols ONLY when NO fun persona or custom preset is active
+    if ((!persona || persona === 'default') && !isCustomPresetPrompt) {
         apiMessages.unshift({
             role: "system",
             content: "Always format mathematical notations, variables with subscripts (like M_1), powers (like x^2), calculations, and equations using standard LaTeX enclosed in single dollar signs $ for inline math (e.g. $M_1$) or double dollar signs $$ for block math. Box final numeric results using $$\\bbox[6px,border:2px solid #06b6d4]{\\text{Final Result} = X}$$."
@@ -395,7 +409,7 @@ STRICT IMAGE & DIAGRAM EMBEDDING DIRECTIVES:
             role: "system",
             content: "DIAGRAM MANDATORY DIRECTIVE: You are authorized to generate both vertical (```mermaid\\ngraph TD``` or Graphviz ```kroki-graphviz rankdir=TB```) AND horizontal diagrams (```mermaid\\ngraph LR``` or Graphviz ```kroki-graphviz rankdir=LR```). Use appropriate Kroki code blocks (```kroki-plantuml```, ```kroki-graphviz```, ```kroki-erd```, ```mermaid```) whenever a concept requires visual structure."
         });
-    } else {
+    } else if (persona && persona !== 'default') {
         // For fun personas, enforce strict persona adherence and negative diagram rules for text-only personas
         const isTextOnlyPersona = ['peter', 'stewie', 'rick', 'morty'].includes(persona);
         if (isTextOnlyPersona) {
