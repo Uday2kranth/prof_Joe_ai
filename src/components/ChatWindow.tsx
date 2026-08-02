@@ -202,7 +202,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   const handleExportFullChatPdf = () => {
-    setIsSessionPreviewOpen(true);
+    handleDirectSessionPrint();
   };
 
   const handleDirectSessionPrint = async () => {

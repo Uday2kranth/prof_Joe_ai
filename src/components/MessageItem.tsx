@@ -6,6 +6,7 @@ import 'katex/dist/katex.min.css';
 
 import type { Message } from '../types';
 import { extractDiagrams, fetchKrokiSvg } from '../services/krokiService';
+import { getRenderCache, setRenderCache } from '../services/renderCacheService';
 import { exportBubbleToImage } from '../services/exportService';
 import { printBubbleToPdf } from '../services/printPdfService';
 import { PdfPreviewModal } from './PdfPreviewModal';
@@ -83,15 +84,33 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
 
     async function processMessage() {
       const rawContent = message.content || '';
+      if (!rawContent) {
+        if (isMounted) setRenderedHtml('');
+        return;
+      }
+
+      // Check IndexedDB render cache for full parsed message HTML
+      const msgHash = `msg_rendered_v2_${message.id || 'msg'}_${rawContent.length}_${rawContent.slice(0, 40)}`;
+      const cachedHtml = await getRenderCache(msgHash);
+      if (cachedHtml && isMounted) {
+        setRenderedHtml(cachedHtml);
+        return;
+      }
+
       const diagrams = extractDiagrams(rawContent);
       const diagramMap = new Map<string, string>();
 
-      for (let index = 0; index < diagrams.length; index++) {
-        const diag = diagrams[index];
-        const token = `KROKIDIAGRAMTOKEN${index}ENDTOKEN`;
-        const svgHtml = await fetchKrokiSvg(diag.type, diag.source);
-        diagramMap.set(token, `<div class="kroki-container" data-type="${diag.type}">${svgHtml}</div>`);
-      }
+      const svgResults = await Promise.all(
+        diagrams.map(async (diag, index) => {
+          const token = `KROKIDIAGRAMTOKEN${index}ENDTOKEN`;
+          const svgHtml = await fetchKrokiSvg(diag.type, diag.source);
+          return { token, svgHtml, type: diag.type };
+        })
+      );
+
+      svgResults.forEach(res => {
+        diagramMap.set(res.token, `<div class="kroki-container" data-type="${res.type}">${res.svgHtml}</div>`);
+      });
 
       let markdownToParse = rawContent;
       let tokenIndex = 0;
@@ -104,6 +123,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
 
       if (isMounted) {
         setRenderedHtml(parsedHtml);
+        setRenderCache(msgHash, parsedHtml);
       }
     }
 
@@ -112,7 +132,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
     return () => {
       isMounted = false;
     };
-  }, [message.content]);
+  }, [message.content, message.id]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message.content);

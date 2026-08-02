@@ -208,7 +208,7 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
   };
 
   const handleExportFullChatPdf = () => {
-    setIsSessionPreviewOpen(true);
+    handleDirectSessionPrint();
   };
 
   const handleDirectSessionPrint = async () => {

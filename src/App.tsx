@@ -218,7 +218,18 @@ export const App: React.FC = () => {
   const DEFAULT_FREE_PROVIDER = 'Pollinations AI (Free Keyless)';
   const DEFAULT_FREE_MODEL = 'openai-fast';
 
-  const [activeView, setActiveView] = useState<ActiveViewType>('chat');
+  const [activeView, setActiveViewState] = useState<ActiveViewType>(() => {
+    const saved = localStorage.getItem('chatterbot_active_view');
+    return (saved && ['chat', 'exam_prep', 'system_prompts', 'prompts', 'diagram_studio', 'cubes', 'fun_personas', 'text_extractor', 'code_lab'].includes(saved))
+      ? (saved as ActiveViewType)
+      : 'chat';
+  });
+
+  const setActiveView = (view: ActiveViewType) => {
+    setActiveViewState(view);
+    localStorage.setItem('chatterbot_active_view', view);
+  };
+
   const [currentUser, setCurrentUser] = useState<string>(() => localStorage.getItem('chatterbot_username') || '');
   const [authToken, setAuthToken] = useState<string>(() => localStorage.getItem('chatterbot_token') || '');
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(() => !localStorage.getItem('chatterbot_token'));
@@ -404,8 +415,27 @@ export const App: React.FC = () => {
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
   const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
-  const [appLayoutMode, setAppLayoutMode] = useState<'standard' | 'hub-demo'>('hub-demo');
-  const [activeHubWorkspace, setActiveHubWorkspace] = useState<'landing' | ActiveViewType>('landing');
+  const [appLayoutMode, setAppLayoutModeState] = useState<'standard' | 'hub-demo'>(() => {
+    const saved = localStorage.getItem('chatterbot_app_layout_mode');
+    return (saved === 'standard' || saved === 'hub-demo') ? saved : 'hub-demo';
+  });
+
+  const setAppLayoutMode = (mode: 'standard' | 'hub-demo') => {
+    setAppLayoutModeState(mode);
+    localStorage.setItem('chatterbot_app_layout_mode', mode);
+  };
+
+  const [activeHubWorkspace, setActiveHubWorkspaceState] = useState<'landing' | ActiveViewType>(() => {
+    const saved = localStorage.getItem('chatterbot_active_hub_workspace');
+    return (saved && ['landing', 'chat', 'exam_prep', 'system_prompts', 'prompts', 'diagram_studio', 'cubes', 'fun_personas', 'text_extractor', 'code_lab'].includes(saved))
+      ? (saved as 'landing' | ActiveViewType)
+      : 'landing';
+  });
+
+  const setActiveHubWorkspace = (ws: 'landing' | ActiveViewType) => {
+    setActiveHubWorkspaceState(ws);
+    localStorage.setItem('chatterbot_active_hub_workspace', ws);
+  };
 
   const activeSession = sessions.find(s => s.id === activeSessionIdState) || sessions[0];
 

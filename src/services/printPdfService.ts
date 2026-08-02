@@ -6,21 +6,24 @@ import { extractDiagrams, fetchKrokiSvg } from './krokiService';
 
 /**
  * Direct PDF File Downloader via html2canvas & jsPDF
- * Directly generates and downloads a .pdf file without opening Chrome's print popup window.
  */
 export async function exportBubbleDirectPdf(content: string, modelUsed?: string, customTitle?: string): Promise<void> {
   const diagrams = extractDiagrams(content);
   const diagramMap = new Map<string, string>();
 
-  for (let i = 0; i < diagrams.length; i++) {
-    const diag = diagrams[i];
+  const svgPromises = diagrams.map(async (diag, i) => {
     const token = `PRINTDIAGRAMTOKEN${i}ENDTOKEN`;
     const svgHtml = await fetchKrokiSvg(diag.type, diag.source);
+    return { token, svgHtml, type: diag.type };
+  });
+
+  const svgResults = await Promise.all(svgPromises);
+  svgResults.forEach(res => {
     diagramMap.set(
-      token,
-      `<div class="pdf-diagram-page" data-type="${diag.type}">${svgHtml}</div>`
+      res.token,
+      `<div class="pdf-diagram-page" data-type="${res.type}">${res.svgHtml}</div>`
     );
-  }
+  });
 
   let markdownToParse = content;
   let tokenIndex = 0;
@@ -144,26 +147,49 @@ function parseMarkdownWithMathAndDiagrams(content: string, diagramMap: Map<strin
 }
 
 /**
- * Native Printable PDF Engine via Print Iframe & @media print CSS
- * Produces a printable document with 100% real selectable text and dedicated pages for Kroki diagrams.
+ * Native Printable PDF Engine via Print Window / Iframe
  */
 export async function printBubbleToPdf(content: string, modelUsed?: string, customTitle?: string): Promise<void> {
-  // 1. Extract Kroki diagrams
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  let targetWindow: Window | null = null;
+  let targetIframe: HTMLIFrameElement | null = null;
+
+  // Pre-open window/iframe synchronously to prevent mobile popup blockers
+  if (isMobile) {
+    targetWindow = window.open('', '_blank');
+    if (targetWindow) {
+      targetWindow.document.write('<div style="font-family:sans-serif;padding:32px;text-align:center;color:#06b6d4;">⏳ Preparing Prof. Joe AI Document for Print...</div>');
+    }
+  } else {
+    targetIframe = document.createElement('iframe');
+    targetIframe.style.position = 'fixed';
+    targetIframe.style.right = '0';
+    targetIframe.style.bottom = '0';
+    targetIframe.style.width = '0';
+    targetIframe.style.height = '0';
+    targetIframe.style.border = '0';
+    document.body.appendChild(targetIframe);
+  }
+
+  // Fetch diagrams in parallel
   const diagrams = extractDiagrams(content);
   const diagramMap = new Map<string, string>();
 
-  for (let i = 0; i < diagrams.length; i++) {
-    const diag = diagrams[i];
-    const token = `PRINTDIAGRAMTOKEN${i}ENDTOKEN`;
-    const svgHtml = await fetchKrokiSvg(diag.type, diag.source);
-    // Wrap SVG in dedicated page container
-    diagramMap.set(
-      token,
-      `<div class="pdf-diagram-page" data-type="${diag.type}">${svgHtml}</div>`
-    );
-  }
+  const svgResults = await Promise.all(
+    diagrams.map(async (diag, i) => {
+      const token = `PRINTDIAGRAMTOKEN${i}ENDTOKEN`;
+      const svgHtml = await fetchKrokiSvg(diag.type, diag.source);
+      return { token, svgHtml, type: diag.type };
+    })
+  );
 
-  // 2. Parse Markdown, Math, and Diagrams cleanly
+  svgResults.forEach(res => {
+    diagramMap.set(
+      res.token,
+      `<div class="pdf-diagram-page" data-type="${res.type}">${res.svgHtml}</div>`
+    );
+  });
+
   let markdownToParse = content;
   let tokenIndex = 0;
   diagrams.forEach(diag => {
@@ -173,215 +199,86 @@ export async function printBubbleToPdf(content: string, modelUsed?: string, cust
 
   const parsedHtml = parseMarkdownWithMathAndDiagrams(markdownToParse, diagramMap);
 
-  // 5. Build printable HTML document
   const isLight = document.documentElement.getAttribute('data-theme') === 'light';
   const bgColor = isLight ? '#ffffff' : '#0b0f19';
   const textColor = isLight ? '#0f172a' : '#f8fafc';
   const docTitle = customTitle || `ProfJoe_${modelUsed ? modelUsed.replace(/[^a-zA-Z0-9.-]/g, '_') : 'Export'}_${new Date().toISOString().split('T')[0]}`;
 
-  const printHtml = `
-    <!DOCTYPE html>
-    <html>
-      <head>
-        <meta charset="utf-8">
-        <title>${docTitle}</title>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
-        <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
-          
-          body {
-            font-family: 'Inter', sans-serif;
-            background-color: ${bgColor};
-            color: ${textColor};
-            padding: 32px;
-            margin: 0;
-            line-height: 1.65;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
-          }
+  const printHtml = buildPrintHtmlDocument(docTitle, parsedHtml, bgColor, textColor, modelUsed);
 
-          .print-header {
-            border-bottom: 2px solid rgba(6, 182, 212, 0.4);
-            padding-bottom: 12px;
-            margin-bottom: 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-          }
-
-          .print-header h1 {
-            font-size: 1.4rem;
-            margin: 0;
-            color: #06b6d4;
-          }
-
-          .print-meta {
-            font-size: 0.85rem;
-            color: #64748b;
-          }
-
-          .markdown-content h1, .markdown-content h2, .markdown-content h3, .markdown-content h4, .markdown-content h5, .markdown-content h6 {
-            color: #0f172a;
-            margin-top: 18px;
-            margin-bottom: 8px;
-          }
-
-          .markdown-content p {
-            margin-bottom: 12px;
-          }
-
-          .markdown-content strong {
-            color: #06b6d4;
-          }
-
-          .markdown-content table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 16px 0;
-          }
-
-          .markdown-content th, .markdown-content td {
-            border: 1px solid rgba(148, 163, 184, 0.3);
-            padding: 8px 12px;
-            text-align: left;
-          }
-
-          .markdown-content th {
-            background: rgba(6, 182, 212, 0.1);
-            color: #06b6d4;
-          }
-
-          /* Dedicated Page Break for Diagrams */
-          .pdf-diagram-page {
-            page-break-before: always;
-            break-before: page;
-            margin: 24px 0;
-            padding: 24px;
-            background: #ffffff;
-            border: 1px solid #cbd5e1;
-            border-radius: 12px;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-          }
-
-          .pdf-diagram-page svg {
-            width: 100% !important;
-            max-width: 100% !important;
-            height: auto !important;
-          }
-
-          .pdf-diagram-page svg text {
-            fill: #0f172a !important;
-            font-family: 'Inter', sans-serif !important;
-          }
-
-          @media print {
-            body {
-              padding: 0;
-              background: #ffffff !important;
-              color: #0f172a !important;
-            }
-            .markdown-content h1, .markdown-content h2, .markdown-content h3, .markdown-content h4, .markdown-content h5, .markdown-content h6 {
-              color: #0f172a !important;
-            }
-            .pdf-diagram-page {
-              page-break-before: always !important;
-              break-before: page !important;
-              box-shadow: none !important;
-              border: 1px solid #e2e8f0 !important;
-            }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="print-header">
-          <h1>ChatterBot AI Document</h1>
-          <div class="print-meta">Model: ${modelUsed || 'AI Model'} | Date: ${new Date().toLocaleDateString()}</div>
-        </div>
-        <div class="markdown-content">
-          ${parsedHtml}
-        </div>
-      </body>
-    </html>
-  `;
-
-  executePrintDocument(printHtml);
-}
-
-function executePrintDocument(printHtml: string): void {
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-
-  if (isMobile) {
-    const printWin = window.open('', '_blank');
-    if (printWin) {
-      printWin.document.open();
-      printWin.document.write(printHtml);
-      printWin.document.close();
-      setTimeout(() => {
-        printWin.focus();
-        printWin.print();
-      }, 500);
-      return;
-    }
-  }
-
-  // Desktop printable iframe fallback
-  const iframe = document.createElement('iframe');
-  iframe.style.position = 'fixed';
-  iframe.style.right = '0';
-  iframe.style.bottom = '0';
-  iframe.style.width = '0';
-  iframe.style.height = '0';
-  iframe.style.border = '0';
-
-  document.body.appendChild(iframe);
-
-  const doc = iframe.contentWindow?.document;
-  if (!doc) return;
-
-  doc.open();
-  doc.write(printHtml);
-  doc.close();
-
-  setTimeout(() => {
-    iframe.contentWindow?.focus();
-    iframe.contentWindow?.print();
+  if (isMobile && targetWindow) {
+    targetWindow.document.open();
+    targetWindow.document.write(printHtml);
+    targetWindow.document.close();
     setTimeout(() => {
-      if (document.body.contains(iframe)) {
-        document.body.removeChild(iframe);
-      }
-    }, 1000);
-  }, 400);
+      targetWindow?.focus();
+      targetWindow?.print();
+    }, 400);
+  } else if (targetIframe && targetIframe.contentWindow) {
+    const doc = targetIframe.contentWindow.document;
+    doc.open();
+    doc.write(printHtml);
+    doc.close();
+    setTimeout(() => {
+      targetIframe?.contentWindow?.focus();
+      targetIframe?.contentWindow?.print();
+      setTimeout(() => {
+        if (targetIframe && document.body.contains(targetIframe)) {
+          document.body.removeChild(targetIframe);
+        }
+      }, 1000);
+    }, 400);
+  }
 }
 
 /**
- * Printable Full Chat Session Export Engine
- * Loops over all user prompts and assistant answers, parses Markdown and Kroki SVGs,
- * and renders a clean, paginated printable PDF document.
+ * Printable Full Chat Session Export Engine (Optimized & Non-blocking)
  */
 export async function printSessionToPdf(messages: any[], sessionTitle: string = 'Prof. Joe AI Chat Session'): Promise<void> {
   if (!messages || messages.length === 0) return;
 
-  let sessionHtmlContent = '';
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  let targetWindow: Window | null = null;
+  let targetIframe: HTMLIFrameElement | null = null;
 
-  for (let mIdx = 0; mIdx < messages.length; mIdx++) {
-    const msg = messages[mIdx];
+  // 1. Synchronously create target popup / iframe on user click to avoid popup blocker delays
+  if (isMobile) {
+    targetWindow = window.open('', '_blank');
+    if (targetWindow) {
+      targetWindow.document.write('<div style="font-family:sans-serif;padding:32px;text-align:center;color:#06b6d4;font-size:1.2rem;">⏳ Preparing Full Chat Session Print Document...</div>');
+    }
+  } else {
+    targetIframe = document.createElement('iframe');
+    targetIframe.style.position = 'fixed';
+    targetIframe.style.right = '0';
+    targetIframe.style.bottom = '0';
+    targetIframe.style.width = '0';
+    targetIframe.style.height = '0';
+    targetIframe.style.border = '0';
+    document.body.appendChild(targetIframe);
+  }
+
+  // 2. Parallel processing across all messages in session
+  const processedMessagePromises = messages.map(async (msg, mIdx) => {
     const isUser = msg.role === 'user';
     const roleTitle = isUser ? '👤 User Query' : `🎓 Prof. Joe AI (${msg.model || 'Assistant'})`;
 
     const diagrams = extractDiagrams(msg.content || '');
     const diagramMap = new Map<string, string>();
 
-    for (let i = 0; i < diagrams.length; i++) {
-      const diag = diagrams[i];
+    const svgPromises = diagrams.map(async (diag, i) => {
       const token = `PRINTDIAGRAMTOKEN${mIdx}_${i}ENDTOKEN`;
       const svgHtml = await fetchKrokiSvg(diag.type, diag.source);
+      return { token, svgHtml, type: diag.type };
+    });
+
+    const svgResults = await Promise.all(svgPromises);
+    svgResults.forEach(res => {
       diagramMap.set(
-        token,
-        `<div class="pdf-diagram-page" data-type="${diag.type}">${svgHtml}</div>`
+        res.token,
+        `<div class="pdf-diagram-page" data-type="${res.type}">${res.svgHtml}</div>`
       );
-    }
+    });
 
     let markdownToParse = msg.content || '';
     let tokenIndex = 0;
@@ -392,7 +289,7 @@ export async function printSessionToPdf(messages: any[], sessionTitle: string = 
 
     const parsedHtml = parseMarkdownWithMathAndDiagrams(markdownToParse, diagramMap);
 
-    sessionHtmlContent += `
+    return `
       <div class="message-block ${isUser ? 'user-block' : 'assistant-block'}">
         <div class="message-header">${roleTitle}</div>
         <div class="markdown-content">
@@ -400,7 +297,10 @@ export async function printSessionToPdf(messages: any[], sessionTitle: string = 
         </div>
       </div>
     `;
-  }
+  });
+
+  const sessionHtmlBlocks = await Promise.all(processedMessagePromises);
+  const sessionHtmlContent = sessionHtmlBlocks.join('');
 
   const isLight = document.documentElement.getAttribute('data-theme') === 'light';
   const bgColor = isLight ? '#ffffff' : '#0b0f19';
@@ -536,5 +436,150 @@ export async function printSessionToPdf(messages: any[], sessionTitle: string = 
     </html>
   `;
 
-  executePrintDocument(printHtml);
+  if (isMobile && targetWindow) {
+    targetWindow.document.open();
+    targetWindow.document.write(printHtml);
+    targetWindow.document.close();
+    setTimeout(() => {
+      targetWindow?.focus();
+      targetWindow?.print();
+    }, 400);
+  } else if (targetIframe && targetIframe.contentWindow) {
+    const doc = targetIframe.contentWindow.document;
+    doc.open();
+    doc.write(printHtml);
+    doc.close();
+    setTimeout(() => {
+      targetIframe?.contentWindow?.focus();
+      targetIframe?.contentWindow?.print();
+      setTimeout(() => {
+        if (targetIframe && document.body.contains(targetIframe)) {
+          document.body.removeChild(targetIframe);
+        }
+      }, 1000);
+    }, 400);
+  }
+}
+
+function buildPrintHtmlDocument(docTitle: string, parsedHtml: string, bgColor: string, textColor: string, modelUsed?: string): string {
+  return `
+    <!DOCTYPE html>
+    <html>
+      <head>
+        <meta charset="utf-8">
+        <title>${docTitle}</title>
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
+        <style>
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+          
+          body {
+            font-family: 'Inter', sans-serif;
+            background-color: ${bgColor};
+            color: ${textColor};
+            padding: 32px;
+            margin: 0;
+            line-height: 1.65;
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+          }
+
+          .print-header {
+            border-bottom: 2px solid rgba(6, 182, 212, 0.4);
+            padding-bottom: 12px;
+            margin-bottom: 24px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
+
+          .print-header h1 {
+            font-size: 1.4rem;
+            margin: 0;
+            color: #06b6d4;
+          }
+
+          .print-meta {
+            font-size: 0.85rem;
+            color: #64748b;
+          }
+
+          .markdown-content h1, .markdown-content h2, .markdown-content h3, .markdown-content h4, .markdown-content h5, .markdown-content h6 {
+            color: #0f172a;
+            margin-top: 18px;
+            margin-bottom: 8px;
+          }
+
+          .markdown-content p {
+            margin-bottom: 12px;
+          }
+
+          .markdown-content strong {
+            color: #06b6d4;
+          }
+
+          .markdown-content table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 16px 0;
+          }
+
+          .markdown-content th, .markdown-content td {
+            border: 1px solid rgba(148, 163, 184, 0.3);
+            padding: 8px 12px;
+            text-align: left;
+          }
+
+          .markdown-content th {
+            background: rgba(6, 182, 212, 0.1);
+            color: #06b6d4;
+          }
+
+          .pdf-diagram-page {
+            page-break-before: always;
+            break-before: page;
+            margin: 24px 0;
+            padding: 24px;
+            background: #ffffff;
+            border: 1px solid #cbd5e1;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+          }
+
+          .pdf-diagram-page svg {
+            width: 100% !important;
+            max-width: 100% !important;
+            height: auto !important;
+          }
+
+          @media print {
+            body {
+              padding: 0;
+              background: #ffffff !important;
+              color: #0f172a !important;
+            }
+            .markdown-content h1, .markdown-content h2, .markdown-content h3, .markdown-content h4, .markdown-content h5, .markdown-content h6 {
+              color: #0f172a !important;
+            }
+            .pdf-diagram-page {
+              page-break-before: always !important;
+              break-before: page !important;
+              box-shadow: none !important;
+              border: 1px solid #e2e8f0 !important;
+            }
+          }
+        </style>
+      </head>
+      <body>
+        <div class="print-header">
+          <h1>Prof. Joe AI Document</h1>
+          <div class="print-meta">Model: ${modelUsed || 'AI Model'} | Date: ${new Date().toLocaleDateString()}</div>
+        </div>
+        <div class="markdown-content">
+          ${parsedHtml}
+        </div>
+      </body>
+    </html>
+  `;
 }
