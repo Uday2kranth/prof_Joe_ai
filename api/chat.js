@@ -466,54 +466,65 @@ STRICT IMAGE & DIAGRAM EMBEDDING DIRECTIVES:
                     );
 
                     if (provider === "ollama") {
-                        // 1. Try primary native Ollama chat endpoint: https://ollama.com/api/chat
-                        response = await fetch("https://ollama.com/api/chat", {
-                            method: "POST",
-                            headers: headers,
-                            body: JSON.stringify({
-                                model: targetModel,
-                                messages: apiMessages,
-                                stream: false
-                            })
-                        });
+                        // Resolve Ollama Endpoint Array: Custom Header > Env Var > Ollama Cloud > Localhost 11434
+                        const ollamaEndpoints = [
+                            req.headers['x-user-ollama-endpoint'],
+                            process.env.OLLAMA_ENDPOINT,
+                            "https://api.ollama.com/v1/chat/completions",
+                            "http://127.0.0.1:11434/v1/chat/completions",
+                            "http://localhost:11434/v1/chat/completions"
+                        ].filter(Boolean);
 
-                        if (response.ok) {
-                            const nativeData = await response.json();
-                            if (nativeData && nativeData.message && nativeData.message.content) {
-                                responsePayload = {
-                                    id: `chatcmpl-ollama-${Date.now()}`,
-                                    object: 'chat.completion',
-                                    created: Math.floor(Date.now() / 1000),
-                                    model: targetModel,
-                                    choices: [
-                                        {
-                                            index: 0,
-                                            message: { role: 'assistant', content: nativeData.message.content },
-                                            finish_reason: nativeData.done ? 'stop' : 'length'
-                                        }
-                                    ]
-                                };
-                                successfulModel = targetModel;
-                                break;
+                        let ollamaSuccess = false;
+                        for (const ep of ollamaEndpoints) {
+                            try {
+                                const fetchUrl = ep.includes('/v1/chat/completions') || ep.includes('/api/chat')
+                                    ? ep 
+                                    : `${ep.replace(/\/$/, '')}/v1/chat/completions`;
+                                
+                                const res = await fetch(fetchUrl, {
+                                    method: "POST",
+                                    headers: headers,
+                                    body: JSON.stringify({
+                                        model: targetModel,
+                                        messages: apiMessages,
+                                        max_tokens: 4096,
+                                        stream: false
+                                    })
+                                });
+
+                                if (res.ok) {
+                                    const data = await res.json();
+                                    const content = data.choices?.[0]?.message?.content || data.message?.content || data.response;
+                                    if (content) {
+                                        responsePayload = {
+                                            id: `chatcmpl-ollama-${Date.now()}`,
+                                            object: 'chat.completion',
+                                            created: Math.floor(Date.now() / 1000),
+                                            model: targetModel,
+                                            choices: [
+                                                {
+                                                    index: 0,
+                                                    message: { role: 'assistant', content: content },
+                                                    finish_reason: 'stop'
+                                                }
+                                            ]
+                                        };
+                                        successfulModel = targetModel;
+                                        ollamaSuccess = true;
+                                        response = res;
+                                        break;
+                                    }
+                                } else {
+                                    lastStatus = res.status;
+                                    lastErrorText = `Ollama Endpoint (${fetchUrl}) returned HTTP ${res.status}: ${res.statusText}`;
+                                }
+                            } catch (errEp) {
+                                lastErrorText = `Ollama Connection Error: ${errEp?.message || 'Connection refused'}`;
                             }
                         }
 
-                        // 2. Fallback to OpenAI-compatible v1 endpoint: https://api.ollama.com/v1/chat/completions
-                        response = await fetch("https://api.ollama.com/v1/chat/completions", {
-                            method: "POST",
-                            headers: headers,
-                            body: JSON.stringify({
-                                model: targetModel,
-                                messages: apiMessages,
-                                max_tokens: 4096
-                            })
-                        });
-
-                        if (response.ok) {
-                            responsePayload = await response.json();
-                            successfulModel = targetModel;
-                            break;
-                        }
+                        if (ollamaSuccess && responsePayload) break;
                     } else if (isPollinationsKeyless) {
                         // Keyless Pollinations mode: Use 100% free anonymous GET endpoint with system prompt
                         const systemMsg = apiMessages.find(m => m.role === 'system')?.content || '';
