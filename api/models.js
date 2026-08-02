@@ -33,7 +33,12 @@ export default async function handler(req, res) {
                 delete headers['Authorization'];
                 break;
             case 'ollama':
-                fetchUrl = customEndpoint || 'http://localhost:11434/api/tags';
+                fetchUrl = 'https://api.ollama.com/v1/models';
+                break;
+            case 'local_endpoint':
+            case 'local':
+                fetchUrl = customEndpoint ? (customEndpoint.endsWith('/api/tags') ? customEndpoint : `${customEndpoint.replace(/\/$/, '')}/api/tags`) : 'http://localhost:11434/api/tags';
+                delete headers['Authorization'];
                 break;
             case 'gemini':
                 const gKey = keyStr ? keyStr.split(',')[0].trim() : '';

@@ -466,17 +466,16 @@ STRICT IMAGE & DIAGRAM EMBEDDING DIRECTIVES:
                     );
 
                     if (provider === "ollama") {
-                        // Resolve Ollama Endpoint Array: Custom Header > Env Var > Ollama Cloud > Localhost 11434
-                        const ollamaEndpoints = [
+                        // Slot 1: Ollama Cloud API Key Slot (https://api.ollama.com/v1/chat/completions)
+                        const ollamaCloudEndpoints = [
                             req.headers['x-user-ollama-endpoint'],
                             process.env.OLLAMA_ENDPOINT,
                             "https://api.ollama.com/v1/chat/completions",
-                            "http://127.0.0.1:11434/v1/chat/completions",
-                            "http://localhost:11434/v1/chat/completions"
+                            "https://ollama.com/api/chat"
                         ].filter(Boolean);
 
                         let ollamaSuccess = false;
-                        for (const ep of ollamaEndpoints) {
+                        for (const ep of ollamaCloudEndpoints) {
                             try {
                                 const fetchUrl = ep.includes('/v1/chat/completions') || ep.includes('/api/chat')
                                     ? ep 
@@ -517,14 +516,70 @@ STRICT IMAGE & DIAGRAM EMBEDDING DIRECTIVES:
                                     }
                                 } else {
                                     lastStatus = res.status;
-                                    lastErrorText = `Ollama Endpoint (${fetchUrl}) returned HTTP ${res.status}: ${res.statusText}`;
+                                    lastErrorText = `Ollama Cloud Endpoint (${fetchUrl}) returned HTTP ${res.status}: ${res.statusText}`;
                                 }
                             } catch (errEp) {
-                                lastErrorText = `Ollama Connection Error: ${errEp?.message || 'Connection refused'}`;
+                                lastErrorText = `Ollama Cloud Connection Error: ${errEp?.message || 'Connection refused'}`;
                             }
                         }
 
                         if (ollamaSuccess && responsePayload) break;
+                    } else if (provider === "local_endpoint" || provider === "local") {
+                        // Slot 2: Local Device / Ngrok Tunnel Slot
+                        const localEndpoints = [
+                            req.headers['x-user-local-endpoint'],
+                            process.env.LOCAL_ENDPOINT,
+                            "http://127.0.0.1:11434/v1/chat/completions",
+                            "http://localhost:11434/v1/chat/completions"
+                        ].filter(Boolean);
+
+                        let localSuccess = false;
+                        for (const ep of localEndpoints) {
+                            try {
+                                const fetchUrl = ep.includes('/v1/chat/completions') || ep.includes('/api/chat')
+                                    ? ep 
+                                    : `${ep.replace(/\/$/, '')}/v1/chat/completions`;
+
+                                const res = await fetch(fetchUrl, {
+                                    method: "POST",
+                                    headers: { "Content-Type": "application/json" },
+                                    body: JSON.stringify({
+                                        model: targetModel,
+                                        messages: apiMessages,
+                                        max_tokens: 4096,
+                                        stream: false
+                                    })
+                                });
+
+                                if (res.ok) {
+                                    const data = await res.json();
+                                    const content = data.choices?.[0]?.message?.content || data.message?.content || data.response;
+                                    if (content) {
+                                        responsePayload = {
+                                            id: `chatcmpl-local-${Date.now()}`,
+                                            object: 'chat.completion',
+                                            created: Math.floor(Date.now() / 1000),
+                                            model: targetModel,
+                                            choices: [
+                                                {
+                                                    index: 0,
+                                                    message: { role: 'assistant', content: content },
+                                                    finish_reason: 'stop'
+                                                }
+                                            ]
+                                        };
+                                        successfulModel = targetModel;
+                                        localSuccess = true;
+                                        response = res;
+                                        break;
+                                    }
+                                }
+                            } catch (errLocal) {
+                                lastErrorText = `Local Device Connection Error (${ep}): ${errLocal?.message || 'Local server offline'}`;
+                            }
+                        }
+
+                        if (localSuccess && responsePayload) break;
                     } else if (isPollinationsKeyless) {
                         // Keyless Pollinations mode: Use 100% free anonymous GET endpoint with system prompt
                         const systemMsg = apiMessages.find(m => m.role === 'system')?.content || '';
