@@ -4,14 +4,15 @@ export function useTypewriterPlaceholder(
   prompts: string[],
   speed = 60,
   deleteSpeed = 30,
-  delayBetweenPrompts = 2200
+  delayBetweenPrompts = 2200,
+  enabled = true
 ): string {
   const [currentPromptIndex, setCurrentPromptIndex] = useState(0);
   const [displayText, setDisplayText] = useState('');
   const [isDeleting, setIsDeleting] = useState(false);
 
   useEffect(() => {
-    if (!prompts || prompts.length === 0) return;
+    if (!enabled || !prompts || prompts.length === 0) return;
 
     const fullPrompt = prompts[currentPromptIndex];
 
@@ -31,7 +32,7 @@ export function useTypewriterPlaceholder(
     }, isDeleting ? deleteSpeed : speed);
 
     return () => clearTimeout(timer);
-  }, [displayText, isDeleting, currentPromptIndex, prompts, speed, deleteSpeed, delayBetweenPrompts]);
+  }, [enabled, displayText, isDeleting, currentPromptIndex, prompts, speed, deleteSpeed, delayBetweenPrompts]);
 
-  return displayText ? `${displayText} |` : '';
+  return (enabled && displayText) ? `${displayText} |` : '';
 }

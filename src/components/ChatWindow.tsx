@@ -79,7 +79,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
     `Attach a syllabus PDF or ask anything...`
   ], [selectedModel]);
 
-  const animatedPlaceholder = useTypewriterPlaceholder(dynamicPlaceholderPrompts, 50, 25, 2000);
+  const animatedPlaceholder = useTypewriterPlaceholder(dynamicPlaceholderPrompts, 50, 25, 2000, inputPrompt.length === 0);
 
   // Instant scroll to latest message on session load / new messages
   useEffect(() => {
