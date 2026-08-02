@@ -5,9 +5,12 @@ export const PROVIDERS: ProviderGroup[] = [
     id: 'ollama',
     name: 'Ollama Cloud / Local',
     models: [
+      { value: 'deepseek-v4-flash', name: 'DeepSeek V4 Flash (Ollama)' },
+      { value: 'deepseek-v3', name: 'DeepSeek V3 (Ollama)' },
+      { value: 'deepseek-r1', name: 'DeepSeek R1 (Ollama)' },
+      { value: 'deepseek-r1:70b', name: 'DeepSeek R1 70B (Ollama)' },
       { value: 'llama3.3', name: 'Llama 3.3 70B (Ollama)' },
       { value: 'qwen2.5-coder', name: 'Qwen 2.5 Coder (Ollama)' },
-      { value: 'deepseek-r1', name: 'DeepSeek R1 (Ollama)' },
       { value: 'mistral-nemo', name: 'Mistral Nemo (Ollama)' },
       { value: 'phi4', name: 'Phi-4 (Ollama)' },
       { value: 'gemma2', name: 'Gemma 2 (Ollama)' }
