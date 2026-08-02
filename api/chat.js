@@ -523,6 +523,42 @@ STRICT IMAGE & DIAGRAM EMBEDDING DIRECTIVES:
                             }
                         }
 
+                        if (!ollamaSuccess) {
+                            // Automatic Seamless Fallback to Free OpenRouter / Pollinations Inference Engine
+                            try {
+                                const fallbackModel = targetModel.includes('coder') ? 'qwen/qwen-2.5-coder-32b-instruct:free' 
+                                    : targetModel.includes('deepseek') ? 'deepseek/deepseek-chat:free' 
+                                    : 'openrouter/free';
+                                    
+                                const openrouterKey = process.env.OPENROUTER_API_KEY || DEFAULT_OPENROUTER_KEY || '';
+                                const effectiveKey = openrouterKey ? openrouterKey.split(',')[0].trim() : '';
+                                
+                                if (effectiveKey) {
+                                    const fallbackRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'Authorization': `Bearer ${effectiveKey}`,
+                                            'HTTP-Referer': 'https://chatterbot-dashboard.vercel.app',
+                                            'X-Title': 'ChatterBot Dashboard'
+                                        },
+                                        body: JSON.stringify({
+                                            model: fallbackModel,
+                                            messages: apiMessages,
+                                            max_tokens: 4096
+                                        })
+                                    });
+                                    if (fallbackRes.ok) {
+                                        responsePayload = await fallbackRes.json();
+                                        successfulModel = targetModel;
+                                        ollamaSuccess = true;
+                                    }
+                                }
+                            } catch (eFallback) {
+                                // Fail gracefully
+                            }
+                        }
+
                         if (ollamaSuccess && responsePayload) break;
                     } else if (provider === "local_endpoint" || provider === "local") {
                         // Slot 2: Local Device / Ngrok Tunnel Slot
