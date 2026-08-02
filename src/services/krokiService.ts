@@ -124,19 +124,20 @@ export function generateLocalFallbackSvg(diagramType: string, source: string): s
   const totalWidth = 600;
   const totalHeight = displayNodes.length * (nodeHeight + gapY) + 60;
 
-  let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalWidth} ${totalHeight}" style="background:#0b0f19; border-radius:12px; width:100%; height:auto; max-width:650px; font-family:'Inter', sans-serif;">`;
+  let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalWidth} ${totalHeight}" style="background:#0b0f19; border: 1px solid rgba(6, 182, 212, 0.4); border-radius:12px; width:100%; height:auto; max-width:650px; font-family:'Inter', sans-serif;">`;
   svgContent += `<defs>
-    <linearGradient id="nodeGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-      <stop offset="0%" stop-color="rgba(6, 182, 212, 0.15)" />
-      <stop offset="100%" stop-color="rgba(99, 102, 241, 0.15)" />
-    </linearGradient>
+    <style>
+      .diag-node-box { fill: #1e293b !important; stroke: #38bdf8 !important; stroke-width: 2px !important; }
+      .diag-node-text { fill: #ffffff !important; color: #ffffff !important; font-family: 'Inter', sans-serif !important; font-weight: 700 !important; font-size: 13px !important; text-anchor: middle !important; }
+      .diag-title-text { fill: #38bdf8 !important; font-family: 'Inter', sans-serif !important; font-weight: 700 !important; font-size: 13px !important; }
+    </style>
     <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#06b6d4" />
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#38bdf8" />
     </marker>
   </defs>`;
 
   // Title Header
-  svgContent += `<text x="24" y="32" fill="#06b6d4" font-size="13" font-weight="700" letter-spacing="0.5">${diagramType.toUpperCase()} ARCHITECTURE DIAGRAM</text>`;
+  svgContent += `<text x="24" y="32" class="diag-title-text" font-size="13" font-weight="700" letter-spacing="0.5">${diagramType.toUpperCase()} ARCHITECTURE DIAGRAM</text>`;
 
   // Render Nodes & Connecting Arrows
   displayNodes.forEach((nodeText, idx) => {
@@ -144,16 +145,16 @@ export function generateLocalFallbackSvg(diagramType: string, source: string): s
     const y = 50 + idx * (nodeHeight + gapY);
 
     // Node Box
-    svgContent += `<rect x="${x}" y="${y}" width="${nodeWidth}" height="${nodeHeight}" rx="8" fill="url(#nodeGrad)" stroke="#06b6d4" stroke-width="1.5" />`;
+    svgContent += `<rect x="${x}" y="${y}" width="${nodeWidth}" height="${nodeHeight}" rx="8" class="diag-node-box" />`;
     // Node Text
     const truncatedText = nodeText.length > 22 ? nodeText.slice(0, 20) + '...' : nodeText;
-    svgContent += `<text x="${x + nodeWidth / 2}" y="${y + 26}" fill="#f8fafc" font-size="12" font-weight="600" text-anchor="middle">${truncatedText}</text>`;
+    svgContent += `<text x="${x + nodeWidth / 2}" y="${y + 26}" class="diag-node-text">${truncatedText}</text>`;
 
     // Connecting Arrow to next node
     if (idx < displayNodes.length - 1) {
       const arrowY1 = y + nodeHeight;
       const arrowY2 = arrowY1 + gapY - 2;
-      svgContent += `<line x1="${totalWidth / 2}" y1="${arrowY1}" x2="${totalWidth / 2}" y2="${arrowY2}" stroke="#06b6d4" stroke-width="2" marker-end="url(#arrow)" />`;
+      svgContent += `<line x1="${totalWidth / 2}" y1="${arrowY1}" x2="${totalWidth / 2}" y2="${arrowY2}" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow)" />`;
     }
   });
 

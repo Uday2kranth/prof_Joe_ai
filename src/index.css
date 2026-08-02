@@ -1475,20 +1475,13 @@ body {
   font-family: var(--font-main);
 }
 
-/* High contrast SVG diagram text for light/dark themes */
-[data-theme="dark"] .kroki-container svg text {
-  fill: #f8fafc;
-}
-
-[data-theme="light"] .kroki-container svg text {
-  fill: #0f172a;
-}
-
-.kroki-container svg text[fill="#f8fafc"],
-.kroki-container svg text[fill="#06b6d4"],
+.kroki-container svg text.diag-node-text,
 .kroki-container svg text[fill="#ffffff"],
-.kroki-container svg text[fill="white"] {
-  fill: attr(fill);
+.kroki-container svg text[fill="#f8fafc"],
+.kroki-container svg text[fill="#38bdf8"],
+.kroki-container svg text[fill="#06b6d4"] {
+  fill: #ffffff !important;
+  color: #ffffff !important;
 }
 
 .kroki-error-box {
