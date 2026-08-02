@@ -90,7 +90,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
       }
 
       // Check IndexedDB render cache for full parsed message HTML
-      const msgHash = `msg_rendered_v2_${message.id || 'msg'}_${rawContent.length}_${rawContent.slice(0, 40)}`;
+      const msgHash = `msg_rendered_v4_${message.id || 'msg'}_${rawContent.length}_${rawContent.slice(0, 40)}`;
       const cachedHtml = await getRenderCache(msgHash);
       if (cachedHtml && isMounted) {
         setRenderedHtml(cachedHtml);
@@ -98,18 +98,12 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
       }
 
       const diagrams = extractDiagrams(rawContent);
-      const diagramMap = new Map<string, string>();
 
-      const svgResults = await Promise.all(
-        diagrams.map(async (diag, index) => {
-          const token = `KROKIDIAGRAMTOKEN${index}ENDTOKEN`;
-          const svgHtml = await fetchKrokiSvg(diag.type, diag.source);
-          return { token, svgHtml, type: diag.type };
-        })
-      );
-
-      svgResults.forEach(res => {
-        diagramMap.set(res.token, `<div class="kroki-container" data-type="${res.type}">${res.svgHtml}</div>`);
+      // Pass 1: Render Markdown & LaTeX Math INSTANTLY with skeleton diagram placeholders (< 10ms!)
+      const skeletonMap = new Map<string, string>();
+      diagrams.forEach((diag, index) => {
+        const token = `KROKIDIAGRAMTOKEN${index}ENDTOKEN`;
+        skeletonMap.set(token, `<div class="kroki-container-skeleton" style="padding:16px; margin:12px 0; border:1px dashed rgba(6,182,212,0.4); border-radius:8px; background:rgba(6,182,212,0.05); color:#06b6d4; font-size:0.85rem; font-weight:600; display:flex; align-items:center; gap:8px;">⏳ Loading ${diag.type.toUpperCase()} Diagram...</div>`);
       });
 
       let markdownToParse = rawContent;
@@ -119,11 +113,34 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
         markdownToParse = markdownToParse.replace(diag.fullMatch, token);
       });
 
-      const parsedHtml = renderMarkdownWithMathAndDiagrams(markdownToParse, diagramMap);
-
+      const initialParsedHtml = renderMarkdownWithMathAndDiagrams(markdownToParse, skeletonMap);
       if (isMounted) {
-        setRenderedHtml(parsedHtml);
-        setRenderCache(msgHash, parsedHtml);
+        setRenderedHtml(initialParsedHtml);
+      }
+
+      if (diagrams.length === 0) {
+        setRenderCache(msgHash, initialParsedHtml);
+        return;
+      }
+
+      // Pass 2: Asynchronously fetch SVGs in background & upgrade placeholders cleanly
+      const updatedDiagramMap = new Map<string, string>();
+      const svgResults = await Promise.all(
+        diagrams.map(async (diag, index) => {
+          const token = `KROKIDIAGRAMTOKEN${index}ENDTOKEN`;
+          const svgHtml = await fetchKrokiSvg(diag.type, diag.source);
+          return { token, svgHtml, type: diag.type };
+        })
+      );
+
+      svgResults.forEach(res => {
+        updatedDiagramMap.set(res.token, `<div class="kroki-container" data-type="${res.type}">${res.svgHtml}</div>`);
+      });
+
+      const finalParsedHtml = renderMarkdownWithMathAndDiagrams(markdownToParse, updatedDiagramMap);
+      if (isMounted) {
+        setRenderedHtml(finalParsedHtml);
+        setRenderCache(msgHash, finalParsedHtml);
       }
     }
 
