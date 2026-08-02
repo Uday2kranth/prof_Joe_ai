@@ -6,11 +6,13 @@ import { ChatWindow } from './components/ChatWindow';
 import { ExamPrepView } from './components/ExamPrepView';
 import { SystemPromptLibraryView } from './components/SystemPromptLibraryView';
 import { PromptLibraryView } from './components/PromptLibraryView';
-import { DiagramStudioView } from './components/DiagramStudioView';
-import { CubesPlaygroundView } from './components/CubesPlaygroundView';
 import { FunPersonaChatView } from './components/FunPersonaChatView';
-import { DocumentExtractorStudioView } from './components/DocumentExtractorStudioView';
 import { PracticalCodeLabView } from './components/PracticalCodeLabView';
+
+// Code-Split Heavy Studio Views for Faster Initial App Load & Bundle Optimization
+const DiagramStudioView = React.lazy(() => import('./components/DiagramStudioView').then(m => ({ default: m.DiagramStudioView })));
+const CubesPlaygroundView = React.lazy(() => import('./components/CubesPlaygroundView').then(m => ({ default: m.CubesPlaygroundView })));
+const DocumentExtractorStudioView = React.lazy(() => import('./components/DocumentExtractorStudioView').then(m => ({ default: m.DocumentExtractorStudioView })));
 import { ACADEMIC_PRESETS } from './components/CodeLabPresetDrawer';
 import { SettingsModal } from './components/SettingsModal';
 import { LoginModal } from './components/LoginModal';
@@ -1179,11 +1181,15 @@ export const App: React.FC = () => {
             )}
 
             {activeHubWorkspace === 'diagrams' && (
-              <DiagramStudioView />
+              <React.Suspense fallback={<div className="p-8 text-cyan-400 font-semibold flex items-center gap-2">⏳ Loading Diagram Studio...</div>}>
+                <DiagramStudioView />
+              </React.Suspense>
             )}
 
             {activeHubWorkspace === 'cubes' && (
-              <CubesPlaygroundView />
+              <React.Suspense fallback={<div className="p-8 text-cyan-400 font-semibold flex items-center gap-2">⏳ Loading 3D Cubes Playground...</div>}>
+                <CubesPlaygroundView />
+              </React.Suspense>
             )}
 
             {activeHubWorkspace === 'fun_personas' && (
@@ -1214,12 +1220,14 @@ export const App: React.FC = () => {
               />
             )}
             {activeHubWorkspace === 'extractor_studio' && (
-              <DocumentExtractorStudioView
-                onBackToHub={() => setActiveHubWorkspace('chat')}
-                onSendToChat={() => {
-                  setActiveHubWorkspace('chat');
-                }}
-              />
+              <React.Suspense fallback={<div className="p-8 text-cyan-400 font-semibold flex items-center gap-2">⏳ Loading Document Extractor...</div>}>
+                <DocumentExtractorStudioView
+                  onBackToHub={() => setActiveHubWorkspace('chat')}
+                  onSendToChat={() => {
+                    setActiveHubWorkspace('chat');
+                  }}
+                />
+              </React.Suspense>
             )}
             {activeHubWorkspace === 'code_lab' && (
               <PracticalCodeLabView

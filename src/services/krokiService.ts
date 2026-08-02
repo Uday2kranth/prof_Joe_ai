@@ -17,6 +17,15 @@ const KNOWN_DIAGRAM_TYPES = [
   'nomnoml', 'wavedrom', 'symbolator', 'wbs'
 ];
 
+export function minifySvg(svg: string): string {
+  if (!svg) return '';
+  return svg
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/\s+/g, ' ')
+    .replace(/>\s+</g, '><')
+    .trim();
+}
+
 // Concurrency Queue for Kroki API Calls (max 2 parallel requests)
 const MAX_CONCURRENT_REQUESTS = 2;
 let activeRequestCount = 0;
@@ -201,9 +210,10 @@ export async function fetchKrokiSvg(diagramType: string, source: string): Promis
         if (res.ok) {
           const svgText = await res.text();
           if (svgText && svgText.includes('<svg')) {
-            inMemorySvgCache.set(cacheKey, svgText);
-            setRenderCache(cacheKey, svgText);
-            return svgText;
+            const minified = minifySvg(svgText);
+            inMemorySvgCache.set(cacheKey, minified);
+            setRenderCache(cacheKey, minified);
+            return minified;
           }
         }
       } catch (err2) {
@@ -211,7 +221,7 @@ export async function fetchKrokiSvg(diagramType: string, source: string): Promis
       }
 
       // Attempt 3: Immediate High-Performance Local SVG Flowchart Generator
-      const fallbackSvg = generateLocalFallbackSvg(diagramType, source);
+      const fallbackSvg = minifySvg(generateLocalFallbackSvg(diagramType, source));
       inMemorySvgCache.set(cacheKey, fallbackSvg);
       setRenderCache(cacheKey, fallbackSvg);
       return fallbackSvg;
