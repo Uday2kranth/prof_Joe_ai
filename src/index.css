@@ -1472,15 +1472,23 @@ body {
 
 /* Fix SVG diagram text color & contrast */
 .kroki-container svg text {
-  font-family: var(--font-main) !important;
-  fill: #0f172a !important;
+  font-family: var(--font-main);
 }
 
+/* High contrast SVG diagram text for light/dark themes */
+[data-theme="dark"] .kroki-container svg text {
+  fill: #f8fafc;
+}
+
+[data-theme="light"] .kroki-container svg text {
+  fill: #0f172a;
+}
+
+.kroki-container svg text[fill="#f8fafc"],
+.kroki-container svg text[fill="#06b6d4"],
 .kroki-container svg text[fill="#ffffff"],
-.kroki-container svg text[fill="white"],
-.kroki-container svg g[fill="#0f172a"] text,
-.kroki-container svg g[fill="#1e293b"] text {
-  fill: #ffffff !important;
+.kroki-container svg text[fill="white"] {
+  fill: attr(fill);
 }
 
 .kroki-error-box {
@@ -8368,6 +8376,25 @@ body {
 }
 
 /* Mobile Touch & Hardware Accelerated Scrolling Optimizations */
+.chat-messages-container {
+  flex: 1 1 0%;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior-y: contain !important;
+  scroll-behavior: smooth !important;
+  padding: 20px 16px;
+  will-change: scroll-position;
+}
+
+.messages-inner {
+  max-width: 900px;
+  margin: 0 auto;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
 @media (max-width: 768px) {
   .chat-messages-container,
   .messages-scroll-area,
@@ -8380,10 +8407,14 @@ body {
     -webkit-overflow-scrolling: touch !important;
     overscroll-behavior-y: contain !important;
     scroll-behavior: smooth !important;
+    touch-action: pan-y !important;
   }
 
   .message-item,
+  .message-row,
   .chat-bubble,
+  .user-bubble,
+  .assistant-bubble,
   .demo-workspace-card {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
