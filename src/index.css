@@ -1508,6 +1508,38 @@ body {
   font-size: 0.85rem;
 }
 
+/* Rule 4: Fixed Image Containers & Aspect-Ratio Skeletons (Zero Layout Shifts) */
+.markdown-body img,
+.formatted-content img {
+  max-width: 100%;
+  height: auto;
+  min-height: 160px;
+  aspect-ratio: 16 / 9;
+  background-color: rgba(15, 23, 42, 0.7);
+  border-radius: 12px;
+  display: block;
+  margin: 12px 0;
+  object-fit: contain;
+  contain: layout style paint;
+}
+
+.img-skeleton-wrapper {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  min-height: 160px;
+  border-radius: 12px;
+  background: linear-gradient(90deg, rgba(30,41,59,0.6) 25%, rgba(51,65,85,0.6) 50%, rgba(30,41,59,0.6) 75%);
+  background-size: 200% 100%;
+  animation: img-skeleton-shimmer 1.5s infinite;
+  overflow: hidden;
+}
+
+@keyframes img-skeleton-shimmer {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
 .bubble-actions {
   display: flex;
   gap: 8px;

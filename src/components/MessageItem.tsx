@@ -71,13 +71,14 @@ interface MessageItemProps {
   onEditUserMessage?: (oldText: string) => void;
 }
 
-export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRetry, onEditUserMessage }) => {
+const MessageItemComponent: React.FC<MessageItemProps> = ({ message, isLast, onRetry, onEditUserMessage }) => {
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
   const [exportingImage, setExportingImage] = useState(false);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [renderedHtml, setRenderedHtml] = useState<string>('');
   const bubbleRef = useRef<HTMLDivElement>(null);
+  const lastParsedTimeRef = useRef<number>(0);
 
   useEffect(() => {
     let isMounted = true;
@@ -89,7 +90,7 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
         return;
       }
 
-      // Check IndexedDB render cache for full parsed message HTML
+      // Check IndexedDB render cache for completed messages
       const msgHash = `msg_rendered_v4_${message.id || 'msg'}_${rawContent.length}_${rawContent.slice(0, 40)}`;
       const cachedHtml = await getRenderCache(msgHash);
       if (cachedHtml && isMounted) {
@@ -144,12 +145,22 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
       }
     }
 
+    // Stream throttling: Throttle parsing updates to 80ms windows during active streaming
+    const now = Date.now();
+    if (message.isStreaming && now - lastParsedTimeRef.current < 80) {
+      const timer = setTimeout(() => {
+        if (isMounted) processMessage();
+      }, 80);
+      return () => clearTimeout(timer);
+    }
+
+    lastParsedTimeRef.current = now;
     processMessage();
 
     return () => {
       isMounted = false;
     };
-  }, [message.content, message.id]);
+  }, [message.content, message.id, message.isStreaming]);
 
   const handleCopy = () => {
     navigator.clipboard.writeText(message.content);
@@ -250,19 +261,19 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
             onClick={handleExportImage}
             disabled={exportingImage}
             className="kokonut-msg-btn"
-            title="Save PNG Image"
+            title="Export Bubble to PNG Image"
           >
             <Download size={13} />
-            <span>Download</span>
+            <span>{exportingImage ? 'Exporting...' : 'PNG'}</span>
           </button>
 
           <button
             onClick={handleExportPdf}
             className="kokonut-msg-btn"
-            title="Interactive Document Preview Modal"
+            title="Preview PDF Document"
           >
             <Eye size={13} />
-            <span>Preview</span>
+            <span>PDF</span>
           </button>
 
           <button
@@ -315,3 +326,14 @@ export const MessageItem: React.FC<MessageItemProps> = ({ message, isLast, onRet
     </div>
   );
 };
+
+const arePropsEqual = (prevProps: MessageItemProps, nextProps: MessageItemProps) => {
+  if (prevProps.isLast !== nextProps.isLast) return false;
+  if (prevProps.message.id !== nextProps.message.id) return false;
+  if (prevProps.message.content !== nextProps.message.content) return false;
+  if (prevProps.message.isStreaming !== nextProps.message.isStreaming) return false;
+  if (prevProps.message.modelUsed !== nextProps.message.modelUsed) return false;
+  return true;
+};
+
+export const MessageItem = React.memo(MessageItemComponent, arePropsEqual);

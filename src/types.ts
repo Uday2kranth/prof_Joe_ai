@@ -5,6 +5,7 @@ export interface Message {
   timestamp: number;
   modelUsed?: string;
   personaTag?: string;
+  isStreaming?: boolean;
   usage?: {
     prompt_tokens?: number;
     completion_tokens?: number;
