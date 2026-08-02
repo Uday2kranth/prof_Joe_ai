@@ -1484,6 +1484,21 @@ body {
   color: #ffffff !important;
 }
 
+/* KaTeX Math & SVG Diagram Layout Containment for Mobile Touch Performance */
+.katex-display,
+.kroki-container {
+  contain: layout style;
+  touch-action: pan-y;
+}
+
+.katex-display {
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  max-width: 100%;
+  margin: 0.75em 0;
+}
+
 .kroki-error-box {
   background: rgba(239, 68, 68, 0.1);
   border: 1px solid rgba(239, 68, 68, 0.3);
