@@ -33,6 +33,12 @@ export const PROVIDERS: ProviderGroup[] = [
       { value: 'poolside/laguna-xs-2.1:free', name: 'Laguna XS 2.1 (Coding)' },
       { value: 'cohere/north-mini-code:free', name: 'North Mini Code (Low-Latency)' },
       { value: 'qwen/qwen3-coder:free', name: 'Qwen 3 Coder (Repo-Scale)' },
+      { value: 'meta-llama/llama-3.3-70b-instruct:free', name: 'Llama 3.3 70B Instruct Free [WS]' },
+      { value: 'meta-llama/llama-3.1-8b-instruct:free', name: 'Llama 3.1 8B Ultra-Light Free [WS]' },
+      { value: 'google/gemma-2-9b-it:free', name: 'Gemma 2 9B Light Free [WS]' },
+      { value: 'qwen/qwen-2.5-7b-instruct:free', name: 'Qwen 2.5 7B Light Free [WS]' },
+      { value: 'microsoft/phi-3-mini-128k-instruct:free', name: 'Phi-3 Mini 128K Fast Free [WS]' },
+      { value: 'mistralai/mistral-7b-instruct:free', name: 'Mistral 7B Light Free [WS]' },
       { value: 'google/gemma-4-31b-it:free', name: 'Gemma 4 31B (OCR/Vision)' },
       { value: 'google/gemma-4-26b-a4b-it:free', name: 'Gemma 4 26B (Visual Instruction)' },
       { value: 'nvidia/nemotron-3-nano-omni:free', name: 'Nemotron 3 Nano Omni (Multimodal)' }
