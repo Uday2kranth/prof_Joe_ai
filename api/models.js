@@ -81,6 +81,24 @@ export default async function handler(req, res) {
         clearTimeout(timeout);
 
         if (!response.ok) {
+            if (provider === 'ollama') {
+                return res.status(200).json({
+                    success: true,
+                    provider: 'ollama',
+                    count: 9,
+                    models: [
+                        { id: 'deepseek-v4-flash', name: 'DeepSeek V4 Flash (Ollama Cloud/Local)', isFree: true },
+                        { id: 'deepseek-v3', name: 'DeepSeek V3 (Ollama Cloud/Local)', isFree: true },
+                        { id: 'deepseek-r1', name: 'DeepSeek R1 (Ollama Cloud/Local)', isFree: true },
+                        { id: 'deepseek-r1:70b', name: 'DeepSeek R1 70B (Ollama)', isFree: true },
+                        { id: 'llama3.3', name: 'Llama 3.3 70B (Ollama)', isFree: true },
+                        { id: 'qwen2.5-coder', name: 'Qwen 2.5 Coder (Ollama)', isFree: true },
+                        { id: 'mistral-nemo', name: 'Mistral Nemo (Ollama)', isFree: true },
+                        { id: 'phi4', name: 'Phi-4 (Ollama)', isFree: true },
+                        { id: 'gemma2', name: 'Gemma 2 (Ollama)', isFree: true }
+                    ]
+                });
+            }
             const errText = await response.text().catch(() => '');
             return res.status(response.status).json({
                 error: `Failed to fetch models from ${provider} (HTTP ${response.status}): ${errText.substring(0, 150)}`
@@ -131,6 +149,24 @@ export default async function handler(req, res) {
 
     } catch (err) {
         console.error('Error fetching live models:', err);
+        if (req.body && req.body.provider === 'ollama') {
+            return res.status(200).json({
+                success: true,
+                provider: 'ollama',
+                count: 9,
+                models: [
+                    { id: 'deepseek-v4-flash', name: 'DeepSeek V4 Flash (Ollama Cloud/Local)', isFree: true },
+                    { id: 'deepseek-v3', name: 'DeepSeek V3 (Ollama Cloud/Local)', isFree: true },
+                    { id: 'deepseek-r1', name: 'DeepSeek R1 (Ollama Cloud/Local)', isFree: true },
+                    { id: 'deepseek-r1:70b', name: 'DeepSeek R1 70B (Ollama)', isFree: true },
+                    { id: 'llama3.3', name: 'Llama 3.3 70B (Ollama)', isFree: true },
+                    { id: 'qwen2.5-coder', name: 'Qwen 2.5 Coder (Ollama)', isFree: true },
+                    { id: 'mistral-nemo', name: 'Mistral Nemo (Ollama)', isFree: true },
+                    { id: 'phi4', name: 'Phi-4 (Ollama)', isFree: true },
+                    { id: 'gemma2', name: 'Gemma 2 (Ollama)', isFree: true }
+                ]
+            });
+        }
         return res.status(500).json({
             error: err.name === 'AbortError' 
                 ? 'Request timed out while fetching provider models.' 

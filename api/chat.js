@@ -595,9 +595,9 @@ STRICT IMAGE & DIAGRAM EMBEDDING DIRECTIVES:
                         }
                     }
 
-                    const errData = await response.json().catch(() => ({}));
-                    lastErrorText = errData.error?.message || errData.message || errData.error || response.statusText || 'Unknown Provider Error';
-                    lastStatus = response.status;
+                    const errData = response ? await response.json().catch(() => ({})) : {};
+                    lastErrorText = errData.error?.message || errData.message || errData.error || (response ? response.statusText : lastErrorText) || 'Unknown Provider Error';
+                    lastStatus = response ? response.status : 503;
 
                     console.warn(`Key rotation: Key index ${i} failed for model "${targetModel}" with status ${response.status}: ${lastErrorText}`);
 
