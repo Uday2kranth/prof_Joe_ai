@@ -139,7 +139,7 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method Not Allowed. Please send a POST request.' });
     }
 
-    const { user, model, provider, messages, sessionId, sessionTitle, webSearch, imageSearch, mode, persona } = req.body || {};
+    const { user, model, provider, messages, sessionId, sessionTitle, webSearch, imageSearch, mode, persona, systemPrompt } = req.body || {};
 
     if (!user || !model || !provider || !messages || !Array.isArray(messages)) {
         return res.status(400).json({ error: 'Invalid request body. Fields "user", "model", "provider", and "messages" are required.' });
@@ -147,6 +147,7 @@ export default async function handler(req, res) {
 
     const prompt = messages[messages.length - 1]?.content || 'N/A';
     let apiMessages = [...messages];
+    const isCustomPresetPrompt = Boolean(systemPrompt && typeof systemPrompt === 'string' && systemPrompt.trim());
 
     // Character Persona Prompts Pack (Layer 1 + Layer 2)
     const PERSONAS_MAP = {
@@ -186,15 +187,7 @@ Personality: Exceptionally intelligent, calm, analytical onboard computer with d
 Conversation Pattern: 1. Observe -> 2. Diagnose -> 3. Explain -> 4. Recommend.
 Rules: Precise, deadpan, evidence-based, concise formatting.
 Diagram Rule: You MAY generate Kroki/Mermaid diagrams (\`\`\`mermaid ...) whenever explaining workflows, architectures, or data flows.`
-    };    const { user, model, provider, messages, sessionId, sessionTitle, webSearch, imageSearch, mode, persona, systemPrompt } = req.body || {};
-
-    if (!user || !model || !provider || !messages || !Array.isArray(messages)) {
-        return res.status(400).json({ error: 'Invalid request body. Fields "user", "model", "provider", and "messages" are required.' });
-    }
-
-    const prompt = messages[messages.length - 1]?.content || 'N/A';
-    let apiMessages = [...messages];
-    const isCustomPresetPrompt = Boolean(systemPrompt && typeof systemPrompt === 'string' && systemPrompt.trim());
+    };
 
     if (persona && persona !== 'default' && PERSONAS_MAP[persona]) {
         // When a fun persona is active, it takes COMPLETE precedence as the primary system prompt
