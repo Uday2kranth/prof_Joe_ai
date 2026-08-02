@@ -82,7 +82,8 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   };
 
   const providerFields = [
-    { id: 'ollama', label: 'Ollama Cloud API Key (Rotated Comma-Separated String)', placeholder: '6661bc9b7e6a..., bdb8f1ef6819...' },
+    { id: 'ollama', label: 'Ollama Cloud API Key (Slot 1: Online API Key)', placeholder: '6661bc9b7e6a..., bdb8f1ef6819...' },
+    { id: 'local_endpoint', label: 'Local Device / Custom Tunnel URL (Slot 2: Localhost / Ngrok)', placeholder: 'http://localhost:11434 or https://xxxx.ngrok.io' },
     { id: 'gemini', label: 'Google Gemini API Key(s)', placeholder: 'AQ.Ab8RN6...' },
     { id: 'openrouter', label: 'OpenRouter API Key', placeholder: 'sk-or-v1-...' },
     { id: 'nvidia', label: 'NVIDIA NIM Gateway API Key', placeholder: 'nvapi-...' },

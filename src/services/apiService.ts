@@ -22,6 +22,7 @@ export async function sendChatMessage(
     'Content-Type': 'application/json',
     'x-user-authorization': activeToken,
     'x-user-ollama-key': userKeys.ollama || '',
+    'x-user-local-endpoint': userKeys.local_endpoint || '',
     'x-user-openrouter-key': userKeys.openrouter || '',
     'x-user-gemini-key': userKeys.gemini || '',
     'x-user-groq-key': userKeys.groq || '',
