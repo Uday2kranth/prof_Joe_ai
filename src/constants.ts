@@ -3,17 +3,31 @@ import type { ProviderGroup, PersonaOption } from './types';
 export const PROVIDERS: ProviderGroup[] = [
   {
     id: 'ollama',
-    name: 'Ollama Cloud / Local',
+    name: 'Ollama Cloud',
     models: [
-      { value: 'deepseek-v4-flash', name: 'DeepSeek V4 Flash (Ollama)' },
-      { value: 'deepseek-v3', name: 'DeepSeek V3 (Ollama)' },
-      { value: 'deepseek-r1', name: 'DeepSeek R1 (Ollama)' },
-      { value: 'deepseek-r1:70b', name: 'DeepSeek R1 70B (Ollama)' },
-      { value: 'llama3.3', name: 'Llama 3.3 70B (Ollama)' },
-      { value: 'qwen2.5-coder', name: 'Qwen 2.5 Coder (Ollama)' },
-      { value: 'mistral-nemo', name: 'Mistral Nemo (Ollama)' },
-      { value: 'phi4', name: 'Phi-4 (Ollama)' },
-      { value: 'gemma2', name: 'Gemma 2 (Ollama)' }
+      { value: 'deepseek-v4-flash', name: 'DeepSeek V4 Flash (Ollama Cloud)' },
+      { value: 'deepseek-v3', name: 'DeepSeek V3 (Ollama Cloud)' },
+      { value: 'deepseek-r1', name: 'DeepSeek R1 (Ollama Cloud)' },
+      { value: 'deepseek-r1:70b', name: 'DeepSeek R1 70B (Ollama Cloud)' },
+      { value: 'llama3.3', name: 'Llama 3.3 70B (Ollama Cloud)' },
+      { value: 'qwen2.5-coder', name: 'Qwen 2.5 Coder (Ollama Cloud)' },
+      { value: 'mistral-nemo', name: 'Mistral Nemo (Ollama Cloud)' },
+      { value: 'phi4', name: 'Phi-4 (Ollama Cloud)' },
+      { value: 'gemma2', name: 'Gemma 2 (Ollama Cloud)' }
+    ]
+  },
+  {
+    id: 'local_endpoint',
+    name: 'Local Device / Tunnel (Ollama)',
+    models: [
+      { value: 'deepseek-v4-flash', name: 'DeepSeek V4 Flash (Local Device)' },
+      { value: 'deepseek-v3', name: 'DeepSeek V3 (Local Device)' },
+      { value: 'deepseek-r1', name: 'DeepSeek R1 (Local Device)' },
+      { value: 'llama3.3', name: 'Llama 3.3 70B (Local Device)' },
+      { value: 'qwen2.5-coder', name: 'Qwen 2.5 Coder (Local Device)' },
+      { value: 'mistral-nemo', name: 'Mistral Nemo (Local Device)' },
+      { value: 'phi4', name: 'Phi-4 (Local Device)' },
+      { value: 'gemma2', name: 'Gemma 2 (Local Device)' }
     ]
   },
   {
@@ -33,7 +47,6 @@ export const PROVIDERS: ProviderGroup[] = [
       { value: 'poolside/laguna-xs-2.1:free', name: 'Laguna XS 2.1 (Coding)' },
       { value: 'cohere/north-mini-code:free', name: 'North Mini Code (Low-Latency)' },
       { value: 'qwen/qwen3-coder:free', name: 'Qwen 3 Coder (Repo-Scale)' },
-      { value: 'meta-llama/llama-3.3-70b-instruct:free', name: 'Llama 3.3 70B Instruct Free [WS]' },
       { value: 'meta-llama/llama-3.1-8b-instruct:free', name: 'Llama 3.1 8B Ultra-Light Free [WS]' },
       { value: 'google/gemma-2-9b-it:free', name: 'Gemma 2 9B Light Free [WS]' },
       { value: 'qwen/qwen-2.5-7b-instruct:free', name: 'Qwen 2.5 7B Light Free [WS]' },
@@ -90,6 +103,24 @@ export const PROVIDERS: ProviderGroup[] = [
     ]
   },
   {
+    id: 'nvidia',
+    name: 'NVIDIA NIM Gateway',
+    models: [
+      { value: 'nvidia/nemotron-3-ultra:free', name: 'Nemotron 3 Ultra (NVIDIA Gateway) [WS]' },
+      { value: 'nvidia/nemotron-3-super-120b-a12b:free', name: 'Nemotron 3 Super 120B [WS]' },
+      { value: 'nvidia/nemotron-3-nano-30b-a3b:free', name: 'Nemotron 3 Nano 30B' },
+      { value: 'nvidia/nemotron-3-nano-omni:free', name: 'Nemotron 3 Nano Omni' }
+    ]
+  },
+  {
+    id: 'poolside',
+    name: 'Poolside AI (Code Engine)',
+    models: [
+      { value: 'poolside/laguna-m.1:free', name: 'Laguna M.1 Agent [WS]' },
+      { value: 'poolside/laguna-xs-2.1:free', name: 'Laguna XS 2.1 Code Engine [WS]' }
+    ]
+  },
+  {
     id: 'cerebras',
     name: 'Cerebras Cloud (Ultra-Fast)',
     models: [
@@ -127,7 +158,10 @@ export const PROVIDERS: ProviderGroup[] = [
     models: [
       { value: 'mistral-large', name: 'Mistral Large (Free) [WS]' },
       { value: 'mistral-medium-3-5', name: 'Mistral Medium 3.5 (Free) [WS]' },
-      { value: 'tencent-hy3', name: 'Tencent Hunyuan 3 (Free)' }
+      { value: 'tencent-hy3', name: 'Tencent Hunyuan 3 (Free)' },
+      { value: 'meta-llama/llama-3-8b-instruct', name: 'Llama 3 8B (Omni)' },
+      { value: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash (Omni) [WS]' },
+      { value: 'anthropic/claude-3-haiku', name: 'Claude 3 Haiku (Omni)' }
     ]
   },
   {
@@ -137,18 +171,9 @@ export const PROVIDERS: ProviderGroup[] = [
       { value: 'Qwen/Qwen2.5-72B-Instruct', name: 'Qwen 2.5 72B Instruct (HF) [WS]' },
       { value: 'deepseek-ai/DeepSeek-R1-Distill-Qwen-32B', name: 'DeepSeek R1 Distill Qwen 32B (HF)' },
       { value: 'meta-llama/Llama-3.2-3B-Instruct', name: 'Llama 3.2 3B Instruct (HF) [WS]' },
-      { value: 'google/gemma-2-9b-it', name: "Gemma 2 9B (HF) [WS]" },
+      { value: 'google/gemma-2-9b-it', name: 'Gemma 2 9B (HF) [WS]' },
       { value: 'microsoft/Phi-3.5-mini-instruct', name: 'Phi 3.5 Mini Instruct (HF)' },
       { value: 'HuggingFaceH4/zephyr-7b-beta', name: 'Zephyr 7B Beta (HF)' }
-    ]
-  },
-  {
-    id: 'nararouter',
-    name: 'NaraRouter',
-    models: [
-      { value: 'meta-llama/llama-3-8b-instruct', name: 'Llama 3 8B (Omni)' },
-      { value: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash (Omni) [WS]' },
-      { value: 'anthropic/claude-3-haiku', name: 'Claude 3 Haiku (Omni)' }
     ]
   },
   {

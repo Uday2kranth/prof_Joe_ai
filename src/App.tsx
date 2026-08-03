@@ -39,6 +39,7 @@ const DEFAULT_KEYS: UserKeys = {
   huggingface: '',
   pollinations: '',
   opencode: '',
+  poolside: '',
   local_endpoint: ''
 };
 

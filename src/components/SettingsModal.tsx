@@ -94,6 +94,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     { id: 'nararouter', label: 'NaraRouter API Key', placeholder: 'sk-nry-...' },
     { id: 'huggingface', label: 'Hugging Face Access Token', placeholder: 'hf_...' },
     { id: 'opencode', label: 'OpenCode AI API Key (50 req/day, 20 req/hr free tier)', placeholder: 'oc_...' },
+    { id: 'poolside', label: 'Poolside AI API Key (Code Engine)', placeholder: 'sky_...' },
     { id: 'pollinations', label: 'Pollinations Priority Key (Optional)', placeholder: 'sk_...' }
   ] as const;
 

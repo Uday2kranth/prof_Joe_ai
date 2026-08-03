@@ -60,6 +60,7 @@ export interface UserKeys {
   huggingface: string;
   pollinations: string;
   opencode?: string;
+  poolside?: string;
   local_endpoint: string;
 }
 

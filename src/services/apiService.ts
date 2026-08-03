@@ -33,6 +33,7 @@ export async function sendChatMessage(
     'x-user-nararouter-key': userKeys.nararouter || '',
     'x-user-huggingface-key': userKeys.huggingface || '',
     'x-user-opencode-key': userKeys.opencode || '',
+    'x-user-poolside-key': userKeys.poolside || '',
     'x-user-pollinations-key': userKeys.pollinations || ''
   };
 

@@ -71,6 +71,9 @@ export default async function handler(req, res) {
             case 'opencode':
                 fetchUrl = 'https://opencode.ai/zen/v1/models';
                 break;
+            case 'poolside':
+                fetchUrl = 'https://api.poolside.ai/v1/models';
+                break;
             default:
                 return res.status(400).json({ error: `Unsupported provider for model fetching: ${provider}` });
         }

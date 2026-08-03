@@ -263,14 +263,18 @@ GENERAL AI ASSISTANT DIRECTIVES:
     let targetProvider = (provider || '').toLowerCase().trim();
     if (targetProvider.includes('gemini')) targetProvider = 'gemini';
     else if (targetProvider.includes('pollinations')) targetProvider = 'pollinations';
+    else if (targetProvider.includes('local') || targetProvider === 'local_endpoint') targetProvider = 'local_endpoint';
     else if (targetProvider.includes('ollama')) targetProvider = 'ollama';
     else if (targetProvider.includes('openrouter')) targetProvider = 'openrouter';
     else if (targetProvider.includes('groq')) targetProvider = 'groq';
     else if (targetProvider.includes('cerebras')) targetProvider = 'cerebras';
     else if (targetProvider.includes('mistral')) targetProvider = 'mistral';
     else if (targetProvider.includes('nvidia')) targetProvider = 'nvidia';
+    else if (targetProvider.includes('poolside')) targetProvider = 'poolside';
     else if (targetProvider.includes('sambanova')) targetProvider = 'sambanova';
     else if (targetProvider.includes('huggingface')) targetProvider = 'huggingface';
+    else if (targetProvider.includes('opencode')) targetProvider = 'opencode';
+    else if (targetProvider.includes('nararouter')) targetProvider = 'nararouter';
 
     // 1. Resolve API Key: prioritizes client-submitted header keys.
     let apiKey = '';
@@ -298,6 +302,10 @@ GENERAL AI ASSISTANT DIRECTIVES:
         apiKey = req.headers['x-user-huggingface-key'] || process.env.HUGGINGFACE_API_KEY || '';
     } else if (targetProvider === "opencode") {
         apiKey = req.headers['x-user-opencode-key'] || process.env.OPENCODE_API_KEY || '';
+    } else if (targetProvider === "poolside") {
+        apiKey = req.headers['x-user-poolside-key'] || process.env.POOLSIDE_API_KEY || 'sky_ctnYuLL8.k6uIJOVBqzZ4sVoJqqbZRKst6Kl040Pb';
+    } else if (targetProvider === "local_endpoint" || targetProvider === "local") {
+        apiKey = 'local_device_keyless';
     } else if (targetProvider === "pollinations-keyless") {
         apiKey = 'keyless_anonymous';
     } else if (targetProvider === "pollinations-keyed" || targetProvider === "pollinations") {
@@ -337,6 +345,10 @@ GENERAL AI ASSISTANT DIRECTIVES:
         endpoint = 'https://router.huggingface.co/v1/chat/completions';
     } else if (targetProvider === "opencode") {
         endpoint = 'https://opencode.ai/zen/v1/chat/completions';
+    } else if (targetProvider === "poolside") {
+        endpoint = 'https://api.poolside.ai/v1/chat/completions';
+    } else if (targetProvider === "local_endpoint" || targetProvider === "local") {
+        endpoint = req.headers['x-user-local-endpoint'] || process.env.LOCAL_ENDPOINT || 'http://127.0.0.1:11434/v1/chat/completions';
     } else if (targetProvider === "pollinations" || targetProvider === "pollinations-keyed" || targetProvider === "pollinations-keyless") {
         endpoint = (apiKey === 'keyless_anonymous' || !apiKey)
             ? 'https://text.pollinations.ai/'
