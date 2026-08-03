@@ -303,7 +303,7 @@ GENERAL AI ASSISTANT DIRECTIVES:
     } else if (targetProvider === "opencode") {
         apiKey = req.headers['x-user-opencode-key'] || process.env.OPENCODE_API_KEY || '';
     } else if (targetProvider === "poolside") {
-        apiKey = req.headers['x-user-poolside-key'] || process.env.POOLSIDE_API_KEY || 'sky_ctnYuLL8.k6uIJOVBqzZ4sVoJqqbZRKst6Kl040Pb';
+        apiKey = req.headers['x-user-poolside-key'] || process.env.POOLSIDE_API_KEY || '';
     } else if (targetProvider === "local_endpoint" || targetProvider === "local") {
         apiKey = 'local_device_keyless';
     } else if (targetProvider === "pollinations-keyless") {
