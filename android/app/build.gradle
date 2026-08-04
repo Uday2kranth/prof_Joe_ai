@@ -22,6 +22,21 @@ android {
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
         }
     }
+    flavorDimensions "version"
+    productFlavors {
+        admin {
+            dimension "version"
+            applicationId "com.udaykranth.ai.admin"
+            resValue "string", "app_name", "Joe AI"
+            resValue "string", "title_activity_main", "Joe AI"
+        }
+        student {
+            dimension "version"
+            applicationId "com.udaykranth.ai"
+            resValue "string", "app_name", "Prof Joe AI"
+            resValue "string", "title_activity_main", "Prof Joe AI"
+        }
+    }
 }
 
 repositories {

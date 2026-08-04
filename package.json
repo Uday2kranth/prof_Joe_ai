@@ -7,6 +7,8 @@
     "server": "node local-server.js",
     "dev": "node -e \"require('child_process').spawn('node', ['local-server.js'], {stdio:'inherit'}); require('child_process').spawn('npx', ['vite'], {stdio:'inherit', shell:true});\"",
     "build": "tsc -b && vite build",
+    "build:admin": "tsc -b && vite build",
+    "build:student": "tsc -b && vite build",
     "cap:build": "vite build && npx cap sync",
     "cap:sync": "npx cap sync",
     "cap:open": "npx cap open android",

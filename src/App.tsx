@@ -216,9 +216,11 @@ export const App: React.FC = () => {
     }).catch(() => {});
   }, []);
 
+  const IS_ADMIN_BUILD = import.meta.env.MODE === 'admin' || import.meta.env.VITE_ENABLE_ADMIN_KEYS === 'true';
+
   const [userKeys, setUserKeys] = useState<UserKeys>(() => {
     const activeUser = localStorage.getItem('chatterbot_username');
-    const isAuthorizedAdmin = activeUser === 'Admin@uday' || activeUser === 'Uday@joe';
+    const isAuthorizedAdmin = (activeUser === 'Admin@uday' || activeUser === 'Uday@joe') && IS_ADMIN_BUILD;
     const baseFallback = isAuthorizedAdmin ? ADMIN_BUNDLED_SYSTEM_KEYS : DEFAULT_KEYS;
 
     if (activeUser) {
