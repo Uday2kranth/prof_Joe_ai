@@ -49,6 +49,14 @@ const CodeDungeonMessageBubble: React.FC<CodeDungeonMessageBubbleProps> = ({
 }) => {
   const isUser = msg.role === 'user';
   const [renderedHtml, setRenderedHtml] = useState<string>('');
+  const [isCopied, setIsCopied] = useState(false);
+
+  const handleCopyMessage = () => {
+    if (!msg.content) return;
+    navigator.clipboard.writeText(msg.content);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -100,11 +108,37 @@ const CodeDungeonMessageBubble: React.FC<CodeDungeonMessageBubbleProps> = ({
         padding: '12px 16px',
         borderRadius: '16px',
         fontSize: '0.84rem',
-        lineHeight: 1.5
+        lineHeight: 1.5,
+        position: 'relative'
       }}
     >
-      <div style={{ fontSize: '0.7rem', fontWeight: 700, opacity: 0.7, marginBottom: '4px' }}>
-        {isUser ? 'Student Prompt' : 'Prof. Joe AI'}
+      {/* Header bar with role label and Copy button */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', gap: '8px' }}>
+        <div style={{ fontSize: '0.7rem', fontWeight: 700, opacity: 0.7 }}>
+          {isUser ? 'Student Prompt' : 'Prof. Joe AI'}
+        </div>
+        <button
+          type="button"
+          onClick={handleCopyMessage}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '4px',
+            background: isCopied ? 'rgba(6, 182, 212, 0.25)' : 'rgba(255, 255, 255, 0.08)',
+            border: isCopied ? '1px solid rgba(6, 182, 212, 0.5)' : '1px solid rgba(255, 255, 255, 0.15)',
+            borderRadius: '6px',
+            padding: '2px 7px',
+            fontSize: '0.68rem',
+            fontWeight: 600,
+            color: isCopied ? '#38bdf8' : '#cbd5e1',
+            cursor: 'pointer',
+            transition: 'all 0.2s ease'
+          }}
+          title={isCopied ? 'Copied to clipboard!' : 'Copy message text'}
+        >
+          {isCopied ? <Check size={12} className="text-cyan-400" /> : <Copy size={12} />}
+          <span>{isCopied ? 'Copied' : 'Copy'}</span>
+        </button>
       </div>
 
       {isUser ? (
