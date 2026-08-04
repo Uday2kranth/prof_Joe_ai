@@ -4806,10 +4806,11 @@ body {
   color: #475569 !important;
 }
 
+.demo-header-toolbar-dock,
 .demo-header-actions {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 6px;
 }
 
 .demo-view-toggle-btn {
@@ -8103,7 +8104,7 @@ body {
     border-radius: 8px !important;
   }
 
-  /* 🧭 WORKSPACE HEADER MOBILE OPTIMIZATION (ICON-ONLY BUTTONS & TITLE HIDING) */
+  /* 🧭 WORKSPACE HEADER MOBILE OPTIMIZATION (UNIFIED CONTINUOUS DOCK & ICON BUTTONS) */
   .demo-workspace-header {
     padding-top: calc(env(safe-area-inset-top, 24px) + 10px) !important;
     padding-bottom: 10px !important;
@@ -8111,7 +8112,6 @@ body {
     padding-right: 10px !important;
     justify-content: flex-start !important;
     align-items: center !important;
-    gap: 6px !important;
     overflow-x: auto !important;
     scrollbar-width: none !important;
   }
@@ -8120,12 +8120,14 @@ body {
     display: none !important;
   }
 
-  .demo-header-left-actions,
-  .demo-header-actions {
+  .demo-header-toolbar-dock {
     display: flex !important;
     align-items: center !important;
     gap: 6px !important;
+    flex-wrap: nowrap !important;
     flex-shrink: 0 !important;
+    width: auto !important;
+    margin: 0 !important;
   }
 
   .demo-header-middle-title {
@@ -8137,7 +8139,8 @@ body {
     display: none !important;
   }
 
-  /* 🎯 UNIFORM BUTTON ALIGNMENT: 36px height, 10px radius, perfect vertical centering */
+  /* 🎯 UNIFORM BUTTON ALIGNMENT: 36px height, 10px radius, 6px gap, perfect line centering */
+  .demo-header-toolbar-dock > button,
   .demo-home-breadcrumb-btn,
   .demo-status-pill,
   .demo-icon-btn,
@@ -8154,6 +8157,7 @@ body {
     box-sizing: border-box !important;
     margin: 0 !important;
     vertical-align: middle !important;
+    flex-shrink: 0 !important;
   }
 
   .demo-view-toggle-btn {
@@ -8166,12 +8170,13 @@ body {
     justify-content: center !important;
     background: rgba(6, 182, 212, 0.15) !important;
     border: 1px solid rgba(6, 182, 212, 0.4) !important;
-    color: #38bdf8 !important;
-    font-size: 0.74rem !important;
-    font-weight: 600 !important;
+    color: #06b6d4 !important;
+    font-size: 0.76rem !important;
+    font-weight: 700 !important;
     box-sizing: border-box !important;
     margin: 0 !important;
     vertical-align: middle !important;
+    flex-shrink: 0 !important;
   }
 
   .demo-view-toggle-text {

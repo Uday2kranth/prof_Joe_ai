@@ -1056,7 +1056,8 @@ export const App: React.FC = () => {
         <div className="app-main-viewport" style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column' }}>
           {/* Top Home Navigation Breadcrumb Bar */}
           <div className="demo-workspace-header">
-            <div className="demo-header-left-actions" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <div className="demo-header-toolbar-dock">
+              {/* 1. Return to Home Hub */}
               <button 
                 type="button" 
                 onClick={() => setActiveHubWorkspace('landing')}
@@ -1067,6 +1068,7 @@ export const App: React.FC = () => {
                 <span>Home Hub</span>
               </button>
 
+              {/* 2. Control Deck Drawer Button */}
               {activeHubWorkspace === 'chat' && (
                 <button
                   type="button"
@@ -1102,6 +1104,58 @@ export const App: React.FC = () => {
                   <span className="demo-control-deck-text">Control Deck</span>
                 </button>
               )}
+
+              {/* 3. Refresh App */}
+              <button 
+                type="button" 
+                onClick={() => window.location.reload()} 
+                className="demo-icon-btn"
+                title="Refresh App"
+              >
+                <RotateCw size={16} />
+              </button>
+
+              {/* 4. Switch to Classic View */}
+              <button 
+                type="button" 
+                onClick={() => setAppLayoutMode('standard')}
+                className="demo-view-toggle-btn"
+                title="Switch to Classic View"
+              >
+                <Layout size={14} />
+                <span>Classic View</span>
+              </button>
+
+              {/* 5. Settings & API Keys */}
+              <button 
+                type="button" 
+                onClick={() => setIsSettingsOpen(true)} 
+                className="demo-status-pill cyan-pill"
+                title="API Settings & Keys"
+              >
+                <Key size={14} />
+                <span>Settings</span>
+              </button>
+
+              {/* 6. Theme Toggle */}
+              <button 
+                type="button" 
+                onClick={handleToggleTheme} 
+                className="demo-icon-btn"
+                title="Toggle Dark/Light Theme"
+              >
+                {theme === 'dark' ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} className="text-purple-400" />}
+              </button>
+
+              {/* 7. User Profile */}
+              <button 
+                type="button" 
+                onClick={() => setIsProfileModalOpen(true)} 
+                className="demo-profile-avatar-btn"
+                title="User Profile"
+              >
+                <User size={16} />
+              </button>
             </div>
 
             <div className="demo-header-middle-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1112,47 +1166,6 @@ export const App: React.FC = () => {
                   ? 'TEXTRACTOR WORKSPACE ⚡'
                   : `${activeHubWorkspace} Workspace`}
               </span>
-            </div>
-
-            <div className="demo-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <button 
-                type="button" 
-                onClick={() => window.location.reload()} 
-                className="demo-icon-btn"
-                title="Refresh App"
-              >
-                <RotateCw size={16} />
-              </button>
-              <button 
-                type="button" 
-                onClick={() => setAppLayoutMode('standard')}
-                className="demo-view-toggle-btn"
-              >
-                <Layout size={14} />
-                <span>Classic View</span>
-              </button>
-              <button 
-                type="button" 
-                onClick={() => setIsSettingsOpen(true)} 
-                className="demo-status-pill cyan-pill"
-              >
-                <Key size={14} />
-                <span>Settings</span>
-              </button>
-              <button 
-                type="button" 
-                onClick={handleToggleTheme} 
-                className="demo-icon-btn"
-              >
-                {theme === 'dark' ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} className="text-purple-400" />}
-              </button>
-              <button 
-                type="button" 
-                onClick={() => setIsProfileModalOpen(true)} 
-                className="demo-profile-avatar-btn"
-              >
-                <User size={16} />
-              </button>
             </div>
           </div>
 
