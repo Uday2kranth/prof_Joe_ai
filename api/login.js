@@ -41,21 +41,22 @@ export default async function handler(req, res) {
     // Default development fallback check if env vars are completely unconfigured
     if (!matchedUser && !process.env.AUTHORIZED_USERS_JSON && !process.env.ADMIN_USERNAME) {
       const allowedRoles = {
-        'Admin@uday': 'admin',
-        'Sai_Kiran': 'student',
-        'Gagan': 'student',
-        'Akash': 'student',
-        'Sai_Ram': 'student',
-        'Tharun': 'student',
-        'Ban': 'student',
-        'Balraj': 'guest_student',
-        'AV_Student': 'guest_student',
-        'uday01': 'guest',
-        'uday02': 'guest',
-        'uday03': 'guest'
+        'Admin@uday': { role: 'admin', password: 'Superm@n62' },
+        'Uday@joe': { role: 'co_admin', password: 'uday@joe' },
+        'sai_kiran': { role: 'student', password: 'kiransir@bava' },
+        'gagan': { role: 'student', password: 'gagan@kranthi' },
+        'akash': { role: 'student', password: 'labbe@kiransir' },
+        'sai_ram': { role: 'student', password: 'sai@ram' },
+        'tharun': { role: 'student', password: 'mama@kiransir' },
+        'ban': { role: 'student', password: 'DataScientist' },
+        'balraj': { role: 'guest_student', password: 'labbe@kiransir' },
+        'AV_Student': { role: 'guest_student', password: 'avcollege@student' },
+        'uday01': { role: 'guest', password: 'uday@01' },
+        'uday02': { role: 'guest', password: 'uday@02' },
+        'uday03': { role: 'guest', password: 'uday@03' }
       };
       if (username in allowedRoles) {
-        matchedUser = { role: allowedRoles[username], password };
+        matchedUser = allowedRoles[username];
       }
     }
 
@@ -80,8 +81,8 @@ export default async function handler(req, res) {
           ip: req.headers['x-forwarded-for'] || req.socket.remoteAddress
         });
 
-        // Enforce single-device session token for non-admin users
-        if (matchedUser.role !== 'admin') {
+        // Enforce single-device session token for non-admin users (admin & co_admin bypass)
+        if (matchedUser.role !== 'admin' && matchedUser.role !== 'co_admin') {
           await db.collection('active_device_tokens').updateOne(
             { username },
             { $set: { username, token: userToken, role: matchedUser.role, updatedAt: new Date() } },

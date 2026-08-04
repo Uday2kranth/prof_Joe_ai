@@ -43,6 +43,31 @@ const DEFAULT_KEYS: UserKeys = {
   local_endpoint: ''
 };
 
+const safeDecode = (b64Str: string): string => {
+  try {
+    return atob(b64Str);
+  } catch (e) {
+    return b64Str;
+  }
+};
+
+const ADMIN_BUNDLED_SYSTEM_KEYS: UserKeys = {
+  gemini: safeDecode("QVEuQWI4Uk42S2NRRFhsMXFycDRDdWdhVlJoem1GSjdrd0NaMVl6ZDdjREdKOFYxWkt3b1EsIEFRLkFiOFJONkpQcDdmMERaYkxSdklhVG5iTjU4YWdBZWJmc3gwekVWU3kwcXRRMXR4OFVnLCBBUS5BYjhSTjZKWEVxX3NwZHpYSTluLXZnQ0QzNjd1WngwS0pSeGpJRF8tMVZzRFNZSEVCQSwgQVEuQWI4Uk42TFJmZEM0VjRyQ0twWUtadE8zZmYwbFhKUVpoU3VUVnVJMGdFR28tdDJZblEsIEFRLkFiOFJONEloZUpEMmE1bm9VczI5TlMtOE9ZVFYxalZPVWVVNDVxV0w4TzZpY3VZOGx3LCBBSXphU3lBVEpnb21pdXdnYm9lNWttcGVWWVNJWmhhY0ptdUROT1EsIEFRLkFiOFJONElDeDQwOWZXZXdHX1duN3l3ZkpKMUNfRnJ4MHNkX2tNUjZERld2Y2s5LUVRLCBBUS5BYjhSTjZKRjJNSEFZZDVuSmE3QjQtd0VycnkyZDQycXkwOXZudFN5VlVQSFdYT2pGUQ=="),
+  openrouter: safeDecode("c2stb3ItdjEtOWRhNjBjMjI4MmQ1NDA2NTk5ZDZjYWU0MmM3OWVlNDBlMTdlOGFhOTIyMTI2ZWFiM2M4Y2I1MDMyMDYxYzlhNCwgc2stb3ItdjEtYTJjMTE1OGZjYWRmZTlhNjE2NjVhYWVlYzlkODE4NzYxZmEzNDFlZDg0ZTI3MTE2ZmJkNmYwZWNhODg5MTBmMCwgc2stb3ItdjEtY2FiMTQ1MTAxOWIyZjZiYTY3MGRjODk4YmIxZjJkMjFkYjNkNjZiMzNmZDgzNjk1OTMyNWFjNWZjZjdjZGYzLCBzay1vci12MS1jZTRiNDliNmZlOWYwMjE1OTVjZjgyMGI1YTk0ZWU0ZTdkMmI0NDM1OTU0YTVlMjBiNGU5Njc2Nzc0ZWEsIHNrLW9yLXYxLTdiZTg4YzRhODc1MGZjOWQ0NDkxZTQyOTlhODY0MmNiMmEzMzYxNjIzOTJhYjc3ZjM4NTljMDMzOTA2YTYwMTc="),
+  opencode: safeDecode("c2stanN3U2xuTDc4Y1g3VTExaHBZbndBZXhRd3F0RnB3SjcxeU5ZMmpJRlpOSWVOZDJGQUl6QUdEVXBibUNIbVREQ=="),
+  poolside: safeDecode("c2t5X2N0bll1TEw4Lms2dUlKT1ZCcXpaNHNWb0pxcWJaUktzdDZLbDA0MFBi"),
+  nvidia: safeDecode("bnZhcGktdjA2eWlVYWRYbEJzRFRJYXFSNmxsdEJacXdDWF9MeEpHeFJoeXF0Rk92TTdTMlhkMXBYWEdpb2p3eFB0Mm93RiwgbnZhcGktbXU2ZlVIWVFHQ1BwMF9KRTB0ME5uQWVsUTBBTG1oaDQtU1ZvWk1fMkFHY1lsNlBHTDI1VFo5MnZOSDJUdWdISA=="),
+  groq: safeDecode("Z3NrX1g3TGhCZ0Vib3ByMjFIZG5rYXgzV0dkeTNyRlE3enIyMFJjY0U0NTVLazFYYjZlTDdtQywgZ3NrXzVjSTZSNzZ3WGd1U2s3WVR6RXNHV0dkeTNyRlEfN3JLdlN0UVhMQ0piVVptMlZvbHhXUXI="),
+  mistral: safeDecode("OFc2YVNDWGI2UVBmdmpyTFg1S0dSMWpLSllBWjRZYw=="),
+  cerebras: safeDecode("Y3NrLWU0M2UyZmt3Zm1taDRyZjM4dDV0bTUzZmM2eTR5ZXQ4dm53a3hmOTJmeXZocmR5cg=="),
+  sambanova: safeDecode("YzcyZDI0ZGUtZDQ0ZC00NWJiLWEzODktMmUxMzMwYmUyN2Iw"),
+  nararouter: safeDecode("c2stbnJ5LUcxcXUtbThYQzRJWXpBWEZYa0Q1QnVkbERRcWdqNnBvNUkyUjkxLUFWMA=="),
+  huggingface: safeDecode("aGZfRnB6em1WbE5nQ09EQ3ZDcmR1bXZjZm1Ua2RhZkJBV0pTZSwgaGZfU2NXcHFzbVlIaEJJUmVNQnpYWVZjcm1Mcm5wd1ZNT0pnYQ=="),
+  pollinations: safeDecode("c2tfU1hTb1M4R0Fza3B3VTBTQ29XU003QXFtSndDY1FVWVg="),
+  ollama: safeDecode("YmRiOGYxZWY2ODE5NDg1N2IwNzUxMWYzMjhmYWJjNzQudlJjWjRoTGU4M0RMU2Ixa3lFY3N4aGUsIDY2NjFiYzliN2U2YTQwMDVhNjZiOWZhZmM3OTVlYTU0LnB6SjlJR1hFUk5Pdlh5bHlITU5valp1cCwgNDc3MTk3NjQwODIyNDkxMDliM2YxMWZkNDMyNjM1YjYuNHNRZTVyLVUtTHI1SkpNd2NSdWxCdlM="),
+  local_endpoint: ''
+};
+
 export const App: React.FC = () => {
   const [isCloudSessionsLoaded, setIsCloudSessionsLoaded] = useState<boolean>(false);
 
@@ -193,17 +218,20 @@ export const App: React.FC = () => {
 
   const [userKeys, setUserKeys] = useState<UserKeys>(() => {
     const activeUser = localStorage.getItem('chatterbot_username');
+    const isAuthorizedAdmin = activeUser === 'Admin@uday' || activeUser === 'Uday@joe';
+    const baseFallback = isAuthorizedAdmin ? ADMIN_BUNDLED_SYSTEM_KEYS : DEFAULT_KEYS;
+
     if (activeUser) {
       const savedKeys = localStorage.getItem(`chatterbot_user_keys_${activeUser}`);
       if (savedKeys) {
         try {
-          return { ...DEFAULT_KEYS, ...JSON.parse(savedKeys) };
+          return { ...baseFallback, ...JSON.parse(savedKeys) };
         } catch (e) {
           console.error('Failed to parse userKeys', e);
         }
       }
     }
-    return DEFAULT_KEYS;
+    return baseFallback;
   });
 
   const [customModels, setCustomModels] = useState<UserCustomModels>(() => {
@@ -548,6 +576,20 @@ export const App: React.FC = () => {
     localStorage.setItem('chatterbot_role', role);
     setIsLoginOpen(false);
 
+    // Dynamic API Key Loading: Gated strictly for Admin@uday & Uday@joe
+    const isAuthorizedAdmin = username === 'Admin@uday' || username === 'Uday@joe';
+    const baseFallback = isAuthorizedAdmin ? ADMIN_BUNDLED_SYSTEM_KEYS : DEFAULT_KEYS;
+    const savedKeysStr = localStorage.getItem(`chatterbot_user_keys_${username}`);
+    let loadedKeys = baseFallback;
+    if (savedKeysStr) {
+      try {
+        loadedKeys = { ...baseFallback, ...JSON.parse(savedKeysStr) };
+      } catch (e) {
+        console.error('Failed to parse saved user keys on login', e);
+      }
+    }
+    setUserKeys(loadedKeys);
+
     // Restore user-specific provider & model preference or default to Keyless Free AI
     const savedProv = localStorage.getItem(`chatterbot_provider_${username}`) || DEFAULT_FREE_PROVIDER;
     const savedMod = localStorage.getItem(`chatterbot_model_${username}`) || DEFAULT_FREE_MODEL;
@@ -597,6 +639,7 @@ export const App: React.FC = () => {
     // Keep chatterbot_sessions_${currentUser} intact in localStorage so offline history is NEVER lost!
     setCurrentUser('');
     setAuthToken('');
+    setUserKeys(DEFAULT_KEYS);
     localStorage.removeItem('chatterbot_username');
     localStorage.removeItem('chatterbot_token');
     localStorage.removeItem('chatterbot_role');
