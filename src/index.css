@@ -1,6 +1,8 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Fira+Code:wght@400;500&display=swap');
 
 :root {
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
   --bg-primary: #0b0f19;
   --bg-secondary: #111827;
   --bg-tertiary: #1f2937;
@@ -2463,7 +2465,10 @@ body {
   }
 
   .app-header {
-    padding: 8px 10px;
+    padding-top: calc(env(safe-area-inset-top, 24px) + 10px) !important;
+    padding-bottom: 8px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
     gap: 6px;
   }
 
@@ -5058,13 +5063,14 @@ body {
 
 /* FULL-BLEED WORKSPACE CONTAINER WITH TOP HOME NAVIGATION BREADCRUMB */
 .demo-workspace-header {
-  height: 48px;
+  min-height: 48px;
+  height: auto;
   background: rgba(15, 23, 42, 0.95);
   border-bottom: 1px solid rgba(6, 182, 212, 0.3);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px;
+  padding: calc(env(safe-area-inset-top, 0px) + 6px) 16px 6px 16px;
   z-index: 999;
 }
 
@@ -8099,8 +8105,19 @@ body {
 
   /* 🧭 WORKSPACE HEADER MOBILE OPTIMIZATION (ICON-ONLY BUTTONS & TITLE HIDING) */
   .demo-workspace-header {
-    padding: 8px 12px !important;
+    padding-top: calc(env(safe-area-inset-top, 24px) + 10px) !important;
+    padding-bottom: 10px !important;
+    padding-left: 10px !important;
+    padding-right: 10px !important;
     justify-content: space-between !important;
+    align-items: center !important;
+  }
+
+  .demo-header-left-actions,
+  .demo-header-actions {
+    display: flex !important;
+    align-items: center !important;
+    gap: 6px !important;
   }
 
   .demo-header-middle-title {
@@ -8112,22 +8129,29 @@ body {
     display: none !important;
   }
 
+  /* 🎯 UNIFORM BUTTON ALIGNMENT: 36px height, 10px radius, perfect vertical centering */
   .demo-home-breadcrumb-btn,
-  .demo-status-pill {
-    padding: 6px 8px !important;
-    min-width: 34px !important;
-    height: 34px !important;
+  .demo-status-pill,
+  .demo-icon-btn,
+  .demo-profile-avatar-btn {
+    padding: 0 8px !important;
+    min-width: 36px !important;
+    width: 36px !important;
+    height: 36px !important;
     border-radius: 10px !important;
     gap: 0 !important;
     display: inline-flex !important;
     align-items: center !important;
     justify-content: center !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    vertical-align: middle !important;
   }
 
   .demo-view-toggle-btn {
-    padding: 5px 10px !important;
-    height: 34px !important;
-    border-radius: 9999px !important;
+    padding: 0 10px !important;
+    height: 36px !important;
+    border-radius: 10px !important;
     gap: 5px !important;
     display: inline-flex !important;
     align-items: center !important;
@@ -8137,6 +8161,9 @@ body {
     color: #38bdf8 !important;
     font-size: 0.74rem !important;
     font-weight: 600 !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+    vertical-align: middle !important;
   }
 
   .demo-view-toggle-text {

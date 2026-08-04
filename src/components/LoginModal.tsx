@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { UserCheck, Key, LogIn, AlertCircle, Sparkles } from 'lucide-react';
 import { BorderBeam } from './ui/BorderBeam';
 import { LetterGlitch } from './LetterGlitch';
+import { getApiUrl } from '../services/apiService';
 
 interface LoginModalProps {
   isOpen: boolean;
@@ -53,7 +54,7 @@ export const LoginModal: React.FC<LoginModalProps> = ({
     setLoading(true);
 
     try {
-      const response = await fetch('/api/login', {
+      const response = await fetch(getApiUrl('/api/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, password })

@@ -1,5 +1,6 @@
 import type { ChatSession } from '../types';
 import { saveCodeLabSession } from './indexedDbService';
+import { getApiUrl } from './apiService';
 
 export async function fetchCloudCodeLabPresetSessions(
   username: string, 
@@ -10,7 +11,7 @@ export async function fetchCloudCodeLabPresetSessions(
     const query = new URLSearchParams({ username });
     if (token) query.append('token', token);
 
-    const response = await fetch(`/api/codelab-sessions?${query.toString()}`);
+    const response = await fetch(getApiUrl(`/api/codelab-sessions?${query.toString()}`));
     if (!response.ok) return null;
 
     const data = await response.json();
@@ -29,7 +30,7 @@ export async function saveCloudCodeLabPresetSessions(
 ): Promise<boolean> {
   if (!username) return false;
   try {
-    const response = await fetch('/api/codelab-sessions', {
+    const response = await fetch(getApiUrl('/api/codelab-sessions'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ username, presetSessions })

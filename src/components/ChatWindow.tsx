@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import { Send, Globe, X, Zap, FileText, FileCode, CheckSquare, MessageSquare, Paperclip, Eye, Printer, ChevronDown, Check, ListFilter } from 'lucide-react';
+import { Send, Globe, X, Zap, FileText, FileCode, CheckSquare, MessageSquare, Paperclip, Eye, Printer, ChevronDown, Check, ListFilter, RotateCw } from 'lucide-react';
 // @ts-ignore
 import TextType from './TextType';
 import type { Message, UserCustomModels } from '../types';
@@ -547,15 +547,25 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               {/* Row 2: Action Tools */}
               <div className="kokonut-actions-row">
                 <div className="flex items-center gap-2">
-                <div className="relative">
                   <button
                     type="button"
-                    onClick={() => setIsQuickActionsOpen(!isQuickActionsOpen)}
+                    onClick={() => window.location.reload()}
                     className="kokonut-action-btn file-attach-btn"
-                    title="Open Quick Actions & Attachment Menu"
+                    title="Refresh App / Reload Page"
+                    style={{ background: 'rgba(255,255,255,0.05)', color: '#94a3b8' }}
                   >
-                    <Paperclip size={14} />
+                    <RotateCw size={14} />
                   </button>
+
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setIsQuickActionsOpen(!isQuickActionsOpen)}
+                      className="kokonut-action-btn file-attach-btn"
+                      title="Open Quick Actions & Attachment Menu"
+                    >
+                      <Paperclip size={14} />
+                    </button>
 
                   <QuickActionsPopover
                     isOpen={isQuickActionsOpen}

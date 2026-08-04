@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Menu, Sparkles, Layout } from 'lucide-react';
+import { Menu, Sparkles, Layout, RotateCw } from 'lucide-react';
 import type { ActiveViewType } from '../types';
 import Toolbar from './Toolbar';
 
@@ -42,7 +42,7 @@ export const Header: React.FC<HeaderProps> = ({
   };
 
   return (
-    <header className="app-header">
+    <header className="app-header" style={{ paddingTop: 'calc(env(safe-area-inset-top, 0px) + 8px)' }}>
       <div className="header-top-row">
         <div className="header-left">
           <button onClick={onToggleSidebar} className="menu-btn" aria-label="Toggle Navigation Sidebar">
@@ -82,19 +82,30 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
         </div>
 
-        {/* Demo Hub View Switcher Toggle Pill */}
-        {onToggleAppLayoutMode && (
+        {/* Demo Hub View Switcher Toggle Pill & Refresh Button */}
+        <div style={{ marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: '6px' }}>
+          {onToggleAppLayoutMode && (
+            <button 
+              type="button" 
+              onClick={onToggleAppLayoutMode} 
+              className="demo-view-toggle-btn"
+              title="Switch between Classic View and New Version Hub"
+            >
+              {appLayoutMode === 'hub-demo' ? <Layout size={14} /> : <Sparkles size={14} className="text-amber-400" />}
+              <span className="demo-view-toggle-text">{appLayoutMode === 'hub-demo' ? 'Classic View' : 'New Version'}</span>
+            </button>
+          )}
+
           <button 
             type="button" 
-            onClick={onToggleAppLayoutMode} 
+            onClick={() => window.location.reload()} 
             className="demo-view-toggle-btn"
-            style={{ marginLeft: 'auto' }}
-            title="Switch between Classic View and New Version Hub"
+            style={{ padding: '6px 10px' }}
+            title="Refresh App"
           >
-            {appLayoutMode === 'hub-demo' ? <Layout size={14} /> : <Sparkles size={14} className="text-amber-400" />}
-            <span className="demo-view-toggle-text">{appLayoutMode === 'hub-demo' ? 'Classic View' : 'New Version'}</span>
+            <RotateCw size={14} />
           </button>
-        )}
+        </div>
       </div>
 
       {/* KokonutUI Figma-Inspired Animated Toolbar Navigation */}

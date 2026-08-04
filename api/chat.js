@@ -127,8 +127,8 @@ async function getImageSearchLinks(query) {
 export default async function handler(req, res) {
     // CORS headers
     res.setHeader('Access-Control-Allow-Origin', '*');
-    res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-    res.setHeader('Access-Control-Allow-Headers', 'Content-Type, x-user-authorization, x-user-openrouter-key, x-user-nvidia-key, x-user-omnirouter-key, x-user-mistral-key, x-user-cerebras-key, x-user-groq-key, x-user-sambanova-key, x-user-gemini-key, x-user-nararouter-key, x-user-huggingface-key, x-user-opencode-key, x-user-pollinations-key, x-user-ollama-key, x-pollinations-subtype');
+    res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+    res.setHeader('Access-Control-Allow-Headers', '*');
 
     // Handle OPTIONS preflight request
     if (req.method === 'OPTIONS') {

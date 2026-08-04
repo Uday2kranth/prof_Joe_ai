@@ -22,8 +22,8 @@ import { DemoChatHistoryDrawer } from './components/DemoChatHistoryDrawer';
 import { PdfPreviewModal } from './components/PdfPreviewModal';
 import { printSessionToPdf } from './services/printPdfService';
 import { pruneOldRenderCache } from './services/renderCacheService';
-import { Home, Layout, Key, Moon, Sun, User, Menu } from 'lucide-react';
-import { sendChatMessage } from './services/apiService';
+import { Home, Layout, Key, Moon, Sun, User, Menu, RotateCw } from 'lucide-react';
+import { sendChatMessage, getApiUrl } from './services/apiService';
 import { fetchCloudCodeLabPresetSessions, syncCodeLabPresetSessions } from './services/codelabSyncService';
 
 const DEFAULT_KEYS: UserKeys = {
@@ -180,6 +180,15 @@ export const App: React.FC = () => {
   useEffect(() => {
     localStorage.removeItem('chatterbot_user_keys');
     localStorage.removeItem('chatterbot_keys');
+  }, []);
+
+  // Android: Push WebView below the native status bar so header buttons are accessible
+  useEffect(() => {
+    import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
+      StatusBar.setOverlaysWebView({ overlay: false }).catch(() => {});
+      StatusBar.setBackgroundColor({ color: '#0b0f19' }).catch(() => {});
+      StatusBar.setStyle({ style: Style.Dark }).catch(() => {});
+    }).catch(() => {});
   }, []);
 
   const [userKeys, setUserKeys] = useState<UserKeys>(() => {
@@ -442,6 +451,36 @@ export const App: React.FC = () => {
     localStorage.setItem('chatterbot_active_hub_workspace', ws);
   };
 
+  // Android Native Hardware Back Button Listener (Navigates back to main view instead of closing app)
+  useEffect(() => {
+    let sub: any = null;
+    import('@capacitor/app').then(({ App: CapApp }) => {
+      CapApp.addListener('backButton', () => {
+        if (isSettingsOpen) {
+          setIsSettingsOpen(false);
+          return;
+        }
+        if (isProfileModalOpen) {
+          setIsProfileModalOpen(false);
+          return;
+        }
+        if (appLayoutMode === 'hub-demo' && activeHubWorkspace !== 'landing') {
+          setActiveHubWorkspace('landing');
+          return;
+        }
+        if (activeView !== 'chat') {
+          setActiveView('chat');
+          return;
+        }
+        CapApp.minimizeApp();
+      }).then(l => { sub = l; });
+    }).catch(() => {});
+
+    return () => {
+      if (sub && sub.remove) sub.remove();
+    };
+  }, [activeView, appLayoutMode, activeHubWorkspace, isSettingsOpen, isProfileModalOpen]);
+
   const activeSession = sessions.find(s => s.id === activeSessionIdState) || sessions[0];
 
   const handleProviderChange = (provider: string) => {
@@ -529,7 +568,7 @@ export const App: React.FC = () => {
 
     // Fetch user-isolated cloud sessions immediately on login
     try {
-      const response = await fetch(`/api/sessions?username=${encodeURIComponent(username)}&token=${encodeURIComponent(token)}`);
+      const response = await fetch(getApiUrl(`/api/sessions?username=${encodeURIComponent(username)}&token=${encodeURIComponent(token)}`));
       if (response.ok) {
         const data = await response.json();
         if (data.success && Array.isArray(data.sessions) && data.sessions.length > 0) {
@@ -574,7 +613,7 @@ export const App: React.FC = () => {
     localStorage.setItem(`chatterbot_sessions_${currentUser}`, JSON.stringify(sessions));
 
     if (sessions && sessions.length > 0) {
-      fetch('/api/sessions', {
+      fetch(getApiUrl('/api/sessions'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username: currentUser, sessions })
@@ -589,7 +628,7 @@ export const App: React.FC = () => {
     const fetchCloudSessions = async () => {
       try {
         const queryToken = authToken ? `&token=${encodeURIComponent(authToken)}` : '';
-        const response = await fetch(`/api/sessions?username=${encodeURIComponent(currentUser)}${queryToken}`);
+        const response = await fetch(getApiUrl(`/api/sessions?username=${encodeURIComponent(currentUser)}${queryToken}`));
         
         if (response.status === 403) {
           const data = await response.json().catch(() => ({}));
@@ -649,7 +688,7 @@ export const App: React.FC = () => {
     // 2. Sync with cloud MongoDB user_api_keys collection
     const fetchCloudKeys = async () => {
       try {
-        const response = await fetch(`/api/user-keys?username=${encodeURIComponent(currentUser)}`);
+        const response = await fetch(getApiUrl(`/api/user-keys?username=${encodeURIComponent(currentUser)}`));
         if (response.ok) {
           const data = await response.json();
           if (data.success && data.keys && Object.keys(data.keys).length > 0) {
@@ -671,7 +710,7 @@ export const App: React.FC = () => {
     if (currentUser) {
       localStorage.setItem(`chatterbot_user_keys_${currentUser}`, JSON.stringify(newKeys));
       try {
-        await fetch('/api/user-keys', {
+        await fetch(getApiUrl('/api/user-keys'), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ username: currentUser, keys: newKeys })
@@ -1017,13 +1056,14 @@ export const App: React.FC = () => {
         <div className="app-main-viewport" style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column' }}>
           {/* Top Home Navigation Breadcrumb Bar */}
           <div className="demo-workspace-header">
-            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div className="demo-header-left-actions" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <button 
                 type="button" 
                 onClick={() => setActiveHubWorkspace('landing')}
                 className="demo-home-breadcrumb-btn"
+                title="Return to Home Hub"
               >
-                <Home size={14} />
+                <Home size={16} />
                 <span>Home Hub</span>
               </button>
 
@@ -1074,7 +1114,15 @@ export const App: React.FC = () => {
               </span>
             </div>
 
-            <div className="demo-header-actions">
+            <div className="demo-header-actions" style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <button 
+                type="button" 
+                onClick={() => window.location.reload()} 
+                className="demo-icon-btn"
+                title="Refresh App"
+              >
+                <RotateCw size={16} />
+              </button>
               <button 
                 type="button" 
                 onClick={() => setAppLayoutMode('standard')}

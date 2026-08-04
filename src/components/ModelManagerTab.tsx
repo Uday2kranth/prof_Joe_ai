@@ -3,6 +3,8 @@ import { RefreshCw, Search, CheckSquare, Square, RotateCcw, Cpu, Check, AlertCir
 import type { UserKeys, UserCustomModels, CustomModel } from '../types';
 import { PROVIDERS } from '../constants';
 
+import { getApiUrl } from '../services/apiService';
+
 interface ModelManagerTabProps {
   userKeys: UserKeys;
   customModels: UserCustomModels;
@@ -100,7 +102,7 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
     setFetchSuccessMsg(null);
 
     try {
-      const response = await fetch('/api/models', {
+      const response = await fetch(getApiUrl('/api/models'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({

@@ -441,8 +441,12 @@ export async function printSessionToPdf(messages: any[], sessionTitle: string = 
     targetWindow.document.write(printHtml);
     targetWindow.document.close();
     setTimeout(() => {
-      targetWindow?.focus();
-      targetWindow?.print();
+      if (typeof window !== 'undefined' && (window as any).AndroidPrintBridge?.print) {
+        (window as any).AndroidPrintBridge.print();
+      } else {
+        targetWindow?.focus();
+        targetWindow?.print();
+      }
     }, 400);
   } else if (targetIframe && targetIframe.contentWindow) {
     const doc = targetIframe.contentWindow.document;
@@ -450,8 +454,12 @@ export async function printSessionToPdf(messages: any[], sessionTitle: string = 
     doc.write(printHtml);
     doc.close();
     setTimeout(() => {
-      targetIframe?.contentWindow?.focus();
-      targetIframe?.contentWindow?.print();
+      if (typeof window !== 'undefined' && (window as any).AndroidPrintBridge?.print) {
+        (window as any).AndroidPrintBridge.print();
+      } else {
+        targetIframe?.contentWindow?.focus();
+        targetIframe?.contentWindow?.print();
+      }
       setTimeout(() => {
         if (targetIframe && document.body.contains(targetIframe)) {
           document.body.removeChild(targetIframe);

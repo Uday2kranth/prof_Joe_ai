@@ -1,5 +1,18 @@
 import type { Message, UserKeys } from '../types';
 
+export function getApiUrl(path: string): string {
+  const cleanPath = path.startsWith('/') ? path : `/${path}`;
+  if (typeof window !== 'undefined') {
+    const isCapacitor = !!(window as any).Capacitor?.isNativePlatform?.();
+    const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+    const isFileProto = window.location.protocol === 'file:';
+    if (isCapacitor || isFileProto || (isLocalhost && window.location.port === '')) {
+      return `https://prof-joe-ai.vercel.app${cleanPath}`;
+    }
+  }
+  return cleanPath;
+}
+
 export async function sendChatMessage(
   provider: string,
   model: string,
@@ -15,7 +28,7 @@ export async function sendChatMessage(
     content: m.content
   }));
 
-  const activeUsername = localStorage.getItem('chatterbot_username') || '';
+  const activeUsername = localStorage.getItem('chatterbot_username') || 'Guest_Student';
   const activeToken = localStorage.getItem('chatterbot_token') || '';
 
   const headers: Record<string, string> = {
@@ -37,7 +50,7 @@ export async function sendChatMessage(
     'x-user-pollinations-key': userKeys.pollinations || ''
   };
 
-  const response = await fetch('/api/chat', {
+  const response = await fetch(getApiUrl('/api/chat'), {
     method: 'POST',
     headers,
     body: JSON.stringify({
