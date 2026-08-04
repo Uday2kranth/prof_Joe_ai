@@ -8210,17 +8210,14 @@ body {
 
   .demo-home-breadcrumb-btn span,
   .demo-status-pill span,
-  .demo-view-toggle-text,
   .demo-control-deck-text {
     display: none !important;
   }
 
-  /* 🎯 UNIFORM MOBILE BUTTON ALIGNMENT: 36px x 36px icon squares, 10px radius, 10px gap */
-  .demo-header-toolbar-dock > button,
+  /* 🎯 UNIFORM MOBILE BUTTON ALIGNMENT: Buttons 1-6 Icon Squares + End-of-Dock Classic View Pill */
   .demo-home-breadcrumb-btn,
   .demo-status-pill,
   .demo-icon-btn,
-  .demo-view-toggle-btn,
   .demo-profile-avatar-btn {
     padding: 0 !important;
     min-width: 36px !important;
@@ -8237,8 +8234,33 @@ body {
     flex-shrink: 0 !important;
   }
 
-  .demo-control-deck-text {
-    display: none !important;
+  .demo-view-toggle-btn {
+    width: auto !important;
+    min-width: max-content !important;
+    padding: 0 12px !important;
+    gap: 6px !important;
+    height: 36px !important;
+    border-radius: 10px !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    background: rgba(6, 182, 212, 0.15) !important;
+    border: 1px solid rgba(6, 182, 212, 0.4) !important;
+    color: #06b6d4 !important;
+    font-size: 0.76rem !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    flex-shrink: 0 !important;
+    box-sizing: border-box !important;
+    margin: 0 !important;
+  }
+
+  .demo-view-toggle-btn .demo-view-toggle-text {
+    display: inline-block !important;
+    font-size: 0.76rem !important;
+    font-weight: 700 !important;
+    white-space: nowrap !important;
+    color: #06b6d4 !important;
   }
 
   .demo-hero-section {

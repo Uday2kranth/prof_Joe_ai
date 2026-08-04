@@ -1115,18 +1115,7 @@ export const App: React.FC = () => {
                 <RotateCw size={16} />
               </button>
 
-              {/* 4. Switch to Classic View */}
-              <button 
-                type="button" 
-                onClick={() => setAppLayoutMode('standard')}
-                className="demo-view-toggle-btn"
-                title="Switch to Classic View"
-              >
-                <Layout size={14} />
-                <span className="demo-view-toggle-text">Classic View</span>
-              </button>
-
-              {/* 5. Settings & API Keys */}
+              {/* 4. Settings & API Keys */}
               <button 
                 type="button" 
                 onClick={() => setIsSettingsOpen(true)} 
@@ -1137,7 +1126,7 @@ export const App: React.FC = () => {
                 <span>Settings</span>
               </button>
 
-              {/* 6. Theme Toggle */}
+              {/* 5. Theme Toggle */}
               <button 
                 type="button" 
                 onClick={handleToggleTheme} 
@@ -1147,7 +1136,7 @@ export const App: React.FC = () => {
                 {theme === 'dark' ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} className="text-purple-400" />}
               </button>
 
-              {/* 7. User Profile */}
+              {/* 6. User Profile */}
               <button 
                 type="button" 
                 onClick={() => setIsProfileModalOpen(true)} 
@@ -1155,6 +1144,17 @@ export const App: React.FC = () => {
                 title="User Profile"
               >
                 <User size={16} />
+              </button>
+
+              {/* 7. Switch to Classic View */}
+              <button 
+                type="button" 
+                onClick={() => setAppLayoutMode('standard')}
+                className="demo-view-toggle-btn"
+                title="Switch to Classic View"
+              >
+                <Layout size={14} />
+                <span className="demo-view-toggle-text">Classic View</span>
               </button>
             </div>
 
