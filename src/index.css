@@ -8109,8 +8109,15 @@ body {
     padding-bottom: 10px !important;
     padding-left: 10px !important;
     padding-right: 10px !important;
-    justify-content: space-between !important;
+    justify-content: flex-start !important;
     align-items: center !important;
+    gap: 6px !important;
+    overflow-x: auto !important;
+    scrollbar-width: none !important;
+  }
+
+  .demo-workspace-header::-webkit-scrollbar {
+    display: none !important;
   }
 
   .demo-header-left-actions,
@@ -8118,6 +8125,7 @@ body {
     display: flex !important;
     align-items: center !important;
     gap: 6px !important;
+    flex-shrink: 0 !important;
   }
 
   .demo-header-middle-title {

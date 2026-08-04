@@ -206,6 +206,25 @@ export function PracticalCodeLabView({
   const [isWebSearch, setIsWebSearch] = useState(false);
   const activeUser = localStorage.getItem('chatterbot_username') || 'guest';
 
+  // Custom Dropdown Popups state (prevents Android native <select> white modal overlay)
+  const [isProviderOpen, setIsProviderOpen] = useState(false);
+  const [isModelOpen, setIsModelOpen] = useState(false);
+  const providerRef = useRef<HTMLDivElement>(null);
+  const modelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e: MouseEvent) => {
+      if (providerRef.current && !providerRef.current.contains(e.target as Node)) {
+        setIsProviderOpen(false);
+      }
+      if (modelRef.current && !modelRef.current.contains(e.target as Node)) {
+        setIsModelOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
   const handleCodeContentChange = (newCode: string | undefined) => {
     if (newCode === undefined || activeFileIndex < 0) return;
     setFiles(prev => {
@@ -542,38 +561,89 @@ Follow these mandatory formatting rules for all responses:
         {/* Active Preset & Model Controls */}
         <div className="code-lab-header-right" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div className="codelab-dropdowns-row" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            {/* Provider Dropdown */}
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1 }}>
-              <select
-                value={selectedProvider}
-                onChange={(e) => onProviderChange && onProviderChange(e.target.value)}
+            {/* Provider Custom Dropdown */}
+            <div className="relative inline-block provider-picker-wrapper" ref={providerRef} style={{ position: 'relative', flex: 1 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsProviderOpen(!isProviderOpen);
+                  setIsModelOpen(false);
+                }}
                 className="custom-dropdown-pill"
-                style={{ fontSize: '0.76rem', width: '100%' }}
+                style={{ fontSize: '0.76rem', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                title="Select AI Provider"
               >
-                {PROVIDERS.map((p) => (
-                  <option key={p.name} value={p.name}>
-                    {p.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={14} style={{ position: 'absolute', right: '8px', color: 'var(--accent-cyan)', pointerEvents: 'none' }} />
+                <span className="truncate">{currentProviderGroup.name}</span>
+                <ChevronDown size={13} className={`transition-transform duration-200 ${isProviderOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isProviderOpen && (
+                <div className="custom-dropdown-menu paper-menu provider-menu" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 999999 }}>
+                  <div className="dropdown-header">AI Providers</div>
+                  {PROVIDERS.map(p => {
+                    const isSelected = p.id === selectedProvider || p.name === selectedProvider;
+                    return (
+                      <button
+                        key={p.id}
+                        type="button"
+                        onClick={() => {
+                          onProviderChange && onProviderChange(p.id);
+                          if (p.models.length > 0) {
+                            onModelChange && onModelChange(p.models[0].value);
+                          }
+                          setIsProviderOpen(false);
+                        }}
+                        className={`dropdown-item ${isSelected ? 'selected' : ''}`}
+                      >
+                        <span>{p.name}</span>
+                        {isSelected && <Check size={13} className="text-cyan-400" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
-            {/* Model Dropdown */}
-            <div style={{ position: 'relative', display: 'flex', alignItems: 'center', flex: 1 }}>
-              <select
-                value={selectedModel}
-                onChange={(e) => onModelChange && onModelChange(e.target.value)}
+            {/* Model Custom Dropdown */}
+            <div className="relative inline-block model-picker-wrapper" ref={modelRef} style={{ position: 'relative', flex: 1 }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsModelOpen(!isModelOpen);
+                  setIsProviderOpen(false);
+                }}
                 className="custom-dropdown-pill"
-                style={{ fontSize: '0.76rem', width: '100%' }}
+                style={{ fontSize: '0.76rem', width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+                title="Select AI Model"
               >
-                {availableModels.map((m) => (
-                  <option key={m.value} value={m.value}>
-                    {m.name}
-                  </option>
-                ))}
-              </select>
-              <ChevronDown size={14} style={{ position: 'absolute', right: '8px', color: '#c084fc', pointerEvents: 'none' }} />
+                <span className="truncate">
+                  {availableModels.find(m => m.value === selectedModel)?.name || selectedModel}
+                </span>
+                <ChevronDown size={13} className={`transition-transform duration-200 ${isModelOpen ? 'rotate-180' : ''}`} />
+              </button>
+
+              {isModelOpen && (
+                <div className="custom-dropdown-menu paper-menu model-menu" style={{ position: 'absolute', top: '100%', right: 0, left: 0, zIndex: 999999 }}>
+                  <div className="dropdown-header">AI Models</div>
+                  {availableModels.map(m => {
+                    const isSelected = m.value === selectedModel;
+                    return (
+                      <button
+                        key={m.value}
+                        type="button"
+                        onClick={() => {
+                          onModelChange && onModelChange(m.value);
+                          setIsModelOpen(false);
+                        }}
+                        className={`dropdown-item ${isSelected ? 'selected' : ''}`}
+                      >
+                        <span>{m.name}</span>
+                        {isSelected && <Check size={13} className="text-purple-400" />}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           </div>
 
