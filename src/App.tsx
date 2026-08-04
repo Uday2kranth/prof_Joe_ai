@@ -1123,7 +1123,7 @@ export const App: React.FC = () => {
                 title="Switch to Classic View"
               >
                 <Layout size={14} />
-                <span>Classic View</span>
+                <span className="demo-view-toggle-text">Classic View</span>
               </button>
 
               {/* 5. Settings & API Keys */}
