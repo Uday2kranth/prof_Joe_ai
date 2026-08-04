@@ -578,7 +578,7 @@ Follow these mandatory formatting rules for all responses:
               </button>
 
               {isProviderOpen && (
-                <div className="custom-dropdown-menu paper-menu provider-menu" style={{ position: 'absolute', top: '100%', left: 0, right: 0, zIndex: 999999 }}>
+                <div className="custom-dropdown-menu paper-menu provider-menu" style={{ position: 'absolute', top: '100%', zIndex: 9999999 }}>
                   <div className="dropdown-header">AI Providers</div>
                   {PROVIDERS.map(p => {
                     const isSelected = p.id === selectedProvider || p.name === selectedProvider;
@@ -623,7 +623,7 @@ Follow these mandatory formatting rules for all responses:
               </button>
 
               {isModelOpen && (
-                <div className="custom-dropdown-menu paper-menu model-menu" style={{ position: 'absolute', top: '100%', right: 0, left: 0, zIndex: 999999 }}>
+                <div className="custom-dropdown-menu paper-menu model-menu" style={{ position: 'absolute', top: '100%', zIndex: 9999999 }}>
                   <div className="dropdown-header">AI Models</div>
                   {availableModels.map(m => {
                     const isSelected = m.value === selectedModel;
