@@ -33,30 +33,8 @@ export default async function handler(req, res) {
 
     // Fallback environment variable checks for admin login if AUTHORIZED_USERS_JSON is not configured
     if (!matchedUser && process.env.ADMIN_USERNAME && username === process.env.ADMIN_USERNAME) {
-      if (password === (process.env.ADMIN_PASSWORD || 'Superm@n62')) {
+      if (password === process.env.ADMIN_PASSWORD) {
         matchedUser = { role: 'admin' };
-      }
-    }
-
-    // Default development fallback check if env vars are completely unconfigured
-    if (!matchedUser && !process.env.AUTHORIZED_USERS_JSON && !process.env.ADMIN_USERNAME) {
-      const allowedRoles = {
-        'Admin@uday': { role: 'admin', password: 'Superm@n62' },
-        'Uday@joe': { role: 'co_admin', password: 'uday@joe' },
-        'sai_kiran': { role: 'student', password: 'kiransir@bava' },
-        'gagan': { role: 'student', password: 'gagan@kranthi' },
-        'akash': { role: 'student', password: 'labbe@kiransir' },
-        'sai_ram': { role: 'student', password: 'sai@ram' },
-        'tharun': { role: 'student', password: 'mama@kiransir' },
-        'ban': { role: 'student', password: 'DataScientist' },
-        'balraj': { role: 'guest_student', password: 'labbe@kiransir' },
-        'AV_Student': { role: 'guest_student', password: 'avcollege@student' },
-        'uday01': { role: 'guest', password: 'uday@01' },
-        'uday02': { role: 'guest', password: 'uday@02' },
-        'uday03': { role: 'guest', password: 'uday@03' }
-      };
-      if (username in allowedRoles) {
-        matchedUser = allowedRoles[username];
       }
     }
 
