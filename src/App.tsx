@@ -590,6 +590,20 @@ export const App: React.FC = () => {
         console.error('Failed to parse saved user keys on login', e);
       }
     }
+
+    // Fetch user-isolated cloud API keys immediately on login for multi-device sync
+    try {
+      const keysRes = await fetch(getApiUrl(`/api/user-keys?username=${encodeURIComponent(username)}`));
+      if (keysRes.ok) {
+        const keysData = await keysRes.json();
+        if (keysData.success && keysData.keys && Object.keys(keysData.keys).length > 0) {
+          loadedKeys = { ...loadedKeys, ...keysData.keys };
+          localStorage.setItem(`chatterbot_user_keys_${username}`, JSON.stringify(loadedKeys));
+        }
+      }
+    } catch (kErr) {
+      console.warn('Could not fetch cloud user keys on login:', kErr);
+    }
     setUserKeys(loadedKeys);
 
     // Restore user-specific provider & model preference or default to Keyless Free AI
@@ -716,18 +730,21 @@ export const App: React.FC = () => {
       return;
     }
 
+    const isAuthorizedAdmin = currentUser === 'Admin@uday' || currentUser === 'Uday@joe';
+    const baseFallback = isAuthorizedAdmin ? ADMIN_BUNDLED_SYSTEM_KEYS : DEFAULT_KEYS;
+
     // 1. Immediately load local storage keys for this user
-    let currentLocalKeys = DEFAULT_KEYS;
+    let currentLocalKeys = baseFallback;
     const savedLocal = localStorage.getItem(`chatterbot_user_keys_${currentUser}`);
     if (savedLocal) {
       try {
-        currentLocalKeys = { ...DEFAULT_KEYS, ...JSON.parse(savedLocal) };
+        currentLocalKeys = { ...baseFallback, ...JSON.parse(savedLocal) };
         setUserKeys(currentLocalKeys);
       } catch (e) {
         console.error('Failed to parse local userKeys', e);
       }
     } else {
-      setUserKeys(DEFAULT_KEYS);
+      setUserKeys(baseFallback);
     }
 
     // 2. Sync with cloud MongoDB user_api_keys collection
