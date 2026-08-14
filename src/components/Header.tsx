@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Menu, Sparkles, Layout, RotateCw } from 'lucide-react';
 import type { ActiveViewType } from '../types';
-import Toolbar from './Toolbar';
+import Toolbar, { getNavItemsForRole } from './Toolbar';
 
 interface HeaderProps {
   onToggleSidebar: () => void;
@@ -12,6 +12,7 @@ interface HeaderProps {
   activeView: ActiveViewType;
   onViewChange?: (view: ActiveViewType) => void;
   username?: string;
+  userRole?: string;
   onLogout?: () => void;
   onOpenProfileModal?: () => void;
   appLayoutMode?: 'standard' | 'hub-demo';
@@ -22,6 +23,7 @@ export const Header: React.FC<HeaderProps> = ({
   onToggleSidebar,
   activeView,
   onViewChange,
+  userRole,
   appLayoutMode = 'standard',
   onToggleAppLayoutMode
 }) => {
@@ -29,6 +31,7 @@ export const Header: React.FC<HeaderProps> = ({
 
   const viewTitles: Record<string, string> = {
     chat: 'AI Multi-Model Dashboard',
+    lecture_notes: 'Lecture Notes & Classroom Studio',
     examprep: 'Exam Prep & Syllabus Hub',
     system_prompts: 'Official System Prompt Library',
     prompts: 'User Prompts Hub',
@@ -111,6 +114,7 @@ export const Header: React.FC<HeaderProps> = ({
       {/* KokonutUI Figma-Inspired Animated Toolbar Navigation */}
       <div className="header-dock-center">
         <Toolbar
+          items={getNavItemsForRole(userRole)}
           activeId={activeView}
           onSelect={(itemId) => onViewChange?.(itemId as ActiveViewType)}
         />

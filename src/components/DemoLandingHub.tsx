@@ -19,13 +19,14 @@ import {
 import { MorphingText } from './MorphingText';
 
 interface DemoLandingHubProps {
-  onSelectWorkspace: (workspaceId: 'chat' | 'personas' | 'fun_personas' | 'examprep' | 'diagrams' | 'system_prompts' | 'prompts' | 'cubes' | 'extractor_studio' | 'code_lab') => void;
+  onSelectWorkspace: (workspaceId: 'chat' | 'personas' | 'fun_personas' | 'examprep' | 'diagrams' | 'system_prompts' | 'prompts' | 'cubes' | 'extractor_studio' | 'code_lab' | 'lecture_notes') => void;
   onOpenSettings: () => void;
   onOpenProfile: () => void;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
   onSwitchToStandard: () => void;
   configuredKeysCount?: number;
+  userRole?: string;
 }
 
 export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
@@ -35,7 +36,8 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
   theme,
   onToggleTheme,
   onSwitchToStandard,
-  configuredKeysCount = 8
+  configuredKeysCount = 8,
+  userRole = 'student'
 }) => {
   const [isSpinning, setIsSpinning] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
@@ -198,32 +200,64 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
             </div>
           </div>
 
-          {/* Card 2: Fun AI Personas Lounge */}
-          <div 
-            className="hub-portal-card personas-portal"
-            onClick={() => onSelectWorkspace('fun_personas')}
-          >
-            <div className="portal-card-header">
-              <div className="portal-icon-badge rose-bg">
-                <Sparkles size={24} />
+          {/* Teacher / Admin Exclusive: Lecture Notes Studio */}
+          {(userRole === 'teacher' || userRole === 'admin') && (
+            <div 
+              className="hub-portal-card lecture-portal"
+              onClick={() => onSelectWorkspace('lecture_notes')}
+              style={{ borderColor: 'rgba(56, 189, 248, 0.4)', background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(12, 74, 110, 0.5))' }}
+            >
+              <div className="portal-card-header">
+                <div className="portal-icon-badge cyan-bg" style={{ backgroundColor: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8' }}>
+                  <GraduationCap size={24} />
+                </div>
+                <span className="portal-tag cyan-tag" style={{ backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', borderColor: 'rgba(56, 189, 248, 0.3)' }}>Educator Studio</span>
               </div>
-              <span className="portal-tag rose-tag">Fun AI Personas</span>
-            </div>
-            <div className="portal-card-body">
-              <h3>Fun AI Personas Lounge</h3>
-              <p>Interact with Balaraju, Aakash, Rick-inspired, and specialized AI tutor personas with custom tones.</p>
-            </div>
-            <div className="portal-card-footer">
-              <div className="portal-meta-features">
-                <span>🎭 Balaraju & Aakash</span>
-                <span>✨ Custom Tones</span>
+              <div className="portal-card-body">
+                <h3>Lecture Notes Studio 🎓</h3>
+                <p>Generate classroom scripts, blackboard notes, student handouts, and syllabus maps with print & PDF export.</p>
               </div>
-              <button type="button" className="launch-portal-btn rose-btn">
-                <span>Open Personas</span>
-                <ArrowRight size={14} />
-              </button>
+              <div className="portal-card-footer">
+                <div className="portal-meta-features">
+                  <span>📘 4 Presets</span>
+                  <span>📄 Print & PDF</span>
+                </div>
+                <button type="button" className="launch-portal-btn cyan-btn">
+                  <span>Open Studio</span>
+                  <ArrowRight size={14} />
+                </button>
+              </div>
             </div>
-          </div>
+          )}
+
+          {/* Card: Fun AI Personas Lounge (Hidden for Teacher role) */}
+          {userRole !== 'teacher' && (
+            <div 
+              className="hub-portal-card personas-portal"
+              onClick={() => onSelectWorkspace('fun_personas')}
+            >
+              <div className="portal-card-header">
+                <div className="portal-icon-badge rose-bg">
+                  <Sparkles size={24} />
+                </div>
+                <span className="portal-tag rose-tag">Fun AI Personas</span>
+              </div>
+              <div className="portal-card-body">
+                <h3>Fun AI Personas Lounge</h3>
+                <p>Interact with Balaraju, Aakash, Rick-inspired, and specialized AI tutor personas with custom tones.</p>
+              </div>
+              <div className="portal-card-footer">
+                <div className="portal-meta-features">
+                  <span>🎭 Balaraju & Aakash</span>
+                  <span>✨ Custom Tones</span>
+                </div>
+                <button type="button" className="launch-portal-btn rose-btn">
+                  <span>Open Personas</span>
+                  <ArrowRight size={14} />
+                </button>
+              </div>
+            </div>
+          )}
 
           {/* Card 2: Exam Prep Hub */}
           <div 
@@ -333,32 +367,34 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
             </div>
           </div>
 
-          {/* Card 6: 3D Physics Lab */}
-          <div 
-            className="hub-portal-card cubes-portal"
-            onClick={() => onSelectWorkspace('cubes')}
-          >
-            <div className="portal-card-header">
-              <div className="portal-icon-badge blue-bg">
-                <Box size={24} />
+          {/* Card 6: 3D Physics Lab (Hidden for Teacher role) */}
+          {userRole !== 'teacher' && (
+            <div 
+              className="hub-portal-card cubes-portal"
+              onClick={() => onSelectWorkspace('cubes')}
+            >
+              <div className="portal-card-header">
+                <div className="portal-icon-badge blue-bg">
+                  <Box size={24} />
+                </div>
+                <span className="portal-tag blue-tag">Interactive 3D</span>
               </div>
-              <span className="portal-tag blue-tag">Interactive 3D</span>
-            </div>
-            <div className="portal-card-body">
-              <h3>3D Physics Lab</h3>
-              <p>Interactive Three.js physics canvas with real-time matrix, tilt sensitivity, and ripple controls.</p>
-            </div>
-            <div className="portal-card-footer">
-              <div className="portal-meta-features">
-                <span>🎮 WebGL 3D</span>
-                <span>Physics Sim</span>
+              <div className="portal-card-body">
+                <h3>3D Physics Lab</h3>
+                <p>Interactive Three.js physics canvas with real-time matrix, tilt sensitivity, and ripple controls.</p>
               </div>
-              <button type="button" className="launch-portal-btn blue-btn">
-                <span>Launch Lab</span>
-                <ArrowRight size={14} />
-              </button>
+              <div className="portal-card-footer">
+                <div className="portal-meta-features">
+                  <span>🎮 WebGL 3D</span>
+                  <span>Physics Sim</span>
+                </div>
+                <button type="button" className="launch-portal-btn blue-btn">
+                  <span>Launch Lab</span>
+                  <ArrowRight size={14} />
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Card 7: Textractor */}
           <div 

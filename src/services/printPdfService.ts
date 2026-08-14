@@ -4,10 +4,28 @@ import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { extractDiagrams, fetchKrokiSvg } from './krokiService';
 
+export interface ExportPdfThemeOptions {
+  primary?: string;
+  accent?: string;
+  cardBg?: string;
+  textColor?: string;
+  headerBorder?: string;
+  tableHeaderBg?: string;
+  tableHeaderText?: string;
+  tableBorder?: string;
+  tableRowOdd?: string;
+  tableRowEven?: string;
+}
+
 /**
- * Direct PDF File Downloader via html2canvas & jsPDF
+ * Direct PDF File Downloader via html2canvas & jsPDF with customizable color themes
  */
-export async function exportBubbleDirectPdf(content: string, modelUsed?: string, customTitle?: string): Promise<void> {
+export async function exportBubbleDirectPdf(
+  content: string,
+  modelUsed?: string,
+  customTitle?: string,
+  theme?: ExportPdfThemeOptions
+): Promise<void> {
   const diagrams = extractDiagrams(content);
   const diagramMap = new Map<string, string>();
 
@@ -34,13 +52,23 @@ export async function exportBubbleDirectPdf(content: string, modelUsed?: string,
 
   const parsedHtml = parseMarkdownWithMathAndDiagrams(markdownToParse, diagramMap);
 
+  const primaryColor = theme?.primary || '#06b6d4';
+  const headerBorderColor = theme?.headerBorder || primaryColor;
+  const tableHeaderBg = theme?.tableHeaderBg || 'rgba(6, 182, 212, 0.15)';
+  const tableHeaderText = theme?.tableHeaderText || primaryColor;
+  const tableBorder = theme?.tableBorder || 'rgba(6, 182, 212, 0.3)';
+  const tableRowOdd = theme?.tableRowOdd || 'rgba(255, 255, 255, 0.75)';
+  const tableRowEven = theme?.tableRowEven || 'rgba(240, 249, 255, 0.82)';
+  const bgColor = theme?.cardBg && !theme.cardBg.includes('rgba') ? theme.cardBg : '#ffffff';
+  const textColor = theme?.textColor || '#0f172a';
+
   const tempContainer = document.createElement('div');
   tempContainer.style.position = 'fixed';
   tempContainer.style.left = '-9999px';
   tempContainer.style.top = '0';
   tempContainer.style.width = '800px';
-  tempContainer.style.background = '#ffffff';
-  tempContainer.style.color = '#0f172a';
+  tempContainer.style.background = bgColor;
+  tempContainer.style.color = textColor;
   tempContainer.style.padding = '32px';
   tempContainer.style.fontFamily = "'Inter', sans-serif";
 
@@ -48,17 +76,20 @@ export async function exportBubbleDirectPdf(content: string, modelUsed?: string,
 
   tempContainer.innerHTML = `
     <style>
-      table { width: 100%; border-collapse: collapse; margin: 16px 0; border: 1px solid rgba(6, 182, 212, 0.3); background: rgba(255, 255, 255, 0.6); }
-      th, td { border: 1px solid rgba(6, 182, 212, 0.25); padding: 10px 14px; text-align: left; font-size: 0.9rem; color: #0f172a; }
-      th { background-color: rgba(6, 182, 212, 0.15); color: #0284c7; font-weight: 700; }
-      tr:nth-child(odd) { background-color: rgba(255, 255, 255, 0.75); }
-      tr:nth-child(even) { background-color: rgba(240, 249, 255, 0.82); }
+      table { width: 100%; border-collapse: collapse; margin: 16px 0; border: 1px solid ${tableBorder}; background: ${bgColor}; }
+      th, td { border: 1px solid ${tableBorder}; padding: 10px 14px; text-align: left; font-size: 0.9rem; color: ${textColor}; }
+      th { background-color: ${tableHeaderBg}; color: ${tableHeaderText}; font-weight: 700; }
+      tr:nth-child(odd) { background-color: ${tableRowOdd}; }
+      tr:nth-child(even) { background-color: ${tableRowEven}; }
+      code { font-family: monospace; background: rgba(0,0,0,0.06); padding: 2px 6px; border-radius: 4px; }
+      pre { background: rgba(0,0,0,0.04); padding: 12px; border-radius: 8px; border: 1px solid ${tableBorder}; overflow-x: auto; }
+      blockquote { border-left: 4px solid ${primaryColor}; margin: 0; padding-left: 14px; color: #475569; }
     </style>
-    <div style="border-bottom: 2px solid #06b6d4; padding-bottom: 12px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
-      <h1 style="font-size: 1.4rem; margin: 0; color: #06b6d4;">Prof. Joe AI Document</h1>
+    <div style="border-bottom: 2px solid ${headerBorderColor}; padding-bottom: 12px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+      <h1 style="font-size: 1.4rem; margin: 0; color: ${primaryColor}; font-weight: 700;">Prof. Joe AI Document</h1>
       <div style="font-size: 0.85rem; color: #64748b;">Model: ${modelUsed || 'AI Model'} | Date: ${new Date().toLocaleDateString()}</div>
     </div>
-    <div class="markdown-content" style="line-height: 1.65; color: #0f172a;">
+    <div class="markdown-content" style="line-height: 1.65; color: ${textColor};">
       ${parsedHtml}
     </div>
   `;
@@ -66,28 +97,59 @@ export async function exportBubbleDirectPdf(content: string, modelUsed?: string,
   document.body.appendChild(tempContainer);
 
   try {
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    await new Promise<void>((resolve, reject) => {
+      pdf.html(tempContainer, {
+        callback: (doc) => {
+          try {
+            doc.save(`${fileName}.pdf`);
+            resolve();
+          } catch (err) {
+            reject(err);
+          }
+        },
+        x: 10,
+        y: 10,
+        width: 190,
+        windowWidth: 800,
+        autoPaging: 'text',
+        html2canvas: {
+          useCORS: true,
+          scale: 2,
+          backgroundColor: bgColor
+        }
+      });
+    });
+  } catch (error) {
+    console.error('Error generating PDF via html2canvas:', error);
+    // Fallback: html2canvas direct capture with page margin calculations
     const canvas = await html2canvas(tempContainer, {
       scale: 2,
       useCORS: true,
-      backgroundColor: '#ffffff'
+      backgroundColor: bgColor
     });
-
     const imgData = canvas.toDataURL('image/png');
     const pdf = new jsPDF('p', 'mm', 'a4');
-    const imgWidth = 210;
-    const pageHeight = 295;
-    const imgHeight = (canvas.height * imgWidth) / canvas.width;
+    const margin = 10;
+    const contentWidth = 190;
+    const pageContentHeight = 277;
+    const imgHeight = (canvas.height * contentWidth) / canvas.width;
     let heightLeft = imgHeight;
-    let position = 0;
+    let position = margin;
 
-    pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-    heightLeft -= pageHeight;
+    pdf.addImage(imgData, 'PNG', margin, position, contentWidth, imgHeight);
+    heightLeft -= pageContentHeight;
 
-    while (heightLeft >= 0) {
-      position = heightLeft - imgHeight;
+    while (heightLeft > 0) {
+      position = margin - (imgHeight - heightLeft);
       pdf.addPage();
-      pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
-      heightLeft -= pageHeight;
+      pdf.addImage(imgData, 'PNG', margin, position, contentWidth, imgHeight);
+      heightLeft -= pageContentHeight;
     }
 
     pdf.save(`${fileName}.pdf`);
@@ -103,22 +165,42 @@ function parseMarkdownWithMathAndDiagrams(content: string, diagramMap: Map<strin
   const mathMap = new Map<string, string>();
   let tokenIdx = 0;
 
-  // 1. Extract block math $$...$$
+  // 1. Extract block math $$...$$ and \[...\]
   let prepped = content.replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
     const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
     try {
-      mathMap.set(token, `<div class="katex-block">${katex.renderToString(math.trim(), { displayMode: true, throwOnError: false })}</div>`);
+      mathMap.set(token, `<div class="katex-display katex-block">${katex.renderToString(math.trim(), { displayMode: true, throwOnError: false })}</div>`);
     } catch {
       mathMap.set(token, `$$${math}$$`);
     }
     return token;
   });
 
-  // 2. Extract inline math $...$
+  prepped = prepped.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => {
+    const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
+    try {
+      mathMap.set(token, `<div class="katex-display katex-block">${katex.renderToString(math.trim(), { displayMode: true, throwOnError: false })}</div>`);
+    } catch {
+      mathMap.set(token, `\\[${math}\\]`);
+    }
+    return token;
+  });
+
+  // 2. Extract inline math \(...\) and $...$
+  prepped = prepped.replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => {
+    const token = `KATEXINLINETOKEN${tokenIdx++}ENDTOKEN`;
+    try {
+      mathMap.set(token, `<span class="katex-inline">${katex.renderToString(math.trim(), { displayMode: false, throwOnError: false })}</span>`);
+    } catch {
+      mathMap.set(token, `\\(${math}\\)`);
+    }
+    return token;
+  });
+
   prepped = prepped.replace(/\$([^\$\n]+?)\$/g, (_, math) => {
     const token = `KATEXINLINETOKEN${tokenIdx++}ENDTOKEN`;
     try {
-      mathMap.set(token, katex.renderToString(math.trim(), { displayMode: false, throwOnError: false }));
+      mathMap.set(token, `<span class="katex-inline">${katex.renderToString(math.trim(), { displayMode: false, throwOnError: false })}</span>`);
     } catch {
       mathMap.set(token, `$${math}$`);
     }
@@ -150,26 +232,7 @@ function parseMarkdownWithMathAndDiagrams(content: string, diagramMap: Map<strin
  * Native Printable PDF Engine via Print Window / Iframe
  */
 export async function printBubbleToPdf(content: string, modelUsed?: string, customTitle?: string): Promise<void> {
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  let targetWindow: Window | null = null;
-  let targetIframe: HTMLIFrameElement | null = null;
-
-  // Pre-open window/iframe synchronously to prevent mobile popup blockers
-  if (isMobile) {
-    targetWindow = window.open('', '_blank');
-    if (targetWindow) {
-      targetWindow.document.write('<div style="font-family:sans-serif;padding:32px;text-align:center;color:#06b6d4;">⏳ Preparing Prof. Joe AI Document for Print...</div>');
-    }
-  } else {
-    targetIframe = document.createElement('iframe');
-    targetIframe.style.position = 'fixed';
-    targetIframe.style.right = '0';
-    targetIframe.style.bottom = '0';
-    targetIframe.style.width = '0';
-    targetIframe.style.height = '0';
-    targetIframe.style.border = '0';
-    document.body.appendChild(targetIframe);
-  }
+  const isAndroidBridge = typeof window !== 'undefined' && Boolean((window as any).AndroidPrintBridge?.printHtml);
 
   // Fetch diagrams in parallel
   const diagrams = extractDiagrams(content);
@@ -206,28 +269,49 @@ export async function printBubbleToPdf(content: string, modelUsed?: string, cust
 
   const printHtml = buildPrintHtmlDocument(docTitle, parsedHtml, bgColor, textColor, modelUsed);
 
-  if (isMobile && targetWindow) {
-    targetWindow.document.open();
-    targetWindow.document.write(printHtml);
-    targetWindow.document.close();
-    setTimeout(() => {
-      targetWindow?.focus();
-      targetWindow?.print();
-    }, 400);
-  } else if (targetIframe && targetIframe.contentWindow) {
-    const doc = targetIframe.contentWindow.document;
-    doc.open();
-    doc.write(printHtml);
-    doc.close();
-    setTimeout(() => {
-      targetIframe?.contentWindow?.focus();
-      targetIframe?.contentWindow?.print();
+  // 1. Android Native Print Bridge Integration (Direct System Print dialog, zero blank pages)
+  if (isAndroidBridge) {
+    (window as any).AndroidPrintBridge.printHtml(printHtml);
+    return;
+  }
+
+  // 2. Web & Desktop: Use Clean Hidden Iframe Print Engine (Avoids window.open blank trap)
+  try {
+    const targetIframe = document.createElement('iframe');
+    targetIframe.style.position = 'fixed';
+    targetIframe.style.right = '0';
+    targetIframe.style.bottom = '0';
+    targetIframe.style.width = '0';
+    targetIframe.style.height = '0';
+    targetIframe.style.border = '0';
+    targetIframe.style.visibility = 'hidden';
+    document.body.appendChild(targetIframe);
+
+    if (targetIframe.contentWindow) {
+      const doc = targetIframe.contentWindow.document;
+      doc.open();
+      doc.write(printHtml);
+      doc.close();
+
       setTimeout(() => {
-        if (targetIframe && document.body.contains(targetIframe)) {
-          document.body.removeChild(targetIframe);
+        try {
+          targetIframe.contentWindow?.focus();
+          targetIframe.contentWindow?.print();
+        } catch (printErr) {
+          console.warn('Iframe print failed, falling back to direct PDF download', printErr);
+          exportBubbleDirectPdf(content, modelUsed, customTitle);
+        } finally {
+          setTimeout(() => {
+            if (document.body.contains(targetIframe)) {
+              document.body.removeChild(targetIframe);
+            }
+          }, 1500);
         }
-      }, 1000);
-    }, 400);
+      }, 350);
+    }
+  } catch (err) {
+    console.error('Print execution failed, falling back to direct PDF file generation:', err);
+    await exportBubbleDirectPdf(content, modelUsed, customTitle);
   }
 }
 
@@ -236,29 +320,9 @@ export async function printBubbleToPdf(content: string, modelUsed?: string, cust
  */
 export async function printSessionToPdf(messages: any[], sessionTitle: string = 'Prof. Joe AI Chat Session'): Promise<void> {
   if (!messages || messages.length === 0) return;
+  const isAndroidBridge = typeof window !== 'undefined' && Boolean((window as any).AndroidPrintBridge?.printHtml);
 
-  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
-  let targetWindow: Window | null = null;
-  let targetIframe: HTMLIFrameElement | null = null;
-
-  // 1. Synchronously create target popup / iframe on user click to avoid popup blocker delays
-  if (isMobile) {
-    targetWindow = window.open('', '_blank');
-    if (targetWindow) {
-      targetWindow.document.write('<div style="font-family:sans-serif;padding:32px;text-align:center;color:#06b6d4;font-size:1.2rem;">⏳ Preparing Full Chat Session Print Document...</div>');
-    }
-  } else {
-    targetIframe = document.createElement('iframe');
-    targetIframe.style.position = 'fixed';
-    targetIframe.style.right = '0';
-    targetIframe.style.bottom = '0';
-    targetIframe.style.width = '0';
-    targetIframe.style.height = '0';
-    targetIframe.style.border = '0';
-    document.body.appendChild(targetIframe);
-  }
-
-  // 2. Parallel processing across all messages in session
+  // Parallel processing across all messages in session
   const processedMessagePromises = messages.map(async (msg, mIdx) => {
     const isUser = msg.role === 'user';
     const roleTitle = isUser ? '👤 User Query' : `🎓 Prof. Joe AI (${msg.model || 'Assistant'})`;
@@ -436,36 +500,47 @@ export async function printSessionToPdf(messages: any[], sessionTitle: string = 
     </html>
   `;
 
-  if (isMobile && targetWindow) {
-    targetWindow.document.open();
-    targetWindow.document.write(printHtml);
-    targetWindow.document.close();
-    setTimeout(() => {
-      if (typeof window !== 'undefined' && (window as any).AndroidPrintBridge?.print) {
-        (window as any).AndroidPrintBridge.print();
-      } else {
-        targetWindow?.focus();
-        targetWindow?.print();
-      }
-    }, 400);
-  } else if (targetIframe && targetIframe.contentWindow) {
-    const doc = targetIframe.contentWindow.document;
-    doc.open();
-    doc.write(printHtml);
-    doc.close();
-    setTimeout(() => {
-      if (typeof window !== 'undefined' && (window as any).AndroidPrintBridge?.print) {
-        (window as any).AndroidPrintBridge.print();
-      } else {
-        targetIframe?.contentWindow?.focus();
-        targetIframe?.contentWindow?.print();
-      }
+  // 1. Android Native Print Bridge
+  if (isAndroidBridge) {
+    (window as any).AndroidPrintBridge.printHtml(printHtml);
+    return;
+  }
+
+  // 2. Web & Desktop: Clean Hidden Iframe
+  try {
+    const targetIframe = document.createElement('iframe');
+    targetIframe.style.position = 'fixed';
+    targetIframe.style.right = '0';
+    targetIframe.style.bottom = '0';
+    targetIframe.style.width = '0';
+    targetIframe.style.height = '0';
+    targetIframe.style.border = '0';
+    targetIframe.style.visibility = 'hidden';
+    document.body.appendChild(targetIframe);
+
+    if (targetIframe.contentWindow) {
+      const doc = targetIframe.contentWindow.document;
+      doc.open();
+      doc.write(printHtml);
+      doc.close();
+
       setTimeout(() => {
-        if (targetIframe && document.body.contains(targetIframe)) {
-          document.body.removeChild(targetIframe);
+        try {
+          targetIframe.contentWindow?.focus();
+          targetIframe.contentWindow?.print();
+        } catch (printErr) {
+          console.warn('Iframe session print failed', printErr);
+        } finally {
+          setTimeout(() => {
+            if (document.body.contains(targetIframe)) {
+              document.body.removeChild(targetIframe);
+            }
+          }, 1500);
         }
-      }, 1000);
-    }, 400);
+      }, 350);
+    }
+  } catch (err) {
+    console.error('Session print execution failed:', err);
   }
 }
 

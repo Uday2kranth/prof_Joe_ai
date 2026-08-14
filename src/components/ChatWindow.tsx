@@ -425,7 +425,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               style={{ 
                 minHeight: '72px', 
                 fontSize: '0.92rem', 
-                padding: isDemoView ? '12px 56px 12px 16px' : '12px 16px' 
+                padding: isDemoView ? '12px 56px 12px 16px' : '12px 16px',
+                caretColor: '#06b6d4',
+                lineHeight: 1.5
               }}
               className="chat-textarea kokonut-textarea"
             />

@@ -35,6 +35,8 @@ export const PROVIDERS: ProviderGroup[] = [
     name: 'OpenRouter',
     models: [
       { value: 'openrouter/free', name: 'Free Automated Router [WS]' },
+      { value: 'google/gemini-2.0-flash-exp:free', name: 'Gemini 2.0 Flash Free [WS]' },
+      { value: 'google/gemini-2.0-flash-thinking-exp:free', name: 'Gemini 2.0 Flash Thinking Free [WS]' },
       { value: 'deepseek/deepseek-r1:free', name: 'DeepSeek R1 (Reasoning) [WS]' },
       { value: 'deepseek/deepseek-chat:free', name: 'DeepSeek V3 / V4 Flash [WS]' },
       { value: 'qwen/qwen-2.5-coder-32b-instruct:free', name: 'Qwen 2.5 Coder 32B [WS]' },
@@ -61,11 +63,11 @@ export const PROVIDERS: ProviderGroup[] = [
     id: 'gemini',
     name: 'Google Gemini',
     models: [
-      { value: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash [WS]' },
-      { value: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite' },
-      { value: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash [WS]' },
-      { value: 'gemma-4-31b-it', name: 'Gemma 4 31B (AI Studio) [WS]' },
-      { value: 'gemma-4-26b-a4b-it', name: 'Gemma 4 26B (AI Studio) [WS]' }
+      { value: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash [WS]' },
+      { value: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash-Lite' },
+      { value: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash [WS]' },
+      { value: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash [WS]' },
+      { value: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' }
     ]
   },
   {

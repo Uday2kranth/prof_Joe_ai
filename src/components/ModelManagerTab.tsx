@@ -1,5 +1,5 @@
 import React, { useState, useMemo } from 'react';
-import { RefreshCw, Search, CheckSquare, Square, RotateCcw, Cpu, Check, AlertCircle, Save } from 'lucide-react';
+import { RefreshCw, Search, CheckSquare, Square, RotateCcw, Cpu, Check, AlertCircle, Save, ChevronDown } from 'lucide-react';
 import type { UserKeys, UserCustomModels, CustomModel } from '../types';
 import { PROVIDERS } from '../constants';
 
@@ -17,6 +17,7 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
   onSaveCustomModels
 }) => {
   const [selectedProviderId, setSelectedProviderId] = useState<string>(PROVIDERS[0].id);
+  const [isProviderDropdownOpen, setIsProviderDropdownOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterMode, setFilterMode] = useState<'all' | 'enabled' | 'free'>('all');
   const [isFetching, setIsFetching] = useState<boolean>(false);
@@ -161,30 +162,91 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
         padding: '12px 16px',
         borderRadius: '12px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '220px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '220px', position: 'relative' }}>
           <Cpu className="text-cyan-400" size={18} />
           <label style={{ fontSize: '13px', fontWeight: 600, color: 'var(--text-main)', whiteSpace: 'nowrap' }}>
             Provider:
           </label>
-          <select
-            value={selectedProviderId}
-            onChange={(e) => {
-              setSelectedProviderId(e.target.value);
-              setSearchQuery('');
-              setFetchError(null);
-            }}
-            className="key-input model-provider-select"
-            style={{
-              padding: '6px 12px',
-              borderRadius: '8px',
-              fontWeight: 600,
-              cursor: 'pointer'
-            }}
-          >
-            {PROVIDERS.map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
-            ))}
-          </select>
+          <div style={{ position: 'relative', flex: 1, minWidth: '170px' }}>
+            <button
+              type="button"
+              onClick={() => setIsProviderDropdownOpen(!isProviderDropdownOpen)}
+              className="key-input model-provider-select"
+              style={{
+                width: '100%',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                fontWeight: 600,
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '8px',
+                textAlign: 'left'
+              }}
+            >
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {selectedProviderGroup.name}
+              </span>
+              <ChevronDown size={14} style={{ transform: isProviderDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s ease', flexShrink: 0 }} />
+            </button>
+
+            {isProviderDropdownOpen && (
+              <div
+                style={{
+                  position: 'absolute',
+                  top: 'calc(100% + 4px)',
+                  left: 0,
+                  right: 0,
+                  zIndex: 999,
+                  background: 'rgba(15, 23, 42, 0.98)',
+                  backdropFilter: 'blur(12px)',
+                  WebkitBackdropFilter: 'blur(12px)',
+                  border: '1px solid rgba(6, 182, 212, 0.35)',
+                  borderRadius: '10px',
+                  boxShadow: '0 12px 28px rgba(0, 0, 0, 0.75)',
+                  maxHeight: '240px',
+                  overflowY: 'auto',
+                  padding: '4px'
+                }}
+              >
+                {PROVIDERS.map(p => {
+                  const isSelected = p.id === selectedProviderId;
+                  return (
+                    <button
+                      key={p.id}
+                      type="button"
+                      onClick={() => {
+                        setSelectedProviderId(p.id);
+                        setSearchQuery('');
+                        setFetchError(null);
+                        setIsProviderDropdownOpen(false);
+                      }}
+                      style={{
+                        width: '100%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '8px 12px',
+                        borderRadius: '6px',
+                        background: isSelected ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
+                        color: isSelected ? '#38bdf8' : '#f8fafc',
+                        fontSize: '13px',
+                        fontWeight: isSelected ? 700 : 500,
+                        border: 'none',
+                        cursor: 'pointer',
+                        textAlign: 'left',
+                        transition: 'all 0.15s ease'
+                      }}
+                    >
+                      <span>{p.name}</span>
+                      {isSelected && <Check size={14} className="text-cyan-400" />}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </div>
 
         {/* Status Badge & Fetch Button */}

@@ -1,4 +1,15 @@
 {
+  "headers": [
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        { "key": "Access-Control-Allow-Credentials", "value": "true" },
+        { "key": "Access-Control-Allow-Origin", "value": "*" },
+        { "key": "Access-Control-Allow-Methods", "value": "GET,OPTIONS,PATCH,DELETE,POST,PUT" },
+        { "key": "Access-Control-Allow-Headers", "value": "X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization, x-user-authorization, x-user-ollama-key, x-user-local-endpoint, x-user-openrouter-key, x-user-gemini-key, x-user-groq-key, x-user-mistral-key, x-user-nvidia-key, x-user-cerebras-key, x-user-sambanova-key, x-user-nararouter-key, x-user-huggingface-key, x-user-opencode-key, x-user-poolside-key, x-user-pollinations-key" }
+      ]
+    }
+  ],
   "rewrites": [
     {
       "source": "/api/(.*)",

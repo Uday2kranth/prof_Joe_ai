@@ -463,8 +463,15 @@ STRICT IMAGE & DIAGRAM EMBEDDING DIRECTIVES:
                 headers["X-Title"] = "ChatterBot Dashboard";
             }
 
-            // Strict single model selection - NO silent fallbacks to other models
+            // Strict single model selection with smart alias resolution for Gemini
             let modelCandidates = [model];
+            if (targetProvider === "gemini") {
+                if (model === 'gemini-3.6-flash' || model === 'gemini-3.5-flash' || model === 'gemini-3.5-flash-lite') {
+                    modelCandidates = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+                } else if (model.startsWith('gemma-4')) {
+                    modelCandidates = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+                }
+            }
 
             for (const targetModel of modelCandidates) {
                 try {
@@ -499,7 +506,7 @@ STRICT IMAGE & DIAGRAM EMBEDDING DIRECTIVES:
                                     body: JSON.stringify({
                                         model: targetModel,
                                         messages: apiMessages,
-                                        max_tokens: 4096,
+                                        max_tokens: 8192,
                                         stream: false
                                     })
                                 });
@@ -594,7 +601,7 @@ STRICT IMAGE & DIAGRAM EMBEDDING DIRECTIVES:
                                     body: JSON.stringify({
                                         model: targetModel,
                                         messages: apiMessages,
-                                        max_tokens: 4096,
+                                        max_tokens: 8192,
                                         stream: false
                                     })
                                 });
@@ -677,7 +684,7 @@ STRICT IMAGE & DIAGRAM EMBEDDING DIRECTIVES:
                             body: JSON.stringify({
                                 model: targetModel,
                                 messages: apiMessages,
-                                max_tokens: 4096
+                                max_tokens: 8192
                             })
                         });
 
@@ -695,6 +702,15 @@ STRICT IMAGE & DIAGRAM EMBEDDING DIRECTIVES:
                             }
                             successfulModel = targetModel;
                             break; // Success! Exit key loop.
+                        } else {
+                            try {
+                                const errJson = await response.json();
+                                lastErrorText = errJson.error?.message || errJson.error || errJson.message || JSON.stringify(errJson);
+                            } catch (e) {
+                                try {
+                                    lastErrorText = await response.text();
+                                } catch (e2) {}
+                            }
                         }
                     }
 

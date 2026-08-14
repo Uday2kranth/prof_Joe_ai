@@ -586,31 +586,54 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
         </div>
       )}
 
-      <div className="chat-window-container fun-persona-lounge-container">
-        <div className="messages-viewport flex-1 overflow-y-auto p-4 space-y-4">
-          {messages.length === 0 ? (
-          <div className="empty-chat-hero flex flex-col items-center justify-center h-full text-center p-6 space-y-4">
-            <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-rose-500/20 to-purple-500/20 border border-rose-500/30 flex items-center justify-center text-4xl shadow-xl shadow-rose-500/10">
-              {activePersonaObj.icon}
-            </div>
-            <div className="max-w-md space-y-2">
-              <h2 className="text-xl font-bold text-slate-100">{activePersonaObj.name}</h2>
-              <p className="text-sm text-slate-400 leading-relaxed">{activePersonaObj.description}</p>
-            </div>
+      <div className="chat-window-container fun-persona-lounge-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}>
+        <div className="chat-messages-container">
+          <div className="messages-inner">
+            {messages.length === 0 ? (
+              <div className="empty-chat-hero flex flex-col items-center justify-center h-full text-center p-6 space-y-4">
+                <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-rose-500/20 to-purple-500/20 border border-rose-500/30 flex items-center justify-center text-4xl shadow-xl shadow-rose-500/10">
+                  {activePersonaObj.icon}
+                </div>
+                <div className="max-w-md space-y-2">
+                  <h2 className="text-xl font-bold text-slate-100">{activePersonaObj.name}</h2>
+                  <p className="text-sm text-slate-400 leading-relaxed">{activePersonaObj.description}</p>
+                </div>
+              </div>
+            ) : (
+              messages.map((msg, index) => (
+                <MessageItem
+                  key={msg.id || index}
+                  message={msg}
+                  isLast={index === messages.length - 1}
+                  onRetry={onRetry}
+                  onEditUserMessage={onEditUserMessage}
+                />
+              ))
+            )}
+
+            {isLoading && (
+              <div className="message-row assistant-row">
+                <div className="avatar">
+                  <img src="/joe-avatar.png" alt="Prof. Joe" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                </div>
+                <div className="bubble-wrapper">
+                  <div className="bubble-header">
+                    <span className="role-label">{activePersonaObj.name}</span>
+                    <span className="model-badge">{selectedModel}</span>
+                  </div>
+                  <div className="message-bubble assistant-bubble loading-bubble">
+                    <div className="loading-dots">
+                      <span />
+                      <span />
+                      <span />
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            <div ref={messagesEndRef} />
           </div>
-        ) : (
-          messages.map((msg, index) => (
-            <MessageItem
-              key={index}
-              message={msg}
-              isLast={index === messages.length - 1}
-              onRetry={onRetry}
-              onEditUserMessage={onEditUserMessage}
-            />
-          ))
-        )}
-        <div ref={messagesEndRef} />
-      </div>
+        </div>
 
       {/* Modern Floating Input Capsule Bar */}
       <div className="chat-input-sticky-footer p-4 border-t border-slate-800/80 bg-slate-900/60 backdrop-blur-md" style={{ overflow: 'visible', position: 'relative', zIndex: 40 }}>
@@ -688,7 +711,9 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
               style={{ 
                 minHeight: '72px', 
                 fontSize: '0.92rem', 
-                padding: isDemoView ? '12px 56px 12px 16px' : '12px 16px' 
+                padding: isDemoView ? '12px 56px 12px 16px' : '12px 16px',
+                caretColor: '#06b6d4',
+                lineHeight: 1.5
               }}
               className="chat-textarea kokonut-textarea"
             />

@@ -95,7 +95,7 @@ const server = http.createServer((req, res) => {
             'Content-Type': 'application/json',
             'Access-Control-Allow-Origin': '*',
             'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-            'Access-Control-Allow-Headers': 'Content-Type, x-user-authorization, x-user-ollama-key, x-user-openrouter-key, x-user-gemini-key, x-user-groq-key, x-user-mistral-key, x-user-nvidia-key, x-user-cerebras-key, x-user-sambanova-key',
+            'Access-Control-Allow-Headers': '*',
             ...this.headers
           });
           res.end(JSON.stringify(data));

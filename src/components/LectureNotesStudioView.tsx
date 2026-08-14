@@ -1,0 +1,1559 @@
+import React, { useState, useRef, useEffect } from 'react';
+import {
+  GraduationCap,
+  BookOpen,
+  Presentation,
+  FileText,
+  Network,
+  Printer,
+  Sparkles,
+  Upload,
+  RefreshCw,
+  Plus,
+  Trash2,
+  X,
+  Search,
+  ChevronDown,
+  ChevronUp,
+  SlidersHorizontal,
+  FileSearch,
+  CheckCircle2,
+  ArrowRight,
+  Globe,
+  BookMarked,
+  Clock,
+  Eye,
+  BarChart2,
+  RotateCcw,
+  Zap,
+  Check,
+  AlertTriangle
+} from 'lucide-react';
+import type { UserKeys, UserCustomModels } from '../types';
+import { sendChatMessage } from '../services/apiService';
+import { PROVIDERS } from '../constants';
+import { extractDiagrams, fetchKrokiSvg } from '../services/krokiService';
+import { marked } from 'marked';
+import DOMPurify from 'dompurify';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
+import { PdfPreviewModal } from './PdfPreviewModal';
+import { printBubbleToPdf } from '../services/printPdfService';
+
+export type TeacherPresetType = 'detailed' | 'classroom' | 'handout' | 'connect_dots';
+
+export interface LectureNoteSession {
+  id: string;
+  title: string;
+  subject: string;
+  customSubjectName?: string;
+  topic: string;
+  preset: TeacherPresetType;
+  syllabusSnippet?: string;
+  notesContent: string;
+  provider: string;
+  model: string;
+  webSearch?: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
+interface LectureNotesStudioViewProps {
+  userKeys: UserKeys;
+  customModels?: UserCustomModels;
+  currentUser?: string;
+  isDemoView?: boolean;
+}
+
+const PRESET_SUBJECTS = [
+  'Cryptography & Network Security',
+  'Big Data Applications & Fast Data',
+  'Machine Learning & Data Science',
+  'Web Mining & Information Retrieval',
+  'Custom Course / Subject'
+];
+
+const PRESETS: Array<{
+  id: TeacherPresetType;
+  title: string;
+  badge: string;
+  icon: React.ElementType;
+  description: string;
+  instructionPrompt: string;
+}> = [
+  {
+    id: 'detailed',
+    title: 'Detailed Topic Notes',
+    badge: 'Theory & Rigor',
+    icon: BookOpen,
+    description: 'Deep theoretical foundations, step-by-step mathematical proofs, and textbook-style depth.',
+    instructionPrompt: `AUTHORING MANDATES FOR DETAILED TOPIC NOTES:
+1. STRUCTURE:
+   - ## 1. Theoretical Foundations & Formal Definition (Rigorous mathematical definitions with KaTeX $...$)
+   - ## 2. Core Architecture & Mathematical Formulations (Step-by-step complete KaTeX equations $$...$$; full derivations with zero cutoffs)
+   - ## 3. Algorithm / Protocol Mechanics (Numbered execution stages + clean pseudocode block)
+   - ## 4. Worked Numerical Example / Walkthrough (Concrete values step-by-step with KaTeX formulas)
+   - ## 5. Comparative Evaluation & Trade-offs (Comprehensive Markdown comparison table)
+   - ## 6. Conceptual Taxonomy & Diagrams (Use valid Mermaid \`\`\`mermaid or PlantUML \`\`\`plantuml blocks for visual architectures)
+   - ## 7. University Exam Standard Textbook References (e.g. William Stallings, Tanenbaum, Cormen, Russell & Norvig)`
+  },
+  {
+    id: 'classroom',
+    title: 'Classroom & Boardwork',
+    badge: '45-Min Lecture',
+    icon: Presentation,
+    description: 'Paced classroom delivery: 15-min modular blocks, chalkboard sketches, and interactive student questions.',
+    instructionPrompt: `AUTHORING MANDATES FOR CLASSROOM & BOARDWORK LECTURE SCRIPT:
+1. STRUCTURE:
+   - ## 1. 2-Minute Intuitive Lecture Hook (Real-world analogy to captivate students)
+   - ## 2. Blackboard / Whiteboard Layout Plan (Mermaid \`\`\`mermaid graph TD or PlantUML architecture diagram for the board)
+   - ## 3. 15-Minute Modular Teaching Segments (Block 1: Foundations, Block 2: Deep-Dive Math, Block 3: Applied Scenarios)
+   - ## 4. Common Student Misconceptions & Exam Pitfalls (Highlighted warning callouts)
+   - ## 5. 3 In-Class Concept-Check Discussion Questions (With evaluator sample answers and step-by-step solutions)`
+  },
+  {
+    id: 'handout',
+    title: 'Student Handout',
+    badge: 'Printable Sheet',
+    icon: FileText,
+    description: 'Concise printable summary: core definitions, key formulas, comparative tables, and quick exam review points.',
+    instructionPrompt: `AUTHORING MANDATES FOR STUDENT STUDY HANDOUT:
+1. STRUCTURE:
+   - ## 1. Core Executive Definitions (High-density, punchy 1-sentence definitions)
+   - ## 2. Essential Mathematical Formulas & KaTeX Quick Reference Box ($...$ inline, $$...$$ display)
+   - ## 3. Master Comparison Matrix (Side-by-side comparative table of methods/parameters)
+   - ## 4. Step-by-Step Algorithm Summary (Fast 4-to-6 step execution summary)
+   - ## 5. Visual Summary / Flowchart (Mermaid \`\`\`mermaid or Graphviz \`\`\`graphviz block)
+   - ## 6. High-Yield University Exam Takeaways (Bulleted checklist of critical scoring points)`
+  },
+  {
+    id: 'connect_dots',
+    title: 'Unit Breakdown & Dots',
+    badge: 'Pedagogy & Links',
+    icon: Network,
+    description: 'Maps prerequisite knowledge chains, conceptual flow, and inter-topic bridges across syllabus units.',
+    instructionPrompt: `AUTHORING MANDATES FOR UNIT BREAKDOWN & PEDAGOGICAL ROADMAP:
+1. STRUCTURE:
+   - ## 1. Prerequisite Knowledge Map (What students must know prior to this lecture)
+   - ## 2. Evolutionary Need & The Conceptual Bridge (Why this method was invented over legacy approaches)
+   - ## 3. Topic Dependency Tree (Visual Mermaid \`\`\`mermaid graph LR concept roadmap)
+   - ## 4. Upstream & Downstream Syllabus Bridges (How this connects to upcoming chapters/units)
+   - ## 5. Pedagogical Synthesis Matrix (Key learning outcomes summary)`
+  }
+];
+
+export const LectureNotesStudioView: React.FC<LectureNotesStudioViewProps> = ({
+  userKeys,
+  customModels = {},
+  currentUser = 'guest',
+  isDemoView: _isDemoView = false
+}) => {
+  // 1. Isolated Session Storage (STRICT LANE - Zero mix with main chat)
+  const storageKey = `chatterbot_lecture_sessions_${currentUser}`;
+  const [sessions, setSessions] = useState<LectureNoteSession[]>(() => {
+    const saved = localStorage.getItem(storageKey);
+    if (saved) {
+      try {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
+      } catch (e) {
+        console.error('Failed to parse lecture sessions', e);
+      }
+    }
+    return [
+      {
+        id: `lecture-sess-${Date.now()}`,
+        title: 'New Lecture Note',
+        subject: PRESET_SUBJECTS[0],
+        customSubjectName: '',
+        topic: 'RSA Algorithm & Diffie-Hellman Key Exchange',
+        preset: 'detailed',
+        syllabusSnippet: '',
+        notesContent: '',
+        provider: 'Pollinations AI (Free Keyless)',
+        model: 'openai-fast',
+        webSearch: true,
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      }
+    ];
+  });
+
+  const [activeSessionId, setActiveSessionId] = useState<string>(() => sessions[0]?.id || `lecture-sess-${Date.now()}`);
+  const activeSession = sessions.find(s => s.id === activeSessionId) || sessions[0];
+
+  // Persist sessions strictly in isolated storage
+  useEffect(() => {
+    localStorage.setItem(storageKey, JSON.stringify(sessions));
+  }, [sessions, storageKey]);
+
+  // Form & Authoring State
+  const [activePreset, setActivePreset] = useState<TeacherPresetType>(activeSession?.preset || 'detailed');
+  const [selectedSubject, setSelectedSubject] = useState<string>(activeSession?.subject || PRESET_SUBJECTS[0]);
+  const [customSubjectName, setCustomSubjectName] = useState<string>(activeSession?.customSubjectName || '');
+  const [topicInput, setTopicInput] = useState<string>(activeSession?.topic || 'RSA Algorithm & Diffie-Hellman Key Exchange');
+  const [syllabusContext, setSyllabusContext] = useState<string>(activeSession?.syllabusSnippet || '');
+  const [generatedNotes, setGeneratedNotes] = useState<string>(activeSession?.notesContent || '');
+  const [webSearch, setWebSearch] = useState<boolean>(activeSession?.webSearch ?? true);
+  const [isSyllabusDrawerOpen, setIsSyllabusDrawerOpen] = useState<boolean>(false);
+
+  // Model & Provider Selection (Exact matching main chat)
+  const [selectedProvider, setSelectedProvider] = useState<string>(() => {
+    return activeSession?.provider || localStorage.getItem(`chatterbot_lecture_provider_${currentUser}`) || 'Pollinations AI (Free Keyless)';
+  });
+  const [selectedModel, setSelectedModel] = useState<string>(() => {
+    return activeSession?.model || localStorage.getItem(`chatterbot_lecture_model_${currentUser}`) || 'openai-fast';
+  });
+
+  // Dropdown States
+  const [isProviderOpen, setIsProviderOpen] = useState<boolean>(false);
+  const [isModelOpen, setIsModelOpen] = useState<boolean>(false);
+  const [isSubjectDropdownOpen, setIsSubjectDropdownOpen] = useState<boolean>(false);
+
+  // Left Control Deck Drawer State
+  const [isControlDeckOpen, setIsControlDeckOpen] = useState<boolean>(false);
+  const [controlDeckSearchQuery, setControlDeckSearchQuery] = useState<string>('');
+  const [showClearConfirm, setShowClearConfirm] = useState<boolean>(false);
+
+  // UI state
+  const [isGenerating, setIsGenerating] = useState<boolean>(false);
+  const [generationError, setGenerationError] = useState<string>('');
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState<boolean>(false);
+  const [ocrStatus, setOcrStatus] = useState<string>('');
+  const [diagramMap, setDiagramMap] = useState<Map<string, string>>(new Map());
+  const [lastGeneratedTopic, setLastGeneratedTopic] = useState<string>(activeSession?.topic || '');
+
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const providerRef = useRef<HTMLDivElement>(null);
+  const modelRef = useRef<HTMLDivElement>(null);
+  const subjectRef = useRef<HTMLDivElement>(null);
+  const composerRef = useRef<HTMLElement>(null);
+
+  // Asynchronously render Kroki vector diagrams (Mermaid, PlantUML, Graphviz)
+  useEffect(() => {
+    let isMounted = true;
+    async function loadDiagrams() {
+      if (!generatedNotes) {
+        if (isMounted) setDiagramMap(new Map());
+        return;
+      }
+      const extracted = extractDiagrams(generatedNotes);
+      if (extracted.length === 0) {
+        if (isMounted) setDiagramMap(new Map());
+        return;
+      }
+
+      const newMap = new Map<string, string>();
+      for (const diag of extracted) {
+        try {
+          const svgHtml = await fetchKrokiSvg(diag.type, diag.source);
+          const containerHtml = `<div class="kroki-container" data-diagram-type="${diag.type}">${svgHtml}</div>`;
+          newMap.set(diag.fullMatch, containerHtml);
+        } catch (e) {
+          console.warn('Failed to render diagram:', e);
+        }
+      }
+      if (isMounted) {
+        setDiagramMap(newMap);
+      }
+    }
+    loadDiagrams();
+    return () => {
+      isMounted = false;
+    };
+  }, [generatedNotes]);
+
+  // Click outside listener for dropdowns
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (providerRef.current && !providerRef.current.contains(event.target as Node)) {
+        setIsProviderOpen(false);
+      }
+      if (modelRef.current && !modelRef.current.contains(event.target as Node)) {
+        setIsModelOpen(false);
+      }
+      if (subjectRef.current && !subjectRef.current.contains(event.target as Node)) {
+        setIsSubjectDropdownOpen(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  // Sync state when switching active session
+  useEffect(() => {
+    if (activeSession) {
+      setActivePreset(activeSession.preset || 'detailed');
+      setSelectedSubject(activeSession.subject || PRESET_SUBJECTS[0]);
+      setCustomSubjectName(activeSession.customSubjectName || '');
+      setTopicInput(activeSession.topic || '');
+      setLastGeneratedTopic(activeSession.topic || '');
+      setSyllabusContext(activeSession.syllabusSnippet || '');
+      setGeneratedNotes(activeSession.notesContent || '');
+      setWebSearch(activeSession.webSearch ?? true);
+      if (activeSession.provider) setSelectedProvider(activeSession.provider);
+      if (activeSession.model) setSelectedModel(activeSession.model);
+    }
+  }, [activeSessionId]);
+
+  // Update current session helper
+  const updateCurrentSession = (updates: Partial<LectureNoteSession>) => {
+    setSessions(prev =>
+      prev.map(s => (s.id === activeSession.id ? { ...s, ...updates, updatedAt: Date.now() } : s))
+    );
+  };
+
+  // Provider & Model choices (Matching ChatWindow logic with ModelManager sync)
+  const currentProviderGroup = React.useMemo(() => {
+    return PROVIDERS.find(p => p.id === selectedProvider || p.name === selectedProvider) || PROVIDERS[0];
+  }, [selectedProvider]);
+
+  const availableModels = React.useMemo(() => {
+    const customList = customModels
+      ? (customModels[selectedProvider] || customModels[currentProviderGroup.id] || customModels[currentProviderGroup.name])
+      : undefined;
+    if (Array.isArray(customList) && customList.length > 0) {
+      const enabledCustom = customList.filter(m => m.enabled).map(m => ({
+        value: m.id,
+        name: m.name
+      }));
+      if (enabledCustom.length > 0) return enabledCustom;
+    }
+    return currentProviderGroup.models || [];
+  }, [selectedProvider, customModels, currentProviderGroup]);
+
+  const currentModelName = availableModels.find(m => m.value === selectedModel)?.name || selectedModel;
+
+  // Auto-sync active model if current selected model is not in available models
+  useEffect(() => {
+    if (availableModels.length > 0 && !availableModels.some(m => m.value === selectedModel)) {
+      const firstVal = availableModels[0].value;
+      setSelectedModel(firstVal);
+      localStorage.setItem(`chatterbot_lecture_model_${currentUser}`, firstVal);
+      updateCurrentSession({ model: firstVal });
+    }
+  }, [availableModels, selectedModel, currentUser]);
+
+  // Robust API Key resolution with fallback
+  const effectiveUserKeys: UserKeys = React.useMemo(() => {
+    if (userKeys && Object.values(userKeys).some(Boolean)) {
+      return userKeys;
+    }
+    const activeUser = localStorage.getItem('chatterbot_username') || currentUser;
+    if (activeUser) {
+      const saved = localStorage.getItem(`chatterbot_user_keys_${activeUser}`);
+      if (saved) {
+        try {
+          return JSON.parse(saved);
+        } catch (e) {}
+      }
+    }
+    return userKeys;
+  }, [userKeys, currentUser]);
+
+  const handleProviderChange = (providerIdOrName: string) => {
+    const pObj = PROVIDERS.find(p => p.id === providerIdOrName || p.name === providerIdOrName) || PROVIDERS[0];
+    setSelectedProvider(pObj.name);
+    localStorage.setItem(`chatterbot_lecture_provider_${currentUser}`, pObj.name);
+
+    const customList = customModels
+      ? (customModels[pObj.name] || customModels[pObj.id])
+      : undefined;
+    let firstModel = pObj.models?.[0]?.value || 'openai-fast';
+    if (Array.isArray(customList) && customList.length > 0) {
+      const enabled = customList.filter(m => m.enabled);
+      if (enabled.length > 0) firstModel = enabled[0].id;
+    }
+
+    setSelectedModel(firstModel);
+    localStorage.setItem(`chatterbot_lecture_model_${currentUser}`, firstModel);
+    updateCurrentSession({ provider: pObj.name, model: firstModel });
+    setIsProviderOpen(false);
+  };
+
+  const handleModelChange = (newModel: string) => {
+    setSelectedModel(newModel);
+    localStorage.setItem(`chatterbot_lecture_model_${currentUser}`, newModel);
+    updateCurrentSession({ model: newModel });
+    setIsModelOpen(false);
+  };
+
+  const handleSubjectChange = (subjectName: string) => {
+    setSelectedSubject(subjectName);
+    updateCurrentSession({ subject: subjectName });
+    setIsSubjectDropdownOpen(false);
+  };
+
+  const handlePresetSelect = (presetId: TeacherPresetType) => {
+    setActivePreset(presetId);
+    updateCurrentSession({ preset: presetId });
+  };
+
+  const handleToggleWebSearch = () => {
+    const nextVal = !webSearch;
+    setWebSearch(nextVal);
+    updateCurrentSession({ webSearch: nextVal });
+  };
+
+  const handleNewLectureSession = () => {
+    const newSess: LectureNoteSession = {
+      id: `lecture-sess-${Date.now()}`,
+      title: 'New Lecture Note',
+      subject: selectedSubject,
+      customSubjectName: '',
+      topic: '',
+      preset: activePreset,
+      syllabusSnippet: '',
+      notesContent: '',
+      provider: selectedProvider,
+      model: selectedModel,
+      webSearch,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    setSessions([newSess, ...sessions]);
+    setActiveSessionId(newSess.id);
+    setIsControlDeckOpen(false);
+    setIsConfigExpanded(true);
+  };
+
+  const handleDeleteSession = (e: React.MouseEvent, id: string) => {
+    e.stopPropagation();
+    const filtered = sessions.filter(s => s.id !== id);
+    const fallback = filtered.length > 0 ? filtered : [
+      {
+        id: `lecture-sess-${Date.now()}`,
+        title: 'New Lecture Note',
+        subject: PRESET_SUBJECTS[0],
+        customSubjectName: '',
+        topic: '',
+        preset: 'detailed' as TeacherPresetType,
+        syllabusSnippet: '',
+        notesContent: '',
+        provider: selectedProvider,
+        model: selectedModel,
+        webSearch: true,
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      }
+    ];
+    setSessions(fallback);
+    if (activeSessionId === id) {
+      setActiveSessionId(fallback[0].id);
+    }
+  };
+
+  const handleClearAllSessions = () => {
+    const fresh: LectureNoteSession = {
+      id: `lecture-sess-${Date.now()}`,
+      title: 'New Lecture Note',
+      subject: PRESET_SUBJECTS[0],
+      customSubjectName: '',
+      topic: '',
+      preset: 'detailed',
+      syllabusSnippet: '',
+      notesContent: '',
+      provider: selectedProvider,
+      model: selectedModel,
+      webSearch: true,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+    setSessions([fresh]);
+    setActiveSessionId(fresh.id);
+    setShowClearConfirm(false);
+    setIsControlDeckOpen(false);
+  };
+
+  const handleOcrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setOcrStatus('Scanning syllabus image with OCR...');
+    try {
+      const { createWorker } = await import('tesseract.js');
+      const worker = await createWorker('eng');
+      const ret = await worker.recognize(file);
+      await worker.terminate();
+
+      if (ret && ret.data && ret.data.text) {
+        const cleaned = ret.data.text.trim();
+        setSyllabusContext(cleaned);
+        updateCurrentSession({ syllabusSnippet: cleaned });
+        setOcrStatus('Syllabus extracted successfully!');
+        setTimeout(() => setOcrStatus(''), 4000);
+      }
+    } catch (err) {
+      console.error('OCR Extraction error:', err);
+      setOcrStatus('OCR failed. Please paste syllabus manually.');
+      setTimeout(() => setOcrStatus(''), 4000);
+    }
+  };
+
+  const handleClearCurrentNotes = () => {
+    setGeneratedNotes('');
+    updateCurrentSession({ notesContent: '' });
+  };
+
+  const executeNoteGeneration = async (targetTopic: string, baseNotes: string) => {
+    if (!targetTopic.trim() || isGenerating) return;
+
+    setIsGenerating(true);
+    setGenerationError('');
+    setLastGeneratedTopic(targetTopic.trim());
+
+    const currentPresetObj = PRESETS.find(p => p.id === activePreset) || PRESETS[0];
+    const subjectDisplayName = selectedSubject === 'Custom Course / Subject'
+      ? (customSubjectName.trim() || 'Custom University Course')
+      : selectedSubject;
+
+    const studioSystemPrompt = `ROLE PERSONA: You are Prof. Joe, Senior University Professor & Distinguished Academic Lecturer.
+
+CORE AUTHORING MANDATES:
+1. ZERO CONVERSATIONAL FLUFF: Never output pleasantries, conversational intros, or filler (e.g. NEVER say "Sure!", "Certainly!", "Here is a comprehensive...", "I hope this helps"). Begin IMMEDIATELY on Line 1 with the document heading.
+2. PEDAGOGICAL RIGOR & FULL DEPTH: Structure content with deep academic depth, formal theorems/definitions, step-by-step mathematical derivations, and clear worked examples. ALWAYS complete every mathematical equation and proof; ensure all LaTeX blocks and code blocks are fully closed before ending output.
+3. FORMULA FORMATTING: Use strict KaTeX LaTeX formatting: $...$ for inline math (e.g. $K = g^{xy} \\pmod{p}$) and $$...$$ for block display equations.
+4. DIAGRAMS & TAXONOMIES: Use valid Mermaid (\`\`\`mermaid ... \`\`\`), PlantUML (\`\`\`plantuml ... \`\`\`), or Graphviz (\`\`\`graphviz ... \`\`\`) blocks for visual taxonomies, architectural schemas, state transitions, decision trees, and concept graphs so they render as rich vector diagrams. Never draw plain ASCII boxes.
+5. VISUAL STRUCTURE: Use clean Markdown tables for side-by-side comparisons and formatted code blocks for algorithms/pseudocode.
+6. STANDARDS COMPLIANCE: Include standard university textbook references (e.g. William Stallings, Tanenbaum, Cormen, Russell & Norvig) where applicable.`;
+
+    const promptMessage = `# 🎓 LECTURE MATERIAL: ${targetTopic.trim().toUpperCase()}
+**University Course / Discipline:** ${subjectDisplayName}
+**Pedagogical Framework:** ${currentPresetObj.title} [${currentPresetObj.badge}]
+
+${syllabusContext.trim() ? `**Prescribed Course Syllabus & Scope Boundaries:**\n"""\n${syllabusContext.trim()}\n"""\n` : ''}
+
+**Specific Pedagogical Directives:**
+${currentPresetObj.instructionPrompt}
+
+**Formatting Enforcement:**
+- Output clean, polished GitHub-Flavored Markdown.
+- Render all equations and variables in LaTeX ($...$ inline, $$...$$ block) and ensure all derivations are completed.
+- Render visual diagrams and taxonomies as valid Mermaid (\`\`\`mermaid\`), PlantUML (\`\`\`plantuml\`), or Graphviz (\`\`\`graphviz\`) vector diagrams.
+- Include comprehensive comparative tables and structured breakdown blocks.
+- Conclude with standard academic textbook references and key takeaway points.`;
+
+    try {
+      const response = await sendChatMessage(
+        selectedProvider,
+        selectedModel,
+        [
+          {
+            id: `msg-${Date.now()}`,
+            role: 'user',
+            content: promptMessage,
+            timestamp: Date.now()
+          }
+        ],
+        effectiveUserKeys,
+        webSearch,
+        'auto',
+        studioSystemPrompt
+      );
+
+      const newContent = response.content.trim();
+      const existing = (baseNotes || '').trim();
+
+      // Continuous Multi-Chapter Note Appending (Pure client-side append)
+      const combinedNotes = existing
+        ? `${existing}\n\n---\n\n${newContent}`
+        : newContent;
+
+      setGeneratedNotes(combinedNotes);
+
+      const baseTitle = `${targetTopic.trim().substring(0, 24)} (${currentPresetObj.badge})`;
+      const currentTitle = activeSession?.title;
+      const finalTitle = (!currentTitle || currentTitle === 'New Lecture Note' || !existing)
+        ? baseTitle
+        : currentTitle.includes(targetTopic.trim().substring(0, 15))
+          ? currentTitle
+          : `${currentTitle.split(' + ')[0]} + ${targetTopic.trim().substring(0, 16)}`;
+
+      updateCurrentSession({
+        notesContent: combinedNotes,
+        title: finalTitle,
+        subject: selectedSubject,
+        customSubjectName,
+        topic: targetTopic.trim(),
+        preset: activePreset,
+        syllabusSnippet: syllabusContext,
+        webSearch
+      });
+    } catch (err: any) {
+      console.error('Lecture note generation failed:', err);
+      const errMsg = `Failed to generate lecture section for "${targetTopic}": ${err.message || 'Server error'}. Please verify API keys or select Pollinations AI (Free Keyless).`;
+      setGenerationError(errMsg);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleGenerateNotes = () => {
+    executeNoteGeneration(topicInput.trim(), generatedNotes.trim());
+  };
+
+  const handleRetryLastSection = () => {
+    const topicToRetry = lastGeneratedTopic || topicInput.trim();
+    if (!topicToRetry || isGenerating) return;
+
+    const existing = (generatedNotes || '').trim();
+    if (existing.includes('\n\n---\n\n')) {
+      const parts = existing.split('\n\n---\n\n');
+      parts.pop(); // Remove only the latest failed or incomplete section
+      const preservedNotes = parts.join('\n\n---\n\n');
+      setGeneratedNotes(preservedNotes);
+      updateCurrentSession({ notesContent: preservedNotes });
+      executeNoteGeneration(topicToRetry, preservedNotes);
+    } else {
+      // Single section note
+      setGeneratedNotes('');
+      updateCurrentSession({ notesContent: '' });
+      executeNoteGeneration(topicToRetry, '');
+    }
+  };
+
+  const renderFormattedNotes = (rawMarkdown: string) => {
+    if (!rawMarkdown) return '';
+
+    // 0. Inject live vector diagrams from diagramMap
+    let processed = rawMarkdown;
+    diagramMap.forEach((containerHtml, token) => {
+      processed = processed.replaceAll(token, containerHtml);
+    });
+
+    const mathMap = new Map<string, string>();
+    let tokenIdx = 0;
+
+    // 1. Extract block math $$...$$ and \[...\]
+    let prepped = processed.replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
+      const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
+      try {
+        mathMap.set(
+          token,
+          `<div class="katex-display katex-block">${katex.renderToString(math.trim(), {
+            displayMode: true,
+            throwOnError: false
+          })}</div>`
+        );
+      } catch {
+        mathMap.set(token, `$$${math}$$`);
+      }
+      return token;
+    });
+
+    prepped = prepped.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => {
+      const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
+      try {
+        mathMap.set(
+          token,
+          `<div class="katex-display katex-block">${katex.renderToString(math.trim(), {
+            displayMode: true,
+            throwOnError: false
+          })}</div>`
+        );
+      } catch {
+        mathMap.set(token, `\\[${math}\\]`);
+      }
+      return token;
+    });
+
+    // 2. Extract inline math \(...\) and $...$
+    prepped = prepped.replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => {
+      const token = `KATEXINLINETOKEN${tokenIdx++}ENDTOKEN`;
+      try {
+        mathMap.set(
+          token,
+          `<span class="katex-inline">${katex.renderToString(math.trim(), {
+            displayMode: false,
+            throwOnError: false
+          })}</span>`
+        );
+      } catch {
+        mathMap.set(token, `\\(${math}\\)`);
+      }
+      return token;
+    });
+
+    prepped = prepped.replace(/\$([^\$\n]+?)\$/g, (_, math) => {
+      const token = `KATEXINLINETOKEN${tokenIdx++}ENDTOKEN`;
+      try {
+        mathMap.set(
+          token,
+          `<span class="katex-inline">${katex.renderToString(math.trim(), {
+            displayMode: false,
+            throwOnError: false
+          })}</span>`
+        );
+      } catch {
+        mathMap.set(token, `$${math}$`);
+      }
+      return token;
+    });
+
+    // 3. Parse Markdown structure (tables, lists, headings, code)
+    let dirtyHtml = marked.parse(prepped) as string;
+
+    // 4. Restore math HTML
+    mathMap.forEach((html, token) => {
+      dirtyHtml = dirtyHtml.replaceAll(token, html);
+    });
+
+    return DOMPurify.sanitize(dirtyHtml, {
+      ADD_TAGS: [
+        'math', 'annotation', 'semantics', 'mrow', 'mi', 'mo', 'mn', 'msup', 'msub',
+        'mfrac', 'mover', 'munder', 'msqrt', 'table', 'thead', 'tbody', 'tr', 'th',
+        'td', 'span', 'div', 'hr', 'blockquote', 'code', 'pre', 'svg', 'g', 'path',
+        'text', 'rect', 'circle', 'line', 'polyline', 'polygon', 'defs', 'marker',
+        'tspan', 'style', 'foreignObject', 'clippath'
+      ],
+      ADD_ATTR: [
+        'display', 'style', 'class', 'id', 'aria-hidden', 'viewBox', 'xmlns', 'fill',
+        'stroke', 'stroke-width', 'd', 'x', 'y', 'width', 'height', 'cx', 'cy', 'r',
+        'x1', 'y1', 'x2', 'y2', 'points', 'transform', 'text-anchor', 'dominant-baseline',
+        'data-diagram-type', 'marker-end', 'marker-start', 'preserveAspectRatio'
+      ]
+    });
+  };
+
+  const handlePrint = () => {
+    if (!generatedNotes) return;
+    const effectiveSubject = selectedSubject === 'Custom Course / Subject' ? (customSubjectName || 'Custom') : selectedSubject;
+    printBubbleToPdf(generatedNotes, selectedModel, `${effectiveSubject}-${topicInput}-LectureNotes`);
+  };
+
+  const filteredSessions = sessions.filter(s =>
+    (s.title || '').toLowerCase().includes(controlDeckSearchQuery.toLowerCase()) ||
+    (s.topic || '').toLowerCase().includes(controlDeckSearchQuery.toLowerCase()) ||
+    (s.subject || '').toLowerCase().includes(controlDeckSearchQuery.toLowerCase()) ||
+    (s.customSubjectName || '').toLowerCase().includes(controlDeckSearchQuery.toLowerCase())
+  );
+
+  const activePresetObj = PRESETS.find(p => p.id === activePreset) || PRESETS[0];
+  const effectiveSubjectLabel = selectedSubject === 'Custom Course / Subject'
+    ? (customSubjectName.trim() || 'Custom Course')
+    : selectedSubject;
+
+  return (
+    <>
+      <div className="studio-unified-wrapper">
+        {/* 📄 Dedicated Academic Parchment Stage (Natural Top Reading Stage) */}
+        <main className="studio-parchment-stage">
+          <div className="academic-parchment-sheet">
+            {/* Header Watermark Plate */}
+            <div className="parchment-header-plate">
+              <div className="parchment-faculty-identity">
+                <div className="faculty-seal-badge">
+                  <img src="/joe-avatar.png" alt="Prof. Joe" className="faculty-seal-img" />
+                </div>
+                <div>
+                  <h3 className="parchment-subject-title">{effectiveSubjectLabel}</h3>
+                  <p className="parchment-meta-line">
+                    <span className="meta-topic">{topicInput || 'Topic Preview'}</span>
+                    <span className="meta-sep">•</span>
+                    <span className="meta-preset">{activePresetObj.title}</span>
+                    {webSearch && (
+                      <>
+                        <span className="meta-sep">•</span>
+                        <span className="text-cyan-400 font-semibold text-xs">🌐 Web Grounded</span>
+                      </>
+                    )}
+                  </p>
+                </div>
+              </div>
+
+              <div className="parchment-right-meta flex items-center gap-2">
+                <span className="parchment-date">
+                  {new Date(activeSession?.updatedAt || Date.now()).toLocaleDateString(undefined, {
+                    year: 'numeric',
+                    month: 'short',
+                    day: 'numeric'
+                  })}
+                </span>
+                {generatedNotes && (
+                  <button
+                    type="button"
+                    onClick={handleClearCurrentNotes}
+                    title="Reset canvas and clear notes on this document"
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '2px 8px',
+                      borderRadius: '5px',
+                      fontSize: '0.65rem',
+                      fontWeight: 700,
+                      background: 'rgba(244, 63, 94, 0.12)',
+                      color: '#f43f5e',
+                      border: '1px solid rgba(244, 63, 94, 0.3)',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Trash2 size={11} />
+                    <span>Reset</span>
+                  </button>
+                )}
+                <span className="parchment-seal-tag">Faculty Archive</span>
+              </div>
+            </div>
+
+            {/* Parchment Body */}
+            <div className="parchment-body">
+              {generatedNotes ? (
+                <>
+                  <article
+                    className="markdown-content lecture-parchment-content"
+                    dangerouslySetInnerHTML={{ __html: renderFormattedNotes(generatedNotes) }}
+                  />
+
+                  {!isGenerating && (
+                    <div className="parchment-bottom-action-bar">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          composerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        }}
+                        className="parchment-footer-btn next-topic-btn"
+                      >
+                        <Plus size={14} />
+                        <span>+ Add Next Topic Chapter</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleRetryLastSection}
+                        className="parchment-footer-btn retry-section-btn"
+                        title="Regenerate only the latest chapter"
+                      >
+                        <RotateCcw size={14} />
+                        <span>Regenerate Last Section</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handlePrint}
+                        className="parchment-footer-btn print-deck-btn"
+                      >
+                        <Printer size={14} />
+                        <span>Print / Export PDF</span>
+                      </button>
+                    </div>
+                  )}
+
+                  {isGenerating && (
+                    <div className="mt-6 p-4 rounded-xl bg-cyan-950/30 border border-cyan-500/30 flex items-center gap-3 animate-pulse">
+                      <RefreshCw size={18} className="text-cyan-400 animate-spin flex-shrink-0" />
+                      <span className="text-sm font-semibold text-cyan-300">
+                        Synthesizing and appending next section for "{topicInput || lastGeneratedTopic}"...
+                      </span>
+                    </div>
+                  )}
+                </>
+              ) : isGenerating ? (
+                <div className="parchment-loading-skeleton">
+                  <div className="skeleton-icon-circle">
+                    <GraduationCap size={32} className="text-cyan-400 animate-pulse" />
+                  </div>
+                  <h3 className="skeleton-title">Synthesizing University Lecture Material</h3>
+                  <p className="skeleton-subtitle">
+                    Applying {activePresetObj.title} pedagogical directives, {webSearch ? 'live academic web search,' : ''} KaTeX math rendering, and blackboard diagrams.
+                  </p>
+                </div>
+              ) : (
+                <div className="parchment-empty-hero">
+                  <div className="empty-hero-icon">
+                    <GraduationCap size={36} className="text-cyan-400" />
+                  </div>
+                  <h3 className="empty-hero-title">Academic Lecture Studio Canvas</h3>
+                  <p className="empty-hero-sub">
+                    Enter any topic, textbook chapter, or concept below, then click <strong>Generate Notes</strong> to produce masterfully structured lecture notes.
+                  </p>
+                </div>
+              )}
+            </div>
+          </div>
+        </main>
+
+        {/* ⚠️ Floating Error Notification Banner */}
+        {generationError && (
+          <div className="studio-error-toast mt-3">
+            <div className="flex items-center gap-2">
+              <AlertTriangle size={16} className="text-rose-300 flex-shrink-0" />
+              <span>{generationError}</span>
+            </div>
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <button
+                type="button"
+                onClick={handleRetryLastSection}
+                className="studio-retry-pill-btn"
+                title="Retry generating this section"
+              >
+                <RotateCcw size={12} />
+                <span>Retry Topic</span>
+              </button>
+              <button
+                type="button"
+                onClick={() => setGenerationError('')}
+                className="p-1 hover:bg-rose-900/50 rounded text-rose-200 hover:text-white cursor-pointer"
+                title="Dismiss error"
+              >
+                <X size={14} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 🎓 Unified Smart Command Bar (Placed right below the notes canvas) */}
+        <header className="studio-smart-bar studio-top-nav-bar mt-2">
+          <div className="smart-bar-left">
+            {/* 📜 Command Deck Trigger Button (Opens Left-Side Control Deck) */}
+            <button
+              type="button"
+              onClick={() => setIsControlDeckOpen(true)}
+              className="demo-view-toggle-btn"
+              style={{
+                height: '34px',
+                padding: '0 12px',
+                fontSize: '12px',
+                borderRadius: '17px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                background: 'rgba(6, 182, 212, 0.15)',
+                border: '1px solid rgba(6, 182, 212, 0.4)',
+                color: '#38bdf8',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+              title="Open Lecture Control Deck & Saved History"
+            >
+              <Zap size={14} className="text-cyan-400" />
+              <span>📜 Command Deck</span>
+            </button>
+
+            {/* Brand Pill */}
+            <div className="smart-brand-pill hidden sm:inline-flex">
+              <GraduationCap size={17} className="text-cyan-400" />
+              <span className="smart-brand-text">Lecture Studio</span>
+              <span className="smart-role-tag">Educator</span>
+            </div>
+
+            {/* Live Context Summary Pill */}
+            <div className="smart-context-summary">
+              <span className="context-subject">{effectiveSubjectLabel}</span>
+              <span className="context-divider">•</span>
+              <span className="context-preset">{activePresetObj.badge}</span>
+              <span className="context-divider">•</span>
+              <span className="context-topic" title={topicInput}>{topicInput || 'No Topic Chosen'}</span>
+            </div>
+          </div>
+
+          <div className="smart-bar-right">
+            {/* ⚡ Provider & 🤖 Model Pickers (Exact Main Chat Styling) */}
+            <div className="desktop-model-selectors flex items-center gap-2">
+              {/* Provider Picker */}
+              <div className="relative inline-block provider-picker-wrapper" ref={providerRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsProviderOpen(!isProviderOpen);
+                    setIsModelOpen(false);
+                  }}
+                  className="custom-dropdown-pill"
+                  title="Select AI Provider"
+                >
+                  <span className="picker-icon">⚡</span>
+                  <span className="truncate">{currentProviderGroup.name}</span>
+                  <ChevronDown size={13} className={`transition-transform duration-200 ${isProviderOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isProviderOpen && (
+                  <div className="custom-dropdown-menu top-downward-menu provider-menu">
+                    <div className="dropdown-header">AI Providers</div>
+                    {PROVIDERS.map(p => {
+                      const isSelected = p.id === currentProviderGroup.id || p.name === selectedProvider;
+                      return (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => handleProviderChange(p.id)}
+                          className={`dropdown-item ${isSelected ? 'selected' : ''}`}
+                        >
+                          <span>{p.name}</span>
+                          {isSelected && <Check size={13} className="text-cyan-400" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+
+              {/* Model Picker */}
+              <div className="relative inline-block model-picker-wrapper" ref={modelRef}>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsModelOpen(!isModelOpen);
+                    setIsProviderOpen(false);
+                  }}
+                  className="custom-dropdown-pill"
+                  title="Select AI Model"
+                >
+                  <span className="picker-icon">🤖</span>
+                  <span className="truncate">{currentModelName}</span>
+                  <ChevronDown size={13} className={`transition-transform duration-200 ${isModelOpen ? 'rotate-180' : ''}`} />
+                </button>
+
+                {isModelOpen && (
+                  <div className="custom-dropdown-menu top-downward-menu model-menu">
+                    <div className="dropdown-header">{currentProviderGroup.name.toUpperCase()} MODELS</div>
+                    {availableModels.map(m => {
+                      const isSelected = m.value === selectedModel;
+                      return (
+                        <button
+                          key={m.value}
+                          type="button"
+                          onClick={() => handleModelChange(m.value)}
+                          className={`dropdown-item ${isSelected ? 'selected' : ''}`}
+                        >
+                          <span>{m.name}</span>
+                          {isSelected && <Check size={13} className="text-cyan-400" />}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Clean Quick Action Tools: New Note, Print */}
+            <div className="smart-actions-deck">
+              <button
+                type="button"
+                onClick={handleNewLectureSession}
+                className="smart-action-btn highlight"
+                title="Start a Fresh Lecture Draft"
+              >
+                <Plus size={15} />
+                <span className="btn-label-desktop">New Note</span>
+              </button>
+
+              {generatedNotes && (
+                <button
+                  type="button"
+                  onClick={handlePrint}
+                  className="smart-action-btn"
+                  title="Native Print / PDF"
+                >
+                  <Printer size={15} />
+                  <span className="btn-label-desktop">Print</span>
+                </button>
+              )}
+            </div>
+          </div>
+        </header>
+
+        {/* 🎛️ Bottom Authoring & Control Deck (Box 1 & Box 2 directly below the notes) */}
+        <section className="studio-composer-dock mt-2" ref={composerRef}>
+          {/* Step 1: Pedagogical Modes (Box 1) */}
+          <div className="composer-row">
+              <div className="composer-row-header">
+                <span className="composer-step-badge">1</span>
+                <span className="composer-row-title">Select Pedagogical Mode</span>
+              </div>
+              <div className="pedagogy-pills-carousel">
+                {PRESETS.map((preset) => {
+                  const Icon = preset.icon;
+                  const isSelected = activePreset === preset.id;
+                  return (
+                    <button
+                      key={preset.id}
+                      type="button"
+                      onClick={() => handlePresetSelect(preset.id)}
+                      className={`pedagogy-pill ${isSelected ? 'active' : ''}`}
+                      title={preset.description}
+                    >
+                      <Icon size={16} className="pedagogy-icon" />
+                      <div className="pedagogy-text">
+                        <span className="pedagogy-title">{preset.title}</span>
+                        <span className="pedagogy-badge">{preset.badge}</span>
+                      </div>
+                      {isSelected && <CheckCircle2 size={14} className="pedagogy-check" />}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Step 2: Course Subject & Target Topic Authoring (Box 2) */}
+            <div className="composer-row">
+              <div className="composer-row-header justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="composer-step-badge">2</span>
+                  <span className="composer-row-title">Course Subject & Target Topic</span>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setIsSyllabusDrawerOpen(!isSyllabusDrawerOpen)}
+                  className={`syllabus-scope-toggle-btn ${syllabusContext.trim() ? 'has-content' : ''}`}
+                  title="Configure Course Syllabus Scope & Reference Boundary"
+                >
+                  <FileSearch size={13} />
+                  <span>
+                    {syllabusContext.trim() ? 'Syllabus Attached (Strict Scope)' : '+ Attach Syllabus / Scope'}
+                  </span>
+                  {isSyllabusDrawerOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
+                </button>
+              </div>
+
+              {/* Subject & Topic Row */}
+              <div className="catalog-selection-top-row">
+                {/* Course / Subject Picker Dropdown */}
+                <div className="subject-dropdown-wrapper" ref={subjectRef}>
+                  <label className="field-label">Course / Subject</label>
+                  <button
+                    type="button"
+                    onClick={() => setIsSubjectDropdownOpen(!isSubjectDropdownOpen)}
+                    className="custom-subject-trigger"
+                  >
+                    <BookMarked size={15} className="text-cyan-400 flex-shrink-0" />
+                    <span className="subject-trigger-name">{effectiveSubjectLabel}</span>
+                    <ChevronDown size={14} className={`dropdown-chevron ${isSubjectDropdownOpen ? 'open' : ''}`} />
+                  </button>
+
+                  {isSubjectDropdownOpen && (
+                    <div className="custom-dropdown-menu top-downward-menu w-full" style={{ minWidth: '280px', maxWidth: '380px' }}>
+                      <div className="dropdown-header">University Course / Subject</div>
+                      {PRESET_SUBJECTS.map(s => {
+                        const isSelected = selectedSubject === s;
+                        return (
+                          <button
+                            key={s}
+                            type="button"
+                            onClick={() => handleSubjectChange(s)}
+                            className={`dropdown-item ${isSelected ? 'selected' : ''}`}
+                          >
+                            <span>{s}</span>
+                            {isSelected && <Check size={13} className="text-cyan-400" />}
+                          </button>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+
+                {/* Target Concept / Chapter / Topic Input Field */}
+                <div className="topic-text-wrapper">
+                  <label className="field-label">
+                    Target Topic / Concept to Author (e.g. RSA Algorithm, Diffie-Hellman from Stallings)
+                  </label>
+                  <div className="topic-input-glow-box">
+                    <input
+                      type="text"
+                      value={topicInput}
+                      onChange={(e) => {
+                        setTopicInput(e.target.value);
+                        updateCurrentSession({ topic: e.target.value });
+                      }}
+                      placeholder="Type the specific topic, chapter or concept you want generated..."
+                      className="topic-text-field"
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') handleGenerateNotes();
+                      }}
+                    />
+                    {topicInput && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTopicInput('');
+                          updateCurrentSession({ topic: '' });
+                        }}
+                        className="clear-topic-btn"
+                        title="Clear topic input"
+                      >
+                        <X size={14} />
+                      </button>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              {/* If Custom Subject selected, show custom name field */}
+              {selectedSubject === 'Custom Course / Subject' && (
+                <div className="mt-1">
+                  <label className="field-label">Custom Subject Title</label>
+                  <input
+                    type="text"
+                    value={customSubjectName}
+                    onChange={(e) => {
+                      setCustomSubjectName(e.target.value);
+                      updateCurrentSession({ customSubjectName: e.target.value });
+                    }}
+                    placeholder="e.g. Advanced Operating Systems, Cloud Computing, Compiler Design..."
+                    className="clean-composer-input"
+                  />
+                </div>
+              )}
+
+              {/* 📑 Expandable Syllabus Scope & Context Area */}
+              {isSyllabusDrawerOpen && (
+                <div className="syllabus-context-collapsible-box">
+                  <div className="ocr-upload-bar">
+                    <span className="text-xs font-semibold text-slate-300">
+                      Syllabus Scope Boundary (Notes will be strictly framed within this scope):
+                    </span>
+                    <label className="ocr-file-btn">
+                      <Upload size={13} />
+                      <span>{ocrStatus || 'Scan Syllabus Image (OCR)'}</span>
+                      <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={handleOcrUpload}
+                        style={{ display: 'none' }}
+                      />
+                    </label>
+                  </div>
+
+                  <textarea
+                    value={syllabusContext}
+                    onChange={(e) => {
+                      setSyllabusContext(e.target.value);
+                      updateCurrentSession({ syllabusSnippet: e.target.value });
+                    }}
+                    placeholder="Paste full syllabus outline, unit breakdown, textbook reference chapters, or course topics here. The AI will strictly anchor all generated notes to this scope."
+                    rows={3}
+                    className="clean-composer-textarea"
+                  />
+                </div>
+              )}
+            </div>
+
+            {/* Step 3: Synthesis Trigger Bar */}
+            <div className="composer-footer">
+              <div className="flex items-center gap-2">
+                {generatedNotes.trim() ? (
+                  <>
+                    <button
+                      type="button"
+                      onClick={handleClearCurrentNotes}
+                      className="studio-reset-parchment-btn"
+                      title="Clear current notes on canvas to start a blank document"
+                    >
+                      <Trash2 size={13} />
+                      <span>Clear Canvas</span>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleRetryLastSection}
+                      disabled={isGenerating}
+                      className="studio-retry-parchment-btn"
+                      title="Regenerate only the latest section"
+                    >
+                      <RotateCcw size={13} className={isGenerating ? 'animate-spin' : ''} />
+                      <span>Retry Last Section</span>
+                    </button>
+                  </>
+                ) : (
+                  <span className="composer-hint-text hidden sm:inline-flex">
+                    Press <kbd className="composer-kbd">Enter ↵</kbd> to author lecture notes
+                  </span>
+                )}
+              </div>
+
+              <button
+                type="button"
+                onClick={handleGenerateNotes}
+                disabled={isGenerating || !topicInput.trim()}
+                className="synthesize-btn"
+              >
+                {isGenerating ? (
+                  <>
+                    <RefreshCw size={16} className="animate-spin" />
+                    <span>Synthesizing Lecture Notes...</span>
+                  </>
+                ) : (
+                  <>
+                    <Sparkles size={16} />
+                    <span>{generatedNotes.trim() ? '+ Append Section to Notes' : 'Generate Notes'}</span>
+                    <ArrowRight size={14} className="opacity-70" />
+                  </>
+                )}
+              </button>
+            </div>
+          </section>
+
+        {/* 📱 Mobile Floating Sticky Action Bar (FAB) */}
+        <div className="mobile-floating-action-bar">
+          <button
+            type="button"
+            onClick={handleGenerateNotes}
+            disabled={isGenerating || !topicInput.trim()}
+            className="mobile-fab-btn primary"
+          >
+            {isGenerating ? (
+              <RefreshCw size={18} className="animate-spin" />
+            ) : (
+              <Sparkles size={18} />
+            )}
+            <span>{isGenerating ? 'Generating...' : 'Generate Notes'}</span>
+          </button>
+
+          {generatedNotes && (
+            <div className="mobile-fab-tools">
+              <button
+                type="button"
+                onClick={handlePrint}
+                className="mobile-fab-tool-btn highlight"
+                title="Native Print"
+              >
+                <Printer size={16} />
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Themed PDF & PNG Preview Modal */}
+        {isPreviewModalOpen && generatedNotes && (
+          <PdfPreviewModal
+            isOpen={isPreviewModalOpen}
+            onClose={() => setIsPreviewModalOpen(false)}
+            content={generatedNotes}
+            modelUsed={selectedModel}
+            docTitle={`${effectiveSubjectLabel.replace(/[^a-zA-Z0-9]/g, '_')}_${topicInput.replace(/[^a-zA-Z0-9]/g, '_')}_LectureNotes`}
+            renderedHtml={renderFormattedNotes(generatedNotes)}
+          />
+        )}
+      </div>
+
+      {/* 📜 UNIFIED LEFT-SIDE LECTURE CONTROL DECK DRAWER (100% Exact Matching Screenshot 1 & Bento Architecture) */}
+      {isControlDeckOpen && (
+        <div className="demo-drawer-overlay" onClick={() => setIsControlDeckOpen(false)} style={{ zIndex: 999999 }}>
+          <aside
+            className="demo-chat-history-drawer"
+            onClick={(e) => e.stopPropagation()}
+            style={{ width: '380px', maxWidth: '90vw' }}
+          >
+            {/* 1. Drawer Header Bar */}
+            <div className="demo-drawer-header">
+              <div className="demo-drawer-title">
+                <Clock size={18} className="text-cyan-400" />
+                <h3>Lecture Control Deck</h3>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsControlDeckOpen(false)}
+                className="demo-icon-btn"
+                aria-label="Close Lecture Control Deck"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* 2. Primary Action Button */}
+            <div className="demo-drawer-action">
+              <button
+                type="button"
+                onClick={() => {
+                  handleNewLectureSession();
+                  setIsControlDeckOpen(false);
+                }}
+                className="demo-new-chat-btn"
+              >
+                <Plus size={16} />
+                <span>New Lecture Note</span>
+              </button>
+            </div>
+
+            {/* 3. Bento Command Control Deck */}
+            <div className="demo-bento-deck">
+              <div className="bento-deck-header">
+                <Sparkles size={13} className="text-cyan-400" />
+                <span>COMMAND CONTROLS</span>
+              </div>
+
+              <div className="bento-grid-container">
+                {/* Tile 1: Persistent Web Search */}
+                <div
+                  className={`bento-card-tile ${webSearch ? 'active-glow-cyan' : ''}`}
+                  onClick={handleToggleWebSearch}
+                  title="Toggle Persistent Academic Web Search Grounding"
+                >
+                  <div className="bento-tile-icon cyan">
+                    <Globe size={16} />
+                  </div>
+                  <div className="bento-tile-content">
+                    <span className="bento-tile-title">Web Search</span>
+                    <span className="bento-tile-status">
+                      {webSearch ? '🟢 Always ON' : '⚪ OFF'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Tile 2: Model & Session Monitor */}
+                <div className="bento-card-tile" title={`Provider: ${selectedProvider} | Model: ${selectedModel}`}>
+                  <div className="bento-tile-icon purple">
+                    <BarChart2 size={16} />
+                  </div>
+                  <div className="bento-tile-content">
+                    <span className="bento-tile-title">{selectedModel.slice(0, 12)}</span>
+                    <span className="bento-tile-sub font-mono">{sessions.length} drafts</span>
+                  </div>
+                </div>
+
+                {/* Tile 3: Preview Note Modal */}
+                <div
+                  className="bento-card-tile"
+                  onClick={() => {
+                    if (generatedNotes) {
+                      setIsPreviewModalOpen(true);
+                      setIsControlDeckOpen(false);
+                    }
+                  }}
+                  title="Open styled in-app Document Preview Modal"
+                  style={{ opacity: generatedNotes ? 1 : 0.6 }}
+                >
+                  <div className="bento-tile-icon blue">
+                    <Eye size={16} />
+                  </div>
+                  <div className="bento-tile-content">
+                    <span className="bento-tile-title">Preview Note</span>
+                    <span className="bento-tile-sub">In-App Pop-up</span>
+                  </div>
+                </div>
+
+                {/* Tile 4: Native Print / PDF */}
+                <div
+                  className="bento-card-tile"
+                  onClick={() => {
+                    if (generatedNotes) {
+                      handlePrint();
+                      setIsControlDeckOpen(false);
+                    }
+                  }}
+                  title="Open System Native Chrome Print Preview Dialog"
+                  style={{ opacity: generatedNotes ? 1 : 0.6 }}
+                >
+                  <div className="bento-tile-icon emerald">
+                    <Printer size={16} />
+                  </div>
+                  <div className="bento-tile-content">
+                    <span className="bento-tile-title">Native Print / PDF</span>
+                    <span className="bento-tile-sub">System Chrome</span>
+                  </div>
+                </div>
+
+                {/* Tile 5 (Full Width Span 2): Clear All Lecture Drafts */}
+                <div
+                  className="bento-card-tile span-2-tile danger-tile"
+                  onClick={() => setShowClearConfirm(true)}
+                  title="Reset and clear all saved lecture note drafts"
+                >
+                  <div className="bento-tile-icon red">
+                    <RotateCcw size={16} />
+                  </div>
+                  <div className="bento-tile-content" style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
+                    <span className="bento-tile-title">Clear All History</span>
+                    <span className="bento-tile-sub text-rose-400">Reset Notes</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Clear All Confirmation Modal Inside Drawer */}
+            {showClearConfirm && (
+              <div className="demo-clear-confirm-banner">
+                <p>Clear all saved lecture notes drafts?</p>
+                <div className="flex items-center gap-2 mt-2">
+                  <button
+                    type="button"
+                    className="confirm-yes-btn"
+                    onClick={handleClearAllSessions}
+                  >
+                    Yes, Clear All
+                  </button>
+                  <button
+                    type="button"
+                    className="confirm-no-btn"
+                    onClick={() => setShowClearConfirm(false)}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            )}
+
+            {/* 4. Live Search Input (Exact Match) */}
+            <div className="demo-drawer-search-bar">
+              <Search size={14} className="text-cyan-400" />
+              <input
+                type="text"
+                placeholder="Search past lecture notes by topic..."
+                value={controlDeckSearchQuery}
+                onChange={(e) => setControlDeckSearchQuery(e.target.value)}
+                className="demo-search-input"
+              />
+              {controlDeckSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setControlDeckSearchQuery('')}
+                  className="clear-search-btn"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
+            {/* 5. Scrollable Session List (Exact Match to Screenshot 1) */}
+            <div className="demo-drawer-sessions-list">
+              {filteredSessions.length === 0 ? (
+                <div className="demo-empty-sessions">
+                  <GraduationCap size={24} className="text-slate-500 mb-1" />
+                  <p>{controlDeckSearchQuery ? 'No matching lecture notes' : 'No lecture history yet'}</p>
+                </div>
+              ) : (
+                filteredSessions.map((s) => {
+                  const isActive = s.id === activeSession.id;
+                  const titleText = s.title || s.topic || 'New Lecture Note';
+                  const presetObj = PRESETS.find(p => p.id === s.preset) || PRESETS[0];
+
+                  return (
+                    <div
+                      key={s.id}
+                      className={`demo-session-item ${isActive ? 'active' : ''}`}
+                      onClick={() => {
+                        setActiveSessionId(s.id);
+                        setIsControlDeckOpen(false);
+                      }}
+                    >
+                      <div className="demo-session-info">
+                        <GraduationCap size={15} className={isActive ? 'text-cyan-400' : 'text-slate-400'} />
+                        <span className="demo-session-title">
+                          {titleText}
+                        </span>
+                      </div>
+
+                      <div className="demo-session-meta">
+                        <span className="demo-msg-badge">{presetObj.badge}</span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleDeleteSession(e, s.id);
+                          }}
+                          className="demo-delete-session-btn"
+                          title="Delete lecture note draft"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          </aside>
+        </div>
+      )}
+    </>
+  );
+};
+export default LectureNotesStudioView;

@@ -1,5 +1,5 @@
-import { toPng } from 'html-to-image';
-import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
+import { jsPDF } from 'jspdf';
 
 /**
  * Pre-processes Kroki SVG text nodes and dimensions for pixel-perfect PNG canvas export
@@ -23,83 +23,30 @@ function fixSvgTextContrast(container: HTMLElement) {
 }
 
 /**
- * Creates a painted offscreen clone container for unconstrained rendering
+ * High-DPI Direct PNG Image Export Engine (Zero Lag, Direct On-Screen Capture)
  */
-function createOffscreenClone(bubbleElement: HTMLElement): HTMLElement {
-  const cloneWrapper = document.createElement('div');
-  cloneWrapper.style.position = 'fixed';
-  cloneWrapper.style.left = '0';
-  cloneWrapper.style.top = '0';
-  cloneWrapper.style.zIndex = '-9999';
-  cloneWrapper.style.opacity = '0.99';
-  cloneWrapper.style.pointerEvents = 'none';
-  cloneWrapper.style.width = '840px'; // Standard container width
-  cloneWrapper.style.maxWidth = '840px';
-  cloneWrapper.style.height = 'auto';
-  cloneWrapper.style.maxHeight = 'none';
-  cloneWrapper.style.overflow = 'hidden';
-
-  const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-  const bgColor = isLight ? '#ffffff' : '#0b0f19';
-  const textColor = isLight ? '#0f172a' : '#f8fafc';
-
-  cloneWrapper.style.background = bgColor;
-  cloneWrapper.style.color = textColor;
-  cloneWrapper.style.padding = '32px';
-  cloneWrapper.style.borderRadius = '16px';
-  cloneWrapper.style.boxSizing = 'border-box';
-
-  const clone = bubbleElement.cloneNode(true) as HTMLElement;
-  clone.style.maxWidth = '100%';
-  clone.style.width = '100%';
-  clone.style.height = 'auto';
-  clone.style.overflow = 'hidden';
-  clone.style.boxShadow = 'none';
-  clone.style.transform = 'none';
-  clone.style.background = bgColor;
-  clone.style.color = textColor;
-
-  fixSvgTextContrast(clone);
-
-  const diagramContainers = clone.querySelectorAll<HTMLElement>('.kroki-container');
-  diagramContainers.forEach((container) => {
-    container.style.maxWidth = '100%';
-    container.style.maxHeight = 'none';
-    container.style.overflow = 'hidden';
-    container.style.width = '100%';
-    container.style.borderRadius = '12px';
-    container.style.background = isLight ? '#f8fafc' : '#090d16';
-  });
-
-  cloneWrapper.appendChild(clone);
-  document.body.appendChild(cloneWrapper);
-  return cloneWrapper;
-}
-
-/**
- * High-DPI Offscreen PNG Image Export Engine
- */
-export async function exportBubbleToImage(bubbleElement: HTMLElement, filenamePrefix: string = 'chat-bubble'): Promise<void> {
+export async function exportBubbleToImage(
+  bubbleElement: HTMLElement,
+  filenamePrefix: string = 'chat-bubble',
+  backgroundColor?: string
+): Promise<void> {
   if (!bubbleElement) return;
-  const cloneWrapper = createOffscreenClone(bubbleElement);
 
   try {
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    fixSvgTextContrast(bubbleElement);
+    const computedBg = window.getComputedStyle(bubbleElement).backgroundColor;
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-    const bgColor = isLight ? '#ffffff' : '#0b0f19';
+    const bg = backgroundColor || ((computedBg && computedBg !== 'rgba(0, 0, 0, 0)' && computedBg !== 'transparent') ? computedBg : (isLight ? '#ffffff' : '#0b0f19'));
 
-    const dataUrl = await toPng(cloneWrapper, {
-      pixelRatio: 2,
-      cacheBust: true,
-      backgroundColor: bgColor,
-      filter: (node) => {
-        if (node instanceof HTMLElement && node.classList.contains('bubble-actions')) {
-          return false;
-        }
-        return true;
-      }
+    const canvas = await html2canvas(bubbleElement, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: bg,
+      logging: false,
+      ignoreElements: (element) => element.classList.contains('bubble-actions')
     });
 
+    const dataUrl = canvas.toDataURL('image/png');
     const link = document.createElement('a');
     link.download = `${filenamePrefix}-${Date.now()}.png`;
     link.href = dataUrl;
@@ -107,76 +54,79 @@ export async function exportBubbleToImage(bubbleElement: HTMLElement, filenamePr
   } catch (err) {
     console.error('Image export failed:', err);
     alert('Failed to export image.');
-  } finally {
-    if (document.body.contains(cloneWrapper)) {
-      document.body.removeChild(cloneWrapper);
-    }
   }
 }
 
 /**
- * High-DPI Paginated Multi-Page A4 PDF Export Engine
+ * High-DPI Paginated Multi-Page A4 PDF Export Engine (Direct Canvas Slicing, Zero Blank Pages)
  */
-export async function exportBubbleToPdf(bubbleElement: HTMLElement, filenamePrefix: string = 'chat-document'): Promise<void> {
+export async function exportBubbleToPdf(
+  bubbleElement: HTMLElement,
+  filenamePrefix: string = 'chat-document',
+  backgroundColor?: string
+): Promise<void> {
   if (!bubbleElement) return;
-  const cloneWrapper = createOffscreenClone(bubbleElement);
 
   try {
-    await new Promise((resolve) => setTimeout(resolve, 150));
+    fixSvgTextContrast(bubbleElement);
+    const computedBg = window.getComputedStyle(bubbleElement).backgroundColor;
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
-    const bgColor = isLight ? '#ffffff' : '#0b0f19';
+    const bg = backgroundColor || ((computedBg && computedBg !== 'rgba(0, 0, 0, 0)' && computedBg !== 'transparent') ? computedBg : (isLight ? '#ffffff' : '#0b0f19'));
 
-    const dataUrl = await toPng(cloneWrapper, {
-      pixelRatio: 2,
-      cacheBust: true,
-      backgroundColor: bgColor,
-      filter: (node) => {
-        if (node instanceof HTMLElement && node.classList.contains('bubble-actions')) {
-          return false;
-        }
-        return true;
+    const canvas = await html2canvas(bubbleElement, {
+      scale: 2,
+      useCORS: true,
+      backgroundColor: bg,
+      logging: false,
+      ignoreElements: (element) => element.classList.contains('bubble-actions')
+    });
+
+    const pdf = new jsPDF({
+      orientation: 'portrait',
+      unit: 'mm',
+      format: 'a4'
+    });
+
+    const pageWidthMm = 210;
+    const pageHeightMm = 297;
+    const marginMm = 12;
+    const contentWidthMm = pageWidthMm - (marginMm * 2); // 186 mm
+    const contentHeightMm = pageHeightMm - (marginMm * 2); // 273 mm
+
+    const pxPerMm = canvas.width / contentWidthMm;
+    const pageHeightPx = Math.floor(contentHeightMm * pxPerMm);
+    const totalPages = Math.max(1, Math.ceil(canvas.height / pageHeightPx));
+
+    for (let i = 0; i < totalPages; i++) {
+      if (i > 0) {
+        pdf.addPage();
       }
-    });
 
-    const img = new Image();
-    img.src = dataUrl;
-    await new Promise((resolve) => {
-      img.onload = resolve;
-    });
+      const srcY = i * pageHeightPx;
+      const srcHeight = Math.min(pageHeightPx, canvas.height - srcY);
 
-    const canvasWidth = img.width;
-    const canvasHeight = img.height;
+      const pageCanvas = document.createElement('canvas');
+      pageCanvas.width = canvas.width;
+      pageCanvas.height = pageHeightPx;
+      const ctx = pageCanvas.getContext('2d');
+      if (ctx) {
+        ctx.fillStyle = bg;
+        ctx.fillRect(0, 0, pageCanvas.width, pageHeightPx);
+        ctx.drawImage(
+          canvas,
+          0, srcY, canvas.width, srcHeight,
+          0, 0, canvas.width, srcHeight
+        );
+      }
 
-    // Standard A4 Dimensions in points (72 DPI): 595.28 x 841.89 pt
-    const a4Width = 595.28;
-    const a4Height = 841.89;
-
-    // Calculate scaled height on A4 page
-    const imgPdfHeight = (canvasHeight * a4Width) / canvasWidth;
-
-    const pdf = new jsPDF('p', 'pt', 'a4');
-    let heightLeft = imgPdfHeight;
-    let position = 0;
-
-    // First page
-    pdf.addImage(dataUrl, 'PNG', 0, position, a4Width, imgPdfHeight);
-    heightLeft -= a4Height;
-
-    // Add extra pages if content exceeds single A4 page height
-    while (heightLeft > 0) {
-      position = heightLeft - imgPdfHeight;
-      pdf.addPage();
-      pdf.addImage(dataUrl, 'PNG', 0, position, a4Width, imgPdfHeight);
-      heightLeft -= a4Height;
+      const pageImgData = pageCanvas.toDataURL('image/jpeg', 0.95);
+      pdf.addImage(pageImgData, 'JPEG', marginMm, marginMm, contentWidthMm, contentHeightMm);
     }
 
     pdf.save(`${filenamePrefix}-${Date.now()}.pdf`);
   } catch (err) {
     console.error('PDF export failed:', err);
     alert('Failed to export PDF.');
-  } finally {
-    if (document.body.contains(cloneWrapper)) {
-      document.body.removeChild(cloneWrapper);
-    }
   }
 }
+

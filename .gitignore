@@ -51,6 +51,7 @@ secrets/*
 .gemini/
 .opencode/
 .impeccable/
+.qwen/
 PRODUCT.md
 PROMPTS_GENERIC.md
 PROMPTS_12MARKS.md

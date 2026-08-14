@@ -8,6 +8,7 @@ import { SystemPromptLibraryView } from './components/SystemPromptLibraryView';
 import { PromptLibraryView } from './components/PromptLibraryView';
 import { FunPersonaChatView } from './components/FunPersonaChatView';
 import { PracticalCodeLabView } from './components/PracticalCodeLabView';
+import { LectureNotesStudioView } from './components/LectureNotesStudioView';
 
 // Code-Split Heavy Studio Views for Faster Initial App Load & Bundle Optimization
 const DiagramStudioView = React.lazy(() => import('./components/DiagramStudioView').then(m => ({ default: m.DiagramStudioView })));
@@ -274,6 +275,7 @@ export const App: React.FC = () => {
   };
 
   const [currentUser, setCurrentUser] = useState<string>(() => localStorage.getItem('chatterbot_username') || '');
+  const [userRole, setUserRole] = useState<string>(() => localStorage.getItem('chatterbot_role') || 'student');
   const [authToken, setAuthToken] = useState<string>(() => localStorage.getItem('chatterbot_token') || '');
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(() => !localStorage.getItem('chatterbot_token'));
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
@@ -572,6 +574,7 @@ export const App: React.FC = () => {
   const handleLoginSuccess = async (username: string, token: string, role: string) => {
     setIsCloudSessionsLoaded(false);
     setCurrentUser(username);
+    setUserRole(role);
     setAuthToken(token);
     localStorage.setItem('chatterbot_username', username);
     localStorage.setItem('chatterbot_token', token);
@@ -721,6 +724,21 @@ export const App: React.FC = () => {
     };
 
     fetchCloudSessions();
+
+    // Passive app-focus & tab visibility re-validation (0 background timers, 0 battery drain)
+    const handleFocusCheck = () => {
+      if (document.visibilityState === 'visible') {
+        fetchCloudSessions();
+      }
+    };
+
+    window.addEventListener('visibilitychange', handleFocusCheck);
+    window.addEventListener('focus', handleFocusCheck);
+
+    return () => {
+      window.removeEventListener('visibilitychange', handleFocusCheck);
+      window.removeEventListener('focus', handleFocusCheck);
+    };
   }, [currentUser, authToken]);
 
   // Fetch & Load Account API Keys safely when currentUser logs in or opens app
@@ -1083,6 +1101,7 @@ export const App: React.FC = () => {
             theme={theme}
             onToggleTheme={handleToggleTheme}
             onSwitchToStandard={() => setAppLayoutMode('standard')}
+            userRole={userRole}
           />
           <SettingsModal
             isOpen={isSettingsOpen}
@@ -1318,6 +1337,15 @@ export const App: React.FC = () => {
               </React.Suspense>
             )}
 
+            {activeHubWorkspace === 'lecture_notes' && (
+              <LectureNotesStudioView
+                userKeys={userKeys}
+                customModels={customModels}
+                currentUser={currentUser}
+                isDemoView={true}
+              />
+            )}
+
             {activeHubWorkspace === 'fun_personas' && (
               <FunPersonaChatView
                 messages={activePersonaSession ? activePersonaSession.messages : []}
@@ -1454,6 +1482,7 @@ export const App: React.FC = () => {
           activeView={activeView}
           onViewChange={setActiveView}
           username={currentUser}
+          userRole={userRole}
           onLogout={handleLogout}
           onOpenProfileModal={() => setIsProfileModalOpen(true)}
           appLayoutMode={appLayoutMode}
@@ -1477,6 +1506,15 @@ export const App: React.FC = () => {
               customModels={customModels}
               promptMode={promptMode}
               onPromptModeChange={handlePromptModeChange}
+            />
+          )}
+
+          {activeView === 'lecture_notes' && (
+            <LectureNotesStudioView
+              userKeys={userKeys}
+              customModels={customModels}
+              currentUser={currentUser}
+              isDemoView={false}
             />
           )}
 

@@ -11,22 +11,6 @@ interface LoginModalProps {
   onClose?: () => void;
 }
 
-const LOCAL_USERS: Record<string, { password: string; role: string }> = {
-  "Admin@uday": { password: "Superm@n62", role: "admin" },
-  "admin@uday": { password: "Superm@n62", role: "admin" },
-  "sai_kiran": { password: "kiransir@bava", role: "student" },
-  "gagan": { password: "gagan@kranthi", role: "student" },
-  "akash": { password: "labbe@kiransir", role: "student" },
-  "sai_ram": { password: "sai@ram", role: "student" },
-  "tharun": { password: "mama@kiransir", role: "student" },
-  "ban": { password: "DataScientist", role: "student" },
-  "balraj": { password: "labbe@kiransir", role: "guest_student" },
-  "AV_Student": { password: "avcollege@student", role: "guest_student" },
-  "uday01": { password: "uday@01", role: "guest" },
-  "uday02": { password: "uday@02", role: "guest" },
-  "uday03": { password: "uday@03", role: "guest" }
-};
-
 export const LoginModal: React.FC<LoginModalProps> = ({
   isOpen,
   onLoginSuccess,
@@ -57,34 +41,29 @@ export const LoginModal: React.FC<LoginModalProps> = ({
       const response = await fetch(getApiUrl('/api/login'), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ username, password })
+        body: JSON.stringify({ username: username.trim(), password })
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        if (data.success) {
-          const userObj = data.user || data;
-          onLoginSuccess(
-            userObj.username || username,
-            userObj.token || `token_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-            userObj.role || 'student'
-          );
-          setLoading(false);
-          return;
-        }
+      const data = await response.json().catch(() => ({}));
+
+      if (response.ok && data.success) {
+        const userObj = data.user || data;
+        onLoginSuccess(
+          userObj.username || username.trim(),
+          userObj.token || `token_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          userObj.role || 'student'
+        );
+        setLoading(false);
+        return;
+      } else {
+        setErrorMsg(data.error || 'Invalid credentials. Please verify your username and password.');
       }
     } catch (err: any) {
-      console.warn('Serverless login endpoint unavailable, applying local credential verification', err);
+      console.error('Authentication request failed:', err);
+      setErrorMsg('Unable to connect to authentication server. Please check your network connection.');
+    } finally {
+      setLoading(false);
     }
-
-    // Local credential verification fallback
-    const matched = LOCAL_USERS[username] || LOCAL_USERS[username.trim()];
-    if (matched && matched.password === password) {
-      onLoginSuccess(username, `token_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`, matched.role);
-    } else {
-      setErrorMsg('Invalid credentials. Please verify your username and password.');
-    }
-    setLoading(false);
   };
 
   return (

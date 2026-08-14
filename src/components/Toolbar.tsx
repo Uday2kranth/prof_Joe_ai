@@ -35,6 +35,32 @@ export const DEFAULT_NAV_TOOLBAR_ITEMS: ToolbarItem[] = [
   { id: "cubes", title: "3D Cubes", icon: Box }
 ];
 
+export function getNavItemsForRole(role?: string): ToolbarItem[] {
+  if (role === 'teacher') {
+    return [
+      { id: "chat", title: "Chat", icon: MessageSquare },
+      { id: "lecture_notes", title: "Lecture Notes", icon: BookOpen },
+      { id: "examprep", title: "Exam Prep", icon: GraduationCap },
+      { id: "system_prompts", title: "System Prompts", icon: BookOpen },
+      { id: "prompts", title: "Prompts", icon: Sparkles },
+      { id: "diagrams", title: "Diagrams", icon: BarChart3 }
+    ];
+  }
+  if (role === 'admin') {
+    return [
+      { id: "chat", title: "Chat", icon: MessageSquare },
+      { id: "lecture_notes", title: "Lecture Notes", icon: BookOpen },
+      { id: "examprep", title: "Exam Prep", icon: GraduationCap },
+      { id: "system_prompts", title: "System Prompts", icon: BookOpen },
+      { id: "prompts", title: "Prompts", icon: Sparkles },
+      { id: "diagrams", title: "Diagrams", icon: BarChart3 },
+      { id: "fun_personas", title: "Fun Personas", icon: Theater },
+      { id: "cubes", title: "3D Cubes", icon: Box }
+    ];
+  }
+  return DEFAULT_NAV_TOOLBAR_ITEMS;
+}
+
 export function Toolbar({
   items = DEFAULT_NAV_TOOLBAR_ITEMS,
   defaultSelected = "chat",
