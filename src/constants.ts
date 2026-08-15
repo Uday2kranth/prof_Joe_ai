@@ -130,12 +130,10 @@ export const PROVIDERS: ProviderGroup[] = [
     id: 'nararouter',
     name: 'NaraRouter API',
     models: [
-      { value: 'mistral-large', name: 'Mistral Large (Free) [WS]' },
-      { value: 'mistral-medium-3-5', name: 'Mistral Medium 3.5 (Free) [WS]' },
-      { value: 'tencent-hy3', name: 'Tencent Hunyuan 3 (Free)' },
-      { value: 'meta-llama/llama-3-8b-instruct', name: 'Llama 3 8B (Omni)' },
-      { value: 'google/gemini-2.5-flash', name: 'Gemini 2.5 Flash (Omni) [WS]' },
-      { value: 'anthropic/claude-3-haiku', name: 'Claude 3 Haiku (Omni)' }
+      { value: 'agnes-2.5-flash', name: 'Agnes 2.5 Flash (NaraRouter) [Free Router]' },
+      { value: 'laguna-s-2.1', name: 'Laguna S 2.1 Agent (NaraRouter) [Free Router]' },
+      { value: 'agnes-2.0-flash', name: 'Agnes 2.0 Flash (NaraRouter) [Free Router]' },
+      { value: 'tencent-hy3-free', name: 'Tencent Hunyuan 3 (NaraRouter) [Free Router]' }
     ]
   },
   {

@@ -141,6 +141,19 @@ export default async function handler(req, res) {
                     ]
                 });
             }
+            if (provider === 'nararouter') {
+                return res.status(200).json({
+                    success: true,
+                    provider: 'nararouter',
+                    count: 4,
+                    models: [
+                        { id: 'agnes-2.5-flash', name: 'Agnes 2.5 Flash [Free Router]', isFree: true },
+                        { id: 'laguna-s-2.1', name: 'Laguna S 2.1 Agent [Free Router]', isFree: true },
+                        { id: 'agnes-2.0-flash', name: 'Agnes 2.0 Flash [Free Router]', isFree: true },
+                        { id: 'tencent-hy3-free', name: 'Tencent Hunyuan 3 [Free Router]', isFree: true }
+                    ]
+                });
+            }
             const errText = await response.text().catch(() => '');
             return res.status(response.status).json({
                 error: `Failed to fetch models from ${provider} (HTTP ${response.status}): ${errText.substring(0, 150)}`
@@ -221,7 +234,8 @@ export default async function handler(req, res) {
                     freeTag = '[Free]';
                 }
             } else if (provider === 'nararouter') {
-                if (id.includes('free') || id.includes('mistral') || id.includes('tencent')) {
+                const activeNaraModels = ['agnes-2.5-flash', 'laguna-s-2.1', 'agnes-2.0-flash', 'tencent-hy3-free'];
+                if (activeNaraModels.includes(id) || id.includes('free') || id.includes('agnes') || id.includes('laguna') || id.includes('tencent')) {
                     isFree = true;
                     freeTag = '[Free Router]';
                 }
