@@ -16,7 +16,9 @@ import {
   ChevronRight,
   Zap,
   Package,
-  MessageSquare
+  MessageSquare,
+  Edit3,
+  RotateCcw
 } from 'lucide-react';
 import 'katex/dist/katex.min.css';
 import { extractDiagrams, fetchKrokiSvg } from '../services/krokiService';
@@ -38,18 +40,58 @@ interface GeneratedFile {
 
 interface CodeDungeonMessageBubbleProps {
   msg: { role: 'user' | 'assistant'; content: string };
+  isLastUserMessage?: boolean;
+  isLastAssistantMessage?: boolean;
+  onRetry?: () => void;
+  onEditUserMessage?: (oldText: string) => void;
   extractCodeBlocksFromMessage: (content: string) => GeneratedFile[];
   handleOpenInIde: (file: GeneratedFile) => void;
 }
 
 const CodeDungeonMessageBubble: React.FC<CodeDungeonMessageBubbleProps> = ({
   msg,
+  isLastUserMessage,
+  isLastAssistantMessage,
+  onRetry,
+  onEditUserMessage,
   extractCodeBlocksFromMessage,
   handleOpenInIde
 }) => {
   const isUser = msg.role === 'user';
   const [renderedHtml, setRenderedHtml] = useState<string>('');
   const [isCopied, setIsCopied] = useState(false);
+  const [isInlineEditing, setIsInlineEditing] = useState(false);
+  const [draftContent, setDraftContent] = useState(msg.content || '');
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null);
+
+  useEffect(() => {
+    setDraftContent(msg.content || '');
+  }, [msg.content]);
+
+  const handleStartEdit = () => {
+    setIsInlineEditing(true);
+    setDraftContent(msg.content || '');
+    setTimeout(() => {
+      if (editTextareaRef.current) {
+        editTextareaRef.current.focus();
+        editTextareaRef.current.style.height = 'auto';
+        editTextareaRef.current.style.height = `${Math.min(editTextareaRef.current.scrollHeight, 200)}px`;
+      }
+    }, 50);
+  };
+
+  const handleCancelEdit = () => {
+    setIsInlineEditing(false);
+    setDraftContent(msg.content || '');
+  };
+
+  const handleSaveEdit = () => {
+    if (!draftContent.trim()) return;
+    setIsInlineEditing(false);
+    if (onEditUserMessage) {
+      onEditUserMessage(draftContent.trim());
+    }
+  };
 
   const handleCopyMessage = () => {
     if (!msg.content) return;
@@ -112,37 +154,160 @@ const CodeDungeonMessageBubble: React.FC<CodeDungeonMessageBubbleProps> = ({
         position: 'relative'
       }}
     >
-      {/* Header bar with role label and Copy button */}
+      {/* Header bar with role label and Action buttons */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', gap: '8px' }}>
         <div style={{ fontSize: '0.7rem', fontWeight: 700, opacity: 0.7 }}>
           {isUser ? 'Student Prompt' : 'Prof. Joe AI'}
         </div>
-        <button
-          type="button"
-          onClick={handleCopyMessage}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: '4px',
-            background: isCopied ? 'rgba(6, 182, 212, 0.25)' : 'rgba(255, 255, 255, 0.08)',
-            border: isCopied ? '1px solid rgba(6, 182, 212, 0.5)' : '1px solid rgba(255, 255, 255, 0.15)',
-            borderRadius: '6px',
-            padding: '2px 7px',
-            fontSize: '0.68rem',
-            fontWeight: 600,
-            color: isCopied ? '#38bdf8' : '#cbd5e1',
-            cursor: 'pointer',
-            transition: 'all 0.2s ease'
-          }}
-          title={isCopied ? 'Copied to clipboard!' : 'Copy message text'}
-        >
-          {isCopied ? <Check size={12} className="text-cyan-400" /> : <Copy size={12} />}
-          <span>{isCopied ? 'Copied' : 'Copy'}</span>
-        </button>
+        {!isInlineEditing && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <button
+              type="button"
+              onClick={handleCopyMessage}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                background: isCopied ? 'rgba(6, 182, 212, 0.25)' : 'rgba(255, 255, 255, 0.08)',
+                border: isCopied ? '1px solid rgba(6, 182, 212, 0.5)' : '1px solid rgba(255, 255, 255, 0.15)',
+                borderRadius: '6px',
+                padding: '2px 7px',
+                fontSize: '0.68rem',
+                fontWeight: 600,
+                color: isCopied ? '#38bdf8' : '#cbd5e1',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              title={isCopied ? 'Copied to clipboard!' : 'Copy message text'}
+            >
+              {isCopied ? <Check size={12} className="text-cyan-400" /> : <Copy size={12} />}
+              <span>{isCopied ? 'Copied' : 'Copy'}</span>
+            </button>
+
+            {isUser && isLastUserMessage && onEditUserMessage && (
+              <button
+                type="button"
+                onClick={handleStartEdit}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '6px',
+                  padding: '2px 7px',
+                  fontSize: '0.68rem',
+                  fontWeight: 600,
+                  color: '#cbd5e1',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                title="Edit Prompt in Bubble"
+              >
+                <Edit3 size={12} />
+                <span>Edit</span>
+              </button>
+            )}
+
+            {!isUser && isLastAssistantMessage && onRetry && (
+              <button
+                type="button"
+                onClick={onRetry}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  background: 'rgba(6, 182, 212, 0.15)',
+                  border: '1px solid rgba(6, 182, 212, 0.3)',
+                  borderRadius: '6px',
+                  padding: '2px 7px',
+                  fontSize: '0.68rem',
+                  fontWeight: 600,
+                  color: '#38bdf8',
+                  cursor: 'pointer',
+                  transition: 'all 0.2s ease'
+                }}
+                title="Regenerate / Retry Answer"
+              >
+                <RotateCcw size={12} />
+                <span>Retry</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {isUser ? (
-        <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+        isInlineEditing ? (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', width: '100%', minWidth: '240px' }}>
+            <textarea
+              ref={editTextareaRef}
+              value={draftContent}
+              onChange={(e) => {
+                setDraftContent(e.target.value);
+                e.target.style.height = 'auto';
+                e.target.style.height = `${Math.min(e.target.scrollHeight, 200)}px`;
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSaveEdit();
+                } else if (e.key === 'Escape') {
+                  handleCancelEdit();
+                }
+              }}
+              style={{
+                width: '100%',
+                background: 'rgba(15, 23, 42, 0.7)',
+                border: '1px solid rgba(6, 182, 212, 0.5)',
+                borderRadius: '8px',
+                padding: '6px 8px',
+                color: '#f8fafc',
+                fontSize: '0.84rem',
+                fontFamily: 'inherit',
+                resize: 'none',
+                outline: 'none',
+                minHeight: '40px'
+              }}
+              placeholder="Edit your lab prompt..."
+            />
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px' }}>
+              <button
+                type="button"
+                onClick={handleCancelEdit}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '6px',
+                  padding: '3px 8px',
+                  fontSize: '0.72rem',
+                  color: '#cbd5e1',
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '4px'
+                }}
+                title="Cancel Edit (Esc)"
+              >
+                <X size={11} />
+                <span>Cancel</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleSaveEdit}
+                disabled={!draftContent.trim()}
+                className="extractor-btn-primary"
+                style={{ padding: '3px 10px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                title="Save and submit (Enter)"
+              >
+                <Send size={11} />
+                <span>Save & Submit</span>
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div style={{ whiteSpace: 'pre-wrap' }}>{msg.content}</div>
+        )
       ) : (
         <div
           className="formatted-content markdown-body"
@@ -177,6 +342,8 @@ const CodeDungeonMessageBubble: React.FC<CodeDungeonMessageBubbleProps> = ({
 interface PracticalCodeLabViewProps {
   onBackToHub?: () => void;
   onSendMessage: (prompt: string, webSearch: boolean, mode: string, systemPrompt?: string) => void;
+  onRetry?: () => void;
+  onEditUserMessage?: (oldText: string) => void;
   isLoading: boolean;
   messages: any[];
   selectedProvider?: string;
@@ -205,6 +372,8 @@ interface GeneratedFile {
 export function PracticalCodeLabView({
   onBackToHub: _onBackToHub,
   onSendMessage,
+  onRetry,
+  onEditUserMessage,
   isLoading,
   messages,
   selectedProvider = 'Ollama Cloud',
@@ -570,6 +739,9 @@ Follow these mandatory formatting rules for all responses:
 
   const activeFile = files[activeFileIndex] || null;
 
+  const lastUserMsgIndex = messages.map(m => m.role).lastIndexOf('user');
+  const lastAssistantMsgIndex = messages.map(m => m.role).lastIndexOf('assistant');
+
   return (
     <div className="code-lab-view-container">
       {/* Header Bar */}
@@ -762,27 +934,31 @@ Follow these mandatory formatting rules for all responses:
       <div ref={containerRef} className="code-lab-split-pane">
         {/* Left Panel: Chat & Prompt OCR */}
         <div className={`code-lab-chat-panel ${mobileActiveTab === 'chat' ? 'mobile-active' : 'mobile-hidden'}`} style={{ width: `${leftPaneWidthPercent}%` }}>
-          {/* Chat Messages */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
-            {messages.length === 0 ? (
-              <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--text-muted)', maxWidth: '340px' }}>
-                <Code size={40} style={{ marginBottom: '12px', opacity: 0.4 }} />
-                <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>Practical Code & ML Lab Ready</h3>
-                <p style={{ fontSize: '0.78rem', lineHeight: 1.5, color: 'var(--text-secondary)' }}>
-                  Ask Prof. Joe AI to write lab code, train ML models, process paper dataset tables, or generate multi-file web apps.
-                </p>
+              {/* Chat Messages */}
+              <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {messages.length === 0 ? (
+                  <div style={{ margin: 'auto', textAlign: 'center', color: 'var(--text-muted)', maxWidth: '340px' }}>
+                    <Code size={40} style={{ marginBottom: '12px', opacity: 0.4 }} />
+                    <h3 style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: '4px' }}>Practical Code & ML Lab Ready</h3>
+                    <p style={{ fontSize: '0.78rem', lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+                      Ask Prof. Joe AI to write lab code, train ML models, process paper dataset tables, or generate multi-file web apps.
+                    </p>
+                  </div>
+                ) : (
+                  messages.map((msg, idx) => (
+                    <CodeDungeonMessageBubble
+                      key={idx}
+                      msg={msg}
+                      isLastUserMessage={idx === lastUserMsgIndex}
+                      isLastAssistantMessage={idx === lastAssistantMsgIndex}
+                      onRetry={onRetry}
+                      onEditUserMessage={onEditUserMessage}
+                      extractCodeBlocksFromMessage={extractCodeBlocksFromMessage}
+                      handleOpenInIde={handleOpenInIde}
+                    />
+                  ))
+                )}
               </div>
-            ) : (
-              messages.map((msg, idx) => (
-                <CodeDungeonMessageBubble
-                  key={idx}
-                  msg={msg}
-                  extractCodeBlocksFromMessage={extractCodeBlocksFromMessage}
-                  handleOpenInIde={handleOpenInIde}
-                />
-              ))
-            )}
-          </div>
 
           {/* Prompt Input Box with Quick Extractor OCR */}
           <div className="codelab-bottom-input-bar" style={{ padding: '14px' }}>

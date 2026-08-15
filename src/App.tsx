@@ -525,6 +525,18 @@ export const App: React.FC = () => {
         s.id === activeSession.id ? { ...s, provider, updatedAt: Date.now() } : s
       )
     );
+    if ((activeView === 'fun_personas' || activeHubWorkspace === 'fun_personas') && activePersonaSession) {
+      setPersonaSessions(prev =>
+        prev.map(s => s.id === activePersonaSession.id ? { ...s, provider, updatedAt: Date.now() } : s)
+      );
+    }
+    if (activeHubWorkspace === 'code_lab' && activeCodeLabSession) {
+      setCodeLabPresetSessions(prev => {
+        const list = prev[activeCodeLabPresetId] || [];
+        const updatedList = list.map(s => s.id === activeCodeLabSession.id ? { ...s, provider, updatedAt: Date.now() } : s);
+        return { ...prev, [activeCodeLabPresetId]: updatedList };
+      });
+    }
   };
 
   const handleModelChange = (model: string) => {
@@ -537,6 +549,18 @@ export const App: React.FC = () => {
         s.id === activeSession.id ? { ...s, model, updatedAt: Date.now() } : s
       )
     );
+    if ((activeView === 'fun_personas' || activeHubWorkspace === 'fun_personas') && activePersonaSession) {
+      setPersonaSessions(prev =>
+        prev.map(s => s.id === activePersonaSession.id ? { ...s, model, updatedAt: Date.now() } : s)
+      );
+    }
+    if (activeHubWorkspace === 'code_lab' && activeCodeLabSession) {
+      setCodeLabPresetSessions(prev => {
+        const list = prev[activeCodeLabPresetId] || [];
+        const updatedList = list.map(s => s.id === activeCodeLabSession.id ? { ...s, model, updatedAt: Date.now() } : s);
+        return { ...prev, [activeCodeLabPresetId]: updatedList };
+      });
+    }
   };
 
   const handlePersonaChange = (persona: string) => {
@@ -997,7 +1021,12 @@ export const App: React.FC = () => {
   };
 
   const handleRetryLastAssistantMessage = async () => {
-    const currentSess = activeSession || sessions[0];
+    const isCodeLabWorkspace = activeHubWorkspace === 'code_lab';
+    const isPersonaWorkspace = activeView === 'fun_personas' || activeHubWorkspace === 'fun_personas';
+    const currentSess = isCodeLabWorkspace
+      ? activeCodeLabSession
+      : (isPersonaWorkspace ? activePersonaSession : (activeSession || sessions[0]));
+
     if (!currentSess || currentSess.messages.length === 0 || isLoading) return;
 
     let updated = [...currentSess.messages];
@@ -1006,24 +1035,79 @@ export const App: React.FC = () => {
     }
     if (updated.length === 0) return;
 
-    setSessions(prev => prev.map(s => {
-      if (s.id === currentSess.id) {
-        return { ...s, messages: updated, updatedAt: Date.now() };
-      }
-      return s;
-    }));
+    let effectivePersona = 'default';
+    if (isPersonaWorkspace && isPersonaEnabled) {
+      effectivePersona = selectedPersona || 'default';
+    }
 
+    const activePresetObj = ACADEMIC_PRESETS.find(p => p.id === activeCodeLabPresetId);
+    const effectiveSystemPrompt = isCodeLabWorkspace
+      ? activePresetObj?.systemInstruction
+      : currentSess.systemPrompt;
+
+    const updateSessState = (msgList: Message[]) => {
+      if (isCodeLabWorkspace) {
+        setCodeLabPresetSessions(prev => {
+          const list = prev[activeCodeLabPresetId] || [];
+          let found = false;
+          const updatedList = list.map(s => {
+            if (s.id === activeCodeLabSession.id) {
+              found = true;
+              return { ...s, messages: msgList, updatedAt: Date.now() };
+            }
+            return s;
+          });
+          if (!found) {
+            const updatedActive = { ...activeCodeLabSession, messages: msgList, updatedAt: Date.now() };
+            updatedList.unshift(updatedActive);
+          }
+          const next = { ...prev, [activeCodeLabPresetId]: updatedList };
+          const activeSess = updatedList.find(s => s.id === activeCodeLabSession.id) || updatedList[0];
+          if (activeSess) {
+            syncCodeLabPresetSessions(currentUser || 'guest', activeCodeLabPresetId, activeSess, next);
+          }
+          return next;
+        });
+      } else if (isPersonaWorkspace) {
+        setPersonaSessions(prev => {
+          const next = prev.map(s => {
+            if (s.id === currentSess.id) {
+              return { ...s, messages: msgList, updatedAt: Date.now() };
+            }
+            return s;
+          });
+          if (currentUser) {
+            localStorage.setItem(`chatterbot_persona_sessions_${currentUser}`, JSON.stringify(next));
+          }
+          return next;
+        });
+      } else {
+        setSessions(prev => prev.map(s => {
+          if (s.id === currentSess.id) {
+            return { ...s, messages: msgList, updatedAt: Date.now() };
+          }
+          return s;
+        }));
+      }
+    };
+
+    updateSessState(updated);
     setIsLoading(true);
+
+    const apiPayloadMessages = (!isPersonaWorkspace || effectivePersona === 'default')
+      ? updated.filter(m => !m.personaTag || m.personaTag === 'default')
+      : updated;
 
     try {
       const response = await sendChatMessage(
         selectedProvider,
         selectedModel,
-        updated,
+        apiPayloadMessages,
         userKeys,
-        false,
-        'auto',
-        currentSess.systemPrompt
+        isPersistentWebSearch,
+        promptMode,
+        effectiveSystemPrompt,
+        effectivePersona
       );
 
       const assistantMsg: Message = {
@@ -1032,24 +1116,147 @@ export const App: React.FC = () => {
         content: response.content,
         timestamp: Date.now(),
         modelUsed: response.modelUsed,
+        personaTag: effectivePersona,
         usage: response.usage
       };
 
-      setSessions(prev => prev.map(s => {
-        if (s.id === currentSess.id) {
-          return { ...s, messages: [...updated, assistantMsg], updatedAt: Date.now() };
-        }
-        return s;
-      }));
+      updateSessState([...updated, assistantMsg]);
     } catch (err: any) {
-      console.error(err);
+      const errorMsg: Message = {
+        id: `msg-${Date.now() + 1}`,
+        role: 'assistant',
+        content: `❌ **Failed to query model:** ${err.message || 'Unknown network error.'}`,
+        timestamp: Date.now()
+      };
+      updateSessState([...updated, errorMsg]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  const handleEditLastUserMessage = (_oldText: string) => {
-    setActiveView('chat');
+  const handleEditLastUserMessage = async (newText: string) => {
+    const isCodeLabWorkspace = activeHubWorkspace === 'code_lab';
+    const isPersonaWorkspace = activeView === 'fun_personas' || activeHubWorkspace === 'fun_personas';
+    const currentSess = isCodeLabWorkspace
+      ? activeCodeLabSession
+      : (isPersonaWorkspace ? activePersonaSession : (activeSession || sessions[0]));
+
+    if (!currentSess || currentSess.messages.length === 0 || !newText.trim()) return;
+
+    // Find index of the last user message
+    const lastUserIdx = currentSess.messages.map(m => m.role).lastIndexOf('user');
+    if (lastUserIdx < 0) return;
+
+    let effectivePersona = 'default';
+    if (isPersonaWorkspace && isPersonaEnabled) {
+      effectivePersona = selectedPersona || 'default';
+    }
+
+    // Truncate messages array up to lastUserIdx (removing that user turn and any following assistant response)
+    const rolledBackMessages = currentSess.messages.slice(0, lastUserIdx);
+
+    const userMessage: Message = {
+      id: `msg-${Date.now()}`,
+      role: 'user',
+      content: newText.trim(),
+      timestamp: Date.now(),
+      personaTag: effectivePersona
+    };
+
+    const updated = [...rolledBackMessages, userMessage];
+
+    const activePresetObj = ACADEMIC_PRESETS.find(p => p.id === activeCodeLabPresetId);
+    const effectiveSystemPrompt = isCodeLabWorkspace
+      ? activePresetObj?.systemInstruction
+      : currentSess.systemPrompt;
+
+    const updateSessState = (msgList: Message[]) => {
+      if (isCodeLabWorkspace) {
+        setCodeLabPresetSessions(prev => {
+          const list = prev[activeCodeLabPresetId] || [];
+          let found = false;
+          const updatedList = list.map(s => {
+            if (s.id === activeCodeLabSession.id) {
+              found = true;
+              return { ...s, messages: msgList, updatedAt: Date.now() };
+            }
+            return s;
+          });
+          if (!found) {
+            const updatedActive = { ...activeCodeLabSession, messages: msgList, updatedAt: Date.now() };
+            updatedList.unshift(updatedActive);
+          }
+          const next = { ...prev, [activeCodeLabPresetId]: updatedList };
+          const activeSess = updatedList.find(s => s.id === activeCodeLabSession.id) || updatedList[0];
+          if (activeSess) {
+            syncCodeLabPresetSessions(currentUser || 'guest', activeCodeLabPresetId, activeSess, next);
+          }
+          return next;
+        });
+      } else if (isPersonaWorkspace) {
+        setPersonaSessions(prev => {
+          const next = prev.map(s => {
+            if (s.id === currentSess.id) {
+              return { ...s, messages: msgList, updatedAt: Date.now() };
+            }
+            return s;
+          });
+          if (currentUser) {
+            localStorage.setItem(`chatterbot_persona_sessions_${currentUser}`, JSON.stringify(next));
+          }
+          return next;
+        });
+      } else {
+        setSessions(prev => prev.map(s => {
+          if (s.id === currentSess.id) {
+            return { ...s, messages: msgList, updatedAt: Date.now() };
+          }
+          return s;
+        }));
+      }
+    };
+
+    updateSessState(updated);
+    setIsLoading(true);
+
+    const apiPayloadMessages = (!isPersonaWorkspace || effectivePersona === 'default')
+      ? updated.filter(m => !m.personaTag || m.personaTag === 'default')
+      : updated;
+
+    try {
+      const response = await sendChatMessage(
+        selectedProvider,
+        selectedModel,
+        apiPayloadMessages,
+        userKeys,
+        isPersistentWebSearch,
+        promptMode,
+        effectiveSystemPrompt,
+        effectivePersona
+      );
+
+      const assistantMsg: Message = {
+        id: `msg-${Date.now() + 1}`,
+        role: 'assistant',
+        content: response.content,
+        timestamp: Date.now(),
+        modelUsed: response.modelUsed,
+        personaTag: effectivePersona,
+        usage: response.usage
+      };
+
+      updateSessState([...updated, assistantMsg]);
+    } catch (err: any) {
+      const errorMsg: Message = {
+        id: `msg-${Date.now() + 1}`,
+        role: 'assistant',
+        content: `❌ **Failed to query model:** ${err.message || 'Unknown network error.'}`,
+        timestamp: Date.now()
+      };
+      updateSessState([...updated, errorMsg]);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleLoadPromptToChat = (_promptText: string) => {
@@ -1389,6 +1596,8 @@ export const App: React.FC = () => {
                 onSendMessage={(prompt, webSearch, mode) => {
                   handleSendMessage(prompt, webSearch, mode);
                 }}
+                onRetry={handleRetryLastAssistantMessage}
+                onEditUserMessage={handleEditLastUserMessage}
                 isLoading={isLoading}
                 messages={activeCodeLabSession ? activeCodeLabSession.messages : []}
                 selectedProvider={selectedProvider}

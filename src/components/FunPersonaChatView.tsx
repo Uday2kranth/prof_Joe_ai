@@ -1,22 +1,28 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   Send, 
   Paperclip, 
   ChevronDown, 
+  ChevronUp,
   Check, 
   Plus, 
   Trash2, 
   Clock, 
   X, 
   Globe,
-  Eye,
-  Printer,
-  BarChart2,
-  RotateCcw,
-  Zap,
-  Search,
-  FileCode,
-  FileText
+  Eye, 
+  Printer, 
+  BarChart2, 
+  RotateCcw, 
+  Zap, 
+  Search, 
+  FileCode, 
+  FileText,
+  MessageSquare,
+  BookOpen,
+  List,
+  ListFilter,
+  ArrowRight
 } from 'lucide-react';
 import { useTypewriterPlaceholder } from '../hooks/useTypewriterPlaceholder';
 import type { Message, ChatSession } from '../types';
@@ -79,6 +85,8 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
     return localStorage.getItem('chatterbot_persona_persistent_websearch') === 'true';
   });
   const [isSessionPreviewOpen, setIsSessionPreviewOpen] = useState(false);
+  const [isOutlineDrawerOpen, setIsOutlineDrawerOpen] = useState(false);
+  const [outlineSearchQuery, setOutlineSearchQuery] = useState('');
 
   // Persona Character Panel & History Drawer State
   const [isPersonaDrawerOpen, setIsPersonaDrawerOpen] = useState(false);
@@ -123,6 +131,78 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // 📑 Parse single-line numbered user questions for persona chat outline
+  const userQueries = useMemo(() => {
+    return messages
+      .filter(m => m.role === 'user')
+      .map((m, idx) => {
+        const cleanText = m.content
+          .replace(/```[\s\S]*?```/g, '')
+          .replace(/\*\*|`|_|#/g, '')
+          .split('\n')
+          .map(s => s.trim())
+          .filter(Boolean)
+          .join(' ')
+          .slice(0, 85);
+        return {
+          id: m.id,
+          index: idx + 1,
+          badge: `Q${idx + 1}`,
+          title: cleanText || `Question ${idx + 1}`,
+          rawContent: m.content
+        };
+      });
+  }, [messages]);
+
+  const filteredUserQueries = useMemo(() => {
+    if (!outlineSearchQuery.trim()) return userQueries;
+    const qLower = outlineSearchQuery.toLowerCase();
+    return userQueries.filter(q =>
+      q.title.toLowerCase().includes(qLower) ||
+      q.rawContent.toLowerCase().includes(qLower)
+    );
+  }, [userQueries, outlineSearchQuery]);
+
+  const handleJumpToQuery = (msgId: string) => {
+    setIsOutlineDrawerOpen(false);
+    let targetEl = document.getElementById(`msg-${msgId}`);
+    if (!targetEl) {
+      const qObj = userQueries.find(q => q.id === msgId);
+      if (qObj) {
+        const clean = qObj.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+        const allBubbles = Array.from(document.querySelectorAll('.message-row.user-row, .user-bubble, [id^="msg-"]'));
+        targetEl = (allBubbles.find(el => (el.textContent || '').toLowerCase().replace(/[^a-z0-9]/g, '').includes(clean)) as HTMLElement) || null;
+      }
+    }
+    if (targetEl) {
+      targetEl.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      targetEl.classList.add('highlight-query');
+      setTimeout(() => targetEl?.classList.remove('highlight-query'), 2000);
+    }
+  };
+
+  const handleScrollToTop = () => {
+    const scrollContainer = document.querySelector('.persona-messages-container, .messages-scroll-area, .chat-messages-container');
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    const firstMsg = document.querySelector('.message-row, .user-bubble');
+    if (firstMsg) {
+      firstMsg.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
+  const handleScrollToBottom = () => {
+    const scrollContainer = document.querySelector('.persona-messages-container, .messages-scroll-area, .chat-messages-container');
+    if (scrollContainer) {
+      scrollContainer.scrollTo({ top: scrollContainer.scrollHeight + 10000, behavior: 'smooth' });
+    }
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+    textareaRef.current?.focus();
+  };
 
   const currentProviderGroup = PROVIDERS.find(p => p.id === selectedProvider || p.name === selectedProvider) || PROVIDERS[0];
   const activePersonaObj = PERSONAS.find(p => p.id === selectedPersona) || PERSONAS[1];
@@ -206,6 +286,9 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
       reader.readAsText(file);
     }
   };
+
+  const lastUserMsgIndex = messages.map(m => m.role).lastIndexOf('user');
+  const lastAssistantMsgIndex = messages.map(m => m.role).lastIndexOf('assistant');
 
   const handleExportFullChatPdf = () => {
     handleDirectSessionPrint();
@@ -605,6 +688,8 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
                   key={msg.id || index}
                   message={msg}
                   isLast={index === messages.length - 1}
+                  isLastUserMessage={index === lastUserMsgIndex}
+                  isLastAssistantMessage={index === lastAssistantMsgIndex}
                   onRetry={onRetry}
                   onEditUserMessage={onEditUserMessage}
                 />
@@ -828,6 +913,18 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
                         </div>
                       )}
                     </div>
+
+                    {userQueries.length > 0 && (
+                      <button
+                        type="button"
+                        onClick={() => setIsOutlineDrawerOpen(true)}
+                        className="input-dock-outline-btn"
+                        title={`Open Questions Outline (${userQueries.length} Questions)`}
+                      >
+                        <ListFilter size={13} />
+                        <span>Outline ({userQueries.length})</span>
+                      </button>
+                    )}
                   </>
                 )}
               </div>
@@ -932,6 +1029,147 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
           </div>
         </form>
       </div>
+
+      {/* 🧭 Vertical Navigation Micro-Dock (Stationed on Desktop Right Margin) */}
+      {userQueries.length > 0 && (
+        <div className="parchment-vertical-micro-dock" aria-label="Persona Chat Navigation Dock">
+          <button
+            type="button"
+            onClick={handleScrollToTop}
+            className="micro-dock-btn"
+            title="Scroll to First Message"
+          >
+            <ChevronUp size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsOutlineDrawerOpen(true)}
+            className="micro-dock-btn outline-active"
+            title={`Open Questions Outline (${userQueries.length} Questions)`}
+          >
+            <BookOpen size={18} />
+            <span className="micro-dock-count">{userQueries.length}</span>
+          </button>
+          <button
+            type="button"
+            onClick={handleScrollToBottom}
+            className="micro-dock-btn"
+            title="Jump to Latest Message & Composer"
+          >
+            <ChevronDown size={18} />
+          </button>
+        </div>
+      )}
+
+      {/* 📖 Isolated Persona Questions Outline Drawer (Rule #1 DOM Root Placement) */}
+      {isOutlineDrawerOpen && (
+        <div className="demo-drawer-overlay right-drawer" onClick={() => setIsOutlineDrawerOpen(false)} style={{ zIndex: 999999 }}>
+          <aside className="studio-outline-drawer" onClick={(e) => e.stopPropagation()}>
+            {/* 1. Drawer Header Bar (Compact Inline Single-Row Plate) */}
+            <div className="demo-drawer-header" style={{ marginBottom: '14px', paddingBottom: '12px' }}>
+              <div className="demo-drawer-brand" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="brand-circle">
+                  <List size={16} className="text-cyan-400" />
+                </div>
+                <div className="brand-text" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#f8fafc', whiteSpace: 'nowrap' }}>
+                    Persona Chat Outline
+                  </h3>
+                  <span
+                    style={{
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      background: 'rgba(6, 182, 212, 0.15)',
+                      color: '#38bdf8',
+                      border: '1px solid rgba(6, 182, 212, 0.35)',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {userQueries.length} Questions
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsOutlineDrawerOpen(false)}
+                className="demo-icon-btn"
+                aria-label="Close Chat Outline"
+                title="Close Chat Outline"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* 2. Primary Action Button: Jump to Composer & Send */}
+            <div className="demo-primary-action-wrap" style={{ marginBottom: '12px' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOutlineDrawerOpen(false);
+                  handleScrollToBottom();
+                }}
+                className="demo-new-chat-btn"
+                style={{
+                  background: 'linear-gradient(135deg, #0284c7, #06b6d4)',
+                  color: '#ffffff',
+                  boxShadow: '0 4px 14px rgba(6, 182, 212, 0.35)'
+                }}
+              >
+                <Zap size={15} />
+                <span>Jump to Composer & Input Dock</span>
+              </button>
+            </div>
+
+            {/* 3. Search Outline Input with Clean Spacing */}
+            <div className="demo-drawer-search-bar" style={{ marginBottom: '14px' }}>
+              <Search size={14} className="text-cyan-400" />
+              <input
+                type="text"
+                placeholder="Search question queries..."
+                value={outlineSearchQuery}
+                onChange={(e) => setOutlineSearchQuery(e.target.value)}
+                className="demo-search-input"
+              />
+              {outlineSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setOutlineSearchQuery('')}
+                  className="clear-search-btn"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
+            {/* 4. Single-Line Numbered Questions List with Model-Picker Style Smooth Scroll */}
+            <div className="studio-outline-list">
+              {filteredUserQueries.length === 0 ? (
+                <div className="demo-empty-sessions">
+                  <MessageSquare size={24} className="text-slate-500 mb-1" />
+                  <p>{outlineSearchQuery ? 'No matching questions found' : 'No questions found in this chat'}</p>
+                </div>
+              ) : (
+                filteredUserQueries.map((q) => (
+                  <div
+                    key={q.id}
+                    className="outline-heading-item"
+                    onClick={() => handleJumpToQuery(q.id)}
+                    title={q.rawContent}
+                  >
+                    <div className="outline-item-left">
+                      <span className="outline-index-badge">{q.badge}</span>
+                      <span className="outline-heading-title">{q.title}</span>
+                    </div>
+                    <ArrowRight size={13} className="outline-arrow" />
+                  </div>
+                ))
+              )}
+            </div>
+          </aside>
+        </div>
+      )}
 
       {isSessionPreviewOpen && (
         <PdfPreviewModal

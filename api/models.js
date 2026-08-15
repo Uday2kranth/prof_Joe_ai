@@ -154,6 +154,19 @@ export default async function handler(req, res) {
                     ]
                 });
             }
+            if (provider === 'huggingface') {
+                return res.status(200).json({
+                    success: true,
+                    provider: 'huggingface',
+                    count: 4,
+                    models: [
+                        { id: 'Qwen/Qwen2.5-72B-Instruct', name: 'Qwen 2.5 72B Instruct [Free Router]', isFree: true },
+                        { id: 'Qwen/Qwen2.5-Coder-32B-Instruct', name: 'Qwen 2.5 Coder 32B [Free Router]', isFree: true },
+                        { id: 'meta-llama/Llama-3.3-70B-Instruct', name: 'Llama 3.3 70B Instruct [Free Router]', isFree: true },
+                        { id: 'Qwen/Qwen2.5-7B-Instruct', name: 'Qwen 2.5 7B Instruct [Free Router]', isFree: true }
+                    ]
+                });
+            }
             const errText = await response.text().catch(() => '');
             return res.status(response.status).json({
                 error: `Failed to fetch models from ${provider} (HTTP ${response.status}): ${errText.substring(0, 150)}`
@@ -236,6 +249,12 @@ export default async function handler(req, res) {
             } else if (provider === 'nararouter') {
                 const activeNaraModels = ['agnes-2.5-flash', 'laguna-s-2.1', 'agnes-2.0-flash', 'tencent-hy3-free'];
                 if (activeNaraModels.includes(id) || id.includes('free') || id.includes('agnes') || id.includes('laguna') || id.includes('tencent')) {
+                    isFree = true;
+                    freeTag = '[Free Router]';
+                }
+            } else if (provider === 'huggingface') {
+                const activeHFModels = ['Qwen/Qwen2.5-72B-Instruct', 'Qwen/Qwen2.5-Coder-32B-Instruct', 'meta-llama/Llama-3.3-70B-Instruct', 'Qwen/Qwen2.5-7B-Instruct'];
+                if (activeHFModels.includes(id) || id.includes('Qwen') || id.includes('Llama-3.3') || id.includes('free')) {
                     isFree = true;
                     freeTag = '[Free Router]';
                 }

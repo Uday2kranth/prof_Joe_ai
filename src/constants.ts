@@ -140,12 +140,10 @@ export const PROVIDERS: ProviderGroup[] = [
     id: 'huggingface',
     name: 'Hugging Face Hub',
     models: [
-      { value: 'Qwen/Qwen2.5-72B-Instruct', name: 'Qwen 2.5 72B Instruct (HF) [WS]' },
-      { value: 'deepseek-ai/DeepSeek-R1-Distill-Qwen-32B', name: 'DeepSeek R1 Distill Qwen 32B (HF)' },
-      { value: 'meta-llama/Llama-3.2-3B-Instruct', name: 'Llama 3.2 3B Instruct (HF) [WS]' },
-      { value: 'google/gemma-2-9b-it', name: 'Gemma 2 9B (HF) [WS]' },
-      { value: 'microsoft/Phi-3.5-mini-instruct', name: 'Phi 3.5 Mini Instruct (HF)' },
-      { value: 'HuggingFaceH4/zephyr-7b-beta', name: 'Zephyr 7B Beta (HF)' }
+      { value: 'Qwen/Qwen2.5-72B-Instruct', name: 'Qwen 2.5 72B Instruct (HF) [Free Router]' },
+      { value: 'Qwen/Qwen2.5-Coder-32B-Instruct', name: 'Qwen 2.5 Coder 32B (HF) [Free Router]' },
+      { value: 'meta-llama/Llama-3.3-70B-Instruct', name: 'Llama 3.3 70B Instruct (HF) [Free Router]' },
+      { value: 'Qwen/Qwen2.5-7B-Instruct', name: 'Qwen 2.5 7B Instruct (HF) [Free Router]' }
     ]
   },
   {

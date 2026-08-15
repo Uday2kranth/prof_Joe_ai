@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import {
   GraduationCap,
   BookOpen,
@@ -26,7 +26,8 @@ import {
   RotateCcw,
   Zap,
   Check,
-  AlertTriangle
+  AlertTriangle,
+  List
 } from 'lucide-react';
 import type { UserKeys, UserCustomModels } from '../types';
 import { sendChatMessage } from '../services/apiService';
@@ -55,6 +56,7 @@ export interface LectureNoteSession {
   webSearch?: boolean;
   createdAt: number;
   updatedAt: number;
+  messages?: Array<{ role: 'user' | 'assistant'; content: string }>;
 }
 
 interface LectureNotesStudioViewProps {
@@ -140,6 +142,46 @@ const PRESETS: Array<{
   }
 ];
 
+// 🛡️ Auto-close hanging/unclosed code blocks and math blocks before real headings
+export const healMarkdownFences = (rawMarkdown: string): string => {
+  if (!rawMarkdown) return '';
+  const rawLines = rawMarkdown.split('\n');
+  const healedLines: string[] = [];
+  let inCode = false;
+
+  for (let i = 0; i < rawLines.length; i++) {
+    const line = rawLines[i];
+    const trimmed = line.trim();
+
+    if (trimmed.startsWith('```')) {
+      inCode = !inCode;
+      healedLines.push(line);
+      continue;
+    }
+
+    // If inside an unclosed code block, but encounter a real Markdown heading (e.g. ## 4. Worked Numerical Walkthrough)
+    if (inCode && /^(#{1,3})\s+(\d+(\.\d+)*\.?|[A-Z]|🎓|📚|[IVXLCDM]+\.)/.test(trimmed)) {
+      healedLines.push('```');
+      inCode = false;
+    }
+
+    healedLines.push(line);
+  }
+
+  if (inCode) {
+    healedLines.push('```');
+  }
+
+  let healedMarkdown = healedLines.join('\n');
+
+  const mathBlockCount = (healedMarkdown.match(/\$\$/g) || []).length;
+  if (mathBlockCount % 2 !== 0) {
+    healedMarkdown += '\n$$\n';
+  }
+
+  return healedMarkdown;
+};
+
 export const LectureNotesStudioView: React.FC<LectureNotesStudioViewProps> = ({
   userKeys,
   customModels = {},
@@ -220,12 +262,66 @@ export const LectureNotesStudioView: React.FC<LectureNotesStudioViewProps> = ({
   const [ocrStatus, setOcrStatus] = useState<string>('');
   const [diagramMap, setDiagramMap] = useState<Map<string, string>>(new Map());
   const [lastGeneratedTopic, setLastGeneratedTopic] = useState<string>(activeSession?.topic || '');
+  const [isOutlineOpen, setIsOutlineOpen] = useState<boolean>(false);
+  const [outlineSearchQuery, setOutlineSearchQuery] = useState<string>('');
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const providerRef = useRef<HTMLDivElement>(null);
   const modelRef = useRef<HTMLDivElement>(null);
   const subjectRef = useRef<HTMLDivElement>(null);
   const composerRef = useRef<HTMLElement>(null);
+
+  // 🎯 Initial landing: scroll directly down to the composer deck
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      composerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 180);
+    return () => clearTimeout(timer);
+  }, []);
+
+  // 📑 Parse single-line numbered headings from generated notes for chapter outline
+  const outlineHeadings = useMemo(() => {
+    if (!generatedNotes) return [];
+    const healed = healMarkdownFences(generatedNotes);
+    const lines = healed.split('\n');
+    const headings: Array<{ id: string; title: string; level: number; index: number }> = [];
+    let inCodeBlock = false;
+    let count = 0;
+
+    for (const line of lines) {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('```')) {
+        inCodeBlock = !inCodeBlock;
+        continue;
+      }
+      if (inCodeBlock) continue;
+
+      const match = trimmed.match(/^(#{1,3})\s+(.+)$/);
+      if (match) {
+        count++;
+        const level = match[1].length;
+        const rawTitle = match[2]
+          .replace(/\*\*/g, '')
+          .replace(/`([^`]+)`/g, '$1')
+          .replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
+          .trim();
+        headings.push({
+          id: `lecture-heading-${count}`,
+          title: rawTitle,
+          level,
+          index: count
+        });
+      }
+    }
+    return headings;
+  }, [generatedNotes]);
+
+  const filteredOutlineHeadings = useMemo(() => {
+    if (!outlineSearchQuery.trim()) return outlineHeadings;
+    return outlineHeadings.filter(h =>
+      h.title.toLowerCase().includes(outlineSearchQuery.toLowerCase())
+    );
+  }, [outlineHeadings, outlineSearchQuery]);
 
   // Asynchronously render Kroki vector diagrams (Mermaid, PlantUML, Graphviz)
   useEffect(() => {
@@ -462,6 +558,12 @@ export const LectureNotesStudioView: React.FC<LectureNotesStudioViewProps> = ({
     setIsControlDeckOpen(false);
   };
 
+  const handleScrollToTop = () => {
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+    document.querySelector('.studio-parchment-stage')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleOcrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -507,19 +609,19 @@ export const LectureNotesStudioView: React.FC<LectureNotesStudioViewProps> = ({
     const studioSystemPrompt = `ROLE PERSONA: You are Prof. Joe, Senior University Professor & Distinguished Academic Lecturer.
 
 CORE AUTHORING RULES (STRICTLY ENFORCED):
-1. ZERO CONVERSATIONAL FLUFF: Never output pleasantries, conversational intros, or filler (e.g. NEVER say "Sure!", "Certainly!", "Here is a comprehensive...", "I hope this helps"). Begin IMMEDIATELY on Line 1 with the document heading.
-2. STRICT LATEX ENCLOSURE: Every mathematical symbol, variable, Greek letter, equation, and matrix derivation MUST be enclosed in $...$ for inline expressions (e.g. $K = g^{xy} \\pmod{p}$) or $$...$$ on dedicated separate lines for display math. NEVER output bare LaTeX commands (such as \\frac, \\sigma, \\prod, \\sum, \\int, \\mathcal, \\mathbf, \\nabla, \\arg\\min) without $...$ or $$...$$.
-3. 100% COMPLETE DERIVATIONS: Pace the depth so that EVERY proof, equation, and algorithm reaches its full mathematical conclusion and all markdown/code blocks (\`\`\`) are completely closed before ending the response. Never cut off mid-equation.
-4. VISUAL DIAGRAM ARCHITECTURE & PEDAGOGICAL GUIDELINES:
-   When visual structure enhances comprehension, render exactly 1 clean Mermaid block (\`\`\`mermaid ... \`\`\`). Dynamically craft the layout using these recommended visual patterns that students and evaluators would like to see:
-   • Interactive Protocols & Security: Best visualized through \`sequenceDiagram\` (with participant lifelines & numbered message steps)
-   • Multi-Stage Systems & ML Lifecycles: Ideally suited for \`graph LR/TD\` with \`subgraph\` (modular grouped stage boxes)
-   • State Transitions & Automata: Most naturally expressed via \`stateDiagram-v2\` (state triggers & condition transitions)
-   • Relational Schemas & Data Models: Excellently structured using \`erDiagram\` (entity attributes & cardinalities)
-   • Step-by-Step Logic & Taxonomies: Cleanly illustrated with compact \`graph LR/TD\` flowcharts or PlantUML mindmaps
-   QUALITY MANDATE: Every node and stage MUST have an explicit, meaningful descriptive title in quotes (e.g. Node1["1. Feature Extraction Matrix X"]). NEVER output empty, unexpanded, or bare single-letter nodes (like A, B).
-5. CLEAN COMPARISON TABLES: Use clean Markdown tables with compact inline math ($...$) for side-by-side comparative analysis.
-6. STANDARDS COMPLIANCE: Conclude with standard university textbook references (e.g. William Stallings, Tanenbaum, Cormen, Russell & Norvig) where applicable.`;
+1. ZERO CONVERSATIONAL FLUFF: Never output pleasantries, conversational intros, or filler. Begin IMMEDIATELY on Line 1 with the document heading.
+2. STRICT LATEX ENCLOSURE: Every mathematical symbol, variable, Greek letter, equation, and matrix derivation MUST be enclosed in $...$ for inline expressions (e.g. $K = g^{xy} \\pmod{p}$) or $$...$$ on dedicated separate lines for display math. NEVER output bare LaTeX commands without $...$ or $$...$$.
+3. FULL-OUTPUT ENFORCEMENT & ZERO SHORTCUTS:
+   • Never use placeholders (\`// ...\`, "and so on", "for brevity", "left as an exercise"). Deliver every proof, equation, code block, and step in full.
+   • Every derivation MUST reach its final boxed/concluded mathematical result. All markdown and code blocks (\`\`\`) MUST be completely closed.
+4. PACING & SECTION BREAKPOINT PROTOCOL:
+   • If the requested syllabus topics exceed single-response output capacity, maintain 100% textbook depth for the current sections, complete the current section cleanly, and conclude with:
+     [PAUSED — Part X Complete. Next Chapter: <Exact Next Topic Name>]
+   • When given a continuation prompt, do NOT recap or repeat prior sections. Pick up IMMEDIATELY on Line 1 with the next chapter.
+5. VISUAL DIAGRAM ARCHITECTURE:
+   When visual structure enhances comprehension, render exactly 1 clean Mermaid block (\`\`\`mermaid ... \`\`\`). Every node MUST have an explicit descriptive title in quotes (e.g. Node1["1. Feature Extraction Matrix X"]). NEVER output bare single-letter nodes (A, B).
+6. CLEAN COMPARISON TABLES: Use clean Markdown tables with compact inline math ($...$) for side-by-side comparative analysis.
+7. STANDARDS COMPLIANCE: Conclude with standard university textbook references where applicable.`;
 
     const promptMessage = `# 🎓 LECTURE MATERIAL: ${targetTopic.trim().toUpperCase()}
 **University Course / Discipline:** ${subjectDisplayName}
@@ -537,18 +639,18 @@ ${currentPresetObj.instructionPrompt}
 - Include comprehensive comparative tables and structured breakdown blocks.
 - Conclude with standard academic textbook references and key takeaway points.`;
 
+    const initialMessages: Array<{ role: 'user' | 'assistant'; content: string }> = [
+      {
+        role: 'user',
+        content: promptMessage
+      }
+    ];
+
     try {
       const response = await sendChatMessage(
         selectedProvider,
         selectedModel,
-        [
-          {
-            id: `msg-${Date.now()}`,
-            role: 'user',
-            content: promptMessage,
-            timestamp: Date.now()
-          }
-        ],
+        initialMessages as any,
         effectiveUserKeys,
         webSearch,
         'none',
@@ -574,8 +676,17 @@ ${currentPresetObj.instructionPrompt}
           ? currentTitle
           : `${currentTitle.split(' + ')[0]} + ${targetTopic.trim().substring(0, 16)}`;
 
+      const updatedMessages = [
+        ...initialMessages,
+        {
+          role: 'assistant' as const,
+          content: newContent
+        }
+      ];
+
       updateCurrentSession({
         notesContent: combinedNotes,
+        messages: updatedMessages,
         title: finalTitle,
         subject: selectedSubject,
         customSubjectName,
@@ -588,6 +699,100 @@ ${currentPresetObj.instructionPrompt}
       console.error('Lecture note generation failed:', err);
       const errMsg = `Failed to generate lecture section for "${targetTopic}": ${err.message || 'Server error'}. Please verify API keys or select Pollinations AI (Free Keyless).`;
       setGenerationError(errMsg);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  const handleContinueNextChapter = async () => {
+    if (isGenerating || !generatedNotes.trim()) return;
+
+    setIsGenerating(true);
+    setGenerationError('');
+
+    const currentPresetObj = PRESETS.find(p => p.id === activePreset) || PRESETS[0];
+    const subjectDisplayName = selectedSubject === 'Custom Course / Subject'
+      ? (customSubjectName.trim() || 'Custom University Course')
+      : selectedSubject;
+
+    const studioSystemPrompt = `ROLE PERSONA: You are Prof. Joe, Senior University Professor & Distinguished Academic Lecturer.
+
+CORE AUTHORING RULES (STRICTLY ENFORCED):
+1. ZERO CONVERSATIONAL FLUFF: Never output pleasantries, conversational intros, or filler. Begin IMMEDIATELY on Line 1 with the document heading.
+2. STRICT LATEX ENCLOSURE: Every mathematical symbol, variable, Greek letter, equation, and matrix derivation MUST be enclosed in $...$ for inline expressions or $$...$$ on dedicated separate lines for display math. NEVER output bare LaTeX commands without $...$ or $$...$$.
+3. FULL-OUTPUT ENFORCEMENT & ZERO SHORTCUTS:
+   • Never use placeholders (\`// ...\`, "and so on", "for brevity", "left as an exercise"). Deliver every proof, equation, code block, and step in full.
+   • Every derivation MUST reach its final boxed/concluded mathematical result. All markdown and code blocks (\`\`\`) MUST be completely closed.
+4. PACING & SECTION BREAKPOINT PROTOCOL:
+   • If the requested syllabus topics exceed single-response output capacity, maintain 100% textbook depth for the current sections, complete the current section cleanly, and conclude with:
+     [PAUSED — Part X Complete. Next Chapter: <Exact Next Topic Name>]
+   • When given a continuation prompt, do NOT recap or repeat prior sections. Pick up IMMEDIATELY on Line 1 with the next chapter.
+5. VISUAL DIAGRAM ARCHITECTURE:
+   When visual structure enhances comprehension, render exactly 1 clean Mermaid block (\`\`\`mermaid ... \`\`\`). Every node MUST have an explicit descriptive title in quotes. NEVER output bare single-letter nodes (A, B).
+6. CLEAN COMPARISON TABLES: Use clean Markdown tables with compact inline math ($...$) for side-by-side comparative analysis.
+7. STANDARDS COMPLIANCE: Conclude with standard university textbook references where applicable.`;
+
+    const continuePrompt = `Continue authoring the lecture notes for "${subjectDisplayName} — ${topicInput.trim() || lastGeneratedTopic}".
+Pedagogical Framework: ${currentPresetObj.title} [${currentPresetObj.badge}]
+
+Do NOT repeat, recap, or summarize the already authored chapters.
+Begin IMMEDIATELY on Line 1 with the next chapter, delivering full theoretical rigor, complete step-by-step mathematical proofs in LaTeX ($$...$$), concrete numerical examples, and comparative tables.`;
+
+    const baseHistory = (activeSession?.messages && activeSession.messages.length > 0)
+      ? activeSession.messages
+      : [
+          { role: 'user' as const, content: `# LECTURE MATERIAL: ${topicInput.trim().toUpperCase()}` },
+          { role: 'assistant' as const, content: generatedNotes }
+        ];
+
+    const messagesPayload = [
+      ...baseHistory,
+      {
+        role: 'user' as const,
+        content: continuePrompt
+      }
+    ];
+
+    try {
+      const response = await sendChatMessage(
+        selectedProvider,
+        selectedModel,
+        messagesPayload as any,
+        effectiveUserKeys,
+        webSearch,
+        'none',
+        studioSystemPrompt,
+        'default'
+      );
+
+      const newContent = response.content.trim();
+      const existing = (generatedNotes || '').trim();
+
+      // Clean trailing [PAUSED ...] from existing notes so it forms a seamless textbook
+      const cleanedBase = existing.replace(/\n*\[PAUSED[\s\S]*?\]\s*$/i, '').trim();
+
+      const combinedNotes = cleanedBase
+        ? `${cleanedBase}\n\n---\n\n${newContent}`
+        : newContent;
+
+      setGeneratedNotes(combinedNotes);
+
+      const updatedHistory = [
+        ...messagesPayload,
+        {
+          role: 'assistant' as const,
+          content: newContent
+        }
+      ];
+
+      updateCurrentSession({
+        notesContent: combinedNotes,
+        messages: updatedHistory,
+        updatedAt: Date.now()
+      });
+    } catch (err: any) {
+      console.error('Continuation generation failed:', err);
+      setGenerationError(`Failed to continue note generation: ${err.message || 'Server error'}`);
     } finally {
       setIsGenerating(false);
     }
@@ -620,10 +825,13 @@ ${currentPresetObj.instructionPrompt}
   const renderFormattedNotes = (rawMarkdown: string) => {
     if (!rawMarkdown) return '';
 
-    // Step 0: Extract Kroki / Mermaid diagrams and replace with tokens so marked and DOMPurify never mangle SVGs or leak <style> text
-    const diagrams = extractDiagrams(rawMarkdown);
+    // Step 0A: Auto-close hanging/unclosed code blocks before headings to prevent layout breakages
+    const healedMarkdown = healMarkdownFences(rawMarkdown);
+
+    // Step 0B: Extract Kroki / Mermaid diagrams and replace with tokens so marked and DOMPurify never mangle SVGs or leak <style> text
+    const diagrams = extractDiagrams(healedMarkdown);
     const renderDiagramTokens = new Map<string, string>();
-    let markdownWithTokens = rawMarkdown;
+    let markdownWithTokens = healedMarkdown;
     let diagTokenIdx = 0;
 
     diagrams.forEach(diag => {
@@ -794,6 +1002,14 @@ ${currentPresetObj.instructionPrompt}
       }
     });
 
+    // 8. Inject index IDs into headings for 1-click chapter outline jumping
+    let headingCounter = 0;
+    cleanHtml = cleanHtml.replace(/<(h[1-3])([^>]*)>([\s\S]*?)<\/\1>/gi, (_match, tag, attrs, content) => {
+      headingCounter++;
+      const headingId = `lecture-heading-${headingCounter}`;
+      return `<${tag} id="${headingId}" ${attrs}>${content}</${tag}>`;
+    });
+
     return cleanHtml;
   };
 
@@ -887,34 +1103,94 @@ ${currentPresetObj.instructionPrompt}
                     dangerouslySetInnerHTML={{ __html: renderFormattedNotes(generatedNotes) }}
                   />
 
+                  {/* ⚡ Multi-Part Full-Output Pause Indicator */}
+                  {generatedNotes.includes('[PAUSED') && !isGenerating && (
+                    <div className="parchment-pause-indicator">
+                      <div className="flex items-center gap-2">
+                        <div className="pause-pulse-dot" />
+                        <span className="pause-indicator-title">
+                          Multi-Part Note Paused at Clean Boundary
+                        </span>
+                      </div>
+                      {(() => {
+                        const pauseMatch = generatedNotes.match(/\[PAUSED[\s\S]*?Next(?:\s+Chapter)?:\s*([^\]\n]+)\]/i);
+                        const nextChapterName = pauseMatch ? pauseMatch[1].trim() : '';
+                        return nextChapterName ? (
+                          <span className="pause-indicator-badge">
+                            Next: {nextChapterName}
+                          </span>
+                        ) : null;
+                      })()}
+                    </div>
+                  )}
+
+                  {/* 🍱 2×2 Balanced Bento Action Deck */}
                   {!isGenerating && (
-                    <div className="parchment-bottom-action-bar">
+                    <div className="parchment-bento-deck">
+                      {/* Tile 1: Continue Next Chapter */}
+                      <button
+                        type="button"
+                        onClick={handleContinueNextChapter}
+                        className="bento-tile bento-tile-continue"
+                        title="Continue generating next chapter with full mathematical rigor"
+                      >
+                        <div className="bento-tile-icon cyan">
+                          <Zap size={16} />
+                        </div>
+                        <div className="bento-tile-content">
+                          <div className="bento-tile-title">⚡ Continue Next Chapter</div>
+                          <div className="bento-tile-desc">Author next syllabus section seamlessly</div>
+                        </div>
+                      </button>
+
+                      {/* Tile 2: Add Topic Section */}
                       <button
                         type="button"
                         onClick={() => {
                           composerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
                         }}
-                        className="parchment-footer-btn next-topic-btn"
+                        className="bento-tile bento-tile-add"
+                        title="Scroll down to compose a different topic"
                       >
-                        <Plus size={14} />
-                        <span>+ Add Next Topic Chapter</span>
+                        <div className="bento-tile-icon blue">
+                          <Plus size={16} />
+                        </div>
+                        <div className="bento-tile-content">
+                          <div className="bento-tile-title">+ Add Topic Section</div>
+                          <div className="bento-tile-desc">Enter new concept into this master note</div>
+                        </div>
                       </button>
+
+                      {/* Tile 3: Regenerate Section */}
                       <button
                         type="button"
                         onClick={handleRetryLastSection}
-                        className="parchment-footer-btn retry-section-btn"
-                        title="Regenerate only the latest chapter"
+                        className="bento-tile bento-tile-retry"
+                        title="Regenerate only the latest section"
                       >
-                        <RotateCcw size={14} />
-                        <span>Regenerate Last Section</span>
+                        <div className="bento-tile-icon slate">
+                          <RotateCcw size={15} />
+                        </div>
+                        <div className="bento-tile-content">
+                          <div className="bento-tile-title">Regenerate Section</div>
+                          <div className="bento-tile-desc">Redo latest section with active AI model</div>
+                        </div>
                       </button>
+
+                      {/* Tile 4: Print / Export PDF */}
                       <button
                         type="button"
                         onClick={handlePrint}
-                        className="parchment-footer-btn print-deck-btn"
+                        className="bento-tile bento-tile-print"
+                        title="Export document to PDF or Native Print"
                       >
-                        <Printer size={14} />
-                        <span>Print / Export PDF</span>
+                        <div className="bento-tile-icon amber">
+                          <Printer size={15} />
+                        </div>
+                        <div className="bento-tile-content">
+                          <div className="bento-tile-title">Print / Export PDF</div>
+                          <div className="bento-tile-desc">High-res export with KaTeX & diagrams</div>
+                        </div>
                       </button>
                     </div>
                   )}
@@ -1202,7 +1478,7 @@ ${currentPresetObj.instructionPrompt}
                   </button>
 
                   {isSubjectDropdownOpen && (
-                    <div className="custom-dropdown-menu top-downward-menu w-full" style={{ minWidth: '280px', maxWidth: '380px' }}>
+                    <div className="custom-dropdown-menu dropup-menu w-full" style={{ minWidth: '280px', maxWidth: '380px' }}>
                       <div className="dropdown-header">University Course / Subject</div>
                       {PRESET_SUBJECTS.map(s => {
                         const isSelected = selectedSubject === s;
@@ -1313,27 +1589,15 @@ ${currentPresetObj.instructionPrompt}
             <div className="composer-footer">
               <div className="flex items-center gap-2">
                 {generatedNotes.trim() ? (
-                  <>
-                    <button
-                      type="button"
-                      onClick={handleClearCurrentNotes}
-                      className="studio-reset-parchment-btn"
-                      title="Clear current notes on canvas to start a blank document"
-                    >
-                      <Trash2 size={13} />
-                      <span>Clear Canvas</span>
-                    </button>
-                    <button
-                      type="button"
-                      onClick={handleRetryLastSection}
-                      disabled={isGenerating}
-                      className="studio-retry-parchment-btn"
-                      title="Regenerate only the latest section"
-                    >
-                      <RotateCcw size={13} className={isGenerating ? 'animate-spin' : ''} />
-                      <span>Retry Last Section</span>
-                    </button>
-                  </>
+                  <button
+                    type="button"
+                    onClick={handleClearCurrentNotes}
+                    className="studio-reset-parchment-btn"
+                    title="Clear canvas to start a blank document"
+                  >
+                    <Trash2 size={13} />
+                    <span>Clear Canvas</span>
+                  </button>
                 ) : (
                   <span className="composer-hint-text hidden sm:inline-flex">
                     Press <kbd className="composer-kbd">Enter ↵</kbd> to author lecture notes
@@ -1349,12 +1613,12 @@ ${currentPresetObj.instructionPrompt}
               >
                 {isGenerating ? (
                   <>
-                    <RefreshCw size={16} className="animate-spin" />
+                    <RefreshCw size={15} className="animate-spin" />
                     <span>Synthesizing Lecture Notes...</span>
                   </>
                 ) : (
                   <>
-                    <Sparkles size={16} />
+                    <Sparkles size={15} />
                     <span>{generatedNotes.trim() ? '+ Append Section to Notes' : 'Generate Notes'}</span>
                     <ArrowRight size={14} className="opacity-70" />
                   </>
@@ -1367,24 +1631,56 @@ ${currentPresetObj.instructionPrompt}
         <div className="mobile-floating-action-bar">
           <button
             type="button"
-            onClick={handleGenerateNotes}
-            disabled={isGenerating || !topicInput.trim()}
+            onClick={
+              generatedNotes.includes('[PAUSED') && (!topicInput.trim() || topicInput.trim() === lastGeneratedTopic)
+                ? handleContinueNextChapter
+                : handleGenerateNotes
+            }
+            disabled={
+              isGenerating ||
+              (!generatedNotes.includes('[PAUSED') && !topicInput.trim())
+            }
             className="mobile-fab-btn primary"
+            style={
+              generatedNotes.includes('[PAUSED') && (!topicInput.trim() || topicInput.trim() === lastGeneratedTopic)
+                ? { background: 'linear-gradient(135deg, #06b6d4, #6366f1)', boxShadow: '0 0 16px rgba(6, 182, 212, 0.4)' }
+                : undefined
+            }
           >
             {isGenerating ? (
-              <RefreshCw size={18} className="animate-spin" />
+              <RefreshCw size={16} className="animate-spin" />
+            ) : generatedNotes.includes('[PAUSED') && (!topicInput.trim() || topicInput.trim() === lastGeneratedTopic) ? (
+              <Zap size={16} />
             ) : (
-              <Sparkles size={18} />
+              <Sparkles size={16} />
             )}
-            <span>{isGenerating ? 'Generating...' : 'Generate Notes'}</span>
+            <span>
+              {isGenerating
+                ? 'Synthesizing...'
+                : generatedNotes.includes('[PAUSED') && (!topicInput.trim() || topicInput.trim() === lastGeneratedTopic)
+                  ? '⚡ Continue Next Chapter'
+                  : generatedNotes.trim()
+                    ? '+ Append Section'
+                    : 'Generate Notes'}
+            </span>
           </button>
 
           {generatedNotes && (
             <div className="mobile-fab-tools">
+              {outlineHeadings.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setIsOutlineOpen(true)}
+                  className="mobile-fab-tool-btn highlight"
+                  title="Chapter Outline"
+                >
+                  <List size={16} />
+                </button>
+              )}
               <button
                 type="button"
                 onClick={handlePrint}
-                className="mobile-fab-tool-btn highlight"
+                className="mobile-fab-tool-btn"
                 title="Native Print"
               >
                 <Printer size={16} />
@@ -1405,6 +1701,37 @@ ${currentPresetObj.instructionPrompt}
           />
         )}
       </div>
+
+      {/* 🧭 Vertical Navigation Micro-Dock (Stationed on Desktop Right Margin) */}
+      {generatedNotes && outlineHeadings.length > 0 && (
+        <div className="parchment-vertical-micro-dock" aria-label="Document Navigation Dock">
+          <button
+            type="button"
+            onClick={handleScrollToTop}
+            className="micro-dock-btn"
+            title="Scroll to Top of Document"
+          >
+            <ChevronUp size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsOutlineOpen(true)}
+            className="micro-dock-btn outline-active"
+            title={`Open Chapter Outline (${outlineHeadings.length} Chapters)`}
+          >
+            <BookOpen size={18} />
+            <span className="micro-dock-count">{outlineHeadings.length}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => composerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
+            className="micro-dock-btn"
+            title="Jump to Composer & 2×2 Bento Actions"
+          >
+            <ChevronDown size={18} />
+          </button>
+        </div>
+      )}
 
       {/* 📜 UNIFIED LEFT-SIDE LECTURE CONTROL DECK DRAWER (100% Exact Matching Screenshot 1 & Bento Architecture) */}
       {isControlDeckOpen && (
@@ -1563,7 +1890,7 @@ ${currentPresetObj.instructionPrompt}
               </div>
             )}
 
-            {/* 4. Live Search Input (Exact Match) */}
+            {/* 4. Live Session Search Input (Exact Match to Screenshot 1) */}
             <div className="demo-drawer-search-bar">
               <Search size={14} className="text-cyan-400" />
               <input
@@ -1630,6 +1957,182 @@ ${currentPresetObj.instructionPrompt}
                     </div>
                   );
                 })
+              )}
+            </div>
+          </aside>
+        </div>
+      )}
+
+      {/* 🧭 Vertical Navigation Micro-Dock (Stationed on Desktop Right Margin) */}
+      {outlineHeadings.length > 0 && (
+        <div className="parchment-vertical-micro-dock" aria-label="Lecture Notes Navigation Dock">
+          <button
+            type="button"
+            onClick={() => {
+              const scrollContainer = document.querySelector('.studio-content-wrapper, .studio-paper-scroll, .main-scroll-area');
+              if (scrollContainer) {
+                scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+              }
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            className="micro-dock-btn"
+            title="Scroll to Top of Notes"
+          >
+            <ChevronUp size={18} />
+          </button>
+          <button
+            type="button"
+            onClick={() => setIsOutlineOpen(true)}
+            className="micro-dock-btn outline-active"
+            title={`Open Chapter Outline (${outlineHeadings.length} Sections)`}
+          >
+            <BookOpen size={18} />
+            <span className="micro-dock-count">{outlineHeadings.length}</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const scrollContainer = document.querySelector('.studio-content-wrapper, .studio-paper-scroll, .main-scroll-area');
+              if (scrollContainer) {
+                scrollContainer.scrollTo({ top: scrollContainer.scrollHeight + 10000, behavior: 'smooth' });
+              }
+              composerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            }}
+            className="micro-dock-btn"
+            title="Jump to Composer & Actions"
+          >
+            <ChevronDown size={18} />
+          </button>
+        </div>
+      )}
+
+      {/* 📖 Isolated Document Outline / Chapter TOC Drawer (Rule #1 DOM Root Placement) */}
+      {isOutlineOpen && (
+        <div className="demo-drawer-overlay right-drawer" onClick={() => setIsOutlineOpen(false)} style={{ zIndex: 999999 }}>
+          <aside className="studio-outline-drawer" onClick={(e) => e.stopPropagation()}>
+            {/* 1. Drawer Header Bar (Compact Inline Single-Row Plate) */}
+            <div className="demo-drawer-header" style={{ marginBottom: '14px', paddingBottom: '12px' }}>
+              <div className="demo-drawer-brand" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div className="brand-circle">
+                  <List size={16} className="text-cyan-400" />
+                </div>
+                <div className="brand-text" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h3 style={{ margin: 0, fontSize: '0.95rem', fontWeight: 700, color: '#f8fafc', whiteSpace: 'nowrap' }}>
+                    Chapter Outline
+                  </h3>
+                  <span
+                    style={{
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      padding: '2px 8px',
+                      borderRadius: '12px',
+                      background: 'rgba(6, 182, 212, 0.15)',
+                      color: '#38bdf8',
+                      border: '1px solid rgba(6, 182, 212, 0.35)',
+                      whiteSpace: 'nowrap'
+                    }}
+                  >
+                    {outlineHeadings.length} Sections
+                  </span>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsOutlineOpen(false)}
+                className="demo-icon-btn"
+                aria-label="Close Chapter Outline"
+                title="Close Chapter Outline"
+              >
+                <X size={18} />
+              </button>
+            </div>
+
+            {/* 2. Primary Action Button: Jump to Composer & Actions */}
+            <div className="demo-primary-action-wrap" style={{ marginBottom: '12px' }}>
+              <button
+                type="button"
+                onClick={() => {
+                  setIsOutlineOpen(false);
+                  const scrollContainer = document.querySelector('.studio-content-wrapper, .studio-paper-scroll, .main-scroll-area');
+                  if (scrollContainer) {
+                    scrollContainer.scrollTo({ top: scrollContainer.scrollHeight + 10000, behavior: 'smooth' });
+                  }
+                  composerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                  window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+                }}
+                className="demo-new-chat-btn"
+                style={{
+                  background: 'linear-gradient(135deg, #0284c7, #06b6d4)',
+                  color: '#ffffff',
+                  boxShadow: '0 4px 14px rgba(6, 182, 212, 0.35)'
+                }}
+              >
+                <Zap size={15} />
+                <span>Jump to Composer & Actions</span>
+              </button>
+            </div>
+
+            {/* 3. Search Outline Input with Clean Spacing */}
+            <div className="demo-drawer-search-bar" style={{ marginBottom: '14px' }}>
+              <Search size={14} className="text-cyan-400" />
+              <input
+                type="text"
+                placeholder="Search outline headings..."
+                value={outlineSearchQuery}
+                onChange={(e) => setOutlineSearchQuery(e.target.value)}
+                className="demo-search-input"
+              />
+              {outlineSearchQuery && (
+                <button
+                  type="button"
+                  onClick={() => setOutlineSearchQuery('')}
+                  className="clear-search-btn"
+                >
+                  <X size={12} />
+                </button>
+              )}
+            </div>
+
+            {/* 4. Single-Line Numbered Outline Headings List with Model-Picker Style Smooth Scroll */}
+            <div className="studio-outline-list">
+              {filteredOutlineHeadings.length === 0 ? (
+                <div className="demo-empty-sessions">
+                  <FileText size={24} className="text-slate-500 mb-1" />
+                  <p>{outlineSearchQuery ? 'No matching chapters found' : 'No headings found in notes'}</p>
+                </div>
+              ) : (
+                filteredOutlineHeadings.map((h) => (
+                  <div
+                    key={h.id}
+                    className="outline-heading-item"
+                    onClick={() => {
+                      setIsOutlineOpen(false);
+                      let targetEl = document.getElementById(`lecture-heading-${h.index}`);
+                      if (!targetEl) {
+                        // Intelligent Fallback: Match text content across rendered headings
+                        const cleanTitle = h.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+                        const allHeadings = Array.from(
+                          document.querySelectorAll('.lecture-parchment-content h1, .lecture-parchment-content h2, .lecture-parchment-content h3')
+                        );
+                        targetEl = (allHeadings.find(el => {
+                          const elText = (el.textContent || '').toLowerCase().replace(/[^a-z0-9]/g, '');
+                          return elText.includes(cleanTitle) || cleanTitle.includes(elText);
+                        }) as HTMLElement) || null;
+                      }
+                      if (targetEl) {
+                        targetEl.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                      }
+                    }}
+                    title={h.title}
+                  >
+                    <div className="outline-item-left">
+                      <span className="outline-index-badge">{h.index}</span>
+                      <span className="outline-heading-title">{h.title}</span>
+                    </div>
+                    <ArrowRight size={13} className="outline-arrow" />
+                  </div>
+                ))
               )}
             </div>
           </aside>

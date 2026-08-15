@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { User, Copy, Download, Eye, Printer, Volume2, Check, RotateCcw, Edit3 } from 'lucide-react';
+import { User, Copy, Download, Eye, Printer, Volume2, Check, RotateCcw, Edit3, Send, X } from 'lucide-react';
 import { marked } from 'marked';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -66,19 +66,60 @@ export function renderMarkdownWithMathAndDiagrams(content: string, diagramMap: M
 
 interface MessageItemProps {
   message: Message;
-  isLast: boolean;
+  isLast?: boolean;
+  isLastUserMessage?: boolean;
+  isLastAssistantMessage?: boolean;
   onRetry?: () => void;
   onEditUserMessage?: (oldText: string) => void;
 }
 
-const MessageItemComponent: React.FC<MessageItemProps> = ({ message, isLast, onRetry, onEditUserMessage }) => {
+const MessageItemComponent: React.FC<MessageItemProps> = ({
+  message,
+  isLast,
+  isLastUserMessage,
+  isLastAssistantMessage,
+  onRetry,
+  onEditUserMessage
+}) => {
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
   const [exportingImage, setExportingImage] = useState(false);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [renderedHtml, setRenderedHtml] = useState<string>('');
+  const [isInlineEditing, setIsInlineEditing] = useState(false);
+  const [draftContent, setDraftContent] = useState(message.content || '');
+  const editTextareaRef = useRef<HTMLTextAreaElement>(null);
   const bubbleRef = useRef<HTMLDivElement>(null);
   const lastParsedTimeRef = useRef<number>(0);
+
+  useEffect(() => {
+    setDraftContent(message.content || '');
+  }, [message.content]);
+
+  const handleStartEdit = () => {
+    setIsInlineEditing(true);
+    setDraftContent(message.content || '');
+    setTimeout(() => {
+      if (editTextareaRef.current) {
+        editTextareaRef.current.focus();
+        editTextareaRef.current.style.height = 'auto';
+        editTextareaRef.current.style.height = `${Math.min(editTextareaRef.current.scrollHeight, 240)}px`;
+      }
+    }, 50);
+  };
+
+  const handleCancelEdit = () => {
+    setIsInlineEditing(false);
+    setDraftContent(message.content || '');
+  };
+
+  const handleSaveEdit = () => {
+    if (!draftContent.trim()) return;
+    setIsInlineEditing(false);
+    if (onEditUserMessage) {
+      onEditUserMessage(draftContent.trim());
+    }
+  };
 
   useEffect(() => {
     let isMounted = true;
@@ -240,78 +281,142 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({ message, isLast, onR
           <span className="time-stamp">{new Date(message.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
         </div>
 
-        <div ref={bubbleRef} className={`message-bubble ${isUser ? 'user-bubble' : 'assistant-bubble'}`}>
-          <div
-            className="formatted-content markdown-body"
-            dangerouslySetInnerHTML={{ __html: renderedHtml }}
-          />
+        <div ref={bubbleRef} className={`message-bubble ${isUser ? 'user-bubble' : 'assistant-bubble'} ${isInlineEditing ? 'inline-editing-mode' : ''}`}>
+          {isInlineEditing ? (
+            <div className="inline-bubble-edit-wrapper" style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px', minWidth: '260px' }}>
+              <textarea
+                ref={editTextareaRef}
+                value={draftContent}
+                onChange={(e) => {
+                  setDraftContent(e.target.value);
+                  e.target.style.height = 'auto';
+                  e.target.style.height = `${Math.min(e.target.scrollHeight, 240)}px`;
+                }}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSaveEdit();
+                  } else if (e.key === 'Escape') {
+                    handleCancelEdit();
+                  }
+                }}
+                className="inline-edit-textarea"
+                style={{
+                  width: '100%',
+                  background: 'rgba(15, 23, 42, 0.7)',
+                  border: '1px solid rgba(6, 182, 212, 0.5)',
+                  borderRadius: '10px',
+                  padding: '8px 10px',
+                  color: '#f8fafc',
+                  fontSize: '0.86rem',
+                  lineHeight: '1.45',
+                  fontFamily: 'inherit',
+                  resize: 'none',
+                  outline: 'none',
+                  minHeight: '44px',
+                  boxShadow: '0 0 12px rgba(6, 182, 212, 0.15)'
+                }}
+                placeholder="Edit your prompt..."
+              />
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '8px' }}>
+                <button
+                  type="button"
+                  onClick={handleCancelEdit}
+                  className="kokonut-msg-btn"
+                  style={{ background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.15)', padding: '4px 10px', borderRadius: '8px', fontSize: '0.74rem' }}
+                  title="Cancel Edit (Esc)"
+                >
+                  <X size={12} />
+                  <span>Cancel</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveEdit}
+                  disabled={!draftContent.trim()}
+                  className="extractor-btn-primary"
+                  style={{ padding: '4px 12px', borderRadius: '8px', fontSize: '0.74rem', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}
+                  title="Save and submit (Enter)"
+                >
+                  <Send size={12} />
+                  <span>Save & Submit</span>
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div
+              className="formatted-content markdown-body"
+              dangerouslySetInnerHTML={{ __html: renderedHtml }}
+            />
+          )}
         </div>
 
-        <div className={`kokonut-msg-actions-container ${isUser ? 'user-actions' : 'assistant-actions'}`}>
-          <button
-            onClick={handleCopy}
-            className={`kokonut-msg-btn ${copied ? 'active-action' : ''}`}
-            title="Copy Text"
-          >
-            {copied ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
-            <span>{copied ? 'Copied!' : 'Copy'}</span>
-          </button>
-
-          <button
-            onClick={handleExportImage}
-            disabled={exportingImage}
-            className="kokonut-msg-btn"
-            title="Export Bubble to PNG Image"
-          >
-            <Download size={13} />
-            <span>{exportingImage ? 'Exporting...' : 'PNG'}</span>
-          </button>
-
-          <button
-            onClick={handleExportPdf}
-            className="kokonut-msg-btn"
-            title="Preview PDF Document"
-          >
-            <Eye size={13} />
-            <span>PDF</span>
-          </button>
-
-          <button
-            onClick={handleDirectPrint}
-            className="kokonut-msg-btn"
-            title="Direct System Print Preview"
-          >
-            <Printer size={13} />
-            <span>Print</span>
-          </button>
-
-          {!isUser && (
-            <button onClick={handleSpeak} className="kokonut-msg-btn" title="Read Aloud">
-              <Volume2 size={13} />
-              <span>Listen</span>
-            </button>
-          )}
-
-          {/* Edit User Message Button */}
-          {isUser && isLast && onEditUserMessage && (
+        {!isInlineEditing && (
+          <div className={`kokonut-msg-actions-container ${isUser ? 'user-actions' : 'assistant-actions'}`}>
             <button
-              onClick={() => onEditUserMessage(message.content)}
-              className="kokonut-msg-btn"
-              title="Edit Prompt Text"
+              onClick={handleCopy}
+              className={`kokonut-msg-btn ${copied ? 'active-action' : ''}`}
+              title="Copy Text"
             >
-              <Edit3 size={13} />
-              <span>Edit</span>
+              {copied ? <Check size={13} className="text-green-400" /> : <Copy size={13} />}
+              <span>{copied ? 'Copied!' : 'Copy'}</span>
             </button>
-          )}
 
-          {/* Retry Response Button */}
-          {!isUser && isLast && onRetry && (
-            <button onClick={onRetry} className="kokonut-msg-btn" title="Regenerate / Retry Answer">
-              <RotateCcw size={13} />
-              <span>Retry</span>
+            <button
+              onClick={handleExportImage}
+              disabled={exportingImage}
+              className="kokonut-msg-btn"
+              title="Export Bubble to PNG Image"
+            >
+              <Download size={13} />
+              <span>{exportingImage ? 'Exporting...' : 'PNG'}</span>
             </button>
-          )}
-        </div>
+
+            <button
+              onClick={handleExportPdf}
+              className="kokonut-msg-btn"
+              title="Preview PDF Document"
+            >
+              <Eye size={13} />
+              <span>PDF</span>
+            </button>
+
+            <button
+              onClick={handleDirectPrint}
+              className="kokonut-msg-btn"
+              title="Direct System Print Preview"
+            >
+              <Printer size={13} />
+              <span>Print</span>
+            </button>
+
+            {!isUser && (
+              <button onClick={handleSpeak} className="kokonut-msg-btn" title="Read Aloud">
+                <Volume2 size={13} />
+                <span>Listen</span>
+              </button>
+            )}
+
+            {/* Edit User Message Button */}
+            {isUser && (isLastUserMessage ?? isLast) && onEditUserMessage && (
+              <button
+                onClick={handleStartEdit}
+                className="kokonut-msg-btn"
+                title="Edit Prompt Text in Bubble"
+              >
+                <Edit3 size={13} />
+                <span>Edit</span>
+              </button>
+            )}
+
+            {/* Retry Response Button */}
+            {!isUser && (isLastAssistantMessage ?? isLast) && onRetry && (
+              <button onClick={onRetry} className="kokonut-msg-btn" title="Regenerate / Retry Answer">
+                <RotateCcw size={13} />
+                <span>Retry</span>
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Option 3 Custom Animated PDF Preview Modal */}
@@ -329,6 +434,8 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({ message, isLast, onR
 
 const arePropsEqual = (prevProps: MessageItemProps, nextProps: MessageItemProps) => {
   if (prevProps.isLast !== nextProps.isLast) return false;
+  if (prevProps.isLastUserMessage !== nextProps.isLastUserMessage) return false;
+  if (prevProps.isLastAssistantMessage !== nextProps.isLastAssistantMessage) return false;
   if (prevProps.message.id !== nextProps.message.id) return false;
   if (prevProps.message.content !== nextProps.message.content) return false;
   if (prevProps.message.isStreaming !== nextProps.message.isStreaming) return false;
