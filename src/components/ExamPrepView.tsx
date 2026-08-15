@@ -1,6 +1,8 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { BookOpen, FileText, Send, Award, Check, Sparkles } from 'lucide-react';
 import { marked } from 'marked';
+import katex from 'katex';
+import 'katex/dist/katex.min.css';
 import examData from '../data/examPrepData.json';
 // @ts-ignore
 import MagicBento from './MagicBento';
@@ -11,10 +13,41 @@ interface ExamPrepViewProps {
 
 const renderFormattedContent = (content: string) => {
   if (!content) return '';
-  if (content.trim().startsWith('<')) {
-    return content;
+  const mathMap = new Map<string, string>();
+  let tokenIdx = 0;
+
+  // 1. Extract block math $$...$$
+  let prepped = content.replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
+    const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
+    try {
+      mathMap.set(token, `<div class="katex-block">${katex.renderToString(math.trim(), { displayMode: true, throwOnError: false })}</div>`);
+    } catch {
+      mathMap.set(token, `$$${math}$$`);
+    }
+    return token;
+  });
+
+  // 2. Extract inline math $...$
+  prepped = prepped.replace(/\$([^\$\n]+?)\$/g, (_, math) => {
+    const token = `KATEXINLINETOKEN${tokenIdx++}ENDTOKEN`;
+    try {
+      mathMap.set(token, katex.renderToString(math.trim(), { displayMode: false, throwOnError: false }));
+    } catch {
+      mathMap.set(token, `$${math}$`);
+    }
+    return token;
+  });
+
+  let parsedHtml = prepped;
+  if (!content.trim().startsWith('<')) {
+    parsedHtml = marked.parse(prepped) as string;
   }
-  return marked.parse(content) as string;
+
+  mathMap.forEach((html, token) => {
+    parsedHtml = parsedHtml.replaceAll(token, html);
+  });
+
+  return parsedHtml;
 };
 
 const SEMESTERS = [

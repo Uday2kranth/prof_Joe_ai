@@ -299,7 +299,7 @@ export const App: React.FC = () => {
   });
 
   // Dedicated Preset-Segregated Multi-Sessions for Practical Code Lab Workspace
-  const [activeCodeLabPresetId, setActiveCodeLabPresetId] = useState<string>('ml_science');
+  const [activeCodeLabPresetId, setActiveCodeLabPresetId] = useState<string>('stat_inference_lab');
   const [activeCodeLabSessionIds, setActiveCodeLabSessionIds] = useState<Record<string, string>>({});
   
   const [codeLabPresetSessions, setCodeLabPresetSessions] = useState<Record<string, ChatSession[]>>(() => {

@@ -381,7 +381,7 @@ export function PracticalCodeLabView({
   onProviderChange,
   onModelChange,
   customModels,
-  activePresetId = 'ml_science',
+  activePresetId = 'stat_inference_lab',
   onSelectPresetId,
   onResetPresetChat,
   presetSessions = [],
@@ -1119,7 +1119,7 @@ Follow these mandatory formatting rules for all responses:
       <CodeLabPresetDrawer
         isOpen={isPresetDrawerOpen}
         onClose={() => setIsPresetDrawerOpen(false)}
-        activePresetId={activePreset?.id || 'ml_science'}
+        activePresetId={activePreset?.id || 'stat_inference_lab'}
         onSelectPreset={(preset) => {
           if (preset && onSelectPresetId) {
             onSelectPresetId(preset.id);
