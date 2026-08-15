@@ -89,7 +89,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     { id: 'nvidia', label: 'NVIDIA NIM Gateway API Key', placeholder: 'nvapi-...' },
     { id: 'groq', label: 'Groq Cloud API Key', placeholder: 'gsk_...' },
     { id: 'mistral', label: 'Mistral AI API Key', placeholder: '8W6aSCXb...' },
-    { id: 'cerebras', label: 'Cerebras Cloud API Key', placeholder: 'csk-...' },
     { id: 'sambanova', label: 'SambaNova Cloud API Key', placeholder: 'c72d24de-...' },
     { id: 'nararouter', label: 'NaraRouter API Key', placeholder: 'sk-nry-...' },
     { id: 'huggingface', label: 'Hugging Face Access Token', placeholder: 'hf_...' },

@@ -306,11 +306,8 @@ GENERAL AI ASSISTANT DIRECTIVES:
         apiKey = req.headers['x-user-poolside-key'] || (isAdmin ? process.env.POOLSIDE_API_KEY : '') || '';
     } else if (targetProvider === "local_endpoint" || targetProvider === "local") {
         apiKey = 'local_device_keyless';
-    } else if (targetProvider === "pollinations-keyless") {
-        apiKey = 'keyless_anonymous';
     } else if (targetProvider === "pollinations-keyed" || targetProvider === "pollinations") {
-        const isKeylessReq = req.headers['x-pollinations-subtype'] === 'keyless' || ['openai-fast', 'openai', 'deepseek', 'llama', 'qwen-coder', 'mistral'].includes(model) || !req.headers['x-user-pollinations-key'];
-        apiKey = req.headers['x-user-pollinations-key'] || (isAdmin ? process.env.POLLINATIONS_API_KEY : '') || (isKeylessReq ? 'keyless_anonymous' : '');
+        apiKey = req.headers['x-user-pollinations-key'] || (isAdmin ? process.env.POLLINATIONS_API_KEY : '') || '';
     } else if (targetProvider === "ollama") {
         apiKey = req.headers['x-user-ollama-key'] || (isAdmin ? (process.env.OLLAMA_API_KEY || DEFAULT_OLLAMA_KEY) : '') || 'ollama_cloud_default';
     }
@@ -502,8 +499,9 @@ MANDATORY QUALITY RULE: Every node and stage MUST have an explicit, meaningful d
                         const ollamaCloudEndpoints = [
                             req.headers['x-user-ollama-endpoint'],
                             process.env.OLLAMA_ENDPOINT,
-                            "https://api.ollama.com/v1/chat/completions",
-                            "https://ollama.com/api/chat"
+                            "https://api.ollama.com/api/chat",
+                            "https://ollama.com/api/chat",
+                            "https://api.ollama.com/v1/chat/completions"
                         ].filter(Boolean);
 
                         let ollamaSuccess = false;

@@ -51,27 +51,26 @@ export const PROVIDERS: ProviderGroup[] = [
     id: 'groq',
     name: 'Groq Cloud',
     models: [
-      { value: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B (Reasoning)' },
-      { value: 'openai/gpt-oss-20b', name: 'GPT-OSS 20B (Reasoning)' },
-      { value: 'qwen-2.5-32b', name: 'Qwen 2.5 32B (Groq)' },
-      { value: 'deepseek-r1-distill-llama-70b', name: 'DeepSeek R1 Distill 70B' },
       { value: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B Versatile [WS]' },
-      { value: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B Instant' }
+      { value: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B Instant (Ultra-Fast)' },
+      { value: 'qwen/qwen3.6-27b', name: 'Qwen 3.6 27B (Thinking/Reasoning)' },
+      { value: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B (Groq)' },
+      { value: 'openai/gpt-oss-20b', name: 'GPT-OSS 20B (Groq)' },
+      { value: 'groq/compound', name: 'Groq Compound Agent' },
+      { value: 'groq/compound-mini', name: 'Groq Compound Mini' }
     ]
   },
   {
     id: 'ollama',
-    name: 'Ollama Cloud',
+    name: 'Ollama Cloud (Online API)',
     models: [
-      { value: 'deepseek-v4-flash', name: 'DeepSeek V4 Flash (Ollama Cloud)' },
-      { value: 'deepseek-v3', name: 'DeepSeek V3 (Ollama Cloud)' },
-      { value: 'deepseek-r1', name: 'DeepSeek R1 (Ollama Cloud)' },
-      { value: 'deepseek-r1:70b', name: 'DeepSeek R1 70B (Ollama Cloud)' },
-      { value: 'llama3.3', name: 'Llama 3.3 70B (Ollama Cloud)' },
-      { value: 'qwen2.5-coder', name: 'Qwen 2.5 Coder (Ollama Cloud)' },
-      { value: 'mistral-nemo', name: 'Mistral Nemo (Ollama Cloud)' },
-      { value: 'phi4', name: 'Phi-4 (Ollama Cloud)' },
-      { value: 'gemma2', name: 'Gemma 2 (Ollama Cloud)' }
+      { value: 'gpt-oss:20b', name: 'GPT-OSS 20B (Ollama Cloud) [Free]' },
+      { value: 'gpt-oss:120b', name: 'GPT-OSS 120B (Ollama Cloud) [Free]' },
+      { value: 'gemma4:31b', name: 'Gemma 4 31B (Ollama Cloud) [Free]' },
+      { value: 'nemotron-3-nano:30b', name: 'Nemotron 3 Nano 30B (Ollama Cloud) [Free]' },
+      { value: 'nemotron-3-super', name: 'Nemotron 3 Super 120B (Ollama Cloud) [Free]' },
+      { value: 'nemotron-3-ultra', name: 'Nemotron 3 Ultra 550B (Ollama Cloud) [Free]' },
+      { value: 'minimax-m3', name: 'MiniMax M3 (Ollama Cloud) [Free]' }
     ]
   },
   {
@@ -107,24 +106,11 @@ export const PROVIDERS: ProviderGroup[] = [
     ]
   },
   {
-    id: 'cerebras',
-    name: 'Cerebras Cloud (Ultra-Fast)',
-    models: [
-      { value: 'llama-3.3-70b', name: 'Llama 3.3 70B (Ultra-Fast 2000+ t/s) [WS]' },
-      { value: 'llama3.1-70b', name: 'Llama 3.1 70B (Ultra-Fast 1800+ t/s) [WS]' },
-      { value: 'llama3.1-8b', name: 'Llama 3.1 8B (Instant 2000+ t/s)' },
-      { value: 'deepseek-r1-distill-llama-70b', name: 'DeepSeek R1 Distill 70B (Reasoning)' }
-    ]
-  },
-  {
     id: 'sambanova',
     name: 'SambaNova Cloud',
     models: [
-      { value: 'DeepSeek-V3.1', name: 'DeepSeek V3.1' },
-      { value: 'Meta-Llama-3.3-70B-Instruct', name: 'Llama 3.3 70B Instruct [WS]' },
-      { value: 'gpt-oss-120b', name: 'GPT-OSS 120B' },
-      { value: 'DeepSeek-V3.2', name: 'DeepSeek V3.2' },
-      { value: 'gemma-4-31b-it', name: 'Gemma 4 31B it' }
+      { value: 'MiniMax-M2.7', name: 'MiniMax M2.7 (SambaNova) [Free Quota]' },
+      { value: 'gemma-4-31B-it', name: 'Gemma 4 31B (SambaNova) [Free Quota]' }
     ]
   },
   {
@@ -132,10 +118,12 @@ export const PROVIDERS: ProviderGroup[] = [
     name: 'Mistral AI',
     models: [
       { value: 'mistral-large-latest', name: 'Mistral Large [WS]' },
-      { value: 'open-mixtral-8x22b', name: 'Mixtral 8x22B [WS]' },
-      { value: 'codestral-latest', name: 'Codestral' },
-      { value: 'open-mistral-nemo', name: 'Mistral Nemo' },
-      { value: 'pixtral-12b-2409', name: 'Pixtral 12B' }
+      { value: 'mistral-medium-latest', name: 'Mistral Medium 3.5 [WS]' },
+      { value: 'mistral-small-latest', name: 'Mistral Small' },
+      { value: 'codestral-latest', name: 'Codestral (Coding Specialist)' },
+      { value: 'ministral-8b-latest', name: 'Ministral 8B (Fast)' },
+      { value: 'ministral-3b-latest', name: 'Ministral 3B (Ultra-Fast)' },
+      { value: 'devstral-medium-latest', name: 'Devstral Medium Agent' }
     ]
   },
   {
@@ -172,6 +160,18 @@ export const PROVIDERS: ProviderGroup[] = [
       { value: 'mimo-v2.5-free', name: 'Mimo V2.5 Reasoning (OpenCode)' },
       { value: 'nemotron-3-ultra-free', name: 'Nemotron 3 Ultra 550B (OpenCode) [WS]' },
       { value: 'north-mini-code-free', name: 'North Mini Code Specialist (OpenCode)' }
+    ]
+  },
+  {
+    id: 'pollinations-keyed',
+    name: 'Pollinations AI (Priority Keyed)',
+    models: [
+      { value: 'vendouple/laguna-s-2.1:free', name: 'Laguna S 2.1 Agent (Pollinations) [Free]' },
+      { value: 'YoannDev90/diffusiongemma-26b-a4b-it:free', name: 'Gemma 26B Instruction (Pollinations) [Free]' },
+      { value: 'chirag-gamer/gpt-oss-120b', name: 'GPT-OSS 120B (Pollinations) [Free]' },
+      { value: 'guus6457/solar-pro-4', name: 'Solar Pro 4 (Pollinations) [Free]' },
+      { value: 'guus6457/ling-2.6-flash', name: 'Ling 2.6 Flash (Pollinations) [Free]' },
+      { value: 'chigwell/llm7-fast', name: 'LLM7 Fast Router (Pollinations) [Free]' }
     ]
   }
 ];

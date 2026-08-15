@@ -186,7 +186,7 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
             </div>
             <div className="portal-card-body">
               <h3>AI Chat & Multi-Model Lounge</h3>
-              <p>Chat seamlessly with Cerebras, Gemini, OpenRouter, and Groq models. Multi-key rotation support.</p>
+              <p>Chat seamlessly with OpenRouter, Gemini, Groq, and NVIDIA models. Multi-key rotation support.</p>
             </div>
             <div className="portal-card-footer">
               <div className="portal-meta-features">
