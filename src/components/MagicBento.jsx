@@ -39,9 +39,9 @@ const DEFAULT_CARDS = [
   {
     id: 'gagan',
     color: '#0f172a',
-    title: "Gagan's High-Yield Predictions",
-    description: "Must-solve 12-mark questions curated by Gagan for OU exams",
-    label: '🔥 OU Special'
+    title: '⭐ Star-Ranked Priority Hit List',
+    description: '1–2 hour high-yield revision list rated with ⭐ priority stars for OU exams',
+    label: '⭐ Star-Rated'
   }
 ];
 

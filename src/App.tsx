@@ -473,7 +473,7 @@ export const App: React.FC = () => {
 
   const [activeHubWorkspace, setActiveHubWorkspaceState] = useState<'landing' | ActiveViewType>(() => {
     const saved = localStorage.getItem('chatterbot_active_hub_workspace');
-    return (saved && ['landing', 'chat', 'exam_prep', 'system_prompts', 'prompts', 'diagram_studio', 'cubes', 'fun_personas', 'text_extractor', 'code_lab'].includes(saved))
+    return (saved && ['landing', 'chat', 'prompts', 'examprep', 'system_prompts', 'diagrams', 'cubes', 'fun_personas', 'extractor_studio', 'code_lab', 'lecture_notes'].includes(saved))
       ? (saved as 'landing' | ActiveViewType)
       : 'landing';
   });

@@ -1298,6 +1298,80 @@ body {
   gap: 16px;
 }
 
+/* Glassmorphic Unit Card Boxes for Syllabi and Question Banks */
+.unit-box {
+  background: rgba(15, 23, 42, 0.65);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  border-left: 4px solid #06b6d4;
+  border-radius: 12px;
+  padding: 20px 22px;
+  margin-bottom: 22px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.25);
+  transition: transform 0.2s ease, border-color 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.unit-box:hover {
+  border-color: rgba(56, 189, 248, 0.4);
+  box-shadow: 0 6px 24px rgba(6, 182, 212, 0.15);
+}
+
+.unit-box.unit-cyan {
+  border-left-color: #06b6d4;
+  border-color: rgba(6, 182, 212, 0.25);
+  background: rgba(6, 182, 212, 0.04);
+}
+
+.unit-box.unit-pink {
+  border-left-color: #ec4899;
+  border-color: rgba(236, 72, 153, 0.25);
+  background: rgba(236, 72, 153, 0.04);
+}
+
+.unit-box.unit-amber {
+  border-left-color: #f59e0b;
+  border-color: rgba(245, 158, 11, 0.25);
+  background: rgba(245, 158, 11, 0.04);
+}
+
+.unit-box.unit-indigo {
+  border-left-color: #818cf8;
+  border-color: rgba(129, 140, 248, 0.25);
+  background: rgba(129, 140, 248, 0.04);
+}
+
+.unit-box.unit-emerald {
+  border-left-color: #10b981;
+  border-color: rgba(16, 185, 129, 0.25);
+  background: rgba(16, 185, 129, 0.04);
+}
+
+.unit-header-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 14px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.unit-title {
+  font-size: 1.05rem;
+  font-weight: 700;
+  letter-spacing: 0.01em;
+  margin: 0;
+}
+
+.unit-badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 3px 10px;
+  border-radius: 9999px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 .card-actions {
   display: flex;
   justify-content: flex-end;
