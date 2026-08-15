@@ -168,8 +168,8 @@ export const LectureNotesStudioView: React.FC<LectureNotesStudioViewProps> = ({
         preset: 'detailed',
         syllabusSnippet: '',
         notesContent: '',
-        provider: 'Pollinations AI (Free Keyless)',
-        model: 'openai-fast',
+        provider: 'OpenRouter',
+        model: 'openrouter/free',
         webSearch: true,
         createdAt: Date.now(),
         updatedAt: Date.now()
@@ -197,10 +197,10 @@ export const LectureNotesStudioView: React.FC<LectureNotesStudioViewProps> = ({
 
   // Model & Provider Selection (Exact matching main chat)
   const [selectedProvider, setSelectedProvider] = useState<string>(() => {
-    return activeSession?.provider || localStorage.getItem(`chatterbot_lecture_provider_${currentUser}`) || 'Pollinations AI (Free Keyless)';
+    return activeSession?.provider || localStorage.getItem(`chatterbot_lecture_provider_${currentUser}`) || 'OpenRouter';
   });
   const [selectedModel, setSelectedModel] = useState<string>(() => {
-    return activeSession?.model || localStorage.getItem(`chatterbot_lecture_model_${currentUser}`) || 'openai-fast';
+    return activeSession?.model || localStorage.getItem(`chatterbot_lecture_model_${currentUser}`) || 'openrouter/free';
   });
 
   // Dropdown States

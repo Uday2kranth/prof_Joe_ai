@@ -2,6 +2,64 @@ import type { ProviderGroup, PersonaOption } from './types';
 
 export const PROVIDERS: ProviderGroup[] = [
   {
+    id: 'openrouter',
+    name: 'OpenRouter',
+    models: [
+      { value: 'openrouter/free', name: 'Free Automated Router [WS]' },
+      { value: 'google/gemini-2.0-flash-exp:free', name: 'Gemini 2.0 Flash Free [WS]' },
+      { value: 'deepseek/deepseek-chat:free', name: 'DeepSeek V3 / V4 Flash [WS]' },
+      { value: 'qwen/qwen-2.5-coder-32b-instruct:free', name: 'Qwen 2.5 Coder 32B [WS]' },
+      { value: 'meta-llama/llama-3.3-70b-instruct:free', name: 'Llama 3.3 70B Free [WS]' },
+      { value: 'deepseek/deepseek-r1:free', name: 'DeepSeek R1 (Reasoning) [WS]' },
+      { value: 'google/gemini-2.0-flash-thinking-exp:free', name: 'Gemini 2.0 Flash Thinking Free [WS]' },
+      { value: 'nvidia/nemotron-3-ultra:free', name: 'Nemotron 3 Ultra (Frontier Logic) [WS]' },
+      { value: 'nvidia/nemotron-3-super-120b-a12b:free', name: 'Nemotron 3 Super (Math/Logic) [WS]' },
+      { value: 'openai/gpt-oss-20b:free', name: 'GPT-OSS 20B (Low-Latency)' },
+      { value: 'nvidia/nemotron-3-nano-30b-a3b:free', name: 'Nemotron 3 Nano 30B (Sub-Agent)' },
+      { value: 'poolside/laguna-m.1:free', name: 'Laguna M.1 (Coding Agent)' },
+      { value: 'poolside/laguna-xs-2.1:free', name: 'Laguna XS 2.1 (Coding)' },
+      { value: 'cohere/north-mini-code:free', name: 'North Mini Code (Low-Latency)' },
+      { value: 'qwen/qwen3-coder:free', name: 'Qwen 3 Coder (Repo-Scale)' },
+      { value: 'meta-llama/llama-3.1-8b-instruct:free', name: 'Llama 3.1 8B Ultra-Light Free [WS]' },
+      { value: 'google/gemma-2-9b-it:free', name: 'Gemma 2 9B Light Free [WS]' },
+      { value: 'qwen/qwen-2.5-7b-instruct:free', name: 'Qwen 2.5 7B Light Free [WS]' },
+      { value: 'microsoft/phi-3-mini-128k-instruct:free', name: 'Phi-3 Mini 128K Fast Free [WS]' },
+      { value: 'mistralai/mistral-7b-instruct:free', name: 'Mistral 7B Light Free [WS]' },
+      { value: 'google/gemma-4-31b-it:free', name: 'Gemma 4 31B (OCR/Vision)' },
+      { value: 'google/gemma-4-26b-a4b-it:free', name: 'Gemma 4 26B (Visual Instruction)' },
+      { value: 'nvidia/nemotron-3-nano-omni:free', name: 'Nemotron 3 Nano Omni (Multimodal)' }
+    ]
+  },
+  {
+    id: 'gemini',
+    name: 'Google Gemini',
+    models: [
+      { value: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash [WS]' },
+      { value: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash [WS]' },
+      { value: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash [WS]' },
+      { value: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite' },
+      { value: 'gemma-4-21b', name: 'Gemma 4 21B (Multimodal)' },
+      { value: 'gemma-4-30b', name: 'Gemma 4 30B (Frontier)' },
+      { value: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash [WS]' },
+      { value: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash-Lite' },
+      { value: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash [WS]' },
+      { value: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash [WS]' },
+      { value: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' }
+    ]
+  },
+  {
+    id: 'groq',
+    name: 'Groq Cloud',
+    models: [
+      { value: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B (Reasoning)' },
+      { value: 'openai/gpt-oss-20b', name: 'GPT-OSS 20B (Reasoning)' },
+      { value: 'qwen-2.5-32b', name: 'Qwen 2.5 32B (Groq)' },
+      { value: 'deepseek-r1-distill-llama-70b', name: 'DeepSeek R1 Distill 70B' },
+      { value: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B Versatile [WS]' },
+      { value: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B Instant' }
+    ]
+  },
+  {
     id: 'ollama',
     name: 'Ollama Cloud',
     models: [
@@ -28,80 +86,6 @@ export const PROVIDERS: ProviderGroup[] = [
       { value: 'mistral-nemo', name: 'Mistral Nemo (Local Device)' },
       { value: 'phi4', name: 'Phi-4 (Local Device)' },
       { value: 'gemma2', name: 'Gemma 2 (Local Device)' }
-    ]
-  },
-  {
-    id: 'openrouter',
-    name: 'OpenRouter',
-    models: [
-      { value: 'openrouter/free', name: 'Free Automated Router [WS]' },
-      { value: 'google/gemini-2.0-flash-exp:free', name: 'Gemini 2.0 Flash Free [WS]' },
-      { value: 'google/gemini-2.0-flash-thinking-exp:free', name: 'Gemini 2.0 Flash Thinking Free [WS]' },
-      { value: 'deepseek/deepseek-r1:free', name: 'DeepSeek R1 (Reasoning) [WS]' },
-      { value: 'deepseek/deepseek-chat:free', name: 'DeepSeek V3 / V4 Flash [WS]' },
-      { value: 'qwen/qwen-2.5-coder-32b-instruct:free', name: 'Qwen 2.5 Coder 32B [WS]' },
-      { value: 'meta-llama/llama-3.3-70b-instruct:free', name: 'Llama 3.3 70B Free [WS]' },
-      { value: 'nvidia/nemotron-3-ultra:free', name: 'Nemotron 3 Ultra (Frontier Logic) [WS]' },
-      { value: 'nvidia/nemotron-3-super-120b-a12b:free', name: 'Nemotron 3 Super (Math/Logic) [WS]' },
-      { value: 'openai/gpt-oss-20b:free', name: 'GPT-OSS 20B (Low-Latency)' },
-      { value: 'nvidia/nemotron-3-nano-30b-a3b:free', name: 'Nemotron 3 Nano 30B (Sub-Agent)' },
-      { value: 'poolside/laguna-m.1:free', name: 'Laguna M.1 (Coding Agent)' },
-      { value: 'poolside/laguna-xs-2.1:free', name: 'Laguna XS 2.1 (Coding)' },
-      { value: 'cohere/north-mini-code:free', name: 'North Mini Code (Low-Latency)' },
-      { value: 'qwen/qwen3-coder:free', name: 'Qwen 3 Coder (Repo-Scale)' },
-      { value: 'meta-llama/llama-3.1-8b-instruct:free', name: 'Llama 3.1 8B Ultra-Light Free [WS]' },
-      { value: 'google/gemma-2-9b-it:free', name: 'Gemma 2 9B Light Free [WS]' },
-      { value: 'qwen/qwen-2.5-7b-instruct:free', name: 'Qwen 2.5 7B Light Free [WS]' },
-      { value: 'microsoft/phi-3-mini-128k-instruct:free', name: 'Phi-3 Mini 128K Fast Free [WS]' },
-      { value: 'mistralai/mistral-7b-instruct:free', name: 'Mistral 7B Light Free [WS]' },
-      { value: 'google/gemma-4-31b-it:free', name: 'Gemma 4 31B (OCR/Vision)' },
-      { value: 'google/gemma-4-26b-a4b-it:free', name: 'Gemma 4 26B (Visual Instruction)' },
-      { value: 'nvidia/nemotron-3-nano-omni:free', name: 'Nemotron 3 Nano Omni (Multimodal)' }
-    ]
-  },
-  {
-    id: 'gemini',
-    name: 'Google Gemini',
-    models: [
-      { value: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash [WS]' },
-      { value: 'gemini-2.5-flash-lite', name: 'Gemini 2.5 Flash-Lite' },
-      { value: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash [WS]' },
-      { value: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash [WS]' },
-      { value: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' }
-    ]
-  },
-  {
-    id: 'pollinations-keyless',
-    name: 'Pollinations AI (Free Keyless)',
-    models: [
-      { value: 'openai-fast', name: 'GPT-5 Nano / GPT-OSS 20B (Free Keyless) [WS]' },
-      { value: 'openai', name: 'GPT-4o Mini / OpenAI (Free Keyless) [WS]' },
-      { value: 'deepseek', name: 'DeepSeek V4 Flash (Free Keyless) [WS]' },
-      { value: 'llama', name: 'Meta Llama 3.3 70B (Free Keyless) [WS]' },
-      { value: 'qwen-coder', name: 'Qwen3 Coder 30B (Free Keyless) [WS]' },
-      { value: 'mistral', name: 'Mistral Small 4 (Free Keyless) [WS]' }
-    ]
-  },
-  {
-    id: 'pollinations-keyed',
-    name: 'Pollinations AI (Priority Keyed)',
-    models: [
-      { value: 'openai-fast', name: 'GPT-5 Nano (Priority Keyed) [WS]' },
-      { value: 'openai', name: 'GPT-4o Mini (Priority Keyed) [WS]' },
-      { value: 'deepseek', name: 'DeepSeek V4 Flash (Priority Keyed) [WS]' },
-      { value: 'llama', name: 'Meta Llama 3.3 70B (Priority Keyed) [WS]' },
-      { value: 'qwen-coder', name: 'Qwen3 Coder 30B (Priority Keyed) [WS]' },
-      { value: 'mistral', name: 'Mistral Small 4 (Priority Keyed) [WS]' }
-    ]
-  },
-  {
-    id: 'groq',
-    name: 'Groq Cloud',
-    models: [
-      { value: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B (Reasoning)' },
-      { value: 'openai/gpt-oss-20b', name: 'GPT-OSS 20B (Reasoning)' },
-      { value: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B Versatile [WS]' },
-      { value: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B Instant' }
     ]
   },
   {

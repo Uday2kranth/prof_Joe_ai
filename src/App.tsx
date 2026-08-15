@@ -89,8 +89,8 @@ export const App: React.FC = () => {
       {
         id: `session-${Date.now()}`,
         title: 'New Chat Session',
-        provider: 'Pollinations AI (Free Keyless)',
-        model: 'openai-fast',
+        provider: 'OpenRouter',
+        model: 'openrouter/free',
         messages: [],
         createdAt: Date.now(),
         updatedAt: Date.now()
@@ -120,8 +120,8 @@ export const App: React.FC = () => {
       {
         id: `persona-session-${Date.now()}`,
         title: 'Fun Persona Chat',
-        provider: 'Pollinations AI (Free Keyless)',
-        model: 'openai-fast',
+        provider: 'OpenRouter',
+        model: 'openrouter/free',
         messages: [],
         createdAt: Date.now(),
         updatedAt: Date.now()
@@ -259,8 +259,8 @@ export const App: React.FC = () => {
     }
   };
 
-  const DEFAULT_FREE_PROVIDER = 'Pollinations AI (Free Keyless)';
-  const DEFAULT_FREE_MODEL = 'openai-fast';
+  const DEFAULT_FREE_PROVIDER = 'OpenRouter';
+  const DEFAULT_FREE_MODEL = 'openrouter/free';
 
   const [activeView, setActiveViewState] = useState<ActiveViewType>(() => {
     const saved = localStorage.getItem('chatterbot_active_view');

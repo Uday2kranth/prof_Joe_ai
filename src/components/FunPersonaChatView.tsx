@@ -55,7 +55,7 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
   messages,
   isLoading,
   onSendMessage,
-  selectedProvider = 'Pollinations AI (Free Keyless)',
+  selectedProvider = 'OpenRouter',
   selectedModel,
   selectedPersona,
   isPersonaEnabled = true,

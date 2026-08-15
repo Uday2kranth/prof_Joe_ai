@@ -281,7 +281,7 @@ GENERAL AI ASSISTANT DIRECTIVES:
     const isAdmin = (user && (user.toLowerCase() === "admin@uday" || user.toLowerCase() === "uday@joe"));
 
     if (targetProvider === "openrouter") {
-        apiKey = req.headers['x-user-openrouter-key'] || (isAdmin ? (process.env.OPENROUTER_API_KEY || DEFAULT_OPENROUTER_KEY) : '') || '';
+        apiKey = req.headers['x-user-openrouter-key'] || process.env.OPENROUTER_API_KEY || DEFAULT_OPENROUTER_KEY || '';
     } else if (targetProvider === "nvidia") {
         apiKey = req.headers['x-user-nvidia-key'] || (isAdmin ? (process.env.NVIDIA_API_KEY || DEFAULT_NVIDIA_KEY) : '') || '';
     } else if (targetProvider === "omnirouter") {
@@ -318,7 +318,7 @@ GENERAL AI ASSISTANT DIRECTIVES:
     if (!apiKey) {
         const providerTitle = provider || targetProvider.toUpperCase();
         return res.status(400).json({ 
-            error: `🔑 Personal API key required for ${providerTitle}. Please add your key in Settings (⚙️) or switch to Pollinations AI (Free Keyless).` 
+            error: `🔑 Personal API key required for ${providerTitle}. Please add your key in Settings (⚙️) or switch to OpenRouter (Free Tier).` 
         });
     }
 
@@ -471,18 +471,18 @@ MANDATORY QUALITY RULE: Every node and stage MUST have an explicit, meaningful d
                 headers["X-Title"] = "ChatterBot Dashboard";
             }
 
-            // Clean model ID from prefixes (e.g. models/gemini-2.5-flash -> gemini-2.5-flash)
+            // Clean model ID from prefixes (e.g. models/gemini-3.7-flash -> gemini-3.7-flash)
             const cleanModel = (model || '').replace(/^models\//, '').trim();
 
             // Strict single model selection with smart alias resolution for Gemini
             let modelCandidates = [cleanModel];
             if (targetProvider === "gemini") {
-                if (cleanModel === 'gemini-3.6-flash' || cleanModel === 'gemini-3.5-flash' || cleanModel === 'gemini-3.5-flash-lite') {
-                    modelCandidates = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+                if (cleanModel === 'gemini-3.7-flash' || cleanModel === 'gemini-3.6-flash' || cleanModel === 'gemini-3.5-flash' || cleanModel === 'gemini-3.5-flash-lite') {
+                    modelCandidates = [cleanModel, 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash-lite'];
                 } else if (cleanModel.startsWith('gemma-4')) {
-                    modelCandidates = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
-                } else if (!['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].includes(cleanModel)) {
-                    modelCandidates = [cleanModel, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+                    modelCandidates = [cleanModel, 'gemma-4-31b-it', 'gemma-4-26b-a4b-it', 'gemini-3.7-flash'];
+                } else {
+                    modelCandidates = [cleanModel, 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
                 }
             }
 
