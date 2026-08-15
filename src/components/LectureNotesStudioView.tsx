@@ -620,12 +620,30 @@ ${currentPresetObj.instructionPrompt}
   const renderFormattedNotes = (rawMarkdown: string) => {
     if (!rawMarkdown) return '';
 
-    // 0. Inject live vector diagrams from diagramMap
-    let processed = rawMarkdown;
-    diagramMap.forEach((containerHtml, token) => {
-      processed = processed.replaceAll(token, containerHtml);
+    // Step 0: Extract Kroki / Mermaid diagrams and replace with tokens so marked and DOMPurify never mangle SVGs or leak <style> text
+    const diagrams = extractDiagrams(rawMarkdown);
+    const renderDiagramTokens = new Map<string, string>();
+    let markdownWithTokens = rawMarkdown;
+    let diagTokenIdx = 0;
+
+    diagrams.forEach(diag => {
+      const token = `STUDIODIAGRAMTOKEN${diagTokenIdx++}ENDTOKEN`;
+      const svgContainer = diagramMap.get(diag.fullMatch);
+      if (svgContainer) {
+        renderDiagramTokens.set(token, svgContainer);
+      } else {
+        // Asynchronous loading placeholder
+        renderDiagramTokens.set(
+          token,
+          `<div class="kroki-container kroki-loading-box" style="padding: 20px; text-align: center; color: #64748b; font-size: 0.85rem; background: #ffffff; border-radius: 8px; border: 1px dashed rgba(6, 182, 212, 0.4);">
+            <span style="display: inline-block; margin-right: 6px;">⚡</span> Rendering Vector Diagram (${diag.type})...
+          </div>`
+        );
+      }
+      markdownWithTokens = markdownWithTokens.replace(diag.fullMatch, token);
     });
 
+    let processed = markdownWithTokens;
     const mathMap = new Map<string, string>();
     let tokenIdx = 0;
 
@@ -756,22 +774,27 @@ ${currentPresetObj.instructionPrompt}
       dirtyHtml = dirtyHtml.replaceAll(token, html);
     });
 
-    return DOMPurify.sanitize(dirtyHtml, {
+    // 6. Sanitize sanitized document HTML (without corrupting SVG tags)
+    let cleanHtml = DOMPurify.sanitize(dirtyHtml, {
       ADD_TAGS: [
         'math', 'annotation', 'semantics', 'mrow', 'mi', 'mo', 'mn', 'msup', 'msub',
         'mfrac', 'mover', 'munder', 'msqrt', 'table', 'thead', 'tbody', 'tr', 'th',
-        'td', 'span', 'div', 'hr', 'blockquote', 'code', 'pre', 'svg', 'g', 'path',
-        'text', 'rect', 'circle', 'line', 'polyline', 'polygon', 'defs', 'marker',
-        'tspan', 'style', 'foreignObject', 'clippath'
+        'td', 'span', 'div', 'hr', 'blockquote', 'code', 'pre'
       ],
-      ADD_ATTR: [
-        'display', 'style', 'class', 'id', 'aria-hidden', 'viewBox', 'xmlns', 'fill',
-        'stroke', 'stroke-width', 'd', 'x', 'y', 'width', 'height', 'cx', 'cy', 'r',
-        'x1', 'y1', 'x2', 'y2', 'points', 'transform', 'text-anchor', 'dominant-baseline',
-        'data-diagram-type', 'marker-end', 'marker-start', 'preserveAspectRatio',
-        'textLength', 'lengthAdjust', 'font-size', 'font-family', 'font-weight', 'dx', 'dy', 'letter-spacing'
-      ]
+      ADD_ATTR: ['display', 'style', 'class', 'id', 'aria-hidden']
     });
+
+    // 7. Inject pristine vector SVG diagrams AFTER DOMPurify
+    renderDiagramTokens.forEach((svgContainerHtml, token) => {
+      const paragraphWrapped = `<p>${token}</p>`;
+      if (cleanHtml.includes(paragraphWrapped)) {
+        cleanHtml = cleanHtml.replace(paragraphWrapped, svgContainerHtml);
+      } else {
+        cleanHtml = cleanHtml.replaceAll(token, svgContainerHtml);
+      }
+    });
+
+    return cleanHtml;
   };
 
   const handlePrint = () => {
