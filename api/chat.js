@@ -276,48 +276,49 @@ GENERAL AI ASSISTANT DIRECTIVES:
     else if (targetProvider.includes('opencode')) targetProvider = 'opencode';
     else if (targetProvider.includes('nararouter')) targetProvider = 'nararouter';
 
-    // 1. Resolve API Key: prioritizes client-submitted header keys.
+    // 1. Resolve API Key: prioritizes client-submitted header keys. Admin fallback keys are strictly reserved for Admin accounts.
     let apiKey = '';
-    const isAdmin = (user && user.toLowerCase() === "admin@uday");
+    const isAdmin = (user && (user.toLowerCase() === "admin@uday" || user.toLowerCase() === "uday@joe"));
 
     if (targetProvider === "openrouter") {
-        apiKey = req.headers['x-user-openrouter-key'] || process.env.OPENROUTER_API_KEY || DEFAULT_OPENROUTER_KEY || '';
+        apiKey = req.headers['x-user-openrouter-key'] || (isAdmin ? (process.env.OPENROUTER_API_KEY || DEFAULT_OPENROUTER_KEY) : '') || '';
     } else if (targetProvider === "nvidia") {
-        apiKey = req.headers['x-user-nvidia-key'] || process.env.NVIDIA_API_KEY || DEFAULT_NVIDIA_KEY || '';
+        apiKey = req.headers['x-user-nvidia-key'] || (isAdmin ? (process.env.NVIDIA_API_KEY || DEFAULT_NVIDIA_KEY) : '') || '';
     } else if (targetProvider === "omnirouter") {
-        apiKey = req.headers['x-user-omnirouter-key'] || process.env.OMNIROUTER_API_KEY || '';
+        apiKey = req.headers['x-user-omnirouter-key'] || (isAdmin ? process.env.OMNIROUTER_API_KEY : '') || '';
     } else if (targetProvider === "mistral") {
-        apiKey = req.headers['x-user-mistral-key'] || process.env.MISTRAL_API_KEY || DEFAULT_MISTRAL_KEY || '';
+        apiKey = req.headers['x-user-mistral-key'] || (isAdmin ? (process.env.MISTRAL_API_KEY || DEFAULT_MISTRAL_KEY) : '') || '';
     } else if (targetProvider === "cerebras") {
-        apiKey = req.headers['x-user-cerebras-key'] || process.env.CEREBRAS_API_KEY || DEFAULT_CEREBRAS_KEY || '';
+        apiKey = req.headers['x-user-cerebras-key'] || (isAdmin ? (process.env.CEREBRAS_API_KEY || DEFAULT_CEREBRAS_KEY) : '') || '';
     } else if (targetProvider === "groq") {
-        apiKey = req.headers['x-user-groq-key'] || process.env.GROQ_API_KEY || DEFAULT_GROQ_KEY || '';
+        apiKey = req.headers['x-user-groq-key'] || (isAdmin ? (process.env.GROQ_API_KEY || DEFAULT_GROQ_KEY) : '') || '';
     } else if (targetProvider === "sambanova") {
-        apiKey = req.headers['x-user-sambanova-key'] || process.env.SAMBANOVA_API_KEY || DEFAULT_SAMBANOVA_KEY || '';
+        apiKey = req.headers['x-user-sambanova-key'] || (isAdmin ? (process.env.SAMBANOVA_API_KEY || DEFAULT_SAMBANOVA_KEY) : '') || '';
     } else if (targetProvider === "gemini") {
-        apiKey = req.headers['x-user-gemini-key'] || process.env.GEMINI_API_KEY || '';
+        apiKey = req.headers['x-user-gemini-key'] || (isAdmin ? process.env.GEMINI_API_KEY : '') || '';
     } else if (targetProvider === "nararouter") {
-        apiKey = req.headers['x-user-nararouter-key'] || process.env.NARAROUTER_API_KEY || DEFAULT_NARAROUTER_KEY || '';
+        apiKey = req.headers['x-user-nararouter-key'] || (isAdmin ? (process.env.NARAROUTER_API_KEY || DEFAULT_NARAROUTER_KEY) : '') || '';
     } else if (targetProvider === "huggingface") {
-        apiKey = req.headers['x-user-huggingface-key'] || process.env.HUGGINGFACE_API_KEY || '';
+        apiKey = req.headers['x-user-huggingface-key'] || (isAdmin ? process.env.HUGGINGFACE_API_KEY : '') || '';
     } else if (targetProvider === "opencode") {
-        apiKey = req.headers['x-user-opencode-key'] || process.env.OPENCODE_API_KEY || '';
+        apiKey = req.headers['x-user-opencode-key'] || (isAdmin ? process.env.OPENCODE_API_KEY : '') || '';
     } else if (targetProvider === "poolside") {
-        apiKey = req.headers['x-user-poolside-key'] || process.env.POOLSIDE_API_KEY || '';
+        apiKey = req.headers['x-user-poolside-key'] || (isAdmin ? process.env.POOLSIDE_API_KEY : '') || '';
     } else if (targetProvider === "local_endpoint" || targetProvider === "local") {
         apiKey = 'local_device_keyless';
     } else if (targetProvider === "pollinations-keyless") {
         apiKey = 'keyless_anonymous';
     } else if (targetProvider === "pollinations-keyed" || targetProvider === "pollinations") {
-        const isKeylessReq = req.headers['x-pollinations-subtype'] === 'keyless' || ['openai-fast', 'openai', 'deepseek', 'llama', 'qwen-coder', 'mistral'].includes(model);
-        apiKey = req.headers['x-user-pollinations-key'] || process.env.POLLINATIONS_API_KEY || (isKeylessReq ? 'keyless_anonymous' : '');
+        const isKeylessReq = req.headers['x-pollinations-subtype'] === 'keyless' || ['openai-fast', 'openai', 'deepseek', 'llama', 'qwen-coder', 'mistral'].includes(model) || !req.headers['x-user-pollinations-key'];
+        apiKey = req.headers['x-user-pollinations-key'] || (isAdmin ? process.env.POLLINATIONS_API_KEY : '') || (isKeylessReq ? 'keyless_anonymous' : '');
     } else if (targetProvider === "ollama") {
-        apiKey = req.headers['x-user-ollama-key'] || process.env.OLLAMA_API_KEY || DEFAULT_OLLAMA_KEY || 'ollama_cloud_default';
+        apiKey = req.headers['x-user-ollama-key'] || (isAdmin ? (process.env.OLLAMA_API_KEY || DEFAULT_OLLAMA_KEY) : '') || 'ollama_cloud_default';
     }
 
     if (!apiKey) {
+        const providerTitle = provider || targetProvider.toUpperCase();
         return res.status(400).json({ 
-            error: `API key required for ${provider.toUpperCase()}. Please configure your API key in Settings (⚙️) or select Pollinations AI (Free Keyless).` 
+            error: `🔑 Personal API key required for ${providerTitle}. Please add your key in Settings (⚙️) or switch to Pollinations AI (Free Keyless).` 
         });
     }
 
@@ -448,15 +449,15 @@ MANDATORY QUALITY RULE: Every node and stage MUST have an explicit, meaningful d
                 "Content-Type": "application/json"
             };
 
-            if (provider === "pollinations-keyless" || currentKey === 'keyless_anonymous') {
+            if (targetProvider === "pollinations-keyless" || currentKey === 'keyless_anonymous') {
                 delete headers["Authorization"];
-            } else if (provider === "pollinations-keyed" || provider === "pollinations") {
+            } else if (targetProvider === "pollinations-keyed" || targetProvider === "pollinations") {
                 if (currentKey && currentKey !== 'keyless_anonymous') {
                     headers["Authorization"] = `Bearer ${currentKey}`;
                 } else {
                     delete headers["Authorization"];
                 }
-            } else if (provider === "opencode") {
+            } else if (targetProvider === "opencode") {
                 headers["Authorization"] = `Bearer ${currentKey}`;
                 headers["x-api-key"] = currentKey;
                 headers["api-key"] = currentKey;
@@ -465,18 +466,23 @@ MANDATORY QUALITY RULE: Every node and stage MUST have an explicit, meaningful d
             }
 
             // OpenRouter optional tracking headers
-            if (provider === "openrouter") {
+            if (targetProvider === "openrouter") {
                 headers["HTTP-Referer"] = "https://chatterbot-dashboard.vercel.app";
                 headers["X-Title"] = "ChatterBot Dashboard";
             }
 
+            // Clean model ID from prefixes (e.g. models/gemini-2.5-flash -> gemini-2.5-flash)
+            const cleanModel = (model || '').replace(/^models\//, '').trim();
+
             // Strict single model selection with smart alias resolution for Gemini
-            let modelCandidates = [model];
+            let modelCandidates = [cleanModel];
             if (targetProvider === "gemini") {
-                if (model === 'gemini-3.6-flash' || model === 'gemini-3.5-flash' || model === 'gemini-3.5-flash-lite') {
+                if (cleanModel === 'gemini-3.6-flash' || cleanModel === 'gemini-3.5-flash' || cleanModel === 'gemini-3.5-flash-lite') {
                     modelCandidates = ['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash'];
-                } else if (model.startsWith('gemma-4')) {
+                } else if (cleanModel.startsWith('gemma-4')) {
                     modelCandidates = ['gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
+                } else if (!['gemini-2.5-flash', 'gemini-2.5-flash-lite', 'gemini-2.0-flash', 'gemini-1.5-flash', 'gemini-1.5-pro'].includes(cleanModel)) {
+                    modelCandidates = [cleanModel, 'gemini-2.5-flash', 'gemini-2.0-flash', 'gemini-1.5-flash'];
                 }
             }
 
@@ -484,14 +490,14 @@ MANDATORY QUALITY RULE: Every node and stage MUST have an explicit, meaningful d
                 try {
                     let response;
                     
-                    const isPollinationsKeyless = provider === "pollinations-keyless" || (
-                        (provider === "pollinations" || provider === "pollinations-keyed") && (
+                    const isPollinationsKeyless = targetProvider === "pollinations-keyless" || (
+                        (targetProvider === "pollinations" || targetProvider === "pollinations-keyed") && (
                             req.headers['x-pollinations-subtype'] === 'keyless' ||
                             !currentKey || currentKey === 'keyless_anonymous'
                         )
                     );
 
-                    if (provider === "ollama") {
+                    if (targetProvider === "ollama") {
                         // Slot 1: Ollama Cloud API Key Slot (https://api.ollama.com/v1/chat/completions)
                         const ollamaCloudEndpoints = [
                             req.headers['x-user-ollama-endpoint'],
@@ -586,7 +592,7 @@ MANDATORY QUALITY RULE: Every node and stage MUST have an explicit, meaningful d
                         }
 
                         if (ollamaSuccess && responsePayload) break;
-                    } else if (provider === "local_endpoint" || provider === "local") {
+                    } else if (targetProvider === "local_endpoint" || targetProvider === "local") {
                         // Slot 2: Local Device / Ngrok Tunnel Slot
                         const localEndpoints = [
                             req.headers['x-user-local-endpoint'],
@@ -727,24 +733,24 @@ MANDATORY QUALITY RULE: Every node and stage MUST have an explicit, meaningful d
                     console.warn(`Key rotation: Key index ${i} failed for model "${targetModel}" with status ${currentStatus}: ${lastErrorText}`);
 
                     if (currentStatus === 402) {
-                        if (provider === "openrouter") {
+                        if (targetProvider === "openrouter") {
                             lastErrorText = `OpenRouter key has 0 credit balance for paid model '${targetModel}'. Please select a free model (e.g. Qwen 3 Coder, Gemma 4, Nemotron 3) or top up credits in OpenRouter settings.`;
                         } else {
                             lastErrorText = `Payment required for model '${targetModel}'. Please select a free model or check provider account balance.`;
                         }
                     } else if (currentStatus === 503) {
-                        lastErrorText = `Provider '${provider.toUpperCase()}' is temporarily overloaded (HTTP 503). Please try again in 5s or select Pollinations AI (Free Keyless).`;
+                        lastErrorText = `Provider '${(provider || targetProvider).toUpperCase()}' is temporarily overloaded (HTTP 503). Please try again in 5s or select Pollinations AI (Free Keyless).`;
                     } else if (currentStatus === 429) {
-                        if (provider === "gemini") {
+                        if (targetProvider === "gemini") {
                             lastErrorText = "Google Free Tier Rate Limit Exceeded (15 RPM / 1500 RPD quota). Please try again in 15s or switch provider.";
-                        } else if (provider === "pollinations") {
+                        } else if (targetProvider === "pollinations") {
                             lastErrorText = "Pollinations free queue busy. Please wait a few seconds and try again, or switch model.";
                         }
-                    } else if (currentStatus === 401 && provider === "pollinations") {
+                    } else if (currentStatus === 401 && targetProvider === "pollinations") {
                         lastErrorText = "Authentication required for this model on Pollinations. Please switch to keyless model 'openai-fast' or 'openai', or enter a free Pollinations API key in Settings.";
-                    } else if (currentStatus === 403 && provider === "ollama") {
+                    } else if (currentStatus === 403 && targetProvider === "ollama") {
                         lastErrorText = "This model requires an active paid Ollama Cloud subscription (https://ollama.com/upgrade). Please select a free Ollama Cloud model.";
-                    } else if (currentStatus === 404 && provider === "ollama") {
+                    } else if (currentStatus === 404 && targetProvider === "ollama") {
                         lastErrorText = `Ollama model '${targetModel}' not found on active endpoint. Make sure local Ollama desktop app is running on port 11434, or configure a custom Ollama Cloud endpoint in Settings.`;
                     }
                 } catch (err) {

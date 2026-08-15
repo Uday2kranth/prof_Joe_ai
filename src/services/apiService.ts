@@ -84,7 +84,11 @@ export async function sendChatMessage(
   }
 
   if (!response.ok) {
-    throw new Error(resData.error || `HTTP ${response.status} error from server`);
+    let errMessage = resData.error;
+    if (typeof errMessage === 'object' && errMessage !== null) {
+      errMessage = errMessage.message || JSON.stringify(errMessage);
+    }
+    throw new Error(errMessage || `HTTP ${response.status} error from server`);
   }
 
   return {

@@ -1,4 +1,19 @@
 let IN_MEMORY_USER_KEYS = {};
+let cachedClient = null;
+let cachedDb = null;
+
+async function getMongoDb(uri) {
+  if (cachedClient && cachedDb) {
+    return { client: cachedClient, db: cachedDb };
+  }
+  const { MongoClient } = await import('mongodb');
+  const client = new MongoClient(uri);
+  await client.connect();
+  const db = client.db('prof_joe_ai');
+  cachedClient = client;
+  cachedDb = db;
+  return { client, db };
+}
 
 export default async function handler(req, res) {
   // Set CORS headers
@@ -20,12 +35,8 @@ export default async function handler(req, res) {
 
     if (mongodbUri) {
       try {
-        const { MongoClient } = await import('mongodb');
-        const client = new MongoClient(mongodbUri);
-        await client.connect();
-        const db = client.db('prof_joe_ai');
+        const { db } = await getMongoDb(mongodbUri);
         const doc = await db.collection('user_api_keys').findOne({ username });
-        await client.close();
 
         if (doc && doc.keys) {
           return res.status(200).json({ success: true, keys: doc.keys });
@@ -51,16 +62,12 @@ export default async function handler(req, res) {
 
     if (mongodbUri) {
       try {
-        const { MongoClient } = await import('mongodb');
-        const client = new MongoClient(mongodbUri);
-        await client.connect();
-        const db = client.db('prof_joe_ai');
+        const { db } = await getMongoDb(mongodbUri);
         await db.collection('user_api_keys').updateOne(
           { username },
           { $set: { username, keys, updatedAt: new Date() } },
           { upsert: true }
         );
-        await client.close();
       } catch (err) {
         console.error('MongoDB save keys failed:', err.message);
       }
