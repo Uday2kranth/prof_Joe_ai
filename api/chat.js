@@ -409,10 +409,17 @@ STRICT IMAGE & DIAGRAM EMBEDDING DIRECTIVES:
             content: "Always format mathematical notations, variables with subscripts (like M_1), powers (like x^2), calculations, and equations using standard LaTeX enclosed in single dollar signs $ for inline math (e.g. $M_1$) or double dollar signs $$ for block math. Box final numeric results using $$\\bbox[6px,border:2px solid #06b6d4]{\\text{Final Result} = X}$$."
         });
 
-        // Final Mandatory System Directive: Enable horizontal and vertical Kroki diagrams for academic mode
+        // Final Mandatory System Directive: Visual Diagram Architecture & Pedagogical Guidelines
         apiMessages.push({
             role: "system",
-            content: "DIAGRAM MANDATORY DIRECTIVE: You are authorized to generate both vertical (```mermaid\\ngraph TD``` or Graphviz ```kroki-graphviz rankdir=TB```) AND horizontal diagrams (```mermaid\\ngraph LR``` or Graphviz ```kroki-graphviz rankdir=LR```). Use appropriate Kroki code blocks (```kroki-plantuml```, ```kroki-graphviz```, ```kroki-erd```, ```mermaid```) whenever a concept requires visual structure."
+            content: `📐 VISUAL DIAGRAM ARCHITECTURE & PEDAGOGICAL GUIDELINES:
+When visual structure enhances comprehension, render exactly 1 clean Mermaid block (\`\`\`mermaid ... \`\`\`). Dynamically craft the layout using these recommended visual patterns that students and evaluators would like to see:
+• Interactive Protocols & Security: Best visualized through \`sequenceDiagram\` (with participant lifelines & numbered message steps)
+• Multi-Stage Systems & ML Lifecycles: Ideally suited for \`graph LR/TD\` with \`subgraph\` (modular grouped stage boxes)
+• State Transitions & Automata: Most naturally expressed via \`stateDiagram-v2\` (state triggers & condition transitions)
+• Relational Schemas & Data Models: Excellently structured using \`erDiagram\` (entity attributes & cardinalities)
+• Step-by-Step Logic & Taxonomies: Cleanly illustrated with compact \`graph LR/TD\` flowcharts or PlantUML mindmaps
+MANDATORY QUALITY RULE: Every node and stage MUST have an explicit, meaningful descriptive title in quotes (e.g. Node1["1. Feature Extraction Matrix X"]). NEVER output empty, unexpanded, or bare single-letter nodes (like A, B).`
         });
     } else if (persona && persona !== 'default') {
         // For fun personas, enforce strict persona adherence and negative diagram rules for text-only personas

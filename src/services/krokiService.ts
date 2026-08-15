@@ -19,11 +19,18 @@ const KNOWN_DIAGRAM_TYPES = [
 
 export function minifySvg(svg: string): string {
   if (!svg) return '';
-  return svg
+  let clean = svg
     .replace(/<!--[\s\S]*?-->/g, '')
     .replace(/\s+/g, ' ')
     .replace(/>\s+</g, '><')
     .trim();
+
+  // Inject universal contrast style inside the SVG defs / style
+  const contrastStyle = '<style>text, tspan { fill: #0f172a !important; color: #0f172a !important; font-family: "Inter", system-ui, sans-serif !important; font-weight: 600 !important; font-size: 13px !important; visibility: visible !important; }</style>';
+  if (clean.includes('<svg')) {
+    clean = clean.replace(/<svg([^>]*)>/i, `<svg$1>${contrastStyle}`);
+  }
+  return clean;
 }
 
 // Concurrency Queue for Kroki API Calls (max 2 parallel requests)
@@ -100,70 +107,120 @@ export function extractDiagrams(text: string): ExtractedDiagram[] {
  * Renders a clean visual SVG flowchart if remote Kroki API times out or fails.
  */
 export function generateLocalFallbackSvg(diagramType: string, source: string): string {
-  const lines = source.split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('graph') && !l.startsWith('flowchart') && !l.startsWith('@startuml') && !l.startsWith('@enduml') && !l.startsWith('subgraph'));
-  
-  const nodes: string[] = [];
+  const cleanSource = source.replace(/%%[\s\S]*?$/gm, '').trim();
+  const lines = cleanSource.split('\n').map(l => l.trim()).filter(Boolean);
+
+  const idToLabel = new Map<string, string>();
   const connections: Array<{ from: string; to: string; label?: string }> = [];
+  const nodeOrder: string[] = [];
 
+  function cleanLabel(raw: string): string {
+    if (!raw) return '';
+    return raw
+      .replace(/^["'`]|["'`]$/g, '')
+      .replace(/<[^>]*>/g, '')
+      .replace(/&quot;/g, '"')
+      .replace(/&amp;/g, '&')
+      .replace(/\\n/g, ' ')
+      .trim();
+  }
+
+  // Pass 1: Extract all explicit node label definitions e.g. A["Machine Learning"], node1[Data Prep]
   lines.forEach(line => {
-    // Extract node definitions or connections like A[Label] --> B[Label] or A -> B: Label
-    const connMatch = line.match(/(?:([A-Za-z0-9_]+)(?:\[(.*?)\])?)\s*(?:-->|->|==>)\s*(?:([A-Za-z0-9_]+)(?:\[(.*?)\])?)/);
-    if (connMatch) {
-      const fromId = connMatch[1];
-      const fromLabel = connMatch[2] || fromId;
-      const toId = connMatch[3];
-      const toLabel = connMatch[4] || toId;
-
-      if (!nodes.includes(fromLabel)) nodes.push(fromLabel);
-      if (!nodes.includes(toLabel)) nodes.push(toLabel);
-      connections.push({ from: fromLabel, to: toLabel });
-    } else {
-      const labelMatch = line.match(/([A-Za-z0-9_]+)\[(.*?)\]/);
-      if (labelMatch) {
-        const label = labelMatch[2];
-        if (!nodes.includes(label)) nodes.push(label);
+    const defRegex = /([A-Za-z0-9_-]+)\s*(?:\[\[|\[\(|\[|\(|\{|\(\[)\s*["']?([\s\S]*?)["']?\s*(?:\]\]|\)\]|\]|\)|\}|\)\])/g;
+    let match;
+    while ((match = defRegex.exec(line)) !== null) {
+      const id = match[1].trim();
+      const label = cleanLabel(match[2]);
+      if (label && label !== id) {
+        idToLabel.set(id, label);
       }
     }
   });
 
-  const displayNodes = nodes.length > 0 ? nodes.slice(0, 8) : ['Start Process', 'Candidate Gen (L_k)', 'Support Count', 'Prune & Filter', 'Frequent Itemset Output'];
-  const nodeWidth = 180;
-  const nodeHeight = 44;
-  const gapY = 24;
-  const totalWidth = 600;
-  const totalHeight = displayNodes.length * (nodeHeight + gapY) + 60;
+  // Pass 2: Extract connections and inline labels
+  lines.forEach(line => {
+    if (line.startsWith('graph') || line.startsWith('flowchart') || line.startsWith('subgraph') || line.startsWith('end') || line.startsWith('@startuml') || line.startsWith('@enduml')) {
+      return;
+    }
 
-  let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalWidth} ${totalHeight}" style="background:#0b0f19; border: 1px solid rgba(6, 182, 212, 0.4); border-radius:12px; width:100%; height:auto; max-width:650px; font-family:'Inter', sans-serif;">`;
+    const connRegex = /([A-Za-z0-9_-]+)(?:\s*\[["']?([\s\S]*?)["']?\])?\s*(?:-->|==>|->|-\.->)\s*(?:\|([^|]+)\|)?\s*([A-Za-z0-9_-]+)(?:\s*\[["']?([\s\S]*?)["']?\])?/g;
+    let connMatch;
+    while ((connMatch = connRegex.exec(line)) !== null) {
+      const fromId = connMatch[1].trim();
+      const fromInline = cleanLabel(connMatch[2]);
+      const connLabel = cleanLabel(connMatch[3]);
+      const toId = connMatch[4].trim();
+      const toInline = cleanLabel(connMatch[5]);
+
+      if (fromInline) idToLabel.set(fromId, fromInline);
+      if (toInline) idToLabel.set(toId, toInline);
+
+      const fromName = idToLabel.get(fromId) || (fromId.length > 2 ? fromId : '');
+      const toName = idToLabel.get(toId) || (toId.length > 2 ? toId : '');
+
+      if (fromName && !nodeOrder.includes(fromName)) nodeOrder.push(fromName);
+      if (toName && !nodeOrder.includes(toName)) nodeOrder.push(toName);
+
+      if (fromName && toName && fromName !== toName) {
+        connections.push({ from: fromName, to: toName, label: connLabel });
+      }
+    }
+  });
+
+  // If no nodes found, extract any standalone brackets [Text]
+  if (nodeOrder.length === 0) {
+    lines.forEach(line => {
+      const match = line.match(/\[(.*?)\]/);
+      if (match) {
+        const txt = cleanLabel(match[1]);
+        if (txt && txt.length > 1 && !nodeOrder.includes(txt)) nodeOrder.push(txt);
+      }
+    });
+  }
+
+  // Filter out single-letter dummy nodes (like raw "A" or "B")
+  const validNodes = nodeOrder.filter(n => n.length > 1 && n !== 'A' && n !== 'B' && n !== 'C' && n !== 'D');
+  const displayNodes = validNodes.length > 0 ? validNodes.slice(0, 8) : ['Data Input', 'Preprocessing', 'Feature Extraction', 'Model Optimization', 'Output Predictions'];
+
+  const totalWidth = 680;
+  const nodeWidth = 210;
+  const nodeHeight = 44;
+  const gapY = 28;
+  const totalHeight = displayNodes.length * (nodeHeight + gapY) + 64;
+
+  let svgContent = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${totalWidth} ${totalHeight}" style="background:#ffffff; border: 1px solid #e2e8f0; border-radius:12px; width:100%; height:auto; max-width:680px; font-family:'Inter', system-ui, sans-serif; box-shadow: 0 4px 12px rgba(0,0,0,0.04);">`;
   svgContent += `<defs>
     <style>
-      .diag-node-box { fill: #1e293b !important; stroke: #38bdf8 !important; stroke-width: 2px !important; }
-      .diag-node-text { fill: #ffffff !important; color: #ffffff !important; font-family: 'Inter', sans-serif !important; font-weight: 700 !important; font-size: 13px !important; text-anchor: middle !important; }
-      .diag-title-text { fill: #38bdf8 !important; font-family: 'Inter', sans-serif !important; font-weight: 700 !important; font-size: 13px !important; }
+      .diag-node-box { fill: #f8fafc !important; stroke: #0284c7 !important; stroke-width: 1.75px !important; }
+      .diag-node-text { fill: #0f172a !important; color: #0f172a !important; font-family: 'Inter', system-ui, sans-serif !important; font-weight: 700 !important; font-size: 13px !important; text-anchor: middle !important; dominant-baseline: middle !important; }
+      .diag-title-text { fill: #0369a1 !important; font-family: 'Inter', system-ui, sans-serif !important; font-weight: 800 !important; font-size: 13px !important; letter-spacing: 0.5px !important; }
+      .diag-arrow-line { stroke: #0284c7 !important; stroke-width: 2px !important; }
     </style>
     <marker id="arrow" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
-      <path d="M 0 0 L 10 5 L 0 10 z" fill="#38bdf8" />
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#0284c7" />
     </marker>
   </defs>`;
 
   // Title Header
-  svgContent += `<text x="24" y="32" class="diag-title-text" font-size="13" font-weight="700" letter-spacing="0.5">${diagramType.toUpperCase()} ARCHITECTURE DIAGRAM</text>`;
+  svgContent += `<text x="24" y="30" class="diag-title-text" font-size="13" font-weight="800">📐 ${diagramType.toUpperCase()} ARCHITECTURAL WORKFLOW</text>`;
 
   // Render Nodes & Connecting Arrows
   displayNodes.forEach((nodeText, idx) => {
     const x = (totalWidth - nodeWidth) / 2;
-    const y = 50 + idx * (nodeHeight + gapY);
+    const y = 48 + idx * (nodeHeight + gapY);
 
     // Node Box
     svgContent += `<rect x="${x}" y="${y}" width="${nodeWidth}" height="${nodeHeight}" rx="8" class="diag-node-box" />`;
     // Node Text
-    const truncatedText = nodeText.length > 22 ? nodeText.slice(0, 20) + '...' : nodeText;
-    svgContent += `<text x="${x + nodeWidth / 2}" y="${y + 26}" class="diag-node-text">${truncatedText}</text>`;
+    const truncatedText = nodeText.length > 24 ? nodeText.slice(0, 22) + '...' : nodeText;
+    svgContent += `<text x="${x + nodeWidth / 2}" y="${y + nodeHeight / 2}" class="diag-node-text">${truncatedText}</text>`;
 
     // Connecting Arrow to next node
     if (idx < displayNodes.length - 1) {
       const arrowY1 = y + nodeHeight;
       const arrowY2 = arrowY1 + gapY - 2;
-      svgContent += `<line x1="${totalWidth / 2}" y1="${arrowY1}" x2="${totalWidth / 2}" y2="${arrowY2}" stroke="#38bdf8" stroke-width="2" marker-end="url(#arrow)" />`;
+      svgContent += `<line x1="${totalWidth / 2}" y1="${arrowY1}" x2="${totalWidth / 2}" y2="${arrowY2}" class="diag-arrow-line" marker-end="url(#arrow)" />`;
     }
   });
 
@@ -172,10 +229,10 @@ export function generateLocalFallbackSvg(diagramType: string, source: string): s
 }
 
 /**
- * Fetches inline SVG string from Kroki API with 4s fast timeout & local SVG fallback
+ * Fetches inline SVG string from Kroki API with 6.5s timeout & local SVG fallback
  */
 export async function fetchKrokiSvg(diagramType: string, source: string): Promise<string> {
-  const cacheKey = `kroki_svg_v4_${diagramType}_${source}`;
+  const cacheKey = `kroki_svg_v6_${diagramType}_${source}`;
 
   // 1. Check in-memory cache
   if (inMemorySvgCache.has(cacheKey)) {
@@ -189,21 +246,21 @@ export async function fetchKrokiSvg(diagramType: string, source: string): Promis
     return dbCached;
   }
 
-  // 3. Enqueue throttled network request with 4s fast timeout + Local Fallback
+  // 3. Enqueue throttled network request with 6.5s timeout + Local Fallback
   return enqueueRequest(async () => {
-    // Attempt 1: Kroki POST request with 4s timeout
+    // Attempt 1: Kroki POST request with 6.5s timeout
     try {
-      const svg = await fetchKrokiPost(diagramType, source, 4000);
+      const svg = await fetchKrokiPost(diagramType, source, 6500);
       inMemorySvgCache.set(cacheKey, svg);
       setRenderCache(cacheKey, svg);
       return svg;
     } catch (err1) {
-      // Attempt 2: Deflate GET fallback with 4s timeout
+      // Attempt 2: Deflate GET fallback with 6.5s timeout
       try {
         const encoded = krokiUrlEncode(source);
         const getUrl = `https://kroki.io/${diagramType}/svg/${encoded}`;
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 4000);
+        const timeoutId = setTimeout(() => controller.abort(), 6500);
         const res = await fetch(getUrl, { signal: controller.signal });
         clearTimeout(timeoutId);
 

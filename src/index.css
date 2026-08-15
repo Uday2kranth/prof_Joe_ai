@@ -8768,24 +8768,15 @@ body {
   margin-left: auto;
 }
 
-/* Desktop Custom Dropdowns (Header Model Selectors) */
+/* ⚡ Unified Custom Dropdown System & Model Selectors */
 .desktop-model-selectors {
-  display: none;
+  display: flex !important;
   align-items: center;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
-@media (min-width: 840px) {
-  .desktop-model-selectors {
-    display: flex;
-  }
-}
-
-.studio-model-dropdown-container {
-  position: relative;
-}
-
-.studio-model-dropdown-trigger {
+.custom-dropdown-pill {
   display: inline-flex;
   align-items: center;
   gap: 6px;
@@ -8801,39 +8792,42 @@ body {
   max-width: 240px;
 }
 
-.studio-model-dropdown-trigger:hover {
+.custom-dropdown-pill:hover {
   border-color: rgba(6, 182, 212, 0.5);
   background: rgba(30, 41, 59, 0.9);
 }
 
-.studio-model-dropdown-menu {
+.custom-dropdown-menu {
   position: absolute !important;
   top: calc(100% + 6px) !important;
-  bottom: auto !important;
   left: 0 !important;
-  right: auto !important;
-  min-width: 240px !important;
-  max-width: 380px !important;
-  height: auto !important;
+  min-width: 240px;
+  max-width: min(380px, 90vw);
+  max-height: 280px;
+  overflow-y: auto;
   background: #090e1a !important;
   border: 1px solid rgba(6, 182, 212, 0.45) !important;
   border-radius: 12px !important;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.9), 0 0 20px rgba(6, 182, 212, 0.2) !important;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.95), 0 0 20px rgba(6, 182, 212, 0.25) !important;
   padding: 8px !important;
-  z-index: 99999 !important;
+  z-index: 999999 !important;
   display: flex !important;
   flex-direction: column !important;
   gap: 4px !important;
   animation: fadeIn 0.15s ease-out !important;
 }
 
-.studio-model-dropdown-menu.models-menu {
+.custom-dropdown-menu.model-menu {
   left: auto !important;
   right: 0 !important;
-  min-width: 300px !important;
+  min-width: 260px;
 }
 
-.studio-model-dropdown-header {
+.custom-dropdown-menu.provider-menu {
+  min-width: 240px;
+}
+
+.dropdown-header {
   font-size: 0.68rem !important;
   font-weight: 700 !important;
   text-transform: uppercase !important;
@@ -8845,16 +8839,7 @@ body {
   flex-shrink: 0 !important;
 }
 
-.studio-model-dropdown-scroller {
-  max-height: 260px !important;
-  overflow-y: auto !important;
-  display: flex !important;
-  flex-direction: column !important;
-  gap: 3px !important;
-  padding-right: 2px !important;
-}
-
-.studio-model-dropdown-item {
+.dropdown-item {
   display: flex !important;
   align-items: center !important;
   justify-content: space-between !important;
@@ -8869,17 +8854,18 @@ body {
   text-align: left !important;
   cursor: pointer !important;
   transition: all 0.15s ease !important;
-  white-space: normal !important;
-  word-break: break-word !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
-.studio-model-dropdown-item:hover {
+.dropdown-item:hover {
   background: rgba(30, 41, 59, 0.95) !important;
   border-color: rgba(6, 182, 212, 0.45) !important;
   color: #f8fafc !important;
 }
 
-.studio-model-dropdown-item.active {
+.dropdown-item.selected,
+.dropdown-item.active {
   background: rgba(6, 182, 212, 0.22) !important;
   border-color: #06b6d4 !important;
   color: #38bdf8 !important;
@@ -10337,5 +10323,67 @@ body {
   border-color: #06b6d4;
   color: #38bdf8;
 }
+
+/* 📐 KROKI & MERMAID DIAGRAM CANVAS STYLING & CONTRAST FIX */
+.kroki-container {
+  margin: 1.5rem 0;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 16px;
+  overflow-x: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.04);
+}
+
+.kroki-container svg {
+  max-width: 100%;
+  height: auto;
+  display: block;
+  margin: 0 auto;
+}
+
+/* Force crystal-clear readability for ALL SVG text on light parchment & kroki containers */
+.kroki-container svg text,
+.kroki-container svg tspan,
+.kroki-container svg text *,
+.lecture-parchment-content svg text,
+.lecture-parchment-content svg tspan,
+.academic-parchment-sheet svg text,
+.academic-parchment-sheet svg tspan {
+  fill: #0f172a !important;
+  color: #0f172a !important;
+  font-family: 'Inter', system-ui, -apple-system, sans-serif !important;
+  font-weight: 600 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+.kroki-container svg g text {
+  fill: #0f172a !important;
+  stroke: none !important;
+}
+
+.kroki-container svg .node-text,
+.kroki-container svg .label,
+.kroki-container svg .nodeLabel,
+.kroki-container svg text.diag-node-text {
+  fill: #0f172a !important;
+  color: #0f172a !important;
+  font-weight: 700 !important;
+  opacity: 1 !important;
+  visibility: visible !important;
+}
+
+/* Ensure purple / lavender / light node boxes have crisp visible borders */
+.kroki-container svg rect,
+.kroki-container svg polygon,
+.kroki-container svg circle {
+  stroke-width: 1.5px !important;
+}
+
+
 
 

@@ -84,6 +84,33 @@ export async function exportBubbleDirectPdf(
       code { font-family: monospace; background: rgba(0,0,0,0.06); padding: 2px 6px; border-radius: 4px; }
       pre { background: rgba(0,0,0,0.04); padding: 12px; border-radius: 8px; border: 1px solid ${tableBorder}; overflow-x: auto; }
       blockquote { border-left: 4px solid ${primaryColor}; margin: 0; padding-left: 14px; color: #475569; }
+      .pdf-diagram-page {
+        page-break-before: always !important;
+        break-before: page !important;
+        page-break-after: always !important;
+        break-after: page !important;
+        page-break-inside: avoid !important;
+        break-inside: avoid !important;
+        margin: 0 auto;
+        padding: 20px 10px;
+        background: #ffffff;
+        border: 1px solid ${tableBorder};
+        border-radius: 8px;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        min-height: 82vh;
+        box-sizing: border-box;
+      }
+      .pdf-diagram-page svg {
+        max-width: 100% !important;
+        max-height: 820px !important;
+        width: auto !important;
+        height: auto !important;
+        display: block;
+        margin: auto;
+      }
     </style>
     <div style="border-bottom: 2px solid ${headerBorderColor}; padding-bottom: 12px; margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
       <h1 style="font-size: 1.4rem; margin: 0; color: ${primaryColor}; font-weight: 700;">Prof. Joe AI Document</h1>
@@ -165,8 +192,10 @@ function parseMarkdownWithMathAndDiagrams(content: string, diagramMap: Map<strin
   const mathMap = new Map<string, string>();
   let tokenIdx = 0;
 
-  // 1. Extract block math $$...$$ and \[...\]
-  let prepped = content.replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
+  let text = content;
+
+  // Step 1: Extract already-delimited display math ($$...$$ and \[...\])
+  text = text.replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
     const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
     try {
       mathMap.set(token, `<div class="katex-display katex-block">${katex.renderToString(math.trim(), { displayMode: true, throwOnError: false })}</div>`);
@@ -176,7 +205,7 @@ function parseMarkdownWithMathAndDiagrams(content: string, diagramMap: Map<strin
     return token;
   });
 
-  prepped = prepped.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => {
+  text = text.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => {
     const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
     try {
       mathMap.set(token, `<div class="katex-display katex-block">${katex.renderToString(math.trim(), { displayMode: true, throwOnError: false })}</div>`);
@@ -186,8 +215,8 @@ function parseMarkdownWithMathAndDiagrams(content: string, diagramMap: Map<strin
     return token;
   });
 
-  // 2. Extract inline math \(...\) and $...$
-  prepped = prepped.replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => {
+  // Step 2: Extract already-delimited inline math (\(...\) and $...$)
+  text = text.replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => {
     const token = `KATEXINLINETOKEN${tokenIdx++}ENDTOKEN`;
     try {
       mathMap.set(token, `<span class="katex-inline">${katex.renderToString(math.trim(), { displayMode: false, throwOnError: false })}</span>`);
@@ -197,7 +226,7 @@ function parseMarkdownWithMathAndDiagrams(content: string, diagramMap: Map<strin
     return token;
   });
 
-  prepped = prepped.replace(/\$([^\$\n]+?)\$/g, (_, math) => {
+  text = text.replace(/\$([^\$\n]+?)\$/g, (_, math) => {
     const token = `KATEXINLINETOKEN${tokenIdx++}ENDTOKEN`;
     try {
       mathMap.set(token, `<span class="katex-inline">${katex.renderToString(math.trim(), { displayMode: false, throwOnError: false })}</span>`);
@@ -207,15 +236,68 @@ function parseMarkdownWithMathAndDiagrams(content: string, diagramMap: Map<strin
     return token;
   });
 
-  // 3. Parse clean markdown tables and text
+  // Step 3: Auto-detect bare LaTeX formulas & equations that the AI wrote without $$ delimiters
+  const lines = text.split('\n');
+  let inCodeBlock = false;
+
+  const processedLines = lines.map(line => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('```')) {
+      inCodeBlock = !inCodeBlock;
+      return line;
+    }
+    if (inCodeBlock) return line;
+
+    // Check if line contains bare LaTeX math without existing KATEX token
+    const hasMathKeywords =
+      trimmed.startsWith('\\') ||
+      /^[a-zA-Z_]\s*(\([^\)]*\))?\s*=\s*/.test(trimmed) && (trimmed.includes('\\') || trimmed.includes('^') || trimmed.includes('_')) ||
+      /\\(frac|sum|prod|int|sqrt|mathbf|mathcal|mathbb|boldsymbol|nabla|partial|alpha|beta|gamma|delta|epsilon|theta|lambda|mu|sigma|omega|arg|min|max|vec|hat|tilde|in|subseteq|times|pm|le|ge|neq|approx|to|rightarrow|implies|mid|vert|parallel|mathbb)/.test(trimmed);
+
+    const isStandaloneFormula =
+      !line.includes('KATEX') &&
+      hasMathKeywords &&
+      !trimmed.startsWith('#') &&
+      !trimmed.startsWith('- ') &&
+      !trimmed.startsWith('* ') &&
+      !trimmed.startsWith('>') &&
+      !trimmed.startsWith('|') &&
+      !trimmed.startsWith('1.') &&
+      !trimmed.startsWith('2.') &&
+      !trimmed.startsWith('3.') &&
+      !trimmed.startsWith('4.') &&
+      !trimmed.startsWith('5.');
+
+    if (isStandaloneFormula) {
+      const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
+      try {
+        mathMap.set(
+          token,
+          `<div class="katex-display katex-block">${katex.renderToString(trimmed, {
+            displayMode: true,
+            throwOnError: false
+          })}</div>`
+        );
+      } catch {
+        mathMap.set(token, trimmed);
+      }
+      return token;
+    }
+
+    return line;
+  });
+
+  const prepped = processedLines.join('\n');
+
+  // 4. Parse clean markdown tables and text
   let parsedHtml = marked.parse(prepped) as string;
 
-  // 4. Restore math HTML
+  // 5. Restore math HTML
   mathMap.forEach((html, token) => {
     parsedHtml = parsedHtml.replaceAll(token, html);
   });
 
-  // 5. Restore Kroki diagram containers
+  // 6. Restore Kroki diagram containers
   diagramMap.forEach((svgContainerHtml, token) => {
     const paragraphWrapped = `<p>${token}</p>`;
     if (parsedHtml.includes(paragraphWrapped)) {
@@ -459,20 +541,32 @@ export async function printSessionToPdf(messages: any[], sessionTitle: string = 
           }
 
           .pdf-diagram-page {
-            margin: 16px 0;
-            padding: 16px;
+            page-break-before: always !important;
+            break-before: page !important;
+            page-break-after: always !important;
+            break-after: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            margin: 0 auto;
+            padding: 20px 10px;
             background: #ffffff;
             border: 1px solid #cbd5e1;
             border-radius: 8px;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
+            min-height: 82vh;
+            box-sizing: border-box;
           }
 
           .pdf-diagram-page svg {
-            width: 100% !important;
             max-width: 100% !important;
+            max-height: 820px !important;
+            width: auto !important;
             height: auto !important;
+            display: block;
+            margin: auto;
           }
 
           @media print {
@@ -483,6 +577,17 @@ export async function printSessionToPdf(messages: any[], sessionTitle: string = 
             }
             .markdown-content h1, .markdown-content h2, .markdown-content h3, .markdown-content h4, .markdown-content h5, .markdown-content h6 {
               color: #0f172a !important;
+            }
+            .pdf-diagram-page {
+              page-break-before: always !important;
+              break-before: page !important;
+              page-break-after: always !important;
+              break-after: page !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+              min-height: 90vh !important;
+              box-shadow: none !important;
+              border: 1px solid #e2e8f0 !important;
             }
             .message-block {
               border-color: #cbd5e1 !important;
@@ -618,22 +723,32 @@ function buildPrintHtmlDocument(docTitle: string, parsedHtml: string, bgColor: s
           }
 
           .pdf-diagram-page {
-            page-break-before: always;
-            break-before: page;
-            margin: 24px 0;
-            padding: 24px;
+            page-break-before: always !important;
+            break-before: page !important;
+            page-break-after: always !important;
+            break-after: page !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+            margin: 0 auto;
+            padding: 20px 10px;
             background: #ffffff;
             border: 1px solid #cbd5e1;
-            border-radius: 12px;
+            border-radius: 10px;
             display: flex;
+            flex-direction: column;
             justify-content: center;
             align-items: center;
+            min-height: 82vh;
+            box-sizing: border-box;
           }
 
           .pdf-diagram-page svg {
-            width: 100% !important;
             max-width: 100% !important;
+            max-height: 820px !important;
+            width: auto !important;
             height: auto !important;
+            display: block;
+            margin: auto;
           }
 
           @media print {
@@ -648,6 +763,11 @@ function buildPrintHtmlDocument(docTitle: string, parsedHtml: string, bgColor: s
             .pdf-diagram-page {
               page-break-before: always !important;
               break-before: page !important;
+              page-break-after: always !important;
+              break-after: page !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+              min-height: 90vh !important;
               box-shadow: none !important;
               border: 1px solid #e2e8f0 !important;
             }

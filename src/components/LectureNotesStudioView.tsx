@@ -15,7 +15,6 @@ import {
   Search,
   ChevronDown,
   ChevronUp,
-  SlidersHorizontal,
   FileSearch,
   CheckCircle2,
   ArrowRight,
@@ -88,28 +87,28 @@ const PRESETS: Array<{
     icon: BookOpen,
     description: 'Deep theoretical foundations, step-by-step mathematical proofs, and textbook-style depth.',
     instructionPrompt: `AUTHORING MANDATES FOR DETAILED TOPIC NOTES:
-1. STRUCTURE:
-   - ## 1. Theoretical Foundations & Formal Definition (Rigorous mathematical definitions with KaTeX $...$)
-   - ## 2. Core Architecture & Mathematical Formulations (Step-by-step complete KaTeX equations $$...$$; full derivations with zero cutoffs)
-   - ## 3. Algorithm / Protocol Mechanics (Numbered execution stages + clean pseudocode block)
-   - ## 4. Worked Numerical Example / Walkthrough (Concrete values step-by-step with KaTeX formulas)
-   - ## 5. Comparative Evaluation & Trade-offs (Comprehensive Markdown comparison table)
-   - ## 6. Conceptual Taxonomy & Diagrams (Use valid Mermaid \`\`\`mermaid or PlantUML \`\`\`plantuml blocks for visual architectures)
-   - ## 7. University Exam Standard Textbook References (e.g. William Stallings, Tanenbaum, Cormen, Russell & Norvig)`
+1. STRUCTURE & DEPTH:
+   - ## 1. Theoretical Foundations & Formal Definition (Rigorous definitions with KaTeX $...$)
+   - ## 2. Core Architecture & Mathematical Formulations (Step-by-step derivations with every equation strictly enclosed in $$...$$; complete every proof to its final boxed/concluded result)
+   - ## 3. Algorithm / Protocol Mechanics (Structured numbered execution steps + concise pseudocode block)
+   - ## 4. Worked Numerical Walkthrough (Concrete numerical example with step-by-step KaTeX computations)
+   - ## 5. Comparative Evaluation & Exam Takeaways (Markdown comparison table + key scoring takeaways)
+2. VISUAL DIAGRAM ARCHITECTURE: Provide exactly 1 clean Mermaid (\`\`\`mermaid) diagram. Select the layout students and evaluators would like to see: sequence lifelines for protocols, modular subgraphs for ML/data pipelines, or compact flowcharts for algorithms. Every node MUST have an explicit descriptive title in quotes (e.g. Node1["1. Feature Extraction Matrix X"]). NEVER output dummy single-letter nodes (A, B).
+3. CONCISENESS & COMPLETION: Keep derivations focused and ensure 100% of derivations, code blocks, and formulas reach their full conclusion within the response without truncating.`
   },
   {
     id: 'classroom',
     title: 'Classroom & Boardwork',
     badge: '45-Min Lecture',
     icon: Presentation,
-    description: 'Paced classroom delivery: 15-min modular blocks, chalkboard sketches, and interactive student questions.',
+    description: 'Paced classroom delivery: modular blocks, chalkboard diagrams, and interactive student questions.',
     instructionPrompt: `AUTHORING MANDATES FOR CLASSROOM & BOARDWORK LECTURE SCRIPT:
-1. STRUCTURE:
-   - ## 1. 2-Minute Intuitive Lecture Hook (Real-world analogy to captivate students)
-   - ## 2. Blackboard / Whiteboard Layout Plan (Mermaid \`\`\`mermaid graph TD or PlantUML architecture diagram for the board)
-   - ## 3. 15-Minute Modular Teaching Segments (Block 1: Foundations, Block 2: Deep-Dive Math, Block 3: Applied Scenarios)
-   - ## 4. Common Student Misconceptions & Exam Pitfalls (Highlighted warning callouts)
-   - ## 5. 3 In-Class Concept-Check Discussion Questions (With evaluator sample answers and step-by-step solutions)`
+1. STRUCTURE & PACING:
+   - ## 1. 2-Minute Intuitive Lecture Hook (A compelling real-world scenario or analogy)
+   - ## 2. Blackboard / Boardwork Diagram (Render a clean Mermaid \`\`\`mermaid vector diagram for the chalkboard depicting system components and flow)
+   - ## 3. Modular Teaching Segments (Block 1: Foundations & Core Intuition, Block 2: Key Derivations & Mechanics with $$...$$ math)
+   - ## 4. Student Misconceptions & Discussion Check (Top 2 common exam pitfalls + 2 concept-check questions with solutions)
+2. SMART DIAGRAM MANDATE: Ensure every diagram node has an explicit descriptive title in quotes. Never use bare single-letter nodes (A, B).`
   },
   {
     id: 'handout',
@@ -119,12 +118,11 @@ const PRESETS: Array<{
     description: 'Concise printable summary: core definitions, key formulas, comparative tables, and quick exam review points.',
     instructionPrompt: `AUTHORING MANDATES FOR STUDENT STUDY HANDOUT:
 1. STRUCTURE:
-   - ## 1. Core Executive Definitions (High-density, punchy 1-sentence definitions)
-   - ## 2. Essential Mathematical Formulas & KaTeX Quick Reference Box ($...$ inline, $$...$$ display)
-   - ## 3. Master Comparison Matrix (Side-by-side comparative table of methods/parameters)
-   - ## 4. Step-by-Step Algorithm Summary (Fast 4-to-6 step execution summary)
-   - ## 5. Visual Summary / Flowchart (Mermaid \`\`\`mermaid or Graphviz \`\`\`graphviz block)
-   - ## 6. High-Yield University Exam Takeaways (Bulleted checklist of critical scoring points)`
+   - ## 1. Executive Summary & Core Definitions (Punchy, high-density definitions)
+   - ## 2. Master Formula Reference Matrix (Compact KaTeX formulas: $...$ inline, $$...$$ display)
+   - ## 3. Comparative Matrix & Algorithm Flow (Markdown comparison table + brief Mermaid \`\`\`mermaid flowchart or sequence diagram)
+   - ## 4. High-Yield University Exam Scoring Points (Bulleted checklist of critical scoring points)
+2. COMPLETION: Keep explanations high-yield, compact, and completely self-contained with meaningful node labels in any diagram.`
   },
   {
     id: 'connect_dots',
@@ -134,11 +132,11 @@ const PRESETS: Array<{
     description: 'Maps prerequisite knowledge chains, conceptual flow, and inter-topic bridges across syllabus units.',
     instructionPrompt: `AUTHORING MANDATES FOR UNIT BREAKDOWN & PEDAGOGICAL ROADMAP:
 1. STRUCTURE:
-   - ## 1. Prerequisite Knowledge Map (What students must know prior to this lecture)
-   - ## 2. Evolutionary Need & The Conceptual Bridge (Why this method was invented over legacy approaches)
-   - ## 3. Topic Dependency Tree (Visual Mermaid \`\`\`mermaid graph LR concept roadmap)
-   - ## 4. Upstream & Downstream Syllabus Bridges (How this connects to upcoming chapters/units)
-   - ## 5. Pedagogical Synthesis Matrix (Key learning outcomes summary)`
+   - ## 1. Prerequisite Knowledge Map (Required foundational concepts before this chapter)
+   - ## 2. Evolutionary Need & Conceptual Bridge (Why this method was invented over legacy approaches)
+   - ## 3. Topic Dependency & Concept Map (Visual Mermaid \`\`\`mermaid graph LR concept roadmap with clear concept names on all nodes)
+   - ## 4. Upstream & Downstream Syllabus Connections (How this bridges into subsequent syllabus units)
+   - ## 5. Pedagogical Synthesis Matrix (Learning outcomes summary table)`
   }
 ];
 
@@ -414,7 +412,6 @@ export const LectureNotesStudioView: React.FC<LectureNotesStudioViewProps> = ({
     setSessions([newSess, ...sessions]);
     setActiveSessionId(newSess.id);
     setIsControlDeckOpen(false);
-    setIsConfigExpanded(true);
   };
 
   const handleDeleteSession = (e: React.MouseEvent, id: string) => {
@@ -509,13 +506,20 @@ export const LectureNotesStudioView: React.FC<LectureNotesStudioViewProps> = ({
 
     const studioSystemPrompt = `ROLE PERSONA: You are Prof. Joe, Senior University Professor & Distinguished Academic Lecturer.
 
-CORE AUTHORING MANDATES:
+CORE AUTHORING RULES (STRICTLY ENFORCED):
 1. ZERO CONVERSATIONAL FLUFF: Never output pleasantries, conversational intros, or filler (e.g. NEVER say "Sure!", "Certainly!", "Here is a comprehensive...", "I hope this helps"). Begin IMMEDIATELY on Line 1 with the document heading.
-2. PEDAGOGICAL RIGOR & FULL DEPTH: Structure content with deep academic depth, formal theorems/definitions, step-by-step mathematical derivations, and clear worked examples. ALWAYS complete every mathematical equation and proof; ensure all LaTeX blocks and code blocks are fully closed before ending output.
-3. FORMULA FORMATTING: Use strict KaTeX LaTeX formatting: $...$ for inline math (e.g. $K = g^{xy} \\pmod{p}$) and $$...$$ for block display equations.
-4. DIAGRAMS & TAXONOMIES: Use valid Mermaid (\`\`\`mermaid ... \`\`\`), PlantUML (\`\`\`plantuml ... \`\`\`), or Graphviz (\`\`\`graphviz ... \`\`\`) blocks for visual taxonomies, architectural schemas, state transitions, decision trees, and concept graphs so they render as rich vector diagrams. Never draw plain ASCII boxes.
-5. VISUAL STRUCTURE: Use clean Markdown tables for side-by-side comparisons and formatted code blocks for algorithms/pseudocode.
-6. STANDARDS COMPLIANCE: Include standard university textbook references (e.g. William Stallings, Tanenbaum, Cormen, Russell & Norvig) where applicable.`;
+2. STRICT LATEX ENCLOSURE: Every mathematical symbol, variable, Greek letter, equation, and matrix derivation MUST be enclosed in $...$ for inline expressions (e.g. $K = g^{xy} \\pmod{p}$) or $$...$$ on dedicated separate lines for display math. NEVER output bare LaTeX commands (such as \\frac, \\sigma, \\prod, \\sum, \\int, \\mathcal, \\mathbf, \\nabla, \\arg\\min) without $...$ or $$...$$.
+3. 100% COMPLETE DERIVATIONS: Pace the depth so that EVERY proof, equation, and algorithm reaches its full mathematical conclusion and all markdown/code blocks (\`\`\`) are completely closed before ending the response. Never cut off mid-equation.
+4. VISUAL DIAGRAM ARCHITECTURE & PEDAGOGICAL GUIDELINES:
+   When visual structure enhances comprehension, render exactly 1 clean Mermaid block (\`\`\`mermaid ... \`\`\`). Dynamically craft the layout using these recommended visual patterns that students and evaluators would like to see:
+   • Interactive Protocols & Security: Best visualized through \`sequenceDiagram\` (with participant lifelines & numbered message steps)
+   • Multi-Stage Systems & ML Lifecycles: Ideally suited for \`graph LR/TD\` with \`subgraph\` (modular grouped stage boxes)
+   • State Transitions & Automata: Most naturally expressed via \`stateDiagram-v2\` (state triggers & condition transitions)
+   • Relational Schemas & Data Models: Excellently structured using \`erDiagram\` (entity attributes & cardinalities)
+   • Step-by-Step Logic & Taxonomies: Cleanly illustrated with compact \`graph LR/TD\` flowcharts or PlantUML mindmaps
+   QUALITY MANDATE: Every node and stage MUST have an explicit, meaningful descriptive title in quotes (e.g. Node1["1. Feature Extraction Matrix X"]). NEVER output empty, unexpanded, or bare single-letter nodes (like A, B).
+5. CLEAN COMPARISON TABLES: Use clean Markdown tables with compact inline math ($...$) for side-by-side comparative analysis.
+6. STANDARDS COMPLIANCE: Conclude with standard university textbook references (e.g. William Stallings, Tanenbaum, Cormen, Russell & Norvig) where applicable.`;
 
     const promptMessage = `# 🎓 LECTURE MATERIAL: ${targetTopic.trim().toUpperCase()}
 **University Course / Discipline:** ${subjectDisplayName}
@@ -528,8 +532,8 @@ ${currentPresetObj.instructionPrompt}
 
 **Formatting Enforcement:**
 - Output clean, polished GitHub-Flavored Markdown.
-- Render all equations and variables in LaTeX ($...$ inline, $$...$$ block) and ensure all derivations are completed.
-- Render visual diagrams and taxonomies as valid Mermaid (\`\`\`mermaid\`), PlantUML (\`\`\`plantuml\`), or Graphviz (\`\`\`graphviz\`) vector diagrams.
+- Every single equation and variable must be enclosed in LaTeX ($...$ inline, $$...$$ block) and ensure all derivations are completed to their final result.
+- Render visual diagrams and taxonomies as valid Mermaid (\`\`\`mermaid\`) vector diagrams with meaningful labels on every node (never output bare single letters).
 - Include comprehensive comparative tables and structured breakdown blocks.
 - Conclude with standard academic textbook references and key takeaway points.`;
 
@@ -547,8 +551,9 @@ ${currentPresetObj.instructionPrompt}
         ],
         effectiveUserKeys,
         webSearch,
-        'auto',
-        studioSystemPrompt
+        'none',
+        studioSystemPrompt,
+        'default'
       );
 
       const newContent = response.content.trim();
@@ -624,8 +629,8 @@ ${currentPresetObj.instructionPrompt}
     const mathMap = new Map<string, string>();
     let tokenIdx = 0;
 
-    // 1. Extract block math $$...$$ and \[...\]
-    let prepped = processed.replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
+    // Step 1: Extract already-delimited display math ($$...$$ and \[...\])
+    processed = processed.replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
       const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
       try {
         mathMap.set(
@@ -641,7 +646,7 @@ ${currentPresetObj.instructionPrompt}
       return token;
     });
 
-    prepped = prepped.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => {
+    processed = processed.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => {
       const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
       try {
         mathMap.set(
@@ -657,8 +662,8 @@ ${currentPresetObj.instructionPrompt}
       return token;
     });
 
-    // 2. Extract inline math \(...\) and $...$
-    prepped = prepped.replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => {
+    // Step 2: Extract already-delimited inline math (\(...\) and $...$)
+    processed = processed.replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => {
       const token = `KATEXINLINETOKEN${tokenIdx++}ENDTOKEN`;
       try {
         mathMap.set(
@@ -674,7 +679,7 @@ ${currentPresetObj.instructionPrompt}
       return token;
     });
 
-    prepped = prepped.replace(/\$([^\$\n]+?)\$/g, (_, math) => {
+    processed = processed.replace(/\$([^\$\n]+?)\$/g, (_, math) => {
       const token = `KATEXINLINETOKEN${tokenIdx++}ENDTOKEN`;
       try {
         mathMap.set(
@@ -690,10 +695,63 @@ ${currentPresetObj.instructionPrompt}
       return token;
     });
 
-    // 3. Parse Markdown structure (tables, lists, headings, code)
+    // Step 3: Auto-detect bare LaTeX formulas & equations that the AI wrote without $$ delimiters
+    const lines = processed.split('\n');
+    let inCodeBlock = false;
+
+    const processedLines = lines.map(line => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('```')) {
+        inCodeBlock = !inCodeBlock;
+        return line;
+      }
+      if (inCodeBlock) return line;
+
+      // Check if line contains bare LaTeX math without existing KATEX token
+      const hasMathKeywords =
+        trimmed.startsWith('\\') ||
+        /^[a-zA-Z_]\s*(\([^\)]*\))?\s*=\s*/.test(trimmed) && (trimmed.includes('\\') || trimmed.includes('^') || trimmed.includes('_')) ||
+        /\\(frac|sum|prod|int|sqrt|mathbf|mathcal|mathbb|boldsymbol|nabla|partial|alpha|beta|gamma|delta|epsilon|theta|lambda|mu|sigma|omega|arg|min|max|vec|hat|tilde|in|subseteq|times|pm|le|ge|neq|approx|to|rightarrow|implies|mid|vert|parallel|mathbb)/.test(trimmed);
+
+      const isStandaloneFormula =
+        !line.includes('KATEX') &&
+        hasMathKeywords &&
+        !trimmed.startsWith('#') &&
+        !trimmed.startsWith('- ') &&
+        !trimmed.startsWith('* ') &&
+        !trimmed.startsWith('>') &&
+        !trimmed.startsWith('|') &&
+        !trimmed.startsWith('1.') &&
+        !trimmed.startsWith('2.') &&
+        !trimmed.startsWith('3.') &&
+        !trimmed.startsWith('4.') &&
+        !trimmed.startsWith('5.');
+
+      if (isStandaloneFormula) {
+        const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
+        try {
+          mathMap.set(
+            token,
+            `<div class="katex-display katex-block">${katex.renderToString(trimmed, {
+              displayMode: true,
+              throwOnError: false
+            })}</div>`
+          );
+        } catch {
+          mathMap.set(token, trimmed);
+        }
+        return token;
+      }
+
+      return line;
+    });
+
+    const prepped = processedLines.join('\n');
+
+    // 4. Parse Markdown structure (tables, lists, headings, code)
     let dirtyHtml = marked.parse(prepped) as string;
 
-    // 4. Restore math HTML
+    // 5. Restore math HTML
     mathMap.forEach((html, token) => {
       dirtyHtml = dirtyHtml.replaceAll(token, html);
     });
@@ -710,7 +768,8 @@ ${currentPresetObj.instructionPrompt}
         'display', 'style', 'class', 'id', 'aria-hidden', 'viewBox', 'xmlns', 'fill',
         'stroke', 'stroke-width', 'd', 'x', 'y', 'width', 'height', 'cx', 'cy', 'r',
         'x1', 'y1', 'x2', 'y2', 'points', 'transform', 'text-anchor', 'dominant-baseline',
-        'data-diagram-type', 'marker-end', 'marker-start', 'preserveAspectRatio'
+        'data-diagram-type', 'marker-end', 'marker-start', 'preserveAspectRatio',
+        'textLength', 'lengthAdjust', 'font-size', 'font-family', 'font-weight', 'dx', 'dy', 'letter-spacing'
       ]
     });
   };
