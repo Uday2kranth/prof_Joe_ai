@@ -302,6 +302,12 @@ export const NeuralSimulatorModule: React.FC = () => {
     optAdamM: { m1: number; m2: number };
     optAdamV: { v1: number; v2: number };
     optRmspropS: { s1: number; s2: number };
+    optRaceBatchPos?: { w1: number; w2: number };
+    optRaceMiniPos?: { w1: number; w2: number };
+    optRaceSgdPos?: { w1: number; w2: number };
+    optRaceBatchHist?: { w1: number; w2: number }[];
+    optRaceMiniHist?: { w1: number; w2: number }[];
+    optRaceSgdHist?: { w1: number; w2: number }[];
     pca3dPoints: { x: number; y: number; z: number }[];
     nbProbePos: { x: number; y: number };
   }>({
@@ -346,6 +352,12 @@ export const NeuralSimulatorModule: React.FC = () => {
     optAdamM: { m1: 0, m2: 0 },
     optAdamV: { v1: 0, v2: 0 },
     optRmspropS: { s1: 0, s2: 0 },
+    optRaceBatchPos: { w1: -2.2, w2: 1.8 },
+    optRaceMiniPos: { w1: -2.2, w2: 1.8 },
+    optRaceSgdPos: { w1: -2.2, w2: 1.8 },
+    optRaceBatchHist: [{ w1: -2.2, w2: 1.8 }],
+    optRaceMiniHist: [{ w1: -2.2, w2: 1.8 }],
+    optRaceSgdHist: [{ w1: -2.2, w2: 1.8 }],
     pca3dPoints: [],
     nbProbePos: { x: 0.15, y: -0.1 }
   });
@@ -952,28 +964,6 @@ export const NeuralSimulatorModule: React.FC = () => {
       return;
     }
 
-    if (selectedModel === 'seq_recurrent_gating') {
-      if (canvas) {
-        const cx = canvas.width / 2;
-        const cy = canvas.height / 2;
-        const numSteps = recurrentSeqLen;
-        const cellW = 95;
-        const startX = cx - (numSteps * (cellW + 28)) / 2;
-        const cellY = cy - 45;
-        const mouseX = ((e.clientX - canvas.getBoundingClientRect().left) / canvas.getBoundingClientRect().width) * canvas.width;
-        const mouseY = ((e.clientY - canvas.getBoundingClientRect().top) / canvas.getBoundingClientRect().height) * canvas.height;
-
-        for (let t = 0; t < numSteps; t++) {
-          const tx = startX + t * (cellW + 28);
-          if (mouseX >= tx && mouseX <= tx + cellW && mouseY >= cellY && mouseY <= cellY + 100) {
-            setRecurrentActiveT(t);
-            return;
-          }
-        }
-      }
-      return;
-    }
-
     if (selectedModel === 'conv_operations') {
       if (canvas) {
         const mouseX = ((e.clientX - canvas.getBoundingClientRect().left) / canvas.getBoundingClientRect().width) * canvas.width;
@@ -1126,7 +1116,6 @@ export const NeuralSimulatorModule: React.FC = () => {
       if (canvas) {
         const mouseX = ((e.clientX - canvas.getBoundingClientRect().left) / canvas.getBoundingClientRect().width) * canvas.width;
         const marginX = 14;
-        const marginY = 14;
         const gap = 12;
         const totalW = canvas.width - 2 * marginX - gap;
         const topoW = Math.floor(totalW * 0.51);
@@ -7829,7 +7818,6 @@ export const NeuralSimulatorModule: React.FC = () => {
         for (let c = 0; c < 4; c++) {
           const val = preReluData[r][c];
           const isNegative = val < 0;
-          const activatedVal = Math.max(0, val);
           const px = gridStartX + c * cellSize;
           const py = gridStartY + r * cellSize;
 
@@ -8514,7 +8502,6 @@ export const NeuralSimulatorModule: React.FC = () => {
     const gruCandArg = 1.0 * xt + 0.8 * (gruRt * prevHt);
     const gruCandHt = recurrentCandidateAct === 'tanh' ? Math.tanh(gruCandArg) : recurrentCandidateAct === 'relu' ? Math.max(0, gruCandArg) : (gruCandArg / (1 + Math.exp(-1.702 * gruCandArg)));
     const gruHt = (1 - gruZt) * prevHt + gruZt * gruCandHt;
-    const gruYt = 1 / (1 + Math.exp(-(1.2 * gruHt)));
 
     // 3. Vanilla RNN Gates
     const rnnPreZ = 0.9 * xt + 0.75 * prevHt + 0.1 * recurrentForgetBias;
@@ -8830,7 +8817,6 @@ export const NeuralSimulatorModule: React.FC = () => {
 
       // Flowing Pulse Particles along wires
       ctx.fillStyle = '#f8fafc';
-      const pY = (topBeltY + pulseOffset * 2) % (circuitH);
       ctx.beginPath();
       ctx.arc(pointMultX, (topBeltY + pulseOffset * 3) % (botBusY - topBeltY) + topBeltY, 3, 0, Math.PI * 2);
       ctx.fill();
@@ -13052,7 +13038,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                     </div>
 
                     <div style={{ padding: '8px', background: 'rgba(30, 41, 59, 0.5)', borderRadius: '8px', fontSize: '0.68rem', color: '#94a3b8', lineHeight: 1.4 }}>
-                      💡 <strong style={{ color: '#fbbf24' }}>Intuition:</strong> Left panel shows the Sigmoid S-Curve mapping logit $z \to \hat{y}$. Right panel shows the Log-Loss curve penalizing confident misclassifications ($J \to \infty$ as error increases).
+                      💡 <strong style={{ color: '#fbbf24' }}>Intuition:</strong> Left panel shows the Sigmoid S-Curve mapping logit $z \to \hat&#123;y&#125;$. Right panel shows the Log-Loss curve penalizing confident misclassifications ($J \to \infty$ as error increases).
                     </div>
                   </>
                 )}
