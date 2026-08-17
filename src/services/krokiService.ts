@@ -1,6 +1,7 @@
-// Kroki Diagram Service - Concurrency Control, Instant Text Rendering, Local SVG Fallback & Persistent Caching
 import { deflate } from 'pako';
 import { getRenderCache, setRenderCache } from './renderCacheService';
+import { parseFunctionPlotSource, renderFunctionPlotSvg } from './functionPlotService';
+import { parseChartSpec, renderEChartsSvg, renderChartJsSvg, renderApexChartsSvg, renderCytoscapeSvg, renderMatrixSvg } from './clientChartsService';
 
 const inMemorySvgCache = new Map<string, string>();
 
@@ -14,7 +15,10 @@ const KNOWN_DIAGRAM_TYPES = [
   'mermaid', 'plantuml', 'graphviz', 'erd', 'c4plantuml', 'd2',
   'blockdiag', 'seqdiag', 'actdiag', 'nwdiag', 'packetdiag',
   'rackdiag', 'ditaa', 'pikchr', 'umlet', 'bytefield', 'svgbob',
-  'nomnoml', 'wavedrom', 'symbolator', 'wbs'
+  'nomnoml', 'wavedrom', 'symbolator', 'wbs', 'functionplot', 'function-plot',
+  'echarts', 'chartjs', 'chart.js', 'apexcharts', 'apexchart',
+  'cytoscape', 'matrix', 'svg-matrix', 'matrix-diagram',
+  'vegalite', 'vega-lite', 'vega'
 ];
 
 export function minifySvg(svg: string): string {
@@ -24,6 +28,11 @@ export function minifySvg(svg: string): string {
     .replace(/\s+/g, ' ')
     .replace(/>\s+</g, '><')
     .trim();
+
+  // If this is a self-styled dark function plot or styled SVG, preserve its custom text colors
+  if (clean.includes('function-plot-svg')) {
+    return clean;
+  }
 
   // Inject universal contrast style inside the SVG defs / style
   const contrastStyle = '<style>text, tspan { fill: #0f172a !important; color: #0f172a !important; font-family: "Inter", system-ui, sans-serif !important; font-weight: 600 !important; font-size: 13px !important; visibility: visible !important; }</style>';
@@ -232,6 +241,74 @@ export function generateLocalFallbackSvg(diagramType: string, source: string): s
  * Fetches inline SVG string from Kroki API with 6.5s timeout & local SVG fallback
  */
 export async function fetchKrokiSvg(diagramType: string, source: string): Promise<string> {
+  const normType = (diagramType || '').toLowerCase();
+  
+  // Instant 100% Client-Side Render for Function Plot (Zero Network Latency)
+  if (normType === 'functionplot' || normType === 'function-plot') {
+    try {
+      const spec = parseFunctionPlotSource(source);
+      const svg = minifySvg(renderFunctionPlotSvg(spec));
+      return svg;
+    } catch (e) {
+      console.error('Failed to render local function plot SVG:', e);
+    }
+  }
+
+  // Instant 100% Client-Side Render for Apache ECharts
+  if (normType === 'echarts') {
+    try {
+      const spec = parseChartSpec(source);
+      const svg = minifySvg(renderEChartsSvg(spec));
+      return svg;
+    } catch (e) {
+      console.error('Failed to render local ECharts SVG:', e);
+    }
+  }
+
+  // Instant 100% Client-Side Render for Chart.js
+  if (normType === 'chartjs' || normType === 'chart.js') {
+    try {
+      const spec = parseChartSpec(source);
+      const svg = minifySvg(renderChartJsSvg(spec));
+      return svg;
+    } catch (e) {
+      console.error('Failed to render local Chart.js SVG:', e);
+    }
+  }
+
+  // Instant 100% Client-Side Render for ApexCharts
+  if (normType === 'apexcharts' || normType === 'apexchart') {
+    try {
+      const spec = parseChartSpec(source);
+      const svg = minifySvg(renderApexChartsSvg(spec));
+      return svg;
+    } catch (e) {
+      console.error('Failed to render local ApexCharts SVG:', e);
+    }
+  }
+
+  // Instant 100% Client-Side Render for Cytoscape Network & Layer Graphs
+  if (normType === 'cytoscape') {
+    try {
+      const spec = parseChartSpec(source);
+      const svg = minifySvg(renderCytoscapeSvg(spec));
+      return svg;
+    } catch (e) {
+      console.error('Failed to render local Cytoscape SVG:', e);
+    }
+  }
+
+  // Instant 100% Client-Side Render for Computer Vision Matrix & Convolution
+  if (normType === 'matrix' || normType === 'svg-matrix' || normType === 'matrix-diagram') {
+    try {
+      const spec = parseChartSpec(source);
+      const svg = minifySvg(renderMatrixSvg(spec));
+      return svg;
+    } catch (e) {
+      console.error('Failed to render local Matrix SVG:', e);
+    }
+  }
+
   const cacheKey = `kroki_svg_v6_${diagramType}_${source}`;
 
   // 1. Check in-memory cache

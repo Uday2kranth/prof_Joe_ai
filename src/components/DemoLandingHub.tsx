@@ -14,12 +14,13 @@ import {
   Cpu, 
   PenTool, 
   Layers,
-  Zap
+  Zap,
+  FlaskConical
 } from 'lucide-react';
 import { MorphingText } from './MorphingText';
 
 interface DemoLandingHubProps {
-  onSelectWorkspace: (workspaceId: 'chat' | 'personas' | 'fun_personas' | 'examprep' | 'diagrams' | 'system_prompts' | 'prompts' | 'cubes' | 'extractor_studio' | 'code_lab' | 'lecture_notes') => void;
+  onSelectWorkspace: (workspaceId: 'chat' | 'personas' | 'fun_personas' | 'examprep' | 'diagrams' | 'system_prompts' | 'prompts' | 'cubes' | 'extractor_studio' | 'code_lab' | 'lecture_notes' | 'sandbox') => void;
   onOpenSettings: () => void;
   onOpenProfile: () => void;
   theme: 'dark' | 'light';
@@ -308,6 +309,39 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
               </div>
               <button type="button" className="launch-portal-btn purple-btn">
                 <span>Open Studio</span>
+                <ArrowRight size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* Card: Interactive Sandbox & Whiteboard Lab */}
+          <div 
+            className="hub-portal-card sandbox-portal"
+            onClick={() => onSelectWorkspace('sandbox')}
+            style={{
+              borderColor: 'rgba(168, 85, 247, 0.4)',
+              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(59, 7, 100, 0.5))'
+            }}
+          >
+            <div className="portal-card-header">
+              <div className="portal-icon-badge" style={{ backgroundColor: 'rgba(168, 85, 247, 0.2)', color: '#c084fc' }}>
+                <FlaskConical size={24} />
+              </div>
+              <span className="portal-tag" style={{ backgroundColor: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', borderColor: 'rgba(168, 85, 247, 0.3)' }}>
+                3-in-1 Lab
+              </span>
+            </div>
+            <div className="portal-card-body">
+              <h3>Interactive Sandbox & Whiteboard</h3>
+              <p>Visual Algorithmic Lab (AVL/BFS/DFS), 60 FPS Neural Boundary Simulator & Infinite Teaching Whiteboard.</p>
+            </div>
+            <div className="portal-card-footer">
+              <div className="portal-meta-features">
+                <span>⚡ React Flow & tldraw</span>
+                <span>60 FPS SGD</span>
+              </div>
+              <button type="button" className="launch-portal-btn" style={{ background: 'linear-gradient(135deg, #a855f7, #6366f1)', color: '#ffffff' }}>
+                <span>Launch Sandbox</span>
                 <ArrowRight size={14} />
               </button>
             </div>

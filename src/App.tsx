@@ -14,6 +14,7 @@ import { LectureNotesStudioView } from './components/LectureNotesStudioView';
 const DiagramStudioView = React.lazy(() => import('./components/DiagramStudioView').then(m => ({ default: m.DiagramStudioView })));
 const CubesPlaygroundView = React.lazy(() => import('./components/CubesPlaygroundView').then(m => ({ default: m.CubesPlaygroundView })));
 const DocumentExtractorStudioView = React.lazy(() => import('./components/DocumentExtractorStudioView').then(m => ({ default: m.DocumentExtractorStudioView })));
+const InteractiveSandboxView = React.lazy(() => import('./components/InteractiveSandboxView').then(m => ({ default: m.InteractiveSandboxView })));
 import { ACADEMIC_PRESETS } from './components/CodeLabPresetDrawer';
 import { SettingsModal } from './components/SettingsModal';
 import { LoginModal } from './components/LoginModal';
@@ -1534,13 +1535,19 @@ export const App: React.FC = () => {
 
             {activeHubWorkspace === 'diagrams' && (
               <React.Suspense fallback={<div className="p-8 text-cyan-400 font-semibold flex items-center gap-2">⏳ Loading Diagram Studio...</div>}>
-                <DiagramStudioView />
+                <DiagramStudioView userKeys={userKeys} />
               </React.Suspense>
             )}
 
             {activeHubWorkspace === 'cubes' && (
               <React.Suspense fallback={<div className="p-8 text-cyan-400 font-semibold flex items-center gap-2">⏳ Loading 3D Cubes Playground...</div>}>
                 <CubesPlaygroundView />
+              </React.Suspense>
+            )}
+
+            {activeHubWorkspace === 'sandbox' && (
+              <React.Suspense fallback={<div className="p-8 text-purple-400 font-semibold flex items-center gap-2">⏳ Loading Interactive Sandbox & Whiteboard Lab...</div>}>
+                <InteractiveSandboxView />
               </React.Suspense>
             )}
 
@@ -1743,11 +1750,15 @@ export const App: React.FC = () => {
           )}
 
           {activeView === 'diagrams' && (
-            <DiagramStudioView />
+            <DiagramStudioView userKeys={userKeys} />
           )}
 
           {activeView === 'cubes' && (
             <CubesPlaygroundView />
+          )}
+
+          {activeView === 'sandbox' && (
+            <InteractiveSandboxView />
           )}
 
           {activeView === 'fun_personas' && (

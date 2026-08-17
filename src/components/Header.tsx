@@ -37,7 +37,8 @@ export const Header: React.FC<HeaderProps> = ({
     prompts: 'User Prompts Hub',
     diagrams: 'Kroki Diagram Studio',
     fun_personas: 'Fun AI Personas Lounge',
-    cubes: 'Interactive 3D Cubes Playground'
+    cubes: 'Interactive 3D Cubes Playground',
+    sandbox: 'Interactive Sandbox & Whiteboard Lab'
   };
 
   const toggleSpin = () => {

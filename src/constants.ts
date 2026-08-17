@@ -174,6 +174,10 @@ export const PROVIDERS: ProviderGroup[] = [
 
 export const PERSONAS: PersonaOption[] = [
   { id: 'default', name: 'Prof. Joe Academic (Default)', icon: '🎓', description: 'Exam prep engine with Kroki diagrams', allowDiagrams: true },
+  { id: 'fools_gold_mds203', name: 'MDS-203 Optimization Mentor', icon: '📈', description: 'Simplex, Duality, Transport & PERT/CPM with Kroki', allowDiagrams: true },
+  { id: 'fools_gold_mds302', name: 'MDS-302 Computer Networks Mentor', icon: '🌐', description: 'OSI/TCP-IP, Routing, Protocols & Packet Diagrams', allowDiagrams: true },
+  { id: 'fools_gold_mds204t', name: 'MDS-204-T Software Eng Mentor', icon: '⚙️', description: 'SDLC, Agile, SQA, Testing & UML Diagrams', allowDiagrams: true },
+  { id: 'fools_gold_mds104t', name: 'MDS-104-T Stat Inference Mentor', icon: '📊', description: 'Estimation, Hypotheses, LRT & Bayes Distributions', allowDiagrams: true },
   { id: 'computer', name: "Courage's Computer 🖥️", icon: '🖥️', description: 'Diagnostic expert, dry British wit & kroki diagrams', allowDiagrams: true },
   { id: 'courage', name: 'Courage-Inspired 🐶', icon: '🐶', description: 'Timid, loyal step-by-step solver & kroki diagrams', allowDiagrams: true },
   { id: 'peter', name: 'Peter-Inspired 🍺', icon: '🍺', description: 'Enthusiastic sitcom dad analogies (Text Mode)', allowDiagrams: false },
