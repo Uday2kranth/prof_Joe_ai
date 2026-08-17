@@ -1,15 +1,7 @@
 const fetch = globalThis.fetch || (typeof fetch !== 'undefined' ? fetch : require('node-fetch'));
 
-const DEFAULT_OPENROUTER_KEY = "";
-const DEFAULT_NVIDIA_KEY = "";
-const DEFAULT_MISTRAL_KEY = "";
-const DEFAULT_CEREBRAS_KEY = "";
-const DEFAULT_GROQ_KEY = "";
-const DEFAULT_SAMBANOVA_KEY = "";
-const DEFAULT_NARAROUTER_KEY = "";
-const DEFAULT_HUGGINGFACE_KEY = process.env.HUGGINGFACE_API_KEY || "";
-const DEFAULT_OLLAMA_KEY = process.env.OLLAMA_API_KEY || "";
-const DEFAULT_POOLSIDE_KEY = process.env.POOLSIDE_API_KEY || "";
+// All API credentials are read dynamically from request headers or process.env (Vercel Environment Variables).
+// Zero hardcoded API keys are permitted.
 
 // Helper to scrape DuckDuckGo search snippets for free web search RAG capabilities
 async function getWebSearchSnippets(query) {
@@ -302,35 +294,35 @@ GENERAL AI ASSISTANT DIRECTIVES:
     const isAdmin = (user && (user.toLowerCase() === "admin@uday" || user.toLowerCase() === "uday@joe"));
 
     if (targetProvider === "openrouter") {
-        apiKey = req.headers['x-user-openrouter-key'] || process.env.OPENROUTER_API_KEY || DEFAULT_OPENROUTER_KEY || '';
+        apiKey = req.headers['x-user-openrouter-key'] || process.env.OPENROUTER_API_KEY || '';
     } else if (targetProvider === "nvidia") {
-        apiKey = req.headers['x-user-nvidia-key'] || (isAdmin ? (process.env.NVIDIA_API_KEY || DEFAULT_NVIDIA_KEY) : '') || '';
+        apiKey = req.headers['x-user-nvidia-key'] || (isAdmin ? process.env.NVIDIA_API_KEY : '') || '';
     } else if (targetProvider === "omnirouter") {
         apiKey = req.headers['x-user-omnirouter-key'] || (isAdmin ? process.env.OMNIROUTER_API_KEY : '') || '';
     } else if (targetProvider === "mistral") {
-        apiKey = req.headers['x-user-mistral-key'] || (isAdmin ? (process.env.MISTRAL_API_KEY || DEFAULT_MISTRAL_KEY) : '') || '';
+        apiKey = req.headers['x-user-mistral-key'] || (isAdmin ? process.env.MISTRAL_API_KEY : '') || '';
     } else if (targetProvider === "cerebras") {
-        apiKey = req.headers['x-user-cerebras-key'] || (isAdmin ? (process.env.CEREBRAS_API_KEY || DEFAULT_CEREBRAS_KEY) : '') || '';
+        apiKey = req.headers['x-user-cerebras-key'] || (isAdmin ? process.env.CEREBRAS_API_KEY : '') || '';
     } else if (targetProvider === "groq") {
-        apiKey = req.headers['x-user-groq-key'] || (isAdmin ? (process.env.GROQ_API_KEY || DEFAULT_GROQ_KEY) : '') || '';
+        apiKey = req.headers['x-user-groq-key'] || (isAdmin ? process.env.GROQ_API_KEY : '') || '';
     } else if (targetProvider === "sambanova") {
-        apiKey = req.headers['x-user-sambanova-key'] || (isAdmin ? (process.env.SAMBANOVA_API_KEY || DEFAULT_SAMBANOVA_KEY) : '') || '';
+        apiKey = req.headers['x-user-sambanova-key'] || (isAdmin ? process.env.SAMBANOVA_API_KEY : '') || '';
     } else if (targetProvider === "gemini") {
         apiKey = req.headers['x-user-gemini-key'] || (isAdmin ? process.env.GEMINI_API_KEY : '') || '';
     } else if (targetProvider === "nararouter") {
-        apiKey = req.headers['x-user-nararouter-key'] || (isAdmin ? (process.env.NARAROUTER_API_KEY || DEFAULT_NARAROUTER_KEY) : '') || '';
+        apiKey = req.headers['x-user-nararouter-key'] || (isAdmin ? process.env.NARAROUTER_API_KEY : '') || '';
     } else if (targetProvider === "huggingface") {
         apiKey = req.headers['x-user-huggingface-key'] || (isAdmin ? process.env.HUGGINGFACE_API_KEY : '') || '';
     } else if (targetProvider === "opencode") {
         apiKey = req.headers['x-user-opencode-key'] || (isAdmin ? process.env.OPENCODE_API_KEY : '') || '';
     } else if (targetProvider === "poolside") {
-        apiKey = req.headers['x-user-poolside-key'] || (isAdmin ? (process.env.POOLSIDE_API_KEY || DEFAULT_POOLSIDE_KEY) : '') || (process.env.POOLSIDE_API_KEY || DEFAULT_POOLSIDE_KEY) || 'poolside_free_user';
+        apiKey = req.headers['x-user-poolside-key'] || (isAdmin ? process.env.POOLSIDE_API_KEY : '') || process.env.POOLSIDE_API_KEY || 'poolside_free_user';
     } else if (targetProvider === "local_endpoint" || targetProvider === "local") {
         apiKey = 'local_device_keyless';
     } else if (targetProvider === "pollinations-keyed" || targetProvider === "pollinations") {
         apiKey = req.headers['x-user-pollinations-key'] || (isAdmin ? process.env.POLLINATIONS_API_KEY : '') || '';
     } else if (targetProvider === "ollama") {
-        apiKey = req.headers['x-user-ollama-key'] || (isAdmin ? (process.env.OLLAMA_API_KEY || DEFAULT_OLLAMA_KEY) : '') || 'ollama_cloud_default';
+        apiKey = req.headers['x-user-ollama-key'] || (isAdmin ? process.env.OLLAMA_API_KEY : '') || 'ollama_cloud_default';
     }
 
     if (!apiKey) {
@@ -517,37 +509,51 @@ MANDATORY QUALITY RULE: Every node and stage MUST have an explicit, meaningful d
 
                     if (targetProvider === "poolside") {
                         // Poolside Laguna Model Multi-Bridge Router (NaraRouter, Pollinations, OpenCode, OpenRouter)
-                        const naraKey = req.headers['x-user-nararouter-key'] || process.env.NARAROUTER_API_KEY || DEFAULT_NARAROUTER_KEY || "sk-nry-G1qu-m8XC4IYzvAXFXkD5BudlDQqgj6po5I2R91-AV0";
-                        const openrouterKey = req.headers['x-user-openrouter-key'] || process.env.OPENROUTER_API_KEY || DEFAULT_OPENROUTER_KEY || "";
-                        const opencodeKey = req.headers['x-user-opencode-key'] || process.env.OPENCODE_API_KEY || "";
+                        const naraKey = req.headers['x-user-nararouter-key'] || (isAdmin ? process.env.NARAROUTER_API_KEY : '') || process.env.NARAROUTER_API_KEY || "";
+                        const openrouterKey = req.headers['x-user-openrouter-key'] || process.env.OPENROUTER_API_KEY || "";
+                        const opencodeKey = req.headers['x-user-opencode-key'] || (isAdmin ? process.env.OPENCODE_API_KEY : '') || process.env.OPENCODE_API_KEY || "";
+                        const pollinationsKey = req.headers['x-user-pollinations-key'] || (isAdmin ? process.env.POLLINATIONS_API_KEY : '') || process.env.POLLINATIONS_API_KEY || "";
 
-                        const poolsideEndpoints = [
-                            {
+                        const poolsideEndpoints = [];
+
+                        if (naraKey) {
+                            poolsideEndpoints.push({
                                 url: 'https://router.bynara.id/v1/chat/completions',
-                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${naraKey}` },
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${naraKey.split(',')[0].trim()}` },
                                 model: 'laguna-s-2.1'
-                            },
-                            {
-                                url: 'https://gen.pollinations.ai/v1/chat/completions',
-                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer sk_SXSoS8GAskpwU0SCoWSM7AqmJw7cQUYX` },
-                                model: 'vendouple/laguna-s-2.1:free'
-                            },
-                            {
+                            });
+                        }
+
+                        const polliHeaders = { 'Content-Type': 'application/json' };
+                        if (pollinationsKey) {
+                            polliHeaders['Authorization'] = `Bearer ${pollinationsKey.split(',')[0].trim()}`;
+                        }
+                        poolsideEndpoints.push({
+                            url: 'https://gen.pollinations.ai/v1/chat/completions',
+                            headers: polliHeaders,
+                            model: 'vendouple/laguna-s-2.1:free'
+                        });
+
+                        if (opencodeKey) {
+                            poolsideEndpoints.push({
                                 url: 'https://opencode.ai/zen/v1/chat/completions',
-                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${opencodeKey || 'sk-j3wSlnL78cX7U11hpYnwAexQwuqtFpwJ71NY2jIDZNIeNd2FAIzAGDUpbmCHmT4D'}` },
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${opencodeKey.split(',')[0].trim()}` },
                                 model: 'opencode/laguna-s-2.1-free'
-                            },
-                            {
+                            });
+                        }
+
+                        if (openrouterKey) {
+                            poolsideEndpoints.push({
                                 url: 'https://openrouter.ai/api/v1/chat/completions',
                                 headers: { 
                                     'Content-Type': 'application/json', 
-                                    'Authorization': `Bearer ${openrouterKey ? openrouterKey.split(',')[0].trim() : ''}`,
+                                    'Authorization': `Bearer ${openrouterKey.split(',')[0].trim()}`,
                                     'HTTP-Referer': 'https://chatterbot-dashboard.vercel.app',
                                     'X-Title': 'Prof Joe AI'
                                 },
                                 model: targetModel.startsWith('poolside/') ? targetModel : `poolside/${targetModel}:free`
-                            }
-                        ];
+                            });
+                        }
 
                         let poolsideSuccess = false;
                         for (const ep of poolsideEndpoints) {
@@ -661,7 +667,7 @@ MANDATORY QUALITY RULE: Every node and stage MUST have an explicit, meaningful d
                                     : targetModel.includes('deepseek') ? 'deepseek/deepseek-chat:free' 
                                     : 'openrouter/free';
                                     
-                                const openrouterKey = process.env.OPENROUTER_API_KEY || DEFAULT_OPENROUTER_KEY || '';
+                                const openrouterKey = req.headers['x-user-openrouter-key'] || process.env.OPENROUTER_API_KEY || '';
                                 const effectiveKey = openrouterKey ? openrouterKey.split(',')[0].trim() : '';
                                 
                                 if (effectiveKey) {
