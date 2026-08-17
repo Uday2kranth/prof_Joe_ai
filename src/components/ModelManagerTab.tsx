@@ -9,14 +9,20 @@ interface ModelManagerTabProps {
   userKeys: UserKeys;
   customModels: UserCustomModels;
   onSaveCustomModels: (newCustomModels: UserCustomModels) => void;
+  activeProvider?: string;
+  activeModel?: string;
+  onSelectActiveModel?: (providerId: string, modelId: string) => void;
 }
 
 export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
   userKeys,
   customModels,
-  onSaveCustomModels
+  onSaveCustomModels,
+  activeProvider,
+  activeModel,
+  onSelectActiveModel
 }) => {
-  const [selectedProviderId, setSelectedProviderId] = useState<string>(PROVIDERS[0].id);
+  const [selectedProviderId, setSelectedProviderId] = useState<string>(activeProvider || PROVIDERS[0].id);
   const [isProviderDropdownOpen, setIsProviderDropdownOpen] = useState<boolean>(false);
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [filterMode, setFilterMode] = useState<'all' | 'enabled' | 'free'>('all');
@@ -87,13 +93,13 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
       id: m.value,
       name: m.name,
       enabled: true,
-      isFree: m.value.includes('free') || m.name.includes('Free')
+      isFree: m.value.includes('free') || m.name.includes('Free') || m.name.includes('Quota') || m.name.includes('Tier') || m.name.includes('Local')
     }));
     onSaveCustomModels({
       ...customModels,
       [selectedProviderId]: defaultList
     });
-    setFetchSuccessMsg('Reset to default recommended models.');
+    setFetchSuccessMsg(`Reset to ${defaultList.length} verified default models!`);
     setTimeout(() => setFetchSuccessMsg(null), 2500);
   };
 
@@ -452,74 +458,128 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
             No models matching search or filter.
           </div>
         ) : (
-          filteredModels.map(model => (
-            <div
-              key={model.id}
-              onClick={() => handleToggleModel(model.id)}
-              className={`model-catalog-item ${model.enabled ? 'enabled' : ''}`}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '10px 14px',
-                borderRadius: '8px',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
-                <input
-                  type="checkbox"
-                  checked={model.enabled}
-                  onChange={() => {}} // handled by parent div onClick
-                  style={{ width: '16px', height: '16px', accentColor: '#38bdf8', cursor: 'pointer' }}
-                />
-                <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                  <span style={{
-                    fontSize: '13px',
-                    fontWeight: 600,
-                    color: model.enabled ? 'var(--text-main)' : 'var(--text-muted)',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis'
-                  }}>
-                    {model.name}
-                  </span>
-                  <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
-                    {model.id}
-                  </span>
+          filteredModels.map(model => {
+            const isCurrentlyActive = (activeProvider === selectedProviderId || (selectedProviderGroup && activeProvider === selectedProviderGroup.name)) && activeModel === model.id;
+
+            return (
+              <div
+                key={model.id}
+                onClick={() => handleToggleModel(model.id)}
+                className={`model-catalog-item ${model.enabled ? 'enabled' : ''} ${isCurrentlyActive ? 'active-model-item' : ''}`}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '10px 14px',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  transition: 'all 0.15s ease',
+                  border: isCurrentlyActive ? '1px solid #34d399' : '1px solid rgba(51, 65, 85, 0.4)',
+                  background: isCurrentlyActive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(15, 23, 42, 0.6)'
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                  <input
+                    type="checkbox"
+                    checked={model.enabled}
+                    onChange={() => {}} // handled by parent div onClick
+                    style={{ width: '16px', height: '16px', accentColor: '#38bdf8', cursor: 'pointer' }}
+                  />
+                  <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <span style={{
+                        fontSize: '13px',
+                        fontWeight: 600,
+                        color: model.enabled ? 'var(--text-main)' : 'var(--text-muted)',
+                        whiteSpace: 'nowrap',
+                        overflow: 'hidden',
+                        textOverflow: 'ellipsis'
+                      }}>
+                        {model.name}
+                      </span>
+                      {isCurrentlyActive && (
+                        <span style={{
+                          fontSize: '10px',
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          background: '#059669',
+                          color: '#ffffff',
+                          fontWeight: 700
+                        }}>
+                          ACTIVE
+                        </span>
+                      )}
+                    </div>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                      {model.id}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Badges & 1-Click Activate Button */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  {model.isFree && (
+                    <span style={{
+                      fontSize: '10px',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      background: 'rgba(34, 197, 94, 0.2)',
+                      color: '#4ade80',
+                      fontWeight: 700
+                    }}>
+                      FREE
+                    </span>
+                  )}
+                  {model.contextLength && (
+                    <span style={{
+                      fontSize: '10px',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      background: 'rgba(147, 51, 234, 0.2)',
+                      color: '#c084fc',
+                      fontWeight: 600
+                    }}>
+                      {Math.round(model.contextLength / 1024)}k ctx
+                    </span>
+                  )}
+                  {onSelectActiveModel && !isCurrentlyActive && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        if (!model.enabled) {
+                          const updatedList = currentModelList.map(m => 
+                            m.id === model.id ? { ...m, enabled: true } : m
+                          );
+                          onSaveCustomModels({
+                            ...customModels,
+                            [selectedProviderId]: updatedList
+                          });
+                        }
+                        onSelectActiveModel(selectedProviderId, model.id);
+                        setFetchSuccessMsg(`Selected ${model.name} for chat.`);
+                        setTimeout(() => setFetchSuccessMsg(null), 2500);
+                      }}
+                      className="btn"
+                      style={{
+                        padding: '2px 8px',
+                        fontSize: '10px',
+                        borderRadius: '4px',
+                        background: 'rgba(56, 189, 248, 0.15)',
+                        color: '#38bdf8',
+                        border: '1px solid rgba(56, 189, 248, 0.3)',
+                        cursor: 'pointer',
+                        fontWeight: 600
+                      }}
+                      title="Select this model for chat"
+                    >
+                      Select
+                    </button>
+                  )}
                 </div>
               </div>
-
-              {/* Badges */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                {model.isFree && (
-                  <span style={{
-                    fontSize: '10px',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    background: 'rgba(34, 197, 94, 0.2)',
-                    color: '#4ade80',
-                    fontWeight: 700
-                  }}>
-                    FREE
-                  </span>
-                )}
-                {model.contextLength && (
-                  <span style={{
-                    fontSize: '10px',
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    background: 'rgba(147, 51, 234, 0.2)',
-                    color: '#c084fc',
-                    fontWeight: 600
-                  }}>
-                    {Math.round(model.contextLength / 1024)}k ctx
-                  </span>
-                )}
-              </div>
-            </div>
-          ))
+            );
+          })
         )}
       </div>
     </div>

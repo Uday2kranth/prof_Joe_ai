@@ -25,7 +25,7 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { useTypewriterPlaceholder } from '../hooks/useTypewriterPlaceholder';
-import type { Message, ChatSession } from '../types';
+import type { Message, ChatSession, UserCustomModels } from '../types';
 import { MessageItem } from './MessageItem';
 import { PROVIDERS, PERSONAS } from '../constants';
 import { PdfPreviewModal } from './PdfPreviewModal';
@@ -52,6 +52,7 @@ interface FunPersonaChatViewProps {
   onSelectPersonaSession?: (id: string) => void;
   onNewPersonaSession?: () => void;
   onDeletePersonaSession?: (id: string) => void;
+  customModels?: UserCustomModels;
   isDemoView?: boolean;
   isExternalDrawerOpen?: boolean;
   onCloseExternalDrawer?: () => void;
@@ -73,6 +74,7 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
   onEditUserMessage,
   personaSessions = [],
   activePersonaSessionId = '',
+  customModels,
   onSelectPersonaSession,
   onNewPersonaSession,
   onDeletePersonaSession,
@@ -205,6 +207,19 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
   };
 
   const currentProviderGroup = PROVIDERS.find(p => p.id === selectedProvider || p.name === selectedProvider) || PROVIDERS[0];
+  const availableModels = useMemo(() => {
+    const customList = customModels ? (customModels[selectedProvider] || customModels[currentProviderGroup.id] || customModels[currentProviderGroup.name]) : undefined;
+    if (Array.isArray(customList) && customList.length > 0) {
+      const enabledCustom = customList.filter(m => m.enabled).map(m => ({
+        value: m.id,
+        name: m.name
+      }));
+      if (enabledCustom.length > 0) return enabledCustom;
+    }
+    return currentProviderGroup.models;
+  }, [selectedProvider, customModels, currentProviderGroup]);
+
+  const currentModelName = availableModels.find(m => m.value === selectedModel)?.name || selectedModel;
   const activePersonaObj = PERSONAS.find(p => p.id === selectedPersona) || PERSONAS[1];
 
   const handleTogglePersistentWebSearch = () => {
@@ -857,7 +872,11 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
                                 type="button"
                                 onClick={() => {
                                   onProviderChange(p.id);
-                                  if (p.models.length > 0) {
+                                  const pCustom = customModels ? (customModels[p.id] || customModels[p.name]) : undefined;
+                                  const enabledCustom = Array.isArray(pCustom) ? pCustom.filter(m => m.enabled) : [];
+                                  if (enabledCustom.length > 0) {
+                                    onModelChange(enabledCustom[0].id);
+                                  } else if (p.models.length > 0) {
                                     onModelChange(p.models[0].value);
                                   }
                                   setIsProviderOpen(false);
@@ -885,7 +904,7 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
                       >
                         <span className="picker-icon">🤖</span>
                         <span className="truncate">
-                          {currentProviderGroup.models.find(m => m.value === selectedModel)?.name || selectedModel}
+                          {currentModelName}
                         </span>
                         <ChevronDown size={13} className={`transition-transform duration-200 ${isModelOpen ? 'rotate-180' : ''}`} />
                       </button>
@@ -893,7 +912,7 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
                       {isModelOpen && (
                         <div className="custom-dropdown-menu bottom-upward-menu model-menu">
                           <div className="dropdown-header">{currentProviderGroup.name} Models</div>
-                          {currentProviderGroup.models.map(m => {
+                          {availableModels.map(m => {
                             const isSelected = m.value === selectedModel;
                             return (
                               <button

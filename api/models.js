@@ -98,6 +98,52 @@ export default async function handler(req, res) {
         clearTimeout(timeout);
 
         if (!response.ok) {
+            if (provider === 'gemini') {
+                return res.status(200).json({
+                    success: true,
+                    provider: 'gemini',
+                    count: 7,
+                    models: [
+                        { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash [Free]', isFree: true },
+                        { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash [Free]', isFree: true },
+                        { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash [Free]', isFree: true },
+                        { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite [Free]', isFree: true },
+                        { id: 'gemma-4-31b-it', name: 'Gemma 4 31B [Free]', isFree: true },
+                        { id: 'gemma-4-26b-a4b-it', name: 'Gemma 4 26B [Free]', isFree: true },
+                        { id: 'gemini-flash-latest', name: 'Gemini Flash Latest [Free]', isFree: true }
+                    ]
+                });
+            }
+            if (provider === 'groq') {
+                return res.status(200).json({
+                    success: true,
+                    provider: 'groq',
+                    count: 6,
+                    models: [
+                        { id: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B [Free]', isFree: true },
+                        { id: 'qwen/qwen3.6-27b', name: 'Qwen 3.6 27B Reasoning [Free]', isFree: true },
+                        { id: 'groq/compound', name: 'Groq Compound Agent [Free]', isFree: true },
+                        { id: 'groq/compound-mini', name: 'Groq Compound Mini [Free]', isFree: true },
+                        { id: 'openai/gpt-oss-20b', name: 'GPT-OSS 20B [Free]', isFree: true },
+                        { id: 'allam-2-7b', name: 'Allam 2 7B [Free]', isFree: true }
+                    ]
+                });
+            }
+            if (provider === 'openrouter') {
+                return res.status(200).json({
+                    success: true,
+                    provider: 'openrouter',
+                    count: 6,
+                    models: [
+                        { id: 'openrouter/free', name: 'Free Automated Router [Free]', isFree: true },
+                        { id: 'nvidia/nemotron-3-super-120b-a12b:free', name: 'Nemotron 3 Super 120B [Free]', isFree: true },
+                        { id: 'nvidia/nemotron-3-nano-30b-a3b:free', name: 'Nemotron 3 Nano 30B [Free]', isFree: true },
+                        { id: 'google/gemma-4-26b-a4b-it:free', name: 'Gemma 4 26B [Free]', isFree: true },
+                        { id: 'poolside/laguna-xs-2.1:free', name: 'Laguna XS 2.1 Code Engine [Free]', isFree: true },
+                        { id: 'poolside/laguna-m.1:free', name: 'Laguna M 2.1 Specialist [Free]', isFree: true }
+                    ]
+                });
+            }
             if (provider === 'sambanova') {
                 return res.status(200).json({
                     success: true,
@@ -131,13 +177,13 @@ export default async function handler(req, res) {
                     provider: 'mistral',
                     count: 7,
                     models: [
-                        { id: 'mistral-large-latest', name: 'Mistral Large [Free Tier]', isFree: true },
-                        { id: 'mistral-medium-latest', name: 'Mistral Medium 3.5 [Free Tier]', isFree: true },
-                        { id: 'mistral-small-latest', name: 'Mistral Small [Free Tier]', isFree: true },
-                        { id: 'codestral-latest', name: 'Codestral [Free Tier]', isFree: true },
-                        { id: 'ministral-8b-latest', name: 'Ministral 8B [Free Tier]', isFree: true },
-                        { id: 'ministral-3b-latest', name: 'Ministral 3B [Free Tier]', isFree: true },
-                        { id: 'devstral-medium-latest', name: 'Devstral Medium Agent [Free Tier]', isFree: true }
+                        { id: 'mistral-large-latest', name: 'Mistral Large [Free]', isFree: true },
+                        { id: 'mistral-medium-latest', name: 'Mistral Medium 3.5 [Free]', isFree: true },
+                        { id: 'mistral-small-latest', name: 'Mistral Small [Free]', isFree: true },
+                        { id: 'codestral-latest', name: 'Codestral Coding Specialist [Free]', isFree: true },
+                        { id: 'ministral-8b-latest', name: 'Ministral 8B [Free]', isFree: true },
+                        { id: 'ministral-3b-latest', name: 'Ministral 3B [Free]', isFree: true },
+                        { id: 'devstral-medium-latest', name: 'Devstral Medium Agent [Free]', isFree: true }
                     ]
                 });
             }
@@ -145,12 +191,14 @@ export default async function handler(req, res) {
                 return res.status(200).json({
                     success: true,
                     provider: 'nararouter',
-                    count: 4,
+                    count: 6,
                     models: [
-                        { id: 'agnes-2.5-flash', name: 'Agnes 2.5 Flash [Free Router]', isFree: true },
-                        { id: 'laguna-s-2.1', name: 'Laguna S 2.1 Agent [Free Router]', isFree: true },
-                        { id: 'agnes-2.0-flash', name: 'Agnes 2.0 Flash [Free Router]', isFree: true },
-                        { id: 'tencent-hy3-free', name: 'Tencent Hunyuan 3 [Free Router]', isFree: true }
+                        { id: 'laguna-s-2.1', name: 'Laguna S 2.1 Agent [Free]', isFree: true },
+                        { id: 'agnes-2.5-flash', name: 'Agnes 2.5 Flash [Free]', isFree: true },
+                        { id: 'agnes-2.0-flash', name: 'Agnes 2.0 Flash [Free]', isFree: true },
+                        { id: 'mistral-large', name: 'Mistral Large [Free]', isFree: true },
+                        { id: 'mistral-medium-3-5', name: 'Mistral Medium 3.5 [Free]', isFree: true },
+                        { id: 'qwen-3.8-max-free', name: 'Qwen 3.8 Max [Free]', isFree: true }
                     ]
                 });
             }
@@ -158,12 +206,41 @@ export default async function handler(req, res) {
                 return res.status(200).json({
                     success: true,
                     provider: 'huggingface',
-                    count: 4,
+                    count: 6,
                     models: [
-                        { id: 'Qwen/Qwen2.5-72B-Instruct', name: 'Qwen 2.5 72B Instruct [Free Router]', isFree: true },
-                        { id: 'Qwen/Qwen2.5-Coder-32B-Instruct', name: 'Qwen 2.5 Coder 32B [Free Router]', isFree: true },
-                        { id: 'meta-llama/Llama-3.3-70B-Instruct', name: 'Llama 3.3 70B Instruct [Free Router]', isFree: true },
-                        { id: 'Qwen/Qwen2.5-7B-Instruct', name: 'Qwen 2.5 7B Instruct [Free Router]', isFree: true }
+                        { id: 'Qwen/Qwen2.5-72B-Instruct', name: 'Qwen 2.5 72B Instruct [Free]', isFree: true },
+                        { id: 'Qwen/Qwen2.5-Coder-32B-Instruct', name: 'Qwen 2.5 Coder 32B [Free]', isFree: true },
+                        { id: 'Qwen/Qwen2.5-7B-Instruct', name: 'Qwen 2.5 7B Instruct [Free]', isFree: true },
+                        { id: 'meta-llama/Llama-3.3-70B-Instruct', name: 'Llama 3.3 70B Instruct [Free]', isFree: true },
+                        { id: 'deepseek-ai/DeepSeek-V3', name: 'DeepSeek V3 [Free]', isFree: true },
+                        { id: 'deepseek-ai/DeepSeek-R1', name: 'DeepSeek R1 Reasoning [Free]', isFree: true }
+                    ]
+                });
+            }
+            if (provider === 'opencode') {
+                return res.status(200).json({
+                    success: true,
+                    provider: 'opencode',
+                    count: 6,
+                    models: [
+                        { id: 'deepseek-v4-flash-free', name: 'DeepSeek V4 Flash (OpenCode) [Free]', isFree: true },
+                        { id: 'opencode/laguna-s-2.1-free', name: 'Laguna S 2.1 Agent (OpenCode) [Free]', isFree: true },
+                        { id: 'ling-3.0-flash-free', name: 'Ling 3.0 Flash (OpenCode) [Free]', isFree: true },
+                        { id: 'mimo-v2.5-free', name: 'Mimo V2.5 Reasoning (OpenCode) [Free]', isFree: true },
+                        { id: 'nemotron-3-ultra-free', name: 'Nemotron 3 Ultra 550B (OpenCode) [Free]', isFree: true },
+                        { id: 'north-mini-code-free', name: 'North Mini Code Specialist (OpenCode) [Free]', isFree: true }
+                    ]
+                });
+            }
+            if (provider === 'poolside') {
+                return res.status(200).json({
+                    success: true,
+                    provider: 'poolside',
+                    count: 3,
+                    models: [
+                        { id: 'poolside/laguna-s-2.1:free', name: 'Laguna S 2.1 Agent [Free]', isFree: true },
+                        { id: 'poolside/laguna-xs-2.1:free', name: 'Laguna XS 2.1 Code Engine [Free]', isFree: true },
+                        { id: 'poolside/laguna-m.1:free', name: 'Laguna M 2.1 Specialist [Free]', isFree: true }
                     ]
                 });
             }
@@ -292,24 +369,86 @@ export default async function handler(req, res) {
 
     } catch (err) {
         console.error('Error fetching live models:', err);
-        if (req.body && req.body.provider === 'ollama') {
+        const reqProvider = (req.body && req.body.provider) || '';
+
+        if (reqProvider === 'poolside') {
             return res.status(200).json({
                 success: true,
-                provider: 'ollama',
-                count: 9,
+                provider: 'poolside',
+                count: 3,
                 models: [
-                    { id: 'deepseek-v4-flash', name: 'DeepSeek V4 Flash (Ollama Cloud/Local)', isFree: true },
-                    { id: 'deepseek-v3', name: 'DeepSeek V3 (Ollama Cloud/Local)', isFree: true },
-                    { id: 'deepseek-r1', name: 'DeepSeek R1 (Ollama Cloud/Local)', isFree: true },
-                    { id: 'deepseek-r1:70b', name: 'DeepSeek R1 70B (Ollama)', isFree: true },
-                    { id: 'llama3.3', name: 'Llama 3.3 70B (Ollama)', isFree: true },
-                    { id: 'qwen2.5-coder', name: 'Qwen 2.5 Coder (Ollama)', isFree: true },
-                    { id: 'mistral-nemo', name: 'Mistral Nemo (Ollama)', isFree: true },
-                    { id: 'phi4', name: 'Phi-4 (Ollama)', isFree: true },
-                    { id: 'gemma2', name: 'Gemma 2 (Ollama)', isFree: true }
+                    { id: 'poolside/laguna-s-2.1:free', name: 'Laguna S 2.1 Agent [Free]', isFree: true },
+                    { id: 'poolside/laguna-xs-2.1:free', name: 'Laguna XS 2.1 Code Engine [Free]', isFree: true },
+                    { id: 'poolside/laguna-m.1:free', name: 'Laguna M 2.1 Specialist [Free]', isFree: true }
                 ]
             });
         }
+
+        if (reqProvider === 'opencode') {
+            return res.status(200).json({
+                success: true,
+                provider: 'opencode',
+                count: 6,
+                models: [
+                    { id: 'deepseek-v4-flash-free', name: 'DeepSeek V4 Flash (OpenCode) [Free]', isFree: true },
+                    { id: 'opencode/laguna-s-2.1-free', name: 'Laguna S 2.1 Agent (OpenCode) [Free]', isFree: true },
+                    { id: 'ling-3.0-flash-free', name: 'Ling 3.0 Flash (OpenCode) [Free]', isFree: true },
+                    { id: 'mimo-v2.5-free', name: 'Mimo V2.5 Reasoning (OpenCode) [Free]', isFree: true },
+                    { id: 'nemotron-3-ultra-free', name: 'Nemotron 3 Ultra 550B (OpenCode) [Free]', isFree: true },
+                    { id: 'north-mini-code-free', name: 'North Mini Code Specialist (OpenCode) [Free]', isFree: true }
+                ]
+            });
+        }
+
+        if (reqProvider === 'nararouter') {
+            return res.status(200).json({
+                success: true,
+                provider: 'nararouter',
+                count: 6,
+                models: [
+                    { id: 'laguna-s-2.1', name: 'Laguna S 2.1 Agent [Free]', isFree: true },
+                    { id: 'agnes-2.5-flash', name: 'Agnes 2.5 Flash [Free]', isFree: true },
+                    { id: 'agnes-2.0-flash', name: 'Agnes 2.0 Flash [Free]', isFree: true },
+                    { id: 'mistral-large', name: 'Mistral Large [Free]', isFree: true },
+                    { id: 'mistral-medium-3-5', name: 'Mistral Medium 3.5 [Free]', isFree: true },
+                    { id: 'qwen-3.8-max-free', name: 'Qwen 3.8 Max [Free]', isFree: true }
+                ]
+            });
+        }
+
+        if (reqProvider === 'huggingface') {
+            return res.status(200).json({
+                success: true,
+                provider: 'huggingface',
+                count: 6,
+                models: [
+                    { id: 'Qwen/Qwen2.5-72B-Instruct', name: 'Qwen 2.5 72B Instruct [Free]', isFree: true },
+                    { id: 'Qwen/Qwen2.5-Coder-32B-Instruct', name: 'Qwen 2.5 Coder 32B [Free]', isFree: true },
+                    { id: 'Qwen/Qwen2.5-7B-Instruct', name: 'Qwen 2.5 7B Instruct [Free]', isFree: true },
+                    { id: 'meta-llama/Llama-3.3-70B-Instruct', name: 'Llama 3.3 70B Instruct [Free]', isFree: true },
+                    { id: 'deepseek-ai/DeepSeek-V3', name: 'DeepSeek V3 [Free]', isFree: true },
+                    { id: 'deepseek-ai/DeepSeek-R1', name: 'DeepSeek R1 Reasoning [Free]', isFree: true }
+                ]
+            });
+        }
+
+        if (reqProvider === 'ollama') {
+            return res.status(200).json({
+                success: true,
+                provider: 'ollama',
+                count: 7,
+                models: [
+                    { id: 'gpt-oss:20b', name: 'GPT-OSS 20B [Free]', isFree: true },
+                    { id: 'gpt-oss:120b', name: 'GPT-OSS 120B [Free]', isFree: true },
+                    { id: 'gemma4:31b', name: 'Gemma 4 31B [Free]', isFree: true },
+                    { id: 'nemotron-3-nano:30b', name: 'Nemotron 3 Nano 30B [Free]', isFree: true },
+                    { id: 'nemotron-3-super', name: 'Nemotron 3 Super 120B [Free]', isFree: true },
+                    { id: 'nemotron-3-ultra', name: 'Nemotron 3 Ultra 550B [Free]', isFree: true },
+                    { id: 'minimax-m3', name: 'MiniMax M3 [Free]', isFree: true }
+                ]
+            });
+        }
+
         return res.status(500).json({
             error: err.name === 'AbortError' 
                 ? 'Request timed out while fetching provider models.' 

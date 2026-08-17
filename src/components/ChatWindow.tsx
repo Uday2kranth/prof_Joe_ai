@@ -519,7 +519,11 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                                 type="button"
                                 onClick={() => {
                                   onProviderChange(p.id);
-                                  if (p.models.length > 0) {
+                                  const pCustom = customModels ? (customModels[p.id] || customModels[p.name]) : undefined;
+                                  const enabledCustom = Array.isArray(pCustom) ? pCustom.filter(m => m.enabled) : [];
+                                  if (enabledCustom.length > 0) {
+                                    onModelChange(enabledCustom[0].id);
+                                  } else if (p.models.length > 0) {
                                     onModelChange(p.models[0].value);
                                   }
                                   setIsProviderOpen(false);

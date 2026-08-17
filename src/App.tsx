@@ -239,15 +239,13 @@ export const App: React.FC = () => {
   });
 
   const [customModels, setCustomModels] = useState<UserCustomModels>(() => {
-    const activeUser = localStorage.getItem('chatterbot_username');
-    if (activeUser) {
-      const savedModels = localStorage.getItem(`chatterbot_user_models_${activeUser}`);
-      if (savedModels) {
-        try {
-          return JSON.parse(savedModels);
-        } catch (e) {
-          console.error('Failed to parse custom models', e);
-        }
+    const activeUser = localStorage.getItem('chatterbot_username') || 'guest';
+    const savedModels = localStorage.getItem(`chatterbot_user_models_${activeUser}`) || localStorage.getItem('chatterbot_user_models_global');
+    if (savedModels) {
+      try {
+        return JSON.parse(savedModels);
+      } catch (e) {
+        console.error('Failed to parse custom models', e);
       }
     }
     return {};
@@ -255,9 +253,9 @@ export const App: React.FC = () => {
 
   const handleSaveCustomModels = (newCustomModels: UserCustomModels) => {
     setCustomModels(newCustomModels);
-    if (currentUser) {
-      localStorage.setItem(`chatterbot_user_models_${currentUser}`, JSON.stringify(newCustomModels));
-    }
+    const userKey = currentUser || localStorage.getItem('chatterbot_username') || 'guest';
+    localStorage.setItem(`chatterbot_user_models_${userKey}`, JSON.stringify(newCustomModels));
+    localStorage.setItem('chatterbot_user_models_global', JSON.stringify(newCustomModels));
   };
 
   const DEFAULT_FREE_PROVIDER = 'OpenRouter';
@@ -282,20 +280,16 @@ export const App: React.FC = () => {
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
 
   const [selectedProvider, setSelectedProvider] = useState<string>(() => {
-    const activeUser = localStorage.getItem('chatterbot_username');
-    if (activeUser) {
-      const saved = localStorage.getItem(`chatterbot_provider_${activeUser}`);
-      if (saved) return saved;
-    }
+    const activeUser = localStorage.getItem('chatterbot_username') || 'guest';
+    const saved = localStorage.getItem(`chatterbot_provider_${activeUser}`) || localStorage.getItem('chatterbot_provider_global');
+    if (saved) return saved;
     return DEFAULT_FREE_PROVIDER;
   });
 
   const [selectedModel, setSelectedModel] = useState<string>(() => {
-    const activeUser = localStorage.getItem('chatterbot_username');
-    if (activeUser) {
-      const saved = localStorage.getItem(`chatterbot_model_${activeUser}`);
-      if (saved) return saved;
-    }
+    const activeUser = localStorage.getItem('chatterbot_username') || 'guest';
+    const saved = localStorage.getItem(`chatterbot_model_${activeUser}`) || localStorage.getItem('chatterbot_model_global');
+    if (saved) return saved;
     return DEFAULT_FREE_MODEL;
   });
 
@@ -518,9 +512,9 @@ export const App: React.FC = () => {
 
   const handleProviderChange = (provider: string) => {
     setSelectedProvider(provider);
-    if (currentUser) {
-      localStorage.setItem(`chatterbot_provider_${currentUser}`, provider);
-    }
+    const userKey = currentUser || localStorage.getItem('chatterbot_username') || 'guest';
+    localStorage.setItem(`chatterbot_provider_${userKey}`, provider);
+    localStorage.setItem('chatterbot_provider_global', provider);
     setSessions(prev =>
       prev.map(s =>
         s.id === activeSession.id ? { ...s, provider, updatedAt: Date.now() } : s
@@ -542,9 +536,9 @@ export const App: React.FC = () => {
 
   const handleModelChange = (model: string) => {
     setSelectedModel(model);
-    if (currentUser) {
-      localStorage.setItem(`chatterbot_model_${currentUser}`, model);
-    }
+    const userKey = currentUser || localStorage.getItem('chatterbot_username') || 'guest';
+    localStorage.setItem(`chatterbot_model_${userKey}`, model);
+    localStorage.setItem('chatterbot_model_global', model);
     setSessions(prev =>
       prev.map(s =>
         s.id === activeSession.id ? { ...s, model, updatedAt: Date.now() } : s
@@ -562,6 +556,11 @@ export const App: React.FC = () => {
         return { ...prev, [activeCodeLabPresetId]: updatedList };
       });
     }
+  };
+
+  const handleSelectActiveModel = (providerId: string, modelId: string) => {
+    handleProviderChange(providerId);
+    handleModelChange(modelId);
   };
 
   const handlePersonaChange = (persona: string) => {
@@ -1318,6 +1317,9 @@ export const App: React.FC = () => {
             onSaveKeys={handleSaveUserKeys}
             customModels={customModels}
             onSaveCustomModels={handleSaveCustomModels}
+            activeProvider={selectedProvider}
+            activeModel={selectedModel}
+            onSelectActiveModel={handleSelectActiveModel}
           />
           <UserProfileModal
             isOpen={isProfileModalOpen}
@@ -1639,6 +1641,9 @@ export const App: React.FC = () => {
           onSaveKeys={handleSaveUserKeys}
           customModels={customModels}
           onSaveCustomModels={handleSaveCustomModels}
+          activeProvider={selectedProvider}
+          activeModel={selectedModel}
+          onSelectActiveModel={handleSelectActiveModel}
         />
         <UserProfileModal
           isOpen={isProfileModalOpen}
@@ -1781,6 +1786,7 @@ export const App: React.FC = () => {
               onSelectPersonaSession={setActivePersonaSessionIdState}
               onNewPersonaSession={handleNewPersonaSession}
               onDeletePersonaSession={handleDeletePersonaSession}
+              customModels={customModels}
               isDemoView={false}
             />
           )}
@@ -1794,6 +1800,9 @@ export const App: React.FC = () => {
         onSaveKeys={handleSaveUserKeys}
         customModels={customModels}
         onSaveCustomModels={handleSaveCustomModels}
+        activeProvider={selectedProvider}
+        activeModel={selectedModel}
+        onSelectActiveModel={handleSelectActiveModel}
       />
 
       <UserProfileModal

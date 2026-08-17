@@ -10,6 +10,9 @@ interface SettingsModalProps {
   onSaveKeys: (newKeys: UserKeys) => void;
   customModels: UserCustomModels;
   onSaveCustomModels: (newCustomModels: UserCustomModels) => void;
+  activeProvider?: string;
+  activeModel?: string;
+  onSelectActiveModel?: (providerId: string, modelId: string) => void;
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({
@@ -18,7 +21,10 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
   userKeys,
   onSaveKeys,
   customModels,
-  onSaveCustomModels
+  onSaveCustomModels,
+  activeProvider,
+  activeModel,
+  onSelectActiveModel
 }) => {
   const [activeTab, setActiveTab] = useState<'keys' | 'models'>('keys');
   const [keys, setKeys] = useState<UserKeys>({ ...userKeys });
@@ -227,6 +233,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               userKeys={keys}
               customModels={customModels}
               onSaveCustomModels={onSaveCustomModels}
+              activeProvider={activeProvider}
+              activeModel={activeModel}
+              onSelectActiveModel={onSelectActiveModel}
             />
           )}
         </div>

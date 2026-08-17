@@ -9,6 +9,7 @@ const DEFAULT_SAMBANOVA_KEY = "";
 const DEFAULT_NARAROUTER_KEY = "";
 const DEFAULT_HUGGINGFACE_KEY = process.env.HUGGINGFACE_API_KEY || "";
 const DEFAULT_OLLAMA_KEY = process.env.OLLAMA_API_KEY || "";
+const DEFAULT_POOLSIDE_KEY = process.env.POOLSIDE_API_KEY || "";
 
 // Helper to scrape DuckDuckGo search snippets for free web search RAG capabilities
 async function getWebSearchSnippets(query) {
@@ -323,7 +324,7 @@ GENERAL AI ASSISTANT DIRECTIVES:
     } else if (targetProvider === "opencode") {
         apiKey = req.headers['x-user-opencode-key'] || (isAdmin ? process.env.OPENCODE_API_KEY : '') || '';
     } else if (targetProvider === "poolside") {
-        apiKey = req.headers['x-user-poolside-key'] || (isAdmin ? process.env.POOLSIDE_API_KEY : '') || '';
+        apiKey = req.headers['x-user-poolside-key'] || (isAdmin ? (process.env.POOLSIDE_API_KEY || DEFAULT_POOLSIDE_KEY) : '') || (process.env.POOLSIDE_API_KEY || DEFAULT_POOLSIDE_KEY) || 'poolside_free_user';
     } else if (targetProvider === "local_endpoint" || targetProvider === "local") {
         apiKey = 'local_device_keyless';
     } else if (targetProvider === "pollinations-keyed" || targetProvider === "pollinations") {
@@ -514,7 +515,87 @@ MANDATORY QUALITY RULE: Every node and stage MUST have an explicit, meaningful d
                         )
                     );
 
-                    if (targetProvider === "ollama") {
+                    if (targetProvider === "poolside") {
+                        // Poolside Laguna Model Multi-Bridge Router (NaraRouter, Pollinations, OpenCode, OpenRouter)
+                        const naraKey = req.headers['x-user-nararouter-key'] || process.env.NARAROUTER_API_KEY || DEFAULT_NARAROUTER_KEY || "sk-nry-G1qu-m8XC4IYzvAXFXkD5BudlDQqgj6po5I2R91-AV0";
+                        const openrouterKey = req.headers['x-user-openrouter-key'] || process.env.OPENROUTER_API_KEY || DEFAULT_OPENROUTER_KEY || "";
+                        const opencodeKey = req.headers['x-user-opencode-key'] || process.env.OPENCODE_API_KEY || "";
+
+                        const poolsideEndpoints = [
+                            {
+                                url: 'https://router.bynara.id/v1/chat/completions',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${naraKey}` },
+                                model: 'laguna-s-2.1'
+                            },
+                            {
+                                url: 'https://gen.pollinations.ai/v1/chat/completions',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer sk_SXSoS8GAskpwU0SCoWSM7AqmJw7cQUYX` },
+                                model: 'vendouple/laguna-s-2.1:free'
+                            },
+                            {
+                                url: 'https://opencode.ai/zen/v1/chat/completions',
+                                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${opencodeKey || 'sk-j3wSlnL78cX7U11hpYnwAexQwuqtFpwJ71NY2jIDZNIeNd2FAIzAGDUpbmCHmT4D'}` },
+                                model: 'opencode/laguna-s-2.1-free'
+                            },
+                            {
+                                url: 'https://openrouter.ai/api/v1/chat/completions',
+                                headers: { 
+                                    'Content-Type': 'application/json', 
+                                    'Authorization': `Bearer ${openrouterKey ? openrouterKey.split(',')[0].trim() : ''}`,
+                                    'HTTP-Referer': 'https://chatterbot-dashboard.vercel.app',
+                                    'X-Title': 'Prof Joe AI'
+                                },
+                                model: targetModel.startsWith('poolside/') ? targetModel : `poolside/${targetModel}:free`
+                            }
+                        ];
+
+                        let poolsideSuccess = false;
+                        for (const ep of poolsideEndpoints) {
+                            try {
+                                const res = await fetch(ep.url, {
+                                    method: "POST",
+                                    headers: ep.headers,
+                                    body: JSON.stringify({
+                                        model: ep.model,
+                                        messages: apiMessages,
+                                        max_tokens: 8192,
+                                        stream: false
+                                    })
+                                });
+
+                                if (res.ok) {
+                                    const data = await res.json();
+                                    const content = data.choices?.[0]?.message?.content || data.message?.content || data.response;
+                                    if (content) {
+                                        responsePayload = {
+                                            id: `chatcmpl-poolside-${Date.now()}`,
+                                            object: 'chat.completion',
+                                            created: Math.floor(Date.now() / 1000),
+                                            model: targetModel,
+                                            choices: [
+                                                {
+                                                    index: 0,
+                                                    message: { role: 'assistant', content: content },
+                                                    finish_reason: 'stop'
+                                                }
+                                            ]
+                                        };
+                                        successfulModel = targetModel;
+                                        poolsideSuccess = true;
+                                        response = res;
+                                        break;
+                                    }
+                                } else {
+                                    lastStatus = res.status;
+                                    lastErrorText = `Poolside Bridge (${ep.url}) returned HTTP ${res.status}`;
+                                }
+                            } catch (errEp) {
+                                lastErrorText = `Poolside Bridge Connection Error: ${errEp?.message || 'Connection failed'}`;
+                            }
+                        }
+
+                        if (poolsideSuccess && responsePayload) break;
+                    } else if (targetProvider === "ollama") {
                         // Slot 1: Ollama Cloud API Key Slot (https://api.ollama.com/v1/chat/completions)
                         const ollamaCloudEndpoints = [
                             req.headers['x-user-ollama-endpoint'],
