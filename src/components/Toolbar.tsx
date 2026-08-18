@@ -9,6 +9,7 @@ import {
   Theater,
   Box,
   FlaskConical,
+  Binary,
   type LucideIcon
 } from "lucide-react";
 
@@ -28,6 +29,7 @@ export interface ToolbarProps {
 
 export const DEFAULT_NAV_TOOLBAR_ITEMS: ToolbarItem[] = [
   { id: "chat", title: "Chat", icon: MessageSquare },
+  { id: "dsa_lab", title: "DSA Lab", icon: Binary },
   { id: "sandbox", title: "Sandbox", icon: FlaskConical },
   { id: "diagrams", title: "Diagrams", icon: BarChart3 },
   { id: "examprep", title: "Exam Prep", icon: GraduationCap },
@@ -41,6 +43,7 @@ export function getNavItemsForRole(role?: string): ToolbarItem[] {
   if (role === 'teacher') {
     return [
       { id: "chat", title: "Chat", icon: MessageSquare },
+      { id: "dsa_lab", title: "DSA Lab", icon: Binary },
       { id: "sandbox", title: "Sandbox", icon: FlaskConical },
       { id: "diagrams", title: "Diagrams", icon: BarChart3 },
       { id: "lecture_notes", title: "Lecture Notes", icon: BookOpen },
@@ -52,6 +55,7 @@ export function getNavItemsForRole(role?: string): ToolbarItem[] {
   if (role === 'admin') {
     return [
       { id: "chat", title: "Chat", icon: MessageSquare },
+      { id: "dsa_lab", title: "DSA Lab", icon: Binary },
       { id: "sandbox", title: "Sandbox", icon: FlaskConical },
       { id: "diagrams", title: "Diagrams", icon: BarChart3 },
       { id: "lecture_notes", title: "Lecture Notes", icon: BookOpen },

@@ -15,12 +15,13 @@ import {
   PenTool, 
   Layers,
   Zap,
-  FlaskConical
+  FlaskConical,
+  Binary
 } from 'lucide-react';
 import { MorphingText } from './MorphingText';
 
 interface DemoLandingHubProps {
-  onSelectWorkspace: (workspaceId: 'chat' | 'personas' | 'fun_personas' | 'examprep' | 'diagrams' | 'system_prompts' | 'prompts' | 'cubes' | 'extractor_studio' | 'code_lab' | 'lecture_notes' | 'sandbox') => void;
+  onSelectWorkspace: (workspaceId: 'chat' | 'personas' | 'fun_personas' | 'examprep' | 'diagrams' | 'system_prompts' | 'prompts' | 'cubes' | 'extractor_studio' | 'code_lab' | 'lecture_notes' | 'sandbox' | 'dsa_lab') => void;
   onOpenSettings: () => void;
   onOpenProfile: () => void;
   theme: 'dark' | 'light';
@@ -309,6 +310,39 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
               </div>
               <button type="button" className="launch-portal-btn purple-btn">
                 <span>Open Studio</span>
+                <ArrowRight size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* Card: Dedicated DSA Lab */}
+          <div 
+            className="hub-portal-card dsa-portal"
+            onClick={() => onSelectWorkspace('dsa_lab')}
+            style={{
+              borderColor: 'rgba(56, 189, 248, 0.4)',
+              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(2, 132, 199, 0.4))'
+            }}
+          >
+            <div className="portal-card-header">
+              <div className="portal-icon-badge" style={{ backgroundColor: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8' }}>
+                <Binary size={24} />
+              </div>
+              <span className="portal-tag" style={{ backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', borderColor: 'rgba(56, 189, 248, 0.3)' }}>
+                7 Sub-Labs
+              </span>
+            </div>
+            <div className="portal-card-body">
+              <h3>Data Structures & Algorithms (DSA Lab) ⚡</h3>
+              <p>Sorting, Two-Pointers, Stacks/Queues/AVL, Graph Dijkstra/BFS/DFS, DP Knapsack/LCS, N-Queens & KMP with Multi-Language Code.</p>
+            </div>
+            <div className="portal-card-footer">
+              <div className="portal-meta-features">
+                <span>📶 Sorting & Graphs</span>
+                <span>💻 Python/C++/Java</span>
+              </div>
+              <button type="button" className="launch-portal-btn" style={{ background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: '#ffffff' }}>
+                <span>Launch DSA Lab</span>
                 <ArrowRight size={14} />
               </button>
             </div>

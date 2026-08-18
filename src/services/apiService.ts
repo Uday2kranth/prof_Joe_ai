@@ -21,7 +21,9 @@ export async function sendChatMessage(
   webSearch: boolean = false,
   mode: 'auto' | '12marks' | '2marks' | 'general' | 'none' = 'auto',
   systemPrompt?: string,
-  persona: string = 'default'
+  persona: string = 'default',
+  enableDiagrams: boolean = false,
+  beginnerFriendly: boolean = false
 ): Promise<{ content: string; modelUsed: string; usage?: any }> {
   const formattedMessages = messages.map(m => ({
     role: m.role,
@@ -61,7 +63,9 @@ export async function sendChatMessage(
       webSearch,
       mode,
       persona,
-      systemPrompt: systemPrompt || ''
+      systemPrompt: systemPrompt || '',
+      enableDiagrams,
+      beginnerFriendly
     })
   });
 

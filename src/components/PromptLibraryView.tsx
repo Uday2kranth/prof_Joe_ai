@@ -48,8 +48,8 @@ const PROMPT_TEMPLATES: PromptTemplate[] = [
     title: 'k-Means Clustering & Centroid Update Rule',
     category: 'exam',
     icon: Terminal,
-    description: 'Derives within-cluster sum of squares (WCSS) minimization equations using KaTeX LaTeX notation and a workflow diagram.',
-    promptText: 'Explain k-Means clustering, including centroid update rules and convergence conditions with LaTeX formulas and a Mermaid flowchart.'
+    description: 'Derives within-cluster sum of squares (WCSS) minimization equations using KaTeX LaTeX notation and step-by-step update rules.',
+    promptText: 'Explain k-Means clustering, including centroid update rules and convergence conditions with LaTeX formulas.'
   }
 ];
 

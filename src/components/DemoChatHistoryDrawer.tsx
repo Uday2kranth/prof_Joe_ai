@@ -11,7 +11,9 @@ import {
   Search, 
   RotateCcw,
   Sparkles,
-  BarChart2
+  BarChart2,
+  Layers,
+  GraduationCap
 } from 'lucide-react';
 import type { ChatSession } from '../types';
 
@@ -25,6 +27,10 @@ interface DemoChatHistoryDrawerProps {
   onDeleteSession: (id: string) => void;
   isPersistentWebSearch?: boolean;
   onTogglePersistentWebSearch?: () => void;
+  isDiagramsEnabled?: boolean;
+  onToggleDiagrams?: () => void;
+  isBeginnerFriendly?: boolean;
+  onToggleBeginnerFriendly?: () => void;
   onOpenPdfPreview?: () => void;
   onNativePrintPdf?: () => void;
   onClearActiveSession?: () => void;
@@ -42,6 +48,10 @@ export const DemoChatHistoryDrawer: React.FC<DemoChatHistoryDrawerProps> = ({
   onDeleteSession,
   isPersistentWebSearch = false,
   onTogglePersistentWebSearch,
+  isDiagramsEnabled = false,
+  onToggleDiagrams,
+  isBeginnerFriendly = false,
+  onToggleBeginnerFriendly,
   onOpenPdfPreview,
   onNativePrintPdf,
   onClearActiveSession,
@@ -128,9 +138,43 @@ export const DemoChatHistoryDrawer: React.FC<DemoChatHistoryDrawerProps> = ({
               </div>
             </div>
 
-            {/* Tile 2: Session Monitor */}
-            <div className="bento-card-tile" title={`Provider: ${activeProviderName} | Model: ${activeModelName}`}>
+            {/* Tile 2: Dedicated Visual Diagrams Toggle */}
+            <div 
+              className={`bento-card-tile ${isDiagramsEnabled ? 'active-glow-purple' : ''}`}
+              onClick={onToggleDiagrams}
+              title="Toggle Multi-Engine Visual Diagrams (Mermaid, Kroki, Graphviz, FunctionPlot)"
+            >
               <div className="bento-tile-icon purple">
+                <Layers size={16} />
+              </div>
+              <div className="bento-tile-content">
+                <span className="bento-tile-title">Visual Diagrams</span>
+                <span className="bento-tile-status">
+                  {isDiagramsEnabled ? '🟢 Always ON' : '⚪ OFF'}
+                </span>
+              </div>
+            </div>
+
+            {/* Tile 3: Dedicated Beginner-Friendly Mode Toggle */}
+            <div 
+              className={`bento-card-tile ${isBeginnerFriendly ? 'active-glow-emerald' : ''}`}
+              onClick={onToggleBeginnerFriendly}
+              title="Toggle 6-Stage Beginner-Friendly Scaffolding, Formula Term Breakdown & Concrete Numbers"
+            >
+              <div className="bento-tile-icon emerald">
+                <GraduationCap size={16} />
+              </div>
+              <div className="bento-tile-content">
+                <span className="bento-tile-title">Beginner Friendly</span>
+                <span className="bento-tile-status">
+                  {isBeginnerFriendly ? '🟢 Always ON' : '⚪ OFF'}
+                </span>
+              </div>
+            </div>
+
+            {/* Tile 4: Session Monitor */}
+            <div className="bento-card-tile" title={`Provider: ${activeProviderName} | Model: ${activeModelName}`}>
+              <div className="bento-tile-icon blue">
                 <BarChart2 size={16} />
               </div>
               <div className="bento-tile-content">
@@ -139,7 +183,7 @@ export const DemoChatHistoryDrawer: React.FC<DemoChatHistoryDrawerProps> = ({
               </div>
             </div>
 
-            {/* Tile 3: Preview Chat (In-App Styled Modal) */}
+            {/* Tile 5: Preview Chat (In-App Styled Modal) */}
             <div 
               className="bento-card-tile"
               onClick={() => {
@@ -148,7 +192,7 @@ export const DemoChatHistoryDrawer: React.FC<DemoChatHistoryDrawerProps> = ({
               }}
               title="Open styled in-app Preview Modal with Save Image & Save PDF"
             >
-              <div className="bento-tile-icon blue">
+              <div className="bento-tile-icon amber">
                 <Eye size={16} />
               </div>
               <div className="bento-tile-content">
@@ -157,7 +201,7 @@ export const DemoChatHistoryDrawer: React.FC<DemoChatHistoryDrawerProps> = ({
               </div>
             </div>
 
-            {/* Tile 4: Native Print / PDF (Chrome Native Window) */}
+            {/* Tile 6: Native Print / PDF (Chrome Native Window) */}
             <div 
               className="bento-card-tile"
               onClick={() => {
@@ -174,7 +218,7 @@ export const DemoChatHistoryDrawer: React.FC<DemoChatHistoryDrawerProps> = ({
               </div>
             </div>
 
-            {/* Tile 5 (Full Width Span 2): Clear Session Context */}
+            {/* Tile 7 (Full Width Span 2): Clear Session Context */}
             <div 
               className="bento-card-tile span-2-tile danger-tile"
               onClick={() => setShowClearConfirm(true)}

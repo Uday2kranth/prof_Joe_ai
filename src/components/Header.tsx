@@ -38,7 +38,8 @@ export const Header: React.FC<HeaderProps> = ({
     diagrams: 'Kroki Diagram Studio',
     fun_personas: 'Fun AI Personas Lounge',
     cubes: 'Interactive 3D Cubes Playground',
-    sandbox: 'Interactive Sandbox & Whiteboard Lab'
+    sandbox: 'Interactive Sandbox & Whiteboard Lab',
+    dsa_lab: 'Data Structures & Algorithms Laboratory (DSA Lab)'
   };
 
   const toggleSpin = () => {

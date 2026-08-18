@@ -1,0 +1,101 @@
+# =============================================================================
+# GitNexus Ignore (.gitnexusignore)
+# Code Intelligence & Knowledge Graph indexing filter for Prof. Joe AI
+# =============================================================================
+
+# --- Dependencies & Package Managers ---
+node_modules/
+package-lock.json
+
+# --- Git & GitNexus Internals ---
+.git/
+.gitnexus/
+
+# --- AI Agent Configs, Rules & Custom Skills ---
+.agents/
+.claude/
+.codex/
+.gemini/
+.opencode/
+.impeccable/
+.qwen/
+
+# --- Build Outputs & Bundled Distribution Files ---
+dist/
+dist-ssr/
+build/
+.cache/
+.turbo/
+
+# --- Android Build Directories & Generated Assets ---
+# Exclude pre-compiled/bundled web assets copied by Capacitor into Android (duplicates of src/)
+android/app/src/main/assets/public/
+android/app/build/
+android/build/
+android/.gradle/
+android/.idea/
+android/.kotlin/
+android/capacitor-cordova-android-plugins/
+android/*.log
+android/hs_err_pid*
+android/replay_pid*
+android/local.properties
+
+# --- Security, Private Credentials & API Secrets ---
+secrets/
+*.env*
+.env
+.env.local
+.env.production
+credentials.json
+token.json
+Test_keys.json
+api-key-credentials.json
+chatterbot_api_keys_*.json
+*.pem
+*.key
+
+# --- Internal Agent Logs, Task Trackers & Changelogs ---
+changes/
+implementing plans/
+PRODUCT.md
+PROMPTS_GENERIC.md
+PROMPTS_12MARKS.md
+MODEL_PROVIDERS_GUIDE.md
+FREE_PROVIDERS_GUIDE.md
+update_mode_provider_info.md
+vercel-credentials-map.md
+skills-lock.json
+
+# --- Media, Images, Audio, Video & Binary Files ---
+media/
+*.png
+*.jpg
+*.jpeg
+*.gif
+*.webp
+*.svg
+*.ico
+*.pdf
+*.zip
+*.tar.gz
+*.mp3
+*.mp4
+*.wav
+
+# --- Logs & System Dumps ---
+*.log
+npm-debug.log*
+yarn-debug.log*
+pnpm-debug.log*
+
+# --- OS & Editor Artifacts ---
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?

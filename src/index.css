@@ -5736,6 +5736,18 @@ body {
   box-shadow: 0 0 16px rgba(6, 182, 212, 0.35);
 }
 
+.bento-card-tile.active-glow-purple {
+  background: rgba(168, 85, 247, 0.15);
+  border-color: rgba(168, 85, 247, 0.7);
+  box-shadow: 0 0 16px rgba(168, 85, 247, 0.35);
+}
+
+.bento-card-tile.active-glow-emerald {
+  background: rgba(16, 185, 129, 0.15);
+  border-color: rgba(16, 185, 129, 0.7);
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.35);
+}
+
 .bento-card-tile.danger-tile:hover {
   background: rgba(239, 68, 68, 0.15);
   border-color: rgba(239, 68, 68, 0.5);

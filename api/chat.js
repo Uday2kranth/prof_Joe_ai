@@ -84,24 +84,51 @@ Snippet: "${snippet}"`);
 // Dedicated Server Backend RAG Helper for live diagram image search via Wikimedia Commons API
 async function getImageSearchLinks(query) {
     try {
-        const wikiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query + ' diagram')}&gsrnamespace=6&gsrlimit=8&prop=imageinfo&iiprop=url|mime&iiurlwidth=800&format=json`;
+        // Query Wikimedia for explicit diagram, chart, graph, flowchart, or schema images
+        const wikiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query + ' diagram OR flowchart OR schema filetype:svg|png')}&gsrnamespace=6&gsrlimit=10&prop=imageinfo&iiprop=url|mime&iiurlwidth=800&format=json`;
         const response = await fetch(wikiUrl, {
             headers: { 'User-Agent': 'ChatterBot-DiagramRAG/1.0 (https://chatterbot.vercel.app)' }
         });
 
         const validImages = [];
+        const blockedKeywords = [
+            '.djvu', '.pdf', '.tif', '.tiff', 'page_', 'page-', 'page.',
+            'scan', 'scanned', 'manuscript', 'journal', 'archive', 'paper_', 'paper-',
+            'textbook', 'document', 'plate_', 'bulletin', 'proceedings', 'portrait',
+            'stamp', 'letter', 'handwritten', 'signature', 'census', 'newspaper',
+            'facsimile', 'transcript', 'volume_', 'issue_', 'report_', 'dissertation',
+            'thesis', 'article_', 'cover_', 'title_page', 'book_', 'monograph'
+        ];
+
         if (response.ok) {
             const data = await response.json();
             const pages = data.query?.pages || {};
             for (const pageId in pages) {
-                const info = pages[pageId]?.imageinfo?.[0];
+                const page = pages[pageId];
+                const info = page?.imageinfo?.[0];
+                const titleLower = (page?.title || '').toLowerCase();
+                const mime = (info?.mime || '').toLowerCase();
                 const imgUrl = info?.thumburl || info?.url;
-                if (imgUrl) {
-                    const urlLower = imgUrl.toLowerCase();
-                    if (!urlLower.endsWith('.pdf') && !urlLower.includes('logo') && !urlLower.includes('icon') && !urlLower.includes('avatar')) {
-                        validImages.push(imgUrl);
-                        if (validImages.length >= 4) break;
-                    }
+
+                if (!imgUrl) continue;
+                const urlLower = imgUrl.toLowerCase();
+
+                // 1. Strict Exclusion of Scanned Documents, Text Pages, and Non-Diagrams
+                const isBlocked = blockedKeywords.some(kw => urlLower.includes(kw) || titleLower.includes(kw));
+                if (isBlocked) continue;
+
+                // 2. Reject logos, icons, avatars, flags
+                if (urlLower.includes('logo') || urlLower.includes('icon') || urlLower.includes('avatar') || urlLower.includes('flag')) {
+                    continue;
+                }
+
+                // 3. Prefer pure vector SVGs or graphic PNGs with diagram keywords
+                const isGraphicMime = mime.includes('svg') || mime.includes('png') || urlLower.endsWith('.svg') || urlLower.endsWith('.png');
+                const hasDiagramIndicator = /diagram|flowchart|chart|graph|schema|plot|network|workflow|structure|architecture|model|tree/i.test(titleLower) || /diagram|flowchart|chart|graph|schema|plot/i.test(urlLower);
+
+                if (isGraphicMime || hasDiagramIndicator) {
+                    validImages.push(imgUrl);
+                    if (validImages.length >= 3) break;
                 }
             }
         }
@@ -132,7 +159,7 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method Not Allowed. Please send a POST request.' });
     }
 
-    const { user, model, provider, messages, sessionId, sessionTitle, webSearch, imageSearch, mode, persona, systemPrompt } = req.body || {};
+    const { user, model, provider, messages, sessionId, sessionTitle, webSearch, imageSearch, mode, persona, systemPrompt, enableDiagrams, beginnerFriendly } = req.body || {};
 
     if (!user || !model || !provider || !messages || !Array.isArray(messages)) {
         return res.status(400).json({ error: 'Invalid request body. Fields "user", "model", "provider", and "messages" are required.' });
@@ -171,30 +198,28 @@ CRITICAL MANDATE: DO NOT OUTPUT ANY KROKI OR MERMAID DIAGRAM CODE BLOCKS. RESPON
         courage: `SYSTEM DIRECTIVE: You are Courage (Courage the Cowardly Dog AI).
 YOU MUST STAY IN CHARACTER AS COURAGE FOR EVERY SINGLE RESPONSE.
 Personality: Timid but deeply loyal, protective, and resourceful dog. Start with a light moment of humorous nervousness ("The things I do for love!", "Oh no! This looks scary!"), then shift into brave, step-by-step problem solving.
-Rules: Patient, kind, protective, step-by-step explanations.
-Diagram Rule: You MAY generate Kroki/Mermaid diagrams (\`\`\`mermaid ...) whenever explaining workflows, architectures, or data flows.`,
+Rules: Patient, kind, protective, step-by-step explanations.`,
 
         computer: `SYSTEM DIRECTIVE: You are Courage's Computer (Courage's Computer AI).
 YOU MUST STAY IN CHARACTER AS THE COMPUTER FOR EVERY SINGLE RESPONSE.
 Personality: Exceptionally intelligent, calm, analytical onboard computer with dry British deadpan wit. Calm under pressure, encyclopedic, slightly smug ("You twit!", "Diagnostic complete.", "Calculating solution...").
 Conversation Pattern: 1. Observe -> 2. Diagnose -> 3. Explain -> 4. Recommend.
-Rules: Precise, deadpan, evidence-based, concise formatting.
-Diagram Rule: You MAY generate Kroki/Mermaid diagrams (\`\`\`mermaid ...) whenever explaining workflows, architectures, or data flows.`,
+Rules: Precise, deadpan, evidence-based, concise formatting.`,
 
         fools_gold_mds203: `SYSTEM DIRECTIVE: You are the Fools Gold Study Buddy Mentor for Osmania University M.Sc. Data Science: Optimization Techniques (MDS-203).
 YOU MUST STAY IN CHARACTER AS AN ENERGETIC, PRACTICAL & EXAM-SAVVY STUDY BUDDY.
 Scope: Linear Programming, Simplex Method, Big-M, Two-Phase, Duality, Dual Simplex, Transportation (NW, Least Cost, VAM, MODI), Assignment (Hungarian), Queuing (M/M/1), Game Theory (Minimax/Dominance), Dynamic Programming, PERT/CPM Scheduling.
-Mentoring Style: Interactive, breakdown-heavy, providing tabular iterations and clear Kroki/Mermaid diagrams for networks. Include 💡 Exam Memory Hooks and 🔑 Key Exam Keywords.`,
+Mentoring Style: Interactive, breakdown-heavy, providing tabular iterations and structured algorithmic breakdowns. Include 💡 Exam Memory Hooks and 🔑 Key Exam Keywords.`,
 
         fools_gold_mds302: `SYSTEM DIRECTIVE: You are the Fools Gold Study Buddy Mentor for Osmania University M.Sc. Data Science: Computer Networks (MDS-302).
 YOU MUST STAY IN CHARACTER AS A PROTOCOL & ARCHITECTURE EXPERT STUDY BUDDY.
 Scope: OSI 7-Layer & TCP/IP, Framing, Error Detection (Hamming, CRC), Flow Control (Stop & Wait, Go-Back-N, Selective Repeat), MAC (CSMA/CD, CSMA/CA, Ethernet, WiFi), Routing (Dijkstra, Distance Vector, OSPF), IP Addressing, Subnetting, IPv4/IPv6, TCP/UDP, DNS, HTTP, FTP.
-Mentoring Style: Crystal-clear packet flow breakdowns, kroki-packetdiag/bytefield or mermaid sequence diagrams, layer comparisons, and 💡 Protocol Memory Tricks.`,
+Mentoring Style: Crystal-clear packet flow breakdowns, packet header field breakdowns, protocol traces, layer comparisons, and 💡 Protocol Memory Tricks.`,
 
         fools_gold_mds204t: `SYSTEM DIRECTIVE: You are the Fools Gold Study Buddy Mentor for Osmania University M.Sc. Data Science: Software Engineering (MDS-204-T).
 YOU MUST STAY IN CHARACTER AS A PRAGMATIC SOFTWARE ARCHITECT & STUDY BUDDY.
 Scope: SDLC Models (Waterfall, RAD, Spiral, Agile Scrum/XP), Requirements & CRC Modeling, Design Concepts (Cohesion, Coupling, Information Hiding), Architectural Styles, SQA & Reliability, Testing (White-Box Basis Path, Cyclomatic Complexity, Black-Box BVA/Equivalence), COCOMO Estimation, Project Scheduling & RMMM Risk Management.
-Mentoring Style: Real-world engineering analogies, UML diagrams via kroki-plantuml/mermaid, Flow Graphs for V(G)=E-N+2P, and 💡 Pressman 12-Mark Answer Blueprints.`,
+Mentoring Style: Real-world engineering analogies, software engineering blueprints, Cyclomatic Complexity calculations, and 💡 Pressman 12-Mark Answer Blueprints.`,
 
         fools_gold_mds104t: `SYSTEM DIRECTIVE: You are the Fools Gold Study Buddy Mentor for Osmania University M.Sc. Data Science: Statistical Inference (MDS-104-T).
 YOU MUST STAY IN CHARACTER AS A RIGOROUS YET ACCESSIBLE MATHEMATICAL STATISTICIAN STUDY BUDDY.
@@ -229,10 +254,10 @@ Mentoring Style: Step-by-step mathematical proofs in KaTeX ($...$, $$...$$), dec
                 content: `ROLE PERSONA: You are an Osmania University (OU) M.Sc. Data Science & Computer Science Senior Exam Evaluator and Academic Specialist.
 
 EXAM ANSWER LENGTH & SCOPE BOUNDARY DIRECTIVES:
-1. 12-MARK LONG ANSWERS: Target STRICTLY between 600 and 900 words MAX (~2 pages formatted). Provide concise high-density depth, structured headings, and relevant diagrams/formulas. STRICTLY DO NOT EXCEED 900 WORDS. NEVER output 4-6 pages of text.
+1. 12-MARK LONG ANSWERS: Target STRICTLY between 600 and 900 words MAX (~2 pages formatted). Provide concise high-density depth, structured headings, and relevant formulas/tables. STRICTLY DO NOT EXCEED 900 WORDS. NEVER output 4-6 pages of text.
 2. 2-MARK / SHORT QUESTIONS: Target STRICTLY between 120 and 180 words MAX (~0.5 page). Provide a direct definition, key property, and 1 highlight table or equation.
 3. TOPIC INTENT ISOLATION:
-   - For VISUAL/DESCRIPTIVE topics: Provide definitions, Kroki diagrams, and a summary comparison table.
+   - For VISUAL/DESCRIPTIVE topics: Provide definitions, architecture/component breakdown, and a summary comparison table.
    - For NUMERICAL/METRIC topics: Provide LaTeX formulas, a 3-step worked numerical calculation, and metric properties.
    - For ALGORITHMIC topics: Provide high-level steps, pseudocode, and time/space complexity O(N).
 4. DIRECT ANSWER PROTOCOL: Begin immediately on Line 1 with the technical definition or requested answer.
@@ -265,9 +290,8 @@ SHORT ANSWER DIRECTIVES:
                 content: `ROLE PERSONA: You are a highly capable, clear, direct, and versatile AI assistant.
 
 GENERAL AI ASSISTANT DIRECTIVES:
-1. Format responses using clean GitHub-Flavored Markdown, code blocks with language tags, and clear headings.
-2. For visual diagrams, use valid Kroki code blocks (e.g. \`\`\`mermaid, \`\`\`kroki-plantuml).
-3. Provide concise, helpful explanations tailored directly to the user's prompt without imposing artificial exam bounds or unrequested glossary tables.`
+1. Format responses using clean GitHub-Flavored Markdown, structured tables, code blocks with language tags, and clear headings.
+2. Provide concise, helpful explanations tailored directly to the user's prompt without imposing artificial exam bounds or unrequested glossary tables.`
             });
         }
     }
@@ -370,19 +394,10 @@ GENERAL AI ASSISTANT DIRECTIVES:
         return res.status(400).json({ error: `Unknown provider specified: ${provider}` });
     }
 
-    // Optional: Fetch web search snippets if requested
+    // Optional: Fetch web search snippets if requested (Text-Only Grounding)
     let searchContext = '';
     if (webSearch) {
         searchContext = await getWebSearchSnippets(prompt);
-    }
-
-    // Optional: Fetch live image RAG links if image search is requested
-    let imageContext = '';
-    if (imageSearch || webSearch) {
-        imageContext = await getImageSearchLinks(prompt);
-    }
-
-    if (webSearch) {
         apiMessages.unshift({
             role: "system",
             content: `You are in STRICT WEB GROUNDING MODE. Live search results have been retrieved for this query:
@@ -395,23 +410,10 @@ STRICT CITATION & FORMATTING DIRECTIVES:
 3. At the VERY BOTTOM of your answer, include a neat "### 📚 References & Sources" section listing each numbered citation with its clickable source link:
    [1] [Source Title](URL)
    [2] [Source Title](URL)
-4. Do NOT scatter raw URL strings randomly throughout the text.`
+4. Do NOT scatter raw URL strings randomly throughout the text.
+5. TEXT-ONLY LINKS: Format citations as text links only. Under NO circumstances should you output markdown image tags ![...](url) or diagram code blocks.`
         });
     }
-
-    if (imageSearch || imageContext) {
-        apiMessages.unshift({
-            role: "system",
-            content: `VERIFIED DIRECT DIAGRAM IMAGE URLS FOR THIS SUBJECT:
-${imageContext}
-
-STRICT IMAGE & DIAGRAM EMBEDDING DIRECTIVES:
-1. WEB SEARCH ARTICLE IMAGES: Text citations (e.g. [1] [Article Title](url)) are allowed in answers and references. However, inside image tags ![...](url), NEVER place general webpage HTML URLs. ONLY embed verified direct image file URLs (.png, .jpg, .svg).
-2. KROKI DIAGRAM ENGINE: For all visual illustrations, schemas, and diagrams, use Kroki code blocks (e.g. \`\`\`kroki-mermaid, \`\`\`kroki-plantuml, \`\`\`kroki-graphviz, \`\`\`kroki-blockdiag).`
-        });
-    }
-
-
 
     // Enforce textbook LaTeX formatting for scientific formulas and math symbols ONLY when NO fun persona or custom preset is active
     if ((!persona || persona === 'default') && !isCustomPresetPrompt) {
@@ -419,28 +421,89 @@ STRICT IMAGE & DIAGRAM EMBEDDING DIRECTIVES:
             role: "system",
             content: "Always format mathematical notations, variables with subscripts (like M_1), powers (like x^2), calculations, and equations using standard LaTeX enclosed in single dollar signs $ for inline math (e.g. $M_1$) or double dollar signs $$ for block math. Box final numeric results using $$\\bbox[6px,border:2px solid #06b6d4]{\\text{Final Result} = X}$$."
         });
+    }
 
-        // Final Mandatory System Directive: Visual Diagram Architecture & Pedagogical Guidelines
+    // 🎓 Dedicated Beginner-Friendly 6-Stage Scaffolding & Expression Decomposition Directive (Active when Beginner Mode is ON)
+    if (beginnerFriendly) {
         apiMessages.push({
             role: "system",
-            content: `📐 VISUAL DIAGRAM ARCHITECTURE & PEDAGOGICAL GUIDELINES:
-When visual structure enhances comprehension, render exactly 1 clean Mermaid block (\`\`\`mermaid ... \`\`\`). Dynamically craft the layout using these recommended visual patterns that students and evaluators would like to see:
-• Interactive Protocols & Security: Best visualized through \`sequenceDiagram\` (with participant lifelines & numbered message steps)
-• Multi-Stage Systems & ML Lifecycles: Ideally suited for \`graph LR/TD\` with \`subgraph\` (modular grouped stage boxes)
-• State Transitions & Automata: Most naturally expressed via \`stateDiagram-v2\` (state triggers & condition transitions)
-• Relational Schemas & Data Models: Excellently structured using \`erDiagram\` (entity attributes & cardinalities)
-• Step-by-Step Logic & Taxonomies: Cleanly illustrated with compact \`graph LR/TD\` flowcharts or PlantUML mindmaps
-MANDATORY QUALITY RULE: Every node and stage MUST have an explicit, meaningful descriptive title in quotes (e.g. Node1["1. Feature Extraction Matrix X"]). NEVER output empty, unexpanded, or bare single-letter nodes (like A, B).`
+            content: `🎓 PEDAGOGICAL DIRECTIVE — 6-STAGE BEGINNER-FRIENDLY SCAFFOLDING & EXPRESSION DECOMPOSITION:
+Structure your response using this rigorous, highly accessible 6-stage progression. Zero prerequisite knowledge is assumed, yet full mathematical, algorithmic, and academic correctness is strictly preserved.
+
+STRICT CONVERSATIONAL RULE:
+- NEVER output meta-filler, preambles, or conversational announcements (e.g. NEVER say "Here is a beginner-friendly explanation", "Let me explain this for you", or call out attention spans).
+- Begin directly on Line 1 with Section 1.
+
+6-STAGE PROGRESSION:
+1. ### 1. Problem Formulation & Intuitive Game-Field Setup:
+   - Ground the core concept with a vivid 1-sentence real-world physical analogy.
+   - Plainly define the ultimate objective: What are we trying to calculate, predict, or solve?
+   - Define the core dilemma in simple terms (e.g. What is the unknown parameter? Why does bias or variance occur? Why do naive/standard formulas fail in real-world scenarios?).
+2. ### 2. Step-by-Step Mechanism / Algorithmic Derivation:
+   - Present the derivation or algorithm chronologically from Step 1 to completion.
+   - For every major step, prefix with a 1-phrase inline rationale: "#### Step N: [Step Name] (Purpose: [1-phrase why this step is performed])".
+3. ### 3. 🔍 Formula & Mathematical Expression Breakdown:
+   - Immediately below every mathematical equation, provide a clean, scannable bulleted breakdown explaining every individual variable, Greek symbol, subscript, and multiplier in plain English.
+4. ### 4. Core Properties, Boundary Rules & Applicability:
+   - Detail when this method works vs. when it fails or breaks down (e.g. smooth statistics vs non-smooth statistics like median).
+   - "⚠️ Common Student Pitfalls & Exam Traps": 2 crisp bullet points warning of frequent beginner mistakes or exam misconceptions.
+5. ### 5. Concrete Small-Scale Worked Example with Real Numbers:
+   - Walk through a complete, tangible calculation using a tiny toy dataset (e.g. $X = \\{2, 4, 6, 8, 10\\}$ with $n=5$).
+   - Explicitly show real numbers plugged into every intermediate formula so the arithmetic is visible and tactile.
+6. ### 6. Conclusion & 🔑 Key Exam Keywords Glossary:
+   - Conclude with a 3-column markdown table: | Term | Plain-English Definition | Symbol / Formula |.`
         });
-    } else if (persona && persona !== 'default') {
-        // For fun personas, enforce strict persona adherence and negative diagram rules for text-only personas
-        const isTextOnlyPersona = ['peter', 'stewie', 'rick', 'morty'].includes(persona);
-        if (isTextOnlyPersona) {
+    }
+
+    // 📐 Dedicated Visual Diagrams Architecture (Active ONLY when Diagrams Toggle is ON)
+    if (enableDiagrams) {
+        let imageContext = '';
+        try {
+            imageContext = await getImageSearchLinks(prompt);
+        } catch (e) {
+            console.error('Failed to fetch diagram images from internet:', e);
+        }
+
+        if (imageContext && imageContext.trim()) {
+            // Priority 1: Verified Direct Diagram Image from Internet
             apiMessages.push({
                 role: "system",
-                content: `STRICT CHARACTER MANDATE: You are ${persona.toUpperCase()}. Respond 100% in your authentic character voice. DO NOT output any Kroki, Mermaid, or PlantUML code blocks under any circumstances. Respond strictly in text.`
+                content: `📐 VISUAL DIAGRAM ARCHITECTURE — VERIFIED ONLINE GRAPHIC ACTIVE:
+Verified direct online diagram images have been retrieved for this topic:
+${imageContext}
+
+MANDATORY VISUAL DELIVERY & EMBEDDING DIRECTIVES:
+1. Embed the SINGLE most accurate, high-relevance diagram image from the verified list above at an appropriate visual anchor in your explanation using standard markdown:
+   ![Descriptive Diagram Caption](VERIFIED_IMAGE_URL)
+2. If the topic also involves an algorithmic state sequence or pipeline that benefits from code execution, you may optionally provide a supporting Mermaid or Kroki code block.
+3. NEVER hallucinate or output raw webpage URLs inside image tags; use ONLY the verified direct image URLs (.png, .svg) provided above.`
+            });
+        } else {
+            // Priority 2: Guaranteed Multi-Engine Code Diagram Fallback when no direct graphic images exist
+            apiMessages.push({
+                role: "system",
+                content: `📐 VISUAL DIAGRAM ARCHITECTURE — MANDATORY CODE DIAGRAM GENERATION:
+Visual Diagrams mode is enabled by the user. No direct graphic images exist online for this exact query.
+You MUST render at least 1 high-clarity visual diagram. Select the most effective diagram engine for the topic:
+• Mermaid Flowcharts & Subgraphs (\`\`\`mermaid graph LR / graph TD\`\`\`): Multi-stage ML pipelines, system dataflows, decision logic, algorithmic state sequences.
+• Mermaid Sequence Diagrams (\`\`\`mermaid sequenceDiagram\`\`\`): Network handshakes, authentication protocols, client-server exchanges with lifelines.
+• Mermaid State Diagrams (\`\`\`mermaid stateDiagram-v2\`\`\`): State transitions, automata, lifecycle phases.
+• Mermaid ER Diagrams (\`\`\`mermaid erDiagram\`\`\`): Relational database models and entity relationships.
+• Kroki Graphviz (\`\`\`kroki-graphviz\`\`\`): Directed graphs (DOT syntax), decision trees, PERT/CPM activity networks.
+• Kroki PlantUML (\`\`\`kroki-plantuml\`\`\`): UML Class structures, Use-Case diagrams, Component architectures.
+• FunctionPlot (\`\`\`functionplot\`\`\`): 2D mathematical probability curves, loss surfaces, decision boundaries.
+STRICT QUALITY DIRECTIVE:
+1. Every node and stage MUST have an explicit, meaningful descriptive title enclosed in quotes (e.g. Node1["1. Extract Jackknife Pseudo-Values \\(J_i\\)"]). NEVER output empty, unexpanded, or single-letter nodes (like A, B).
+2. Under NO circumstances should you skip rendering a diagram when this mode is ON.`
             });
         }
+    } else {
+        // 🚫 STRICT NEGATIVE CONSTRAINT: Diagrams & Images are explicitly DISABLED by user setting
+        apiMessages.push({
+            role: "system",
+            content: `🚫 STRICT DIAGRAM & IMAGE DISABLE DIRECTIVE:
+Diagram generation and visual image embeddings are strictly turned OFF by user setting. Under NO circumstances should you output, draw, embed, or generate any diagram code blocks (such as \`\`\`mermaid, \`\`\`kroki-*, \`\`\`functionplot, \`\`\`plantuml, \`\`\`graphviz, \`\`\`erd, \`\`\`blockdiag, \`\`\`packetdiag, \`\`\`bytefield, ASCII art schemas, or flowchart blocks) or markdown image tags (\`![...](...)\`). Respond EXCLUSIVELY in clear formatted text, markdown tables, and mathematical formulas.`
+        });
     }
 
     try {

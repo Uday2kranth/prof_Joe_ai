@@ -15,6 +15,7 @@ const DiagramStudioView = React.lazy(() => import('./components/DiagramStudioVie
 const CubesPlaygroundView = React.lazy(() => import('./components/CubesPlaygroundView').then(m => ({ default: m.CubesPlaygroundView })));
 const DocumentExtractorStudioView = React.lazy(() => import('./components/DocumentExtractorStudioView').then(m => ({ default: m.DocumentExtractorStudioView })));
 const InteractiveSandboxView = React.lazy(() => import('./components/InteractiveSandboxView').then(m => ({ default: m.InteractiveSandboxView })));
+const DsaLabView = React.lazy(() => import('./components/dsa/DsaLabView').then(m => ({ default: m.DsaLabView })));
 import { ACADEMIC_PRESETS } from './components/CodeLabPresetDrawer';
 import { SettingsModal } from './components/SettingsModal';
 import { LoginModal } from './components/LoginModal';
@@ -68,6 +69,20 @@ const ADMIN_BUNDLED_SYSTEM_KEYS: UserKeys = {
   pollinations: safeDecode("c2tfU1hTb1M4R0Fza3B3VTBTQ29XU003QXFtSndDY1FVWVg="),
   ollama: safeDecode("YmRiOGYxZWY2ODE5NDg1N2IwNzUxMWYzMjhmYWJjNzQudlJjWjRoTGU4M0RMU2Ixa3lFY3N4aGUsIDY2NjFiYzliN2U2YTQwMDVhNjZiOWZhZmM3OTVlYTU0LnB6SjlJR1hFUk5Pdlh5bHlITU5valp1cCwgNDc3MTk3NjQwODIyNDkxMDliM2YxMWZkNDMyNjM1YjYuNHNRZTVyLVUtTHI1SkpNd2NSdWxCdlM="),
   local_endpoint: ''
+};
+
+const sanitizeSystemPrompt = (prompt?: string): string | undefined => {
+  if (!prompt || typeof prompt !== 'string') return undefined;
+  const lines = prompt.split('\n');
+  const filtered = lines.filter(line => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('3) KROKI DIAGRAM ENGINE') || trimmed.startsWith('3) DIAGRAM & GRAPH CAPABILITIES') || trimmed.startsWith('2. KROKI DIAGRAM ENGINE')) return false;
+    if (trimmed.includes('```kroki-') || trimmed.includes('```functionplot') || trimmed.includes('```mermaid')) return false;
+    if (/kroki diagram|mermaid diagram|kroki-mermaid|kroki-plantuml/i.test(trimmed)) return false;
+    return true;
+  });
+  const res = filtered.join('\n').trim();
+  return res || undefined;
 };
 
 export const App: React.FC = () => {
@@ -146,6 +161,30 @@ export const App: React.FC = () => {
     setIsPersistentWebSearch(prev => {
       const next = !prev;
       localStorage.setItem('chatterbot_persistent_websearch', String(next));
+      return next;
+    });
+  };
+
+  const [isDiagramsEnabled, setIsDiagramsEnabled] = useState<boolean>(() => {
+    return localStorage.getItem('chatterbot_diagrams_enabled') === 'true';
+  });
+
+  const handleToggleDiagrams = () => {
+    setIsDiagramsEnabled(prev => {
+      const next = !prev;
+      localStorage.setItem('chatterbot_diagrams_enabled', String(next));
+      return next;
+    });
+  };
+
+  const [isBeginnerFriendly, setIsBeginnerFriendly] = useState<boolean>(() => {
+    return localStorage.getItem('chatterbot_beginner_friendly') === 'true';
+  });
+
+  const handleToggleBeginnerFriendly = () => {
+    setIsBeginnerFriendly(prev => {
+      const next = !prev;
+      localStorage.setItem('chatterbot_beginner_friendly', String(next));
       return next;
     });
   };
@@ -982,7 +1021,7 @@ export const App: React.FC = () => {
     const activePresetObj = ACADEMIC_PRESETS.find(p => p.id === activeCodeLabPresetId);
     const effectiveSystemPrompt = isCodeLabWorkspace
       ? (personaArg || activePresetObj?.systemInstruction)
-      : currentSess.systemPrompt;
+      : sanitizeSystemPrompt(currentSess.systemPrompt);
 
     try {
       const response = await sendChatMessage(
@@ -990,10 +1029,12 @@ export const App: React.FC = () => {
         selectedModel,
         apiPayloadMessages,
         userKeys,
-        webSearch,
+        webSearch || isPersistentWebSearch,
         effectiveMode,
         effectiveSystemPrompt,
-        effectivePersona
+        effectivePersona,
+        isDiagramsEnabled,
+        isBeginnerFriendly
       );
 
       const assistantMsg: Message = {
@@ -1043,7 +1084,7 @@ export const App: React.FC = () => {
     const activePresetObj = ACADEMIC_PRESETS.find(p => p.id === activeCodeLabPresetId);
     const effectiveSystemPrompt = isCodeLabWorkspace
       ? activePresetObj?.systemInstruction
-      : currentSess.systemPrompt;
+      : sanitizeSystemPrompt(currentSess.systemPrompt);
 
     const updateSessState = (msgList: Message[]) => {
       if (isCodeLabWorkspace) {
@@ -1107,7 +1148,9 @@ export const App: React.FC = () => {
         isPersistentWebSearch,
         promptMode,
         effectiveSystemPrompt,
-        effectivePersona
+        effectivePersona,
+        isDiagramsEnabled,
+        isBeginnerFriendly
       );
 
       const assistantMsg: Message = {
@@ -1168,7 +1211,7 @@ export const App: React.FC = () => {
     const activePresetObj = ACADEMIC_PRESETS.find(p => p.id === activeCodeLabPresetId);
     const effectiveSystemPrompt = isCodeLabWorkspace
       ? activePresetObj?.systemInstruction
-      : currentSess.systemPrompt;
+      : sanitizeSystemPrompt(currentSess.systemPrompt);
 
     const updateSessState = (msgList: Message[]) => {
       if (isCodeLabWorkspace) {
@@ -1232,7 +1275,9 @@ export const App: React.FC = () => {
         isPersistentWebSearch,
         promptMode,
         effectiveSystemPrompt,
-        effectivePersona
+        effectivePersona,
+        isDiagramsEnabled,
+        isBeginnerFriendly
       );
 
       const assistantMsg: Message = {
@@ -1473,6 +1518,10 @@ export const App: React.FC = () => {
                   onDeleteSession={handleDeleteSession}
                   isPersistentWebSearch={isPersistentWebSearch}
                   onTogglePersistentWebSearch={handleTogglePersistentWebSearch}
+                  isDiagramsEnabled={isDiagramsEnabled}
+                  onToggleDiagrams={handleToggleDiagrams}
+                  isBeginnerFriendly={isBeginnerFriendly}
+                  onToggleBeginnerFriendly={handleToggleBeginnerFriendly}
                   onOpenPdfPreview={() => setIsDemoPdfPreviewOpen(true)}
                   onNativePrintPdf={handleNativePrintPdf}
                   onClearActiveSession={handleClearActiveSession}
@@ -1550,6 +1599,12 @@ export const App: React.FC = () => {
             {activeHubWorkspace === 'sandbox' && (
               <React.Suspense fallback={<div className="p-8 text-purple-400 font-semibold flex items-center gap-2">⏳ Loading Interactive Sandbox & Whiteboard Lab...</div>}>
                 <InteractiveSandboxView />
+              </React.Suspense>
+            )}
+
+            {activeHubWorkspace === 'dsa_lab' && (
+              <React.Suspense fallback={<div className="p-8 text-cyan-400 font-semibold flex items-center gap-2">⏳ Loading Data Structures & Algorithms Lab...</div>}>
+                <DsaLabView />
               </React.Suspense>
             )}
 
@@ -1764,6 +1819,12 @@ export const App: React.FC = () => {
 
           {activeView === 'sandbox' && (
             <InteractiveSandboxView />
+          )}
+
+          {activeView === 'dsa_lab' && (
+            <React.Suspense fallback={<div className="p-8 text-cyan-400 font-semibold flex items-center gap-2">⏳ Loading Data Structures & Algorithms Lab...</div>}>
+              <DsaLabView />
+            </React.Suspense>
           )}
 
           {activeView === 'fun_personas' && (
