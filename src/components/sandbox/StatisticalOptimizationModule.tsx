@@ -8,10 +8,7 @@ import {
   Sliders,
   Sparkles,
   Activity,
-  BarChart2,
-  TrendingUp,
-  Shuffle,
-  Compass
+  BarChart2
 } from 'lucide-react';
 
 export type StatOptPillarType =
@@ -1663,7 +1660,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
           <select
             value={selectedModel}
             onChange={(e) => {
-              const newModelId = e.target.value as StatOptModelId;
+              const newModelId = e.target.value as StatOptModelType;
               setSelectedModel(newModelId);
               const found = STAT_OPT_MODELS.find(m => m.id === newModelId);
               if (found) setActivePillar(found.pillar);

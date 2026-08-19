@@ -572,11 +572,6 @@ export const LectureNotesStudioView: React.FC<LectureNotesStudioViewProps> = ({
     setIsControlDeckOpen(false);
   };
 
-  const handleScrollToTop = () => {
-    window.scrollTo({ top: 0, behavior: 'smooth' });
-    document.querySelector('.studio-parchment-stage')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    document.documentElement.scrollTo({ top: 0, behavior: 'smooth' });
-  };
 
   const handleOcrUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];

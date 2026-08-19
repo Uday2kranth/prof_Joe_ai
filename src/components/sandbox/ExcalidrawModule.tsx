@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Excalidraw } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
-import { Layers, Wand2, X, Sparkles, Check, Copy, PenTool } from 'lucide-react';
+import { Wand2, X, Sparkles, Check, Copy, PenTool } from 'lucide-react';
 import { sendChatMessage } from '../../services/apiService';
 import type { Message, UserKeys } from '../../types';
 

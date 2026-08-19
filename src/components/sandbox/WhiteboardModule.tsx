@@ -1953,7 +1953,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
     }
   };
 
-  const stopDrawingTouch = (e: React.TouchEvent<HTMLCanvasElement>) => {
+  const stopDrawingTouch = () => {
     if (!isDrawing) return;
     setIsDrawing(false);
     const canvas = canvasRef.current;
