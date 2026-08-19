@@ -24,6 +24,7 @@ export interface ChatSession {
   systemPrompt?: string;
   systemPromptTitle?: string;
   presetId?: string;
+  tags?: string[];
 }
 
 export interface ModelOption {
@@ -79,5 +80,32 @@ export interface UserCustomModels {
 }
 
 export type PromptMode = 'auto' | '12marks' | '2marks' | '1marks' | 'general';
+
+export interface PinnedItem {
+  id: string;
+  sessionId: string;
+  sessionTitle?: string;
+  content: string;
+  modelUsed?: string;
+  createdAt: number;
+  note?: string;
+  tag?: string;
+}
+
+export interface Flashcard {
+  id: string;
+  front: string;
+  back: string;
+  category?: string;
+  mastered?: boolean;
+}
+
+export interface QuizQuestion {
+  id: string;
+  question: string;
+  options: string[];
+  correctIndex: number;
+  explanation: string;
+}
 
 

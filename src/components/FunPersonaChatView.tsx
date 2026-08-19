@@ -32,6 +32,7 @@ import { PdfPreviewModal } from './PdfPreviewModal';
 import { QuickActionsPopover, FilePreviewModal, type AttachedFileDetails } from './QuickActionsPopover';
 import { QuickExtractionModal } from './QuickExtractionModal';
 import { printSessionToPdf } from '../services/printPdfService';
+import { TextSelectionToolbar } from './TextSelectionToolbar';
 
 interface FunPersonaChatViewProps {
   messages: Message[];
@@ -48,6 +49,8 @@ interface FunPersonaChatViewProps {
   onRetry?: () => void;
   onEditUserMessage?: (oldText: string) => void;
   onBranchMessage?: (message: Message) => void;
+  onPinMessage?: (message: Message) => void;
+  pinnedMessageIds?: Set<string>;
   personaSessions?: ChatSession[];
   activePersonaSessionId?: string;
   onSelectPersonaSession?: (id: string) => void;
@@ -74,6 +77,8 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
   onRetry,
   onEditUserMessage,
   onBranchMessage,
+  onPinMessage,
+  pinnedMessageIds = new Set(),
   personaSessions = [],
   activePersonaSessionId = '',
   customModels,
@@ -91,6 +96,21 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
   const [isSessionPreviewOpen, setIsSessionPreviewOpen] = useState(false);
   const [isOutlineDrawerOpen, setIsOutlineDrawerOpen] = useState(false);
   const [outlineSearchQuery, setOutlineSearchQuery] = useState('');
+
+  const personaContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleQuickAction = (actionType: 'explain' | 'math' | '2marks' | 'hinglish', selectedText: string) => {
+    if (!selectedText.trim()) return;
+    if (actionType === 'explain') {
+      onSendMessage(`Please explain this specific excerpt simply in character:\n\n> "${selectedText}"`, false, 'auto', selectedPersona);
+    } else if (actionType === 'math') {
+      onSendMessage(`Provide the detailed step-by-step mathematical derivation for:\n\n> "${selectedText}"`, false, 'auto', selectedPersona);
+    } else if (actionType === '2marks') {
+      onSendMessage(`Turn this excerpt into a 2-mark question and answer:\n\n> "${selectedText}"`, false, '2marks', selectedPersona);
+    } else if (actionType === 'hinglish') {
+      onSendMessage(`Explain this in colloquial bilingual Hinglish:\n\n> "${selectedText}"`, false, 'general', selectedPersona);
+    }
+  };
 
   // Persona Character Panel & History Drawer State
   const [isPersonaDrawerOpen, setIsPersonaDrawerOpen] = useState(false);
@@ -687,7 +707,8 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
       )}
 
       <div className="chat-window-container fun-persona-lounge-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}>
-        <div className="chat-messages-container">
+        <div className="chat-messages-container" ref={personaContainerRef}>
+          <TextSelectionToolbar containerRef={personaContainerRef} onQuickAction={handleQuickAction} />
           <div className="messages-inner">
             {messages.length === 0 ? (
               <div className="empty-chat-hero flex flex-col items-center justify-center h-full text-center p-6 space-y-4">
@@ -709,7 +730,9 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
                   isLastAssistantMessage={index === lastAssistantMsgIndex}
                   onRetry={onRetry}
                   onEditUserMessage={onEditUserMessage}
-                  onBranch={onBranchMessage ? () => onBranchMessage(msg) : undefined}
+                  onBranch={onBranchMessage}
+                  onPin={onPinMessage}
+                  isPinned={pinnedMessageIds.has(msg.id)}
                 />
               ))
             )}

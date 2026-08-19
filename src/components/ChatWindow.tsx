@@ -10,6 +10,7 @@ import { QuickExtractionModal } from './QuickExtractionModal';
 import { printSessionToPdf } from '../services/printPdfService';
 import { useTypewriterPlaceholder } from '../hooks/useTypewriterPlaceholder';
 import { QuickActionsPopover, FilePreviewModal, type AttachedFileDetails } from './QuickActionsPopover';
+import { TextSelectionToolbar } from './TextSelectionToolbar';
 
 interface ChatWindowProps {
   messages: Message[];
@@ -22,6 +23,8 @@ interface ChatWindowProps {
   onRetry?: () => void;
   onEditUserMessage?: (oldText: string) => void;
   onBranchMessage?: (message: Message) => void;
+  onPinMessage?: (message: Message) => void;
+  pinnedMessageIds?: Set<string>;
   activeSystemPromptTitle?: string;
   onClearSystemPrompt?: () => void;
   customModels?: UserCustomModels;
@@ -43,6 +46,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   onRetry,
   onEditUserMessage,
   onBranchMessage,
+  onPinMessage,
+  pinnedMessageIds = new Set(),
   activeSystemPromptTitle,
   onClearSystemPrompt,
   customModels,
@@ -73,6 +78,20 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
+  const handleQuickAction = (actionType: 'explain' | 'math' | '2marks' | 'hinglish', selectedText: string) => {
+    if (!selectedText.trim()) return;
+    if (actionType === 'explain') {
+      onSendMessage(`Please explain this specific excerpt simply in 2-3 clear bullet points:\n\n> "${selectedText}"`, false, 'auto');
+    } else if (actionType === 'math') {
+      onSendMessage(`Provide the detailed step-by-step mathematical derivation and formula explanation for:\n\n> "${selectedText}"`, false, 'auto');
+    } else if (actionType === '2marks') {
+      onSendMessage(`Turn this excerpt into a high-scoring 2-mark Osmania University exam question and answer:\n\n> "${selectedText}"`, false, '2marks');
+    } else if (actionType === 'hinglish') {
+      onSendMessage(`Explain this concept in clear colloquial bilingual Hinglish:\n\n> "${selectedText}"`, false, 'general');
+    }
+  };
 
   const dynamicPlaceholderPrompts = useMemo(() => [
     `Ask ${selectedModel}... (Press Enter to Send)`,
@@ -296,7 +315,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         </div>
       )}
 
-      <div className="chat-messages-container">
+      <div className="chat-messages-container" ref={chatContainerRef}>
+        <TextSelectionToolbar containerRef={chatContainerRef} onQuickAction={handleQuickAction} />
         <div className="messages-inner">
         {messages.length === 0 ? (
           <div
@@ -330,7 +350,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               isLastAssistantMessage={idx === lastAssistantMsgIndex}
               onRetry={onRetry}
               onEditUserMessage={onEditUserMessage}
-              onBranch={onBranchMessage ? () => onBranchMessage(m) : undefined}
+              onBranch={onBranchMessage}
+              onPin={onPinMessage}
+              isPinned={pinnedMessageIds.has(m.id)}
             />
           ))
         )}

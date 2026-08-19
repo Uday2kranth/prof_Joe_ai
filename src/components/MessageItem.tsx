@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { User, Copy, Download, Eye, Printer, Volume2, Check, RotateCcw, Edit3, Send, X, GitBranch } from 'lucide-react';
+import { User, Copy, Download, Eye, Printer, Volume2, Check, RotateCcw, Edit3, Send, X, GitBranch, Pin } from 'lucide-react';
 import { marked } from 'marked';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -168,7 +168,9 @@ interface MessageItemProps {
   isLastAssistantMessage?: boolean;
   onRetry?: () => void;
   onEditUserMessage?: (oldText: string) => void;
-  onBranch?: () => void;
+  onBranch?: (msg: Message) => void;
+  onPin?: (msg: Message) => void;
+  isPinned?: boolean;
 }
 
 const MessageItemComponent: React.FC<MessageItemProps> = ({
@@ -178,13 +180,32 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
   isLastAssistantMessage,
   onRetry,
   onEditUserMessage,
-  onBranch
+  onBranch,
+  onPin,
+  isPinned
 }) => {
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
   const [exportingImage, setExportingImage] = useState(false);
   const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
-  const [renderedHtml, setRenderedHtml] = useState<string>('');
+  const [diagramHtml, setDiagramHtml] = useState<string | null>(null);
+
+  // Synchronously compute initial HTML so the DOM is instantly rendered without flash or node replacements
+  const synchronousInitialHtml = React.useMemo(() => {
+    const rawContent = message.content || '';
+    if (!rawContent) return '';
+    const diagrams = extractDiagrams(rawContent);
+    const skeletonMap = new Map<string, string>();
+    let markdownToParse = rawContent;
+    diagrams.forEach((diag, index) => {
+      const token = `KROKIDIAGRAMTOKEN${index}ENDTOKEN`;
+      skeletonMap.set(token, `<div class="kroki-container-skeleton" style="padding:16px; margin:12px 0; border:1px dashed rgba(6,182,212,0.4); border-radius:8px; background:rgba(6,182,212,0.05); color:#06b6d4; font-size:0.85rem; font-weight:600; display:flex; align-items:center; gap:8px;">⏳ Loading ${diag.type.toUpperCase()} Diagram...</div>`);
+      markdownToParse = markdownToParse.replace(diag.fullMatch, token);
+    });
+    return renderMarkdownWithMathAndDiagrams(markdownToParse, skeletonMap);
+  }, [message.content]);
+
+  const renderedHtml = diagramHtml || synchronousInitialHtml;
   const [isInlineEditing, setIsInlineEditing] = useState(false);
   const [draftContent, setDraftContent] = useState(message.content || '');
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
@@ -225,27 +246,21 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
 
     async function processMessage() {
       const rawContent = message.content || '';
-      if (!rawContent) {
-        if (isMounted) setRenderedHtml('');
+      if (!rawContent) return;
+
+      const diagrams = extractDiagrams(rawContent);
+      if (diagrams.length === 0) {
+        // No async diagrams needed — synchronousInitialHtml handles it completely
         return;
       }
 
-      // Check IndexedDB render cache for completed messages
+      // If diagrams exist, check cache or asynchronously fetch SVGs
       const msgHash = `msg_rendered_v4_${message.id || 'msg'}_${rawContent.length}_${rawContent.slice(0, 40)}`;
       const cachedHtml = await getRenderCache(msgHash);
       if (cachedHtml && isMounted) {
-        setRenderedHtml(cachedHtml);
+        setDiagramHtml(cachedHtml);
         return;
       }
-
-      const diagrams = extractDiagrams(rawContent);
-
-      // Pass 1: Render Markdown & LaTeX Math INSTANTLY with skeleton diagram placeholders (< 10ms!)
-      const skeletonMap = new Map<string, string>();
-      diagrams.forEach((diag, index) => {
-        const token = `KROKIDIAGRAMTOKEN${index}ENDTOKEN`;
-        skeletonMap.set(token, `<div class="kroki-container-skeleton" style="padding:16px; margin:12px 0; border:1px dashed rgba(6,182,212,0.4); border-radius:8px; background:rgba(6,182,212,0.05); color:#06b6d4; font-size:0.85rem; font-weight:600; display:flex; align-items:center; gap:8px;">⏳ Loading ${diag.type.toUpperCase()} Diagram...</div>`);
-      });
 
       let markdownToParse = rawContent;
       let tokenIndex = 0;
@@ -254,17 +269,7 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
         markdownToParse = markdownToParse.replace(diag.fullMatch, token);
       });
 
-      const initialParsedHtml = renderMarkdownWithMathAndDiagrams(markdownToParse, skeletonMap);
-      if (isMounted) {
-        setRenderedHtml(initialParsedHtml);
-      }
-
-      if (diagrams.length === 0) {
-        setRenderCache(msgHash, initialParsedHtml);
-        return;
-      }
-
-      // Pass 2: Asynchronously fetch SVGs in background & upgrade placeholders cleanly
+      // Asynchronously fetch SVGs in background & upgrade placeholders cleanly
       const updatedDiagramMap = new Map<string, string>();
       const svgResults = await Promise.all(
         diagrams.map(async (diag, index) => {
@@ -280,7 +285,7 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
 
       const finalParsedHtml = renderMarkdownWithMathAndDiagrams(markdownToParse, updatedDiagramMap);
       if (isMounted) {
-        setRenderedHtml(finalParsedHtml);
+        setDiagramHtml(finalParsedHtml);
         setRenderCache(msgHash, finalParsedHtml);
       }
     }
@@ -495,10 +500,22 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
               </button>
             )}
 
+            {/* Pin to Exam Cheat Sheet Button */}
+            {!isUser && onPin && (
+              <button
+                onClick={() => onPin(message)}
+                className={`kokonut-msg-btn pin-btn ${isPinned ? 'active-pinned' : ''}`}
+                title={isPinned ? "Pinned in Exam Cheat Sheet" : "Pin to Exam Cheat Sheet & Formula Deck"}
+              >
+                <Pin size={13} style={{ color: isPinned ? '#fbbf24' : '#94a3b8' }} className={isPinned ? 'fill-amber-400 text-amber-400' : ''} />
+                <span>{isPinned ? 'Pinned ⭐' : 'Pin'}</span>
+              </button>
+            )}
+
             {/* Branch Conversation from this Turn */}
             {!isUser && onBranch && (
               <button
-                onClick={onBranch}
+                onClick={() => onBranch(message)}
                 className="kokonut-msg-btn branch-btn"
                 title="Branch / Fork conversation from this turn"
               >
@@ -551,7 +568,7 @@ const arePropsEqual = (prevProps: MessageItemProps, nextProps: MessageItemProps)
   if (prevProps.message.content !== nextProps.message.content) return false;
   if (prevProps.message.isStreaming !== nextProps.message.isStreaming) return false;
   if (prevProps.message.modelUsed !== nextProps.message.modelUsed) return false;
-  if (prevProps.onBranch !== nextProps.onBranch) return false;
+  if (prevProps.isPinned !== nextProps.isPinned) return false;
   return true;
 };
 

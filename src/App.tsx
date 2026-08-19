@@ -1,8 +1,12 @@
-import React, { useState, useEffect } from 'react';
-import type { ChatSession, Message, UserKeys, ActiveViewType, UserCustomModels } from './types';
+import React, { useState, useEffect, useMemo } from 'react';
+import type { ChatSession, Message, UserKeys, ActiveViewType, UserCustomModels, PinnedItem, Flashcard, QuizQuestion } from './types';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { ChatWindow } from './components/ChatWindow';
+import { CheatSheetDrawer } from './components/CheatSheetDrawer';
+import { FlashcardsModal } from './components/FlashcardsModal';
+import { QuizModal } from './components/QuizModal';
+import { generateStudyDeckFromChat } from './services/studyToolsService';
 
 // Code-Split Heavy Studio Views for Instant Initial App Load & Drastic Bundle Optimization
 const PracticalCodeLabView = React.lazy(() => import('./components/PracticalCodeLabView').then(m => ({ default: m.PracticalCodeLabView })));
@@ -154,6 +158,92 @@ export const App: React.FC = () => {
   const [isCodeLabDrawerOpen, setIsCodeLabDrawerOpen] = useState<boolean>(false);
   const [isLectureDrawerOpen, setIsLectureDrawerOpen] = useState<boolean>(false);
   const [isDemoPdfPreviewOpen, setIsDemoPdfPreviewOpen] = useState<boolean>(false);
+  const [isCheatSheetOpen, setIsCheatSheetOpen] = useState<boolean>(false);
+  const [isFlashcardsOpen, setIsFlashcardsOpen] = useState<boolean>(false);
+  const [isQuizOpen, setIsQuizOpen] = useState<boolean>(false);
+  const [flashcards, setFlashcards] = useState<Flashcard[]>([]);
+  const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
+
+  const [pinnedItems, setPinnedItems] = useState<PinnedItem[]>(() => {
+    try {
+      const saved = localStorage.getItem(`chatterbot_pins_${currentUser || 'guest'}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const pinnedMessageIds = useMemo(() => new Set(pinnedItems.map(p => p.id)), [pinnedItems]);
+
+  const handleTogglePin = (msg: Message) => {
+    setPinnedItems(prev => {
+      let updated: PinnedItem[];
+      if (prev.some(p => p.id === msg.id)) {
+        updated = prev.filter(p => p.id !== msg.id);
+      } else {
+        const newItem: PinnedItem = {
+          id: msg.id,
+          sessionId: activeSession?.id || '',
+          sessionTitle: activeSession?.title || 'High-Yield Note',
+          content: msg.content,
+          modelUsed: msg.modelUsed || selectedModel,
+          createdAt: Date.now()
+        };
+        updated = [newItem, ...prev];
+      }
+      localStorage.setItem(`chatterbot_pins_${currentUser || 'guest'}`, JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleDeletePin = (id: string) => {
+    setPinnedItems(prev => {
+      const updated = prev.filter(p => p.id !== id);
+      localStorage.setItem(`chatterbot_pins_${currentUser || 'guest'}`, JSON.stringify(updated));
+      return updated;
+    });
+  };
+
+  const handleClearAllPins = () => {
+    setPinnedItems([]);
+    localStorage.removeItem(`chatterbot_pins_${currentUser || 'guest'}`);
+  };
+
+  const handleOpenFlashcards = async () => {
+    const currentMsgs = activeSession ? activeSession.messages : [];
+    if (currentMsgs.length === 0) return;
+    const deck = await generateStudyDeckFromChat(currentMsgs, selectedProvider, selectedModel, userKeys);
+    setFlashcards(deck.flashcards);
+    setIsFlashcardsOpen(true);
+  };
+
+  const handleOpenQuiz = async () => {
+    const currentMsgs = activeSession ? activeSession.messages : [];
+    if (currentMsgs.length === 0) return;
+    const deck = await generateStudyDeckFromChat(currentMsgs, selectedProvider, selectedModel, userKeys);
+    setQuizQuestions(deck.quiz);
+    setIsQuizOpen(true);
+  };
+
+  const handleToggleSessionTag = (sessionId: string, tag: string) => {
+    setSessions(prev => {
+      const updated = prev.map(s => {
+        if (s.id === sessionId) {
+          const currentTags = s.tags || [];
+          const nextTags = currentTags.includes(tag)
+            ? currentTags.filter(t => t !== tag)
+            : [...currentTags, tag];
+          return { ...s, tags: nextTags, updatedAt: Date.now() };
+        }
+        return s;
+      });
+      if (currentUser) {
+        localStorage.setItem(`chatterbot_sessions_${currentUser}`, JSON.stringify(updated));
+      }
+      return updated;
+    });
+  };
+
   const [isPersistentWebSearch, setIsPersistentWebSearch] = useState<boolean>(() => {
     return localStorage.getItem('chatterbot_persistent_websearch') === 'true';
   });
@@ -166,17 +256,9 @@ export const App: React.FC = () => {
     });
   };
 
-  const [isDiagramsEnabled, setIsDiagramsEnabled] = useState<boolean>(() => {
+  const [isDiagramsEnabled] = useState<boolean>(() => {
     return localStorage.getItem('chatterbot_diagrams_enabled') === 'true';
   });
-
-  const handleToggleDiagrams = () => {
-    setIsDiagramsEnabled(prev => {
-      const next = !prev;
-      localStorage.setItem('chatterbot_diagrams_enabled', String(next));
-      return next;
-    });
-  };
 
   const [isBeginnerFriendly, setIsBeginnerFriendly] = useState<boolean>(() => {
     return localStorage.getItem('chatterbot_beginner_friendly') === 'true';
@@ -1688,15 +1770,15 @@ export const App: React.FC = () => {
                   onDeleteSession={handleDeleteSession}
                   isPersistentWebSearch={isPersistentWebSearch}
                   onTogglePersistentWebSearch={handleTogglePersistentWebSearch}
-                  isDiagramsEnabled={isDiagramsEnabled}
-                  onToggleDiagrams={handleToggleDiagrams}
                   isBeginnerFriendly={isBeginnerFriendly}
                   onToggleBeginnerFriendly={handleToggleBeginnerFriendly}
                   onOpenPdfPreview={() => setIsDemoPdfPreviewOpen(true)}
                   onNativePrintPdf={handleNativePrintPdf}
                   onClearActiveSession={handleClearActiveSession}
-                  activeProviderName={selectedProvider}
-                  activeModelName={selectedModel}
+                  onOpenCheatSheet={() => setIsCheatSheetOpen(true)}
+                  onOpenFlashcards={handleOpenFlashcards}
+                  onOpenQuiz={handleOpenQuiz}
+                  onToggleSessionTag={handleToggleSessionTag}
                 />
                 <ChatWindow
                   messages={activeSession ? activeSession.messages : []}
@@ -1709,6 +1791,8 @@ export const App: React.FC = () => {
                   onRetry={handleRetryLastAssistantMessage}
                   onEditUserMessage={handleEditLastUserMessage}
                   onBranchMessage={handleBranchSession}
+                  onPinMessage={handleTogglePin}
+                  pinnedMessageIds={pinnedMessageIds}
                   activeSystemPromptTitle={activeSession?.systemPromptTitle}
                   onClearSystemPrompt={handleClearSystemPrompt}
                   customModels={customModels}
@@ -1800,6 +1884,8 @@ export const App: React.FC = () => {
                 onRetry={handleRetryLastAssistantMessage}
                 onEditUserMessage={handleEditLastUserMessage}
                 onBranchMessage={handleBranchPersonaSession}
+                onPinMessage={handleTogglePin}
+                pinnedMessageIds={pinnedMessageIds}
                 personaSessions={personaSessions}
                 activePersonaSessionId={activePersonaSessionIdState}
                 onSelectPersonaSession={setActivePersonaSessionIdState}
@@ -1881,6 +1967,28 @@ export const App: React.FC = () => {
           onClose={() => setIsLoginOpen(false)}
           onLoginSuccess={handleLoginSuccess}
         />
+
+        <CheatSheetDrawer
+          isOpen={isCheatSheetOpen}
+          onClose={() => setIsCheatSheetOpen(false)}
+          pinnedItems={pinnedItems}
+          onDeletePin={handleDeletePin}
+          onClearAllPins={handleClearAllPins}
+        />
+
+        <FlashcardsModal
+          isOpen={isFlashcardsOpen}
+          onClose={() => setIsFlashcardsOpen(false)}
+          flashcards={flashcards}
+          sessionTitle={activeSession?.title}
+        />
+
+        <QuizModal
+          isOpen={isQuizOpen}
+          onClose={() => setIsQuizOpen(false)}
+          questions={quizQuestions}
+          sessionTitle={activeSession?.title}
+        />
       </div>
     );
   }
@@ -1944,6 +2052,8 @@ export const App: React.FC = () => {
                 onRetry={handleRetryLastAssistantMessage}
                 onEditUserMessage={handleEditLastUserMessage}
                 onBranchMessage={handleBranchSession}
+                onPinMessage={handleTogglePin}
+                pinnedMessageIds={pinnedMessageIds}
                 activeSystemPromptTitle={activeSession?.systemPromptTitle}
                 onClearSystemPrompt={handleClearSystemPrompt}
                 customModels={customModels}
@@ -2008,6 +2118,8 @@ export const App: React.FC = () => {
                 onRetry={handleRetryLastAssistantMessage}
                 onEditUserMessage={handleEditLastUserMessage}
                 onBranchMessage={handleBranchPersonaSession}
+                onPinMessage={handleTogglePin}
+                pinnedMessageIds={pinnedMessageIds}
                 personaSessions={personaSessions}
                 activePersonaSessionId={activePersonaSessionIdState}
                 onSelectPersonaSession={setActivePersonaSessionIdState}
@@ -2049,6 +2161,28 @@ export const App: React.FC = () => {
         preventClose={false}
         onClose={() => setIsLoginOpen(false)}
         onLoginSuccess={handleLoginSuccess}
+      />
+
+      <CheatSheetDrawer
+        isOpen={isCheatSheetOpen}
+        onClose={() => setIsCheatSheetOpen(false)}
+        pinnedItems={pinnedItems}
+        onDeletePin={handleDeletePin}
+        onClearAllPins={handleClearAllPins}
+      />
+
+      <FlashcardsModal
+        isOpen={isFlashcardsOpen}
+        onClose={() => setIsFlashcardsOpen(false)}
+        flashcards={flashcards}
+        sessionTitle={activeSession?.title}
+      />
+
+      <QuizModal
+        isOpen={isQuizOpen}
+        onClose={() => setIsQuizOpen(false)}
+        questions={quizQuestions}
+        sessionTitle={activeSession?.title}
       />
     </div>
   );
