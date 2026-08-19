@@ -47,6 +47,7 @@ interface FunPersonaChatViewProps {
   onPersonaChange: (persona: string) => void;
   onRetry?: () => void;
   onEditUserMessage?: (oldText: string) => void;
+  onBranchMessage?: (message: Message) => void;
   personaSessions?: ChatSession[];
   activePersonaSessionId?: string;
   onSelectPersonaSession?: (id: string) => void;
@@ -72,6 +73,7 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
   onPersonaChange,
   onRetry,
   onEditUserMessage,
+  onBranchMessage,
   personaSessions = [],
   activePersonaSessionId = '',
   customModels,
@@ -707,6 +709,7 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
                   isLastAssistantMessage={index === lastAssistantMsgIndex}
                   onRetry={onRetry}
                   onEditUserMessage={onEditUserMessage}
+                  onBranch={onBranchMessage ? () => onBranchMessage(msg) : undefined}
                 />
               ))
             )}

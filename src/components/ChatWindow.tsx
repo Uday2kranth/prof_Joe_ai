@@ -21,6 +21,7 @@ interface ChatWindowProps {
   onModelChange?: (model: string) => void;
   onRetry?: () => void;
   onEditUserMessage?: (oldText: string) => void;
+  onBranchMessage?: (message: Message) => void;
   activeSystemPromptTitle?: string;
   onClearSystemPrompt?: () => void;
   customModels?: UserCustomModels;
@@ -41,6 +42,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   onModelChange,
   onRetry,
   onEditUserMessage,
+  onBranchMessage,
   activeSystemPromptTitle,
   onClearSystemPrompt,
   customModels,
@@ -328,6 +330,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               isLastAssistantMessage={idx === lastAssistantMsgIndex}
               onRetry={onRetry}
               onEditUserMessage={onEditUserMessage}
+              onBranch={onBranchMessage ? () => onBranchMessage(m) : undefined}
             />
           ))
         )}

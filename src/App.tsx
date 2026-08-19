@@ -243,6 +243,62 @@ export const App: React.FC = () => {
     }
   };
 
+  // 🌿 Main Chat Branching: Fork exact conversation history up to selected turn
+  const handleBranchSession = (targetMsg: Message) => {
+    if (!activeSession || !activeSession.messages.length) return;
+    const targetIdx = activeSession.messages.findIndex(m => m.id === targetMsg.id);
+    if (targetIdx === -1) return;
+
+    const slicedMessages = activeSession.messages.slice(0, targetIdx + 1);
+    const rawTitle = (activeSession.title || 'Chat Session').replace(/^[🌿🌱\s]+/, '').replace(/\s*\(Branch\)$/i, '');
+    const newBranchId = `session-branch-${Date.now()}`;
+
+    const newBranchSession: ChatSession = {
+      id: newBranchId,
+      title: `🌿 ${rawTitle} (Branch)`,
+      provider: activeSession.provider || selectedProvider,
+      model: activeSession.model || selectedModel,
+      messages: slicedMessages,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+
+    const updated = [newBranchSession, ...sessions];
+    setSessions(updated);
+    setActiveSessionIdState(newBranchId);
+    if (currentUser) {
+      localStorage.setItem(`chatterbot_sessions_${currentUser}`, JSON.stringify(updated));
+    }
+  };
+
+  // 🌿 Persona Chat Branching: Fork exact persona conversation history up to selected turn
+  const handleBranchPersonaSession = (targetMsg: Message) => {
+    if (!activePersonaSession || !activePersonaSession.messages.length) return;
+    const targetIdx = activePersonaSession.messages.findIndex(m => m.id === targetMsg.id);
+    if (targetIdx === -1) return;
+
+    const slicedMessages = activePersonaSession.messages.slice(0, targetIdx + 1);
+    const rawTitle = (activePersonaSession.title || 'Persona Chat').replace(/^[🌿🌱\s]+/, '').replace(/\s*\(Branch\)$/i, '');
+    const newBranchId = `persona-branch-${Date.now()}`;
+
+    const newBranchSession: ChatSession = {
+      id: newBranchId,
+      title: `🌿 ${rawTitle} (Branch)`,
+      provider: activePersonaSession.provider || selectedProvider,
+      model: activePersonaSession.model || selectedModel,
+      messages: slicedMessages,
+      createdAt: Date.now(),
+      updatedAt: Date.now()
+    };
+
+    const updated = [newBranchSession, ...personaSessions];
+    setPersonaSessions(updated);
+    setActivePersonaSessionIdState(newBranchId);
+    if (currentUser) {
+      localStorage.setItem(`chatterbot_persona_sessions_${currentUser}`, JSON.stringify(updated));
+    }
+  };
+
   // Perform hard legacy key cache wipe on app startup
   useEffect(() => {
     localStorage.removeItem('chatterbot_user_keys');
@@ -1607,6 +1663,7 @@ export const App: React.FC = () => {
                   onModelChange={handleModelChange}
                   onRetry={handleRetryLastAssistantMessage}
                   onEditUserMessage={handleEditLastUserMessage}
+                  onBranchMessage={handleBranchSession}
                   activeSystemPromptTitle={activeSession?.systemPromptTitle}
                   onClearSystemPrompt={handleClearSystemPrompt}
                   customModels={customModels}
@@ -1697,6 +1754,7 @@ export const App: React.FC = () => {
                 onPersonaChange={handlePersonaChange}
                 onRetry={handleRetryLastAssistantMessage}
                 onEditUserMessage={handleEditLastUserMessage}
+                onBranchMessage={handleBranchPersonaSession}
                 personaSessions={personaSessions}
                 activePersonaSessionId={activePersonaSessionIdState}
                 onSelectPersonaSession={setActivePersonaSessionIdState}
@@ -1840,6 +1898,7 @@ export const App: React.FC = () => {
                 onModelChange={handleModelChange}
                 onRetry={handleRetryLastAssistantMessage}
                 onEditUserMessage={handleEditLastUserMessage}
+                onBranchMessage={handleBranchSession}
                 activeSystemPromptTitle={activeSession?.systemPromptTitle}
                 onClearSystemPrompt={handleClearSystemPrompt}
                 customModels={customModels}
@@ -1903,6 +1962,7 @@ export const App: React.FC = () => {
                 onPersonaChange={handlePersonaChange}
                 onRetry={handleRetryLastAssistantMessage}
                 onEditUserMessage={handleEditLastUserMessage}
+                onBranchMessage={handleBranchPersonaSession}
                 personaSessions={personaSessions}
                 activePersonaSessionId={activePersonaSessionIdState}
                 onSelectPersonaSession={setActivePersonaSessionIdState}

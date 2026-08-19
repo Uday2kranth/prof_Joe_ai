@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { User, Copy, Download, Eye, Printer, Volume2, Check, RotateCcw, Edit3, Send, X } from 'lucide-react';
+import { User, Copy, Download, Eye, Printer, Volume2, Check, RotateCcw, Edit3, Send, X, GitBranch } from 'lucide-react';
 import { marked } from 'marked';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
@@ -168,6 +168,7 @@ interface MessageItemProps {
   isLastAssistantMessage?: boolean;
   onRetry?: () => void;
   onEditUserMessage?: (oldText: string) => void;
+  onBranch?: () => void;
 }
 
 const MessageItemComponent: React.FC<MessageItemProps> = ({
@@ -176,7 +177,8 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
   isLastUserMessage,
   isLastAssistantMessage,
   onRetry,
-  onEditUserMessage
+  onEditUserMessage,
+  onBranch
 }) => {
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
@@ -493,6 +495,18 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
               </button>
             )}
 
+            {/* Branch Conversation from this Turn */}
+            {!isUser && onBranch && (
+              <button
+                onClick={onBranch}
+                className="kokonut-msg-btn branch-btn"
+                title="Branch / Fork conversation from this turn"
+              >
+                <GitBranch size={13} style={{ color: '#34d399' }} />
+                <span>Branch</span>
+              </button>
+            )}
+
             {/* Edit User Message Button */}
             {isUser && (isLastUserMessage ?? isLast) && onEditUserMessage && (
               <button
@@ -537,6 +551,7 @@ const arePropsEqual = (prevProps: MessageItemProps, nextProps: MessageItemProps)
   if (prevProps.message.content !== nextProps.message.content) return false;
   if (prevProps.message.isStreaming !== nextProps.message.isStreaming) return false;
   if (prevProps.message.modelUsed !== nextProps.message.modelUsed) return false;
+  if (prevProps.onBranch !== nextProps.onBranch) return false;
   return true;
 };
 
