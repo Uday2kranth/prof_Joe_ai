@@ -1540,6 +1540,88 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({ userKeys =
             <RefreshCw size={14} className={isLoading ? 'animate-spin' : ''} />
             <span>{isLoading ? 'Rendering...' : 'Render Diagram'}</span>
           </button>
+
+          {/* Unified AI Provider Picker */}
+          <div className="relative inline-block" ref={providerMenuRef} style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setIsProviderMenuOpen(!isProviderMenuOpen);
+                setIsModelMenuOpen(false);
+                setIsCategoryMenuOpen(false);
+                setIsDiagramMenuOpen(false);
+              }}
+              className="custom-dropdown-pill"
+              title="Select AI Provider"
+              style={{ height: '38px', padding: '0 14px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '7px' }}
+            >
+              <span style={{ color: '#38bdf8', fontSize: '12px' }}>⚡</span>
+              <span style={{ fontWeight: 600, maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {activeProvider.name}
+              </span>
+              <ChevronDown size={14} className="text-slate-400" style={{ flexShrink: 0 }} />
+            </button>
+            {isProviderMenuOpen && (
+              <div className="custom-dropdown-menu diagram-menu top-downward-menu dropdown-align-left" style={{ minWidth: '220px', width: '220px', maxHeight: '380px', overflowY: 'auto' }}>
+                <div className="dropdown-header">SELECT AI PROVIDER</div>
+                {DIAGRAM_AI_PROVIDERS.map(p => (
+                  <button
+                    key={p.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedProviderId(p.id);
+                      setIsProviderMenuOpen(false);
+                    }}
+                    className={`dropdown-item flex items-center justify-between gap-2 w-full ${p.id === selectedProviderId ? 'selected' : ''}`}
+                  >
+                    <span style={{ fontSize: '0.82rem' }}>{p.name}</span>
+                    {p.id === selectedProviderId && <span style={{ color: '#38bdf8', fontSize: '0.8rem' }}>✓</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Unified AI Model Picker */}
+          <div className="relative inline-block" ref={modelMenuRef} style={{ position: 'relative' }}>
+            <button
+              type="button"
+              onClick={() => {
+                setIsModelMenuOpen(!isModelMenuOpen);
+                setIsProviderMenuOpen(false);
+                setIsCategoryMenuOpen(false);
+                setIsDiagramMenuOpen(false);
+              }}
+              className="custom-dropdown-pill"
+              title="Select AI Model for Code Generation & Copilot"
+              style={{ height: '38px', padding: '0 14px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '7px' }}
+            >
+              <span style={{ color: '#c084fc', fontSize: '12px' }}>🤖</span>
+              <span style={{ fontWeight: 600, maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                {activeProvider.models.find(m => m.id === selectedModelId)?.name || selectedModelId}
+              </span>
+              <ChevronDown size={14} className="text-slate-400" style={{ flexShrink: 0 }} />
+            </button>
+            {isModelMenuOpen && (
+              <div className="custom-dropdown-menu diagram-menu top-downward-menu dropdown-align-left" style={{ minWidth: '270px', width: '270px', maxHeight: '380px', overflowY: 'auto' }}>
+                <div className="dropdown-header">AVAILABLE MODELS ({activeProvider.name})</div>
+                {activeProvider.models.map(m => (
+                  <button
+                    key={m.id}
+                    type="button"
+                    onClick={() => {
+                      setSelectedModelId(m.id);
+                      setIsModelMenuOpen(false);
+                    }}
+                    className={`dropdown-item flex items-center justify-between gap-2 w-full ${m.id === selectedModelId ? 'selected' : ''}`}
+                  >
+                    <span className="truncate" style={{ fontSize: '0.82rem' }}>{m.name}</span>
+                    {m.id === selectedModelId && <span style={{ color: '#38bdf8', fontSize: '0.8rem' }}>✓</span>}
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1577,98 +1659,29 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({ userKeys =
               <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>| Natural language prompt to visual code</span>
             </div>
 
-            {/* Provider & Model Pickers + Collapse Button */}
+            {/* Active Model Indicator & Collapse Button */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              {/* Provider Picker */}
-              <div style={{ position: 'relative' }} ref={providerMenuRef}>
-                <button
-                  type="button"
-                  onClick={() => setIsProviderMenuOpen(!isProviderMenuOpen)}
-                  style={{
-                    padding: '4px 10px',
-                    borderRadius: '8px',
-                    background: 'rgba(30, 41, 59, 0.9)',
-                    border: '1px solid rgba(51, 65, 85, 0.8)',
-                    fontSize: '0.74rem',
-                    fontWeight: 600,
-                    color: '#e2e8f0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <span style={{ color: '#38bdf8' }}>⚡</span>
-                  <span>{activeProvider.name}</span>
-                  <ChevronDown size={12} style={{ color: '#94a3b8' }} />
-                </button>
-                {isProviderMenuOpen && (
-                  <div className="custom-dropdown-menu" style={{ position: 'absolute', right: 0, marginTop: '6px', width: '200px', zIndex: 100 }}>
-                    <div className="dropdown-header">SELECT PROVIDER</div>
-                    {DIAGRAM_AI_PROVIDERS.map(p => (
-                      <button
-                        key={p.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedProviderId(p.id);
-                          setIsProviderMenuOpen(false);
-                        }}
-                        className={`dropdown-item ${p.id === selectedProviderId ? 'selected' : ''}`}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
-                      >
-                        <span>{p.name}</span>
-                        {p.id === selectedProviderId && <span>✓</span>}
-                      </button>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Model Picker */}
-              <div style={{ position: 'relative' }} ref={modelMenuRef}>
-                <button
-                  type="button"
-                  onClick={() => setIsModelMenuOpen(!isModelMenuOpen)}
-                  style={{
-                    padding: '4px 10px',
-                    borderRadius: '8px',
-                    background: 'rgba(30, 41, 59, 0.9)',
-                    border: '1px solid rgba(51, 65, 85, 0.8)',
-                    fontSize: '0.74rem',
-                    fontWeight: 600,
-                    color: '#e2e8f0',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <span style={{ color: '#c084fc' }}>🤖</span>
-                  <span style={{ maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {activeProvider.models.find(m => m.id === selectedModelId)?.name || selectedModelId}
-                  </span>
-                  <ChevronDown size={12} style={{ color: '#94a3b8' }} />
-                </button>
-                {isModelMenuOpen && (
-                  <div className="custom-dropdown-menu" style={{ position: 'absolute', right: 0, marginTop: '6px', width: '240px', zIndex: 100 }}>
-                    <div className="dropdown-header">AVAILABLE MODELS</div>
-                    {activeProvider.models.map(m => (
-                      <button
-                        key={m.id}
-                        type="button"
-                        onClick={() => {
-                          setSelectedModelId(m.id);
-                          setIsModelMenuOpen(false);
-                        }}
-                        className={`dropdown-item ${m.id === selectedModelId ? 'selected' : ''}`}
-                        style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}
-                      >
-                        <span className="truncate">{m.name}</span>
-                        {m.id === selectedModelId && <span>✓</span>}
-                      </button>
-                    ))}
-                  </div>
-                )}
+              <div
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: '8px',
+                  background: 'rgba(30, 41, 59, 0.8)',
+                  border: '1px solid rgba(51, 65, 85, 0.7)',
+                  fontSize: '0.74rem',
+                  fontWeight: 600,
+                  color: '#cbd5e1',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px'
+                }}
+                title="Active AI Model (Change via toolbar above)"
+              >
+                <span style={{ color: '#38bdf8' }}>⚡</span>
+                <span style={{ color: '#e2e8f0' }}>{activeProvider.name}</span>
+                <span style={{ color: '#64748b' }}>•</span>
+                <span style={{ color: '#c084fc', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  {activeProvider.models.find(m => m.id === selectedModelId)?.name || selectedModelId}
+                </span>
               </div>
 
               <button
@@ -1969,30 +1982,30 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({ userKeys =
                   type="button"
                   onClick={handleDownloadSvg}
                   disabled={!renderedSvg}
-                  className="export-pill-btn"
-                  title="Export Vector SVG"
+                  className="export-pill-btn export-btn-svg"
+                  title="Export Clean Scalable Vector SVG"
                 >
-                  <Download size={11} />
+                  <Download size={12} style={{ color: '#38bdf8' }} />
                   <span>SVG</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleExportImage('png')}
                   disabled={!renderedSvg}
-                  className="export-pill-btn"
-                  title="Export High-Res PNG Image"
+                  className="export-pill-btn export-btn-png"
+                  title="Export High-Resolution PNG (Retina 2x)"
                 >
-                  <ImageIcon size={11} />
+                  <ImageIcon size={12} style={{ color: '#34d399' }} />
                   <span>PNG</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleExportImage('jpeg')}
                   disabled={!renderedSvg}
-                  className="export-pill-btn"
-                  title="Export High-Res JPEG Image"
+                  className="export-pill-btn export-btn-jpeg"
+                  title="Export High-Resolution JPEG Image"
                 >
-                  <FileImage size={11} />
+                  <FileImage size={12} style={{ color: '#fbbf24' }} />
                   <span>JPEG</span>
                 </button>
               </div>
@@ -2164,10 +2177,10 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({ userKeys =
                   type="button"
                   onClick={handleDownloadSvg}
                   disabled={!renderedSvg}
-                  className="export-pill-btn"
-                  title="Export Vector SVG"
+                  className="export-pill-btn export-btn-svg"
+                  title="Export Clean Scalable Vector SVG"
                 >
-                  <Download size={13} />
+                  <Download size={13} style={{ color: '#38bdf8' }} />
                   <span>SVG</span>
                 </button>
 
@@ -2175,10 +2188,10 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({ userKeys =
                   type="button"
                   onClick={() => handleExportImage('png')}
                   disabled={!renderedSvg}
-                  className="export-pill-btn"
-                  title="Export High-Res PNG Image"
+                  className="export-pill-btn export-btn-png"
+                  title="Export High-Resolution PNG (Retina 2x)"
                 >
-                  <ImageIcon size={13} />
+                  <ImageIcon size={13} style={{ color: '#34d399' }} />
                   <span>PNG</span>
                 </button>
 
@@ -2186,10 +2199,10 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({ userKeys =
                   type="button"
                   onClick={() => handleExportImage('jpeg')}
                   disabled={!renderedSvg}
-                  className="export-pill-btn"
-                  title="Export High-Res JPEG Image"
+                  className="export-pill-btn export-btn-jpeg"
+                  title="Export High-Resolution JPEG Image"
                 >
-                  <FileImage size={13} />
+                  <FileImage size={13} style={{ color: '#fbbf24' }} />
                   <span>JPEG</span>
                 </button>
               </div>
