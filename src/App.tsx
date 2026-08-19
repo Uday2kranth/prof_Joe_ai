@@ -243,6 +243,51 @@ export const App: React.FC = () => {
     }
   };
 
+  // 🌿 Option C: Hierarchical Sub-Branch Tree Indexing (e.g. 🌿 #1 Title -> 🌿 #1.1 Title -> 🌿 #1.2 Title)
+  const generateBranchTitle = (activeTitle: string, allSessions: ChatSession[]): string => {
+    const currentTitle = (activeTitle || 'Chat Session').trim();
+    
+    // Check if current title is already an indexed branch: e.g. "🌿 #1 Calculus" or "🌿 #1.2 Calculus" or legacy "🌿 Calculus (Branch)"
+    const branchMatch = currentTitle.match(/^🌿\s*(?:#([0-9.]+)\s+)?(.*?)(?:\s*\(Branch(?:\s*\d+)?\))?$/i);
+    
+    let baseTitle = currentTitle;
+    let currentBranchNum = '';
+    
+    if (branchMatch) {
+      currentBranchNum = branchMatch[1] || '';
+      baseTitle = (branchMatch[2] || currentTitle).trim();
+    }
+    
+    if (!baseTitle) baseTitle = 'Chat Session';
+
+    if (!currentBranchNum) {
+      // Branching from Root Session -> Create top-level branch index "#1", "#2", etc.
+      const topLevelNums: number[] = [];
+      allSessions.forEach(s => {
+        if (!s.title) return;
+        const m = s.title.match(/^🌿\s*#(\d+)(?:\.|\s|$)/);
+        if (m && s.title.toLowerCase().includes(baseTitle.toLowerCase())) {
+          topLevelNums.push(parseInt(m[1], 10));
+        }
+      });
+      const nextNum = topLevelNums.length > 0 ? Math.max(...topLevelNums) + 1 : 1;
+      return `🌿 #${nextNum} ${baseTitle}`;
+    } else {
+      // Branching from an existing Branch (e.g. "#1" or "#1.2") -> Create sub-branch "#1.1" or "#1.2.1"
+      const prefixPattern = new RegExp(`^🌿\\s*#${currentBranchNum.replace(/\./g, '\\.')}\\.(\\d+)(?:\\.|\\s|$)`, 'i');
+      const subNums: number[] = [];
+      allSessions.forEach(s => {
+        if (!s.title) return;
+        const m = s.title.match(prefixPattern);
+        if (m && s.title.toLowerCase().includes(baseTitle.toLowerCase())) {
+          subNums.push(parseInt(m[1], 10));
+        }
+      });
+      const nextSub = subNums.length > 0 ? Math.max(...subNums) + 1 : 1;
+      return `🌿 #${currentBranchNum}.${nextSub} ${baseTitle}`;
+    }
+  };
+
   // 🌿 Main Chat Branching: Fork exact conversation history up to selected turn
   const handleBranchSession = (targetMsg: Message) => {
     if (!activeSession || !activeSession.messages.length) return;
@@ -250,12 +295,12 @@ export const App: React.FC = () => {
     if (targetIdx === -1) return;
 
     const slicedMessages = activeSession.messages.slice(0, targetIdx + 1);
-    const rawTitle = (activeSession.title || 'Chat Session').replace(/^[🌿🌱\s]+/, '').replace(/\s*\(Branch\)$/i, '');
+    const newTitle = generateBranchTitle(activeSession.title || 'Chat Session', sessions);
     const newBranchId = `session-branch-${Date.now()}`;
 
     const newBranchSession: ChatSession = {
       id: newBranchId,
-      title: `🌿 ${rawTitle} (Branch)`,
+      title: newTitle,
       provider: activeSession.provider || selectedProvider,
       model: activeSession.model || selectedModel,
       messages: slicedMessages,
@@ -278,12 +323,12 @@ export const App: React.FC = () => {
     if (targetIdx === -1) return;
 
     const slicedMessages = activePersonaSession.messages.slice(0, targetIdx + 1);
-    const rawTitle = (activePersonaSession.title || 'Persona Chat').replace(/^[🌿🌱\s]+/, '').replace(/\s*\(Branch\)$/i, '');
+    const newTitle = generateBranchTitle(activePersonaSession.title || 'Persona Chat', personaSessions);
     const newBranchId = `persona-branch-${Date.now()}`;
 
     const newBranchSession: ChatSession = {
       id: newBranchId,
-      title: `🌿 ${rawTitle} (Branch)`,
+      title: newTitle,
       provider: activePersonaSession.provider || selectedProvider,
       model: activePersonaSession.model || selectedModel,
       messages: slicedMessages,
