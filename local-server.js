@@ -8,6 +8,7 @@ import loginHandler from './api/login.js';
 import userKeysHandler from './api/user-keys.js';
 import sessionsHandler from './api/sessions.js';
 import codelabSessionsHandler from './api/codelab-sessions.js';
+import personaSessionsHandler from './api/persona-sessions.js';
 import modelsHandler from './api/models.js';
 
 const __filename = fileURLToPath(import.meta.url);
@@ -112,6 +113,7 @@ const server = http.createServer((req, res) => {
         '/api/user-keys': userKeysHandler,
         '/api/sessions': sessionsHandler,
         '/api/codelab-sessions': codelabSessionsHandler,
+        '/api/persona-sessions': personaSessionsHandler,
         '/api/models': modelsHandler
       };
 

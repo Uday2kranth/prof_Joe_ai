@@ -691,6 +691,18 @@ export const App: React.FC = () => {
       }
     }
 
+    // Restore saved local persona sessions for this user
+    let localPersonaSaved: ChatSession[] = [];
+    const savedPersonaLocalStr = localStorage.getItem(`chatterbot_persona_sessions_${username}`);
+    if (savedPersonaLocalStr) {
+      try {
+        const parsed = JSON.parse(savedPersonaLocalStr);
+        if (Array.isArray(parsed) && parsed.length > 0) localPersonaSaved = parsed;
+      } catch (e) {
+        console.error('Failed to parse saved local persona sessions on login', e);
+      }
+    }
+
     // Fetch user-isolated cloud sessions immediately on login
     try {
       const response = await fetch(getApiUrl(`/api/sessions?username=${encodeURIComponent(username)}&token=${encodeURIComponent(token)}`));
@@ -701,19 +713,34 @@ export const App: React.FC = () => {
           setSessions(merged);
           localStorage.setItem(`chatterbot_sessions_${username}`, JSON.stringify(merged));
           setActiveSessionIdState(merged[0].id);
-          setIsCloudSessionsLoaded(true);
-          return;
         }
       }
     } catch (err) {
       console.warn('Could not fetch cloud sessions on login:', err);
     }
 
+    // Fetch user-isolated cloud persona sessions immediately on login
+    try {
+      const personaRes = await fetch(getApiUrl(`/api/persona-sessions?username=${encodeURIComponent(username)}&token=${encodeURIComponent(token)}`));
+      if (personaRes.ok) {
+        const pData = await personaRes.json();
+        if (pData.success && Array.isArray(pData.sessions) && pData.sessions.length > 0) {
+          const mergedPersona = localPersonaSaved.length > 0 ? mergeSessions(localPersonaSaved, pData.sessions) : pData.sessions;
+          setPersonaSessions(mergedPersona);
+          localStorage.setItem(`chatterbot_persona_sessions_${username}`, JSON.stringify(mergedPersona));
+          setActivePersonaSessionIdState(mergedPersona[0].id);
+        }
+      }
+    } catch (pErr) {
+      console.warn('Could not fetch cloud persona sessions on login:', pErr);
+    }
+
     // Fallback: If cloud returned 0 sessions, use localSaved if available, otherwise fresh default
-    const finalSessions = localSaved.length > 0 ? localSaved : [createFreshDefaultSession()];
-    setSessions(finalSessions);
-    localStorage.setItem(`chatterbot_sessions_${username}`, JSON.stringify(finalSessions));
-    setActiveSessionIdState(finalSessions[0].id);
+    if (localSaved.length > 0) {
+      setSessions(localSaved);
+      localStorage.setItem(`chatterbot_sessions_${username}`, JSON.stringify(localSaved));
+      setActiveSessionIdState(localSaved[0].id);
+    }
     setIsCloudSessionsLoaded(true);
   };
 
@@ -747,6 +774,21 @@ export const App: React.FC = () => {
     }
   }, [sessions, currentUser, isCloudSessionsLoaded]);
 
+  // Save Persona sessions to localStorage & Cloud Storage (MongoDB)
+  useEffect(() => {
+    if (!currentUser || !isCloudSessionsLoaded) return;
+
+    localStorage.setItem(`chatterbot_persona_sessions_${currentUser}`, JSON.stringify(personaSessions));
+
+    if (personaSessions && personaSessions.length > 0) {
+      fetch(getApiUrl('/api/persona-sessions'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: currentUser, sessions: personaSessions })
+      }).catch(err => console.warn('Could not sync persona sessions to cloud:', err));
+    }
+  }, [personaSessions, currentUser, isCloudSessionsLoaded]);
+
   // Fetch Cloud Sessions when currentUser logs in or opens app & verify active token
   useEffect(() => {
     if (!currentUser) return;
@@ -777,6 +819,19 @@ export const App: React.FC = () => {
             localStorage.setItem(`chatterbot_sessions_${currentUser}`, JSON.stringify(data.sessions));
             if (data.sessions[0]?.id) {
               setActiveSessionIdState(prev => prev || data.sessions[0].id);
+            }
+          }
+        }
+
+        // Also fetch cloud persona sessions
+        const personaRes = await fetch(getApiUrl(`/api/persona-sessions?username=${encodeURIComponent(currentUser)}${queryToken}`));
+        if (personaRes.ok) {
+          const pData = await personaRes.json();
+          if (pData.success && Array.isArray(pData.sessions) && pData.sessions.length > 0) {
+            setPersonaSessions(prev => mergeSessions(prev, pData.sessions));
+            localStorage.setItem(`chatterbot_persona_sessions_${currentUser}`, JSON.stringify(pData.sessions));
+            if (pData.sessions[0]?.id) {
+              setActivePersonaSessionIdState(prev => prev || pData.sessions[0].id);
             }
           }
         }
