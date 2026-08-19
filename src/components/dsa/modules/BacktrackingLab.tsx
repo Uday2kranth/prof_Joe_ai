@@ -348,31 +348,45 @@ export const BacktrackingLab: React.FC<BacktrackingLabProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
-      {/* Sub-Tabs: N-Queens vs Recursive Call Stacks vs Sudoku */}
-      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-        {[
-          { id: 'n_queens', name: '👑 N-Queens Problem (Backtrack Pruning)' },
-          { id: 'rec_factorial', name: '📦 Recursive Call Stack (Factorial N!)' },
-          { id: 'sudoku', name: '🧩 Sudoku Solver (DFS)' }
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => setActiveTab(tab.id as any)}
+      {/* Top Solver Selector Card */}
+      <div className="dsa-header-card" style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '8px',
+        background: 'rgba(15, 23, 42, 0.75)',
+        padding: '8px 12px',
+        borderRadius: '12px',
+        border: '1px solid rgba(255,255,255,0.08)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 200px', minWidth: 0, maxWidth: '100%', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
+            SOLVER:
+          </span>
+          <select
+            value={activeTab}
+            onChange={(e) => setActiveTab(e.target.value as any)}
+            className="dsa-select-control"
             style={{
-              padding: '5px 12px',
+              minHeight: '36px',
+              padding: '6px 10px',
               borderRadius: '8px',
-              border: activeTab === tab.id ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.1)',
-              background: activeTab === tab.id ? 'rgba(56, 189, 248, 0.2)' : 'rgba(15, 23, 42, 0.6)',
-              color: activeTab === tab.id ? '#38bdf8' : 'var(--text-secondary)',
-              fontSize: '0.78rem',
-              fontWeight: 700,
+              background: 'rgba(30, 41, 59, 0.95)',
+              border: '1.5px solid #38bdf8',
+              color: '#f8fafc',
+              fontSize: '0.82rem',
+              fontWeight: 800,
               cursor: 'pointer',
-              transition: 'all 0.2s ease'
+              outline: 'none',
+              boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)'
             }}
           >
-            {tab.name}
-          </button>
-        ))}
+            <option value="n_queens">👑 N-Queens Problem (Backtrack Pruning)</option>
+            <option value="rec_factorial">📦 Recursive Call Stack (Factorial N! Unwinding)</option>
+            <option value="sudoku">🧩 Sudoku 9x9 Solver (Depth-First Search)</option>
+          </select>
+        </div>
       </div>
 
       {/* Control Action Bar */}
@@ -381,36 +395,31 @@ export const BacktrackingLab: React.FC<BacktrackingLabProps> = ({
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: '10px',
+        gap: '8px',
         background: 'rgba(15, 23, 42, 0.8)',
-        padding: '8px 14px',
-        borderRadius: '12px',
+        padding: '6px 12px',
+        borderRadius: '10px',
         border: '1px solid rgba(255,255,255,0.08)'
       }}>
         {activeTab === 'n_queens' ? (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <button
+                title={isPlaying ? 'Pause' : 'Auto Backtrack'}
                 onClick={() => setIsPlaying(!isPlaying)}
+                className="dsa-action-btn"
                 style={{
-                  padding: '6px 14px',
-                  borderRadius: '8px',
                   border: 'none',
                   background: isPlaying ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #10b981, #059669)',
-                  color: '#fff',
-                  fontWeight: 800,
-                  fontSize: '0.8rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  cursor: 'pointer'
+                  color: '#fff'
                 }}
               >
                 {isPlaying ? <Pause size={13} /> : <Play size={13} />}
-                {isPlaying ? 'Pause' : 'Auto Backtrack'}
+                <span className="dsa-btn-label">{isPlaying ? 'Pause' : 'Auto Backtrack'}</span>
               </button>
 
               <button
+                title="Next Step"
                 onClick={() => {
                   if (currentStep < history.length - 1) {
                     const next = currentStep + 1;
@@ -419,57 +428,70 @@ export const BacktrackingLab: React.FC<BacktrackingLabProps> = ({
                   }
                 }}
                 disabled={currentStep >= history.length - 1 || isPlaying}
-                style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.75rem', cursor: 'pointer' }}
+                className="dsa-action-btn"
+                style={{
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'rgba(255,255,255,0.05)',
+                  color: '#fff',
+                  opacity: currentStep >= history.length - 1 ? 0.4 : 1
+                }}
               >
-                Step +1
+                +1<span className="dsa-btn-label"> Step</span>
               </button>
 
               <button
+                title="Reset Board"
                 onClick={() => {
                   setIsPlaying(false);
                   setCurrentStep(0);
                   if (history.length > 0) setQueens(history[0].queens);
                 }}
-                style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                className="dsa-action-btn"
+                style={{
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'rgba(255,255,255,0.05)',
+                  color: 'var(--text-muted)'
+                }}
               >
-                <RotateCcw size={12} /> Reset
+                <RotateCcw size={12} />
+                <span className="dsa-btn-label">Reset</span>
               </button>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Queens (N):</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Queens:</span>
               {[4, 5, 6].map(n => (
                 <button
                   key={`n-${n}`}
                   onClick={() => setBoardSize(n)}
+                  className="dsa-action-btn"
                   style={{
-                    padding: '3px 8px',
+                    padding: '2px 6px',
                     borderRadius: '4px',
                     border: boardSize === n ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.1)',
                     background: boardSize === n ? '#0284c7' : 'rgba(255,255,255,0.05)',
                     color: '#fff',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    cursor: 'pointer'
+                    fontSize: '0.72rem'
                   }}
                 >
-                  N={n}
+                  {n}
                 </button>
               ))}
             </div>
           </>
         ) : activeTab === 'rec_factorial' ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>N:</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>N:</span>
             <input
               type="number"
               min="1"
               max="6"
               value={factorialInput}
               onChange={(e) => setFactorialInput(parseInt(e.target.value, 10))}
-              style={{ width: '50px', padding: '4px 8px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)', background: '#0f172a', color: '#fff', fontSize: '0.85rem' }}
+              style={{ width: '42px', padding: '3px 6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)', background: '#0f172a', color: '#fff', fontSize: '0.78rem' }}
             />
             <button
+              title="Step Call Frame"
               onClick={() => {
                 if (recStep < recHistory.length - 1) {
                   const next = recStep + 1;
@@ -477,35 +499,31 @@ export const BacktrackingLab: React.FC<BacktrackingLabProps> = ({
                   setCallStack(recHistory[next].stack);
                 }
               }}
-              style={{ padding: '6px 12px', borderRadius: '6px', background: '#10b981', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700 }}
+              className="dsa-action-btn"
+              style={{ background: '#10b981', color: '#fff', border: 'none' }}
             >
-              Step Call Frame
+              +1<span className="dsa-btn-label"> Step Frame</span>
             </button>
           </div>
         ) : (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <button
+                title={sudokuIsPlaying ? 'Pause' : 'Auto Backtrack'}
                 onClick={() => setSudokuIsPlaying(!sudokuIsPlaying)}
+                className="dsa-action-btn"
                 style={{
-                  padding: '6px 14px',
-                  borderRadius: '8px',
                   border: 'none',
                   background: sudokuIsPlaying ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #10b981, #059669)',
-                  color: '#fff',
-                  fontWeight: 800,
-                  fontSize: '0.8rem',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  cursor: 'pointer'
+                  color: '#fff'
                 }}
               >
                 {sudokuIsPlaying ? <Pause size={13} /> : <Play size={13} />}
-                {sudokuIsPlaying ? 'Pause' : 'Auto Backtrack'}
+                <span className="dsa-btn-label">{sudokuIsPlaying ? 'Pause' : 'Auto Backtrack'}</span>
               </button>
 
               <button
+                title="Next Step"
                 onClick={() => {
                   if (sudokuStep < sudokuHistory.length - 1) {
                     const next = sudokuStep + 1;
@@ -514,12 +532,19 @@ export const BacktrackingLab: React.FC<BacktrackingLabProps> = ({
                   }
                 }}
                 disabled={sudokuStep >= sudokuHistory.length - 1 || sudokuIsPlaying}
-                style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.75rem', cursor: 'pointer' }}
+                className="dsa-action-btn"
+                style={{
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'rgba(255,255,255,0.05)',
+                  color: '#fff',
+                  opacity: sudokuStep >= sudokuHistory.length - 1 ? 0.4 : 1
+                }}
               >
-                Step +1
+                +1<span className="dsa-btn-label"> Step</span>
               </button>
 
               <button
+                title="Reset Sudoku Board"
                 onClick={() => {
                   setSudokuIsPlaying(false);
                   setSudokuStep(0);
@@ -529,14 +554,20 @@ export const BacktrackingLab: React.FC<BacktrackingLabProps> = ({
                     setSudokuBoard(sudokuInitial);
                   }
                 }}
-                style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                className="dsa-action-btn"
+                style={{
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  background: 'rgba(255,255,255,0.05)',
+                  color: 'var(--text-muted)'
+                }}
               >
-                <RotateCcw size={12} /> Reset
+                <RotateCcw size={12} />
+                <span className="dsa-btn-label">Reset</span>
               </button>
             </div>
 
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Presets:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Preset:</span>
               {[
                 { name: 'Beginner', key: 'beginner' },
                 { name: 'Easy', key: 'easy' },
@@ -574,15 +605,14 @@ export const BacktrackingLab: React.FC<BacktrackingLabProps> = ({
                     setSudokuInitial(selected);
                     generateSudokuSteps(selected);
                   }}
+                  className="dsa-action-btn"
                   style={{
-                    padding: '3px 8px',
+                    padding: '2px 6px',
                     borderRadius: '4px',
                     border: '1px solid rgba(255,255,255,0.1)',
                     background: 'rgba(255,255,255,0.05)',
                     color: '#fff',
-                    fontSize: '0.75rem',
-                    fontWeight: 700,
-                    cursor: 'pointer'
+                    fontSize: '0.72rem'
                   }}
                 >
                   {p.name}
@@ -600,19 +630,19 @@ export const BacktrackingLab: React.FC<BacktrackingLabProps> = ({
         justifyContent: 'space-between',
         background: 'rgba(2, 132, 199, 0.1)',
         border: '1px solid rgba(56, 189, 248, 0.25)',
-        padding: '8px 14px',
-        borderRadius: '10px'
+        padding: '6px 12px',
+        borderRadius: '8px'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Zap size={14} color="#38bdf8" />
-          <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#38bdf8' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflow: 'hidden' }}>
+          <Zap size={14} color="#38bdf8" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#38bdf8', whiteSpace: 'nowrap' }}>
             {activeTab === 'n_queens' 
-              ? `STEP ${currentStep} / ${Math.max(0, history.length - 1)}` 
+              ? `STEP ${currentStep}/${Math.max(0, history.length - 1)}` 
               : activeTab === 'rec_factorial'
-              ? `CALL STEP ${recStep} / ${Math.max(0, recHistory.length - 1)}`
-              : `DFS STEP ${sudokuStep} / ${Math.max(0, sudokuHistory.length - 1)}`}
+              ? `CALL ${recStep}/${Math.max(0, recHistory.length - 1)}`
+              : `DFS ${sudokuStep}/${Math.max(0, sudokuHistory.length - 1)}`}
           </span>
-          <span style={{ fontSize: '0.8rem', color: '#f1f5f9', fontWeight: 600 }}>
+          <span style={{ fontSize: '0.76rem', color: '#f1f5f9', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {activeTab === 'n_queens' 
               ? currentLog.log 
               : activeTab === 'rec_factorial'
@@ -625,28 +655,29 @@ export const BacktrackingLab: React.FC<BacktrackingLabProps> = ({
       {/* Main Viewport */}
       <div style={{
         flex: 1,
-        minHeight: '380px',
+        minHeight: '280px',
         background: 'radial-gradient(ellipse at center, #0f172a 0%, #030712 100%)',
-        borderRadius: '16px',
-        border: '1px solid rgba(255,255,255,0.1)',
-        padding: '18px',
+        borderRadius: '14px',
+        border: '1px solid rgba(255,255,255,0.08)',
+        padding: '12px',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
-        position: 'relative'
+        position: 'relative',
+        overflow: 'auto'
       }}>
         {activeTab === 'n_queens' ? (
           <div
             style={{
               display: 'grid',
-              gridTemplateColumns: `repeat(${boardSize}, 48px)`,
-              gridTemplateRows: `repeat(${boardSize}, 48px)`,
-              gap: '4px',
+              gridTemplateColumns: `repeat(${boardSize}, 36px)`,
+              gridTemplateRows: `repeat(${boardSize}, 36px)`,
+              gap: '3px',
               background: '#030712',
-              padding: '12px',
-              borderRadius: '12px',
+              padding: '8px',
+              borderRadius: '10px',
               border: '2px solid rgba(56, 189, 248, 0.3)',
-              boxShadow: '0 0 24px rgba(0,0,0,0.8)'
+              boxShadow: '0 0 20px rgba(0,0,0,0.8)'
             }}
           >
             {Array(boardSize).fill(0).map((_, row) =>
@@ -659,9 +690,9 @@ export const BacktrackingLab: React.FC<BacktrackingLabProps> = ({
                   <div
                     key={`sq-${row}-${col}`}
                     style={{
-                      width: '48px',
-                      height: '48px',
-                      borderRadius: '6px',
+                      width: '36px',
+                      height: '36px',
+                      borderRadius: '5px',
                       background: (row + col) % 2 === 0 ? 'rgba(255,255,255,0.06)' : 'rgba(255,255,255,0.02)',
                       border: '1px solid rgba(255,255,255,0.05)',
                       display: 'flex',
@@ -673,9 +704,9 @@ export const BacktrackingLab: React.FC<BacktrackingLabProps> = ({
                     {hasQueen && (
                       <div
                         style={{
-                          width: '38px',
-                          height: '38px',
-                          borderRadius: '8px',
+                          width: '28px',
+                          height: '28px',
+                          borderRadius: '6px',
                           background: isConflict
                             ? 'linear-gradient(135deg, #ef4444, #dc2626)'
                             : isSolved
@@ -685,11 +716,11 @@ export const BacktrackingLab: React.FC<BacktrackingLabProps> = ({
                           justifyContent: 'center',
                           alignItems: 'center',
                           boxShadow: isConflict
-                            ? '0 0 16px rgba(239, 68, 68, 0.8)'
-                            : '0 0 12px rgba(56, 189, 248, 0.6)'
+                            ? '0 0 12px rgba(239, 68, 68, 0.8)'
+                            : '0 0 10px rgba(56, 189, 248, 0.6)'
                         }}
                       >
-                        <Crown size={20} color="#fff" />
+                        <Crown size={15} color="#fff" />
                       </div>
                     )}
                   </div>
@@ -698,30 +729,30 @@ export const BacktrackingLab: React.FC<BacktrackingLabProps> = ({
             )}
           </div>
         ) : activeTab === 'rec_factorial' ? (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
-            <span style={{ fontSize: '0.85rem', color: '#f59e0b', fontWeight: 800 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '0.78rem', color: '#f59e0b', fontWeight: 800 }}>
               RECURSIVE CALL STACK (LIFO FRAME GROWTH)
             </span>
-            <div style={{ width: '180px', minHeight: '220px', borderLeft: '3px solid #f59e0b', borderRight: '3px solid #f59e0b', borderBottom: '5px solid #f59e0b', display: 'flex', flexDirection: 'column-reverse', gap: '6px', padding: '8px' }}>
+            <div style={{ width: '160px', minHeight: '180px', borderLeft: '3px solid #f59e0b', borderRight: '3px solid #f59e0b', borderBottom: '4px solid #f59e0b', display: 'flex', flexDirection: 'column-reverse', gap: '4px', padding: '6px' }}>
               {callStack.map((frame, idx) => (
-                <div key={`frame-${idx}`} style={{ padding: '8px 12px', borderRadius: '6px', background: frame.returning ? '#10b981' : '#0284c7', color: '#fff', fontWeight: 800, textAlign: 'center', fontSize: '0.85rem', border: '1px solid #38bdf8' }}>
+                <div key={`frame-${idx}`} style={{ padding: '6px 10px', borderRadius: '6px', background: frame.returning ? '#10b981' : '#0284c7', color: '#fff', fontWeight: 800, textAlign: 'center', fontSize: '0.78rem', border: '1px solid #38bdf8' }}>
                   {frame.frame}
                 </div>
               ))}
             </div>
           </div>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '12px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px', maxWidth: '100%', overflowX: 'auto' }}>
             <div
               style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(9, 36px)',
-                gridTemplateRows: 'repeat(9, 36px)',
+                gridTemplateColumns: 'repeat(9, 28px)',
+                gridTemplateRows: 'repeat(9, 28px)',
                 background: '#030712',
-                padding: '10px',
-                borderRadius: '12px',
+                padding: '6px',
+                borderRadius: '10px',
                 border: '2px solid rgba(56, 189, 248, 0.4)',
-                boxShadow: '0 0 24px rgba(0,0,0,0.8)'
+                boxShadow: '0 0 20px rgba(0,0,0,0.8)'
               }}
             >
               {Array(9).fill(0).map((_, row) =>
@@ -759,8 +790,8 @@ export const BacktrackingLab: React.FC<BacktrackingLabProps> = ({
                     <div
                       key={`sd-${row}-${col}`}
                       style={{
-                        width: '36px',
-                        height: '36px',
+                        width: '28px',
+                        height: '28px',
                         display: 'flex',
                         justifyContent: 'center',
                         alignItems: 'center',

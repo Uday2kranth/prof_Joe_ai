@@ -3,14 +3,14 @@ import type { ChatSession, Message, UserKeys, ActiveViewType, UserCustomModels }
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { ChatWindow } from './components/ChatWindow';
-import { ExamPrepView } from './components/ExamPrepView';
-import { SystemPromptLibraryView } from './components/SystemPromptLibraryView';
-import { PromptLibraryView } from './components/PromptLibraryView';
-import { FunPersonaChatView } from './components/FunPersonaChatView';
-import { PracticalCodeLabView } from './components/PracticalCodeLabView';
-import { LectureNotesStudioView } from './components/LectureNotesStudioView';
 
-// Code-Split Heavy Studio Views for Faster Initial App Load & Bundle Optimization
+// Code-Split Heavy Studio Views for Instant Initial App Load & Drastic Bundle Optimization
+const PracticalCodeLabView = React.lazy(() => import('./components/PracticalCodeLabView').then(m => ({ default: m.PracticalCodeLabView })));
+const LectureNotesStudioView = React.lazy(() => import('./components/LectureNotesStudioView').then(m => ({ default: m.LectureNotesStudioView })));
+const ExamPrepView = React.lazy(() => import('./components/ExamPrepView').then(m => ({ default: m.ExamPrepView })));
+const SystemPromptLibraryView = React.lazy(() => import('./components/SystemPromptLibraryView').then(m => ({ default: m.SystemPromptLibraryView })));
+const PromptLibraryView = React.lazy(() => import('./components/PromptLibraryView').then(m => ({ default: m.PromptLibraryView })));
+const FunPersonaChatView = React.lazy(() => import('./components/FunPersonaChatView').then(m => ({ default: m.FunPersonaChatView })));
 const DiagramStudioView = React.lazy(() => import('./components/DiagramStudioView').then(m => ({ default: m.DiagramStudioView })));
 const CubesPlaygroundView = React.lazy(() => import('./components/CubesPlaygroundView').then(m => ({ default: m.CubesPlaygroundView })));
 const DocumentExtractorStudioView = React.lazy(() => import('./components/DocumentExtractorStudioView').then(m => ({ default: m.DocumentExtractorStudioView })));
@@ -152,6 +152,7 @@ export const App: React.FC = () => {
   const [isDemoChatDrawerOpen, setIsDemoChatDrawerOpen] = useState<boolean>(false);
   const [isPersonaDrawerOpen, setIsPersonaDrawerOpen] = useState<boolean>(false);
   const [isCodeLabDrawerOpen, setIsCodeLabDrawerOpen] = useState<boolean>(false);
+  const [isLectureDrawerOpen, setIsLectureDrawerOpen] = useState<boolean>(false);
   const [isDemoPdfPreviewOpen, setIsDemoPdfPreviewOpen] = useState<boolean>(false);
   const [isPersistentWebSearch, setIsPersistentWebSearch] = useState<boolean>(() => {
     return localStorage.getItem('chatterbot_persistent_websearch') === 'true';
@@ -1441,6 +1442,18 @@ export const App: React.FC = () => {
                 </button>
               )}
 
+              {activeHubWorkspace === 'lecture_notes' && (
+                <button
+                  type="button"
+                  onClick={() => setIsLectureDrawerOpen(true)}
+                  className="demo-view-toggle-btn cyan-toggle-btn"
+                  title="Open Lecture Control Deck"
+                >
+                  <Menu size={16} />
+                  <span className="demo-control-deck-text">Control Deck</span>
+                </button>
+              )}
+
               {/* 3. Refresh App */}
               <button 
                 type="button" 
@@ -1506,6 +1519,7 @@ export const App: React.FC = () => {
           </div>
 
           <main className="app-main" style={{ flex: 1, overflowY: 'auto', position: 'relative' }}>
+            <React.Suspense fallback={<div className="flex items-center justify-center h-full p-8 text-cyan-400 font-semibold gap-2">⏳ Loading Studio Workspace...</div>}>
             {activeHubWorkspace === 'chat' && (
               <>
                 <DemoChatHistoryDrawer
@@ -1585,27 +1599,19 @@ export const App: React.FC = () => {
             )}
 
             {activeHubWorkspace === 'diagrams' && (
-              <React.Suspense fallback={<div className="p-8 text-cyan-400 font-semibold flex items-center gap-2">⏳ Loading Diagram Studio...</div>}>
-                <DiagramStudioView userKeys={userKeys} />
-              </React.Suspense>
+              <DiagramStudioView userKeys={userKeys} />
             )}
 
             {activeHubWorkspace === 'cubes' && (
-              <React.Suspense fallback={<div className="p-8 text-cyan-400 font-semibold flex items-center gap-2">⏳ Loading 3D Cubes Playground...</div>}>
-                <CubesPlaygroundView />
-              </React.Suspense>
+              <CubesPlaygroundView />
             )}
 
             {activeHubWorkspace === 'sandbox' && (
-              <React.Suspense fallback={<div className="p-8 text-purple-400 font-semibold flex items-center gap-2">⏳ Loading Interactive Sandbox & Whiteboard Lab...</div>}>
-                <InteractiveSandboxView />
-              </React.Suspense>
+              <InteractiveSandboxView />
             )}
 
             {activeHubWorkspace === 'dsa_lab' && (
-              <React.Suspense fallback={<div className="p-8 text-cyan-400 font-semibold flex items-center gap-2">⏳ Loading Data Structures & Algorithms Lab...</div>}>
-                <DsaLabView />
-              </React.Suspense>
+              <DsaLabView />
             )}
 
             {activeHubWorkspace === 'lecture_notes' && (
@@ -1614,6 +1620,8 @@ export const App: React.FC = () => {
                 customModels={customModels}
                 currentUser={currentUser}
                 isDemoView={true}
+                isExternalDrawerOpen={isLectureDrawerOpen}
+                onCloseExternalDrawer={() => setIsLectureDrawerOpen(false)}
               />
             )}
 
@@ -1645,14 +1653,12 @@ export const App: React.FC = () => {
               />
             )}
             {activeHubWorkspace === 'extractor_studio' && (
-              <React.Suspense fallback={<div className="p-8 text-cyan-400 font-semibold flex items-center gap-2">⏳ Loading Document Extractor...</div>}>
-                <DocumentExtractorStudioView
-                  onBackToHub={() => setActiveHubWorkspace('chat')}
-                  onSendToChat={() => {
-                    setActiveHubWorkspace('chat');
-                  }}
-                />
-              </React.Suspense>
+              <DocumentExtractorStudioView
+                onBackToHub={() => setActiveHubWorkspace('chat')}
+                onSendToChat={() => {
+                  setActiveHubWorkspace('chat');
+                }}
+              />
             )}
             {activeHubWorkspace === 'code_lab' && (
               <PracticalCodeLabView
@@ -1686,6 +1692,7 @@ export const App: React.FC = () => {
                 onCloseExternalDrawer={() => setIsCodeLabDrawerOpen(false)}
               />
             )}
+            </React.Suspense>
           </main>
         </div>
 
@@ -1766,91 +1773,91 @@ export const App: React.FC = () => {
         />
 
         <main className="app-main">
-          {activeView === 'chat' && (
-            <ChatWindow
-              messages={activeSession ? activeSession.messages : []}
-              isLoading={isLoading}
-              onSendMessage={handleSendMessage}
-              selectedProvider={selectedProvider}
-              selectedModel={selectedModel}
-              onProviderChange={handleProviderChange}
-              onModelChange={handleModelChange}
-              onRetry={handleRetryLastAssistantMessage}
-              onEditUserMessage={handleEditLastUserMessage}
-              activeSystemPromptTitle={activeSession?.systemPromptTitle}
-              onClearSystemPrompt={handleClearSystemPrompt}
-              customModels={customModels}
-              promptMode={promptMode}
-              onPromptModeChange={handlePromptModeChange}
-            />
-          )}
+          <React.Suspense fallback={<div className="flex items-center justify-center h-full p-8 text-cyan-400 font-semibold gap-2">⏳ Loading Studio Workspace...</div>}>
+            {activeView === 'chat' && (
+              <ChatWindow
+                messages={activeSession ? activeSession.messages : []}
+                isLoading={isLoading}
+                onSendMessage={handleSendMessage}
+                selectedProvider={selectedProvider}
+                selectedModel={selectedModel}
+                onProviderChange={handleProviderChange}
+                onModelChange={handleModelChange}
+                onRetry={handleRetryLastAssistantMessage}
+                onEditUserMessage={handleEditLastUserMessage}
+                activeSystemPromptTitle={activeSession?.systemPromptTitle}
+                onClearSystemPrompt={handleClearSystemPrompt}
+                customModels={customModels}
+                promptMode={promptMode}
+                onPromptModeChange={handlePromptModeChange}
+              />
+            )}
 
-          {activeView === 'lecture_notes' && (
-            <LectureNotesStudioView
-              userKeys={userKeys}
-              customModels={customModels}
-              currentUser={currentUser}
-              isDemoView={false}
-            />
-          )}
+            {activeView === 'lecture_notes' && (
+              <LectureNotesStudioView
+                userKeys={userKeys}
+                customModels={customModels}
+                currentUser={currentUser}
+                isDemoView={false}
+              />
+            )}
 
-          {activeView === 'examprep' && (
-            <ExamPrepView onLoadQuestionToChat={handleLoadPromptToChat} />
-          )}
+            {activeView === 'examprep' && (
+              <ExamPrepView onLoadQuestionToChat={handleLoadPromptToChat} />
+            )}
 
-          {activeView === 'system_prompts' && (
-            <SystemPromptLibraryView
-              onUsePrompt={handleLoadPromptToChat}
-              onApplyPrompt={handleApplySystemPrompt}
-            />
-          )}
+            {activeView === 'system_prompts' && (
+              <SystemPromptLibraryView
+                onUsePrompt={handleLoadPromptToChat}
+                onApplyPrompt={handleApplySystemPrompt}
+              />
+            )}
 
-          {activeView === 'prompts' && (
-            <PromptLibraryView onUsePrompt={handleLoadPromptToChat} />
-          )}
+            {activeView === 'prompts' && (
+              <PromptLibraryView onUsePrompt={handleLoadPromptToChat} />
+            )}
 
-          {activeView === 'diagrams' && (
-            <DiagramStudioView userKeys={userKeys} />
-          )}
+            {activeView === 'diagrams' && (
+              <DiagramStudioView userKeys={userKeys} />
+            )}
 
-          {activeView === 'cubes' && (
-            <CubesPlaygroundView />
-          )}
+            {activeView === 'cubes' && (
+              <CubesPlaygroundView />
+            )}
 
-          {activeView === 'sandbox' && (
-            <InteractiveSandboxView />
-          )}
+            {activeView === 'sandbox' && (
+              <InteractiveSandboxView />
+            )}
 
-          {activeView === 'dsa_lab' && (
-            <React.Suspense fallback={<div className="p-8 text-cyan-400 font-semibold flex items-center gap-2">⏳ Loading Data Structures & Algorithms Lab...</div>}>
+            {activeView === 'dsa_lab' && (
               <DsaLabView />
-            </React.Suspense>
-          )}
+            )}
 
-          {activeView === 'fun_personas' && (
-            <FunPersonaChatView
-              messages={activePersonaSession ? activePersonaSession.messages : []}
-              isLoading={isLoading}
-              onSendMessage={handleSendMessage}
-              selectedProvider={selectedProvider}
-              selectedModel={selectedModel}
-              selectedPersona={selectedPersona}
-              isPersonaEnabled={isPersonaEnabled}
-              onTogglePersonaEnabled={handleTogglePersonaEnabled}
-              onProviderChange={handleProviderChange}
-              onModelChange={handleModelChange}
-              onPersonaChange={handlePersonaChange}
-              onRetry={handleRetryLastAssistantMessage}
-              onEditUserMessage={handleEditLastUserMessage}
-              personaSessions={personaSessions}
-              activePersonaSessionId={activePersonaSessionIdState}
-              onSelectPersonaSession={setActivePersonaSessionIdState}
-              onNewPersonaSession={handleNewPersonaSession}
-              onDeletePersonaSession={handleDeletePersonaSession}
-              customModels={customModels}
-              isDemoView={false}
-            />
-          )}
+            {activeView === 'fun_personas' && (
+              <FunPersonaChatView
+                messages={activePersonaSession ? activePersonaSession.messages : []}
+                isLoading={isLoading}
+                onSendMessage={handleSendMessage}
+                selectedProvider={selectedProvider}
+                selectedModel={selectedModel}
+                selectedPersona={selectedPersona}
+                isPersonaEnabled={isPersonaEnabled}
+                onTogglePersonaEnabled={handleTogglePersonaEnabled}
+                onProviderChange={handleProviderChange}
+                onModelChange={handleModelChange}
+                onPersonaChange={handlePersonaChange}
+                onRetry={handleRetryLastAssistantMessage}
+                onEditUserMessage={handleEditLastUserMessage}
+                personaSessions={personaSessions}
+                activePersonaSessionId={activePersonaSessionIdState}
+                onSelectPersonaSession={setActivePersonaSessionIdState}
+                onNewPersonaSession={handleNewPersonaSession}
+                onDeletePersonaSession={handleDeletePersonaSession}
+                customModels={customModels}
+                isDemoView={false}
+              />
+            )}
+          </React.Suspense>
         </main>
       </div>
 

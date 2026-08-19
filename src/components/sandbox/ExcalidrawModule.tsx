@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Excalidraw } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
-import { Layers, Wand2, X, Sparkles, Check, Copy } from 'lucide-react';
+import { Layers, Wand2, X, Sparkles, Check, Copy, PenTool } from 'lucide-react';
 import { sendChatMessage } from '../../services/apiService';
 import type { Message, UserKeys } from '../../types';
 
@@ -100,9 +100,10 @@ export const ExcalidrawModule: React.FC = () => {
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '10px' }}>
+    <div className="excalidraw-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '10px' }}>
       {/* Top Header Information Bar with AI Formula Trigger */}
       <div
+        className="excalidraw-header-bar"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -110,19 +111,22 @@ export const ExcalidrawModule: React.FC = () => {
           padding: '10px 16px',
           background: 'rgba(15, 23, 42, 0.95)',
           borderRadius: '14px',
-          border: '1px solid rgba(51, 65, 85, 0.7)'
+          border: '1px solid rgba(51, 65, 85, 0.7)',
+          boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ padding: '5px', borderRadius: '8px', background: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', display: 'flex' }}>
-            <Layers size={16} />
+            <PenTool size={16} />
           </div>
-          <span style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f8fafc' }}>
-            Excalidraw Diagramming & Sketch Suite
-          </span>
-          <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
-            | 100% Free MIT Open-Source, Zero Watermarks, Vector Hand-Drawn Diagrams
-          </span>
+          <div>
+            <h3 style={{ fontSize: '0.85rem', fontWeight: 800, color: '#f8fafc', margin: 0 }}>
+              Excalidraw Freehand Canvas
+            </h3>
+            <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+              Full-bleed infinite whiteboard, hand-drawn vector diagrams & AI formula integration
+            </span>
+          </div>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -145,7 +149,7 @@ export const ExcalidrawModule: React.FC = () => {
             }}
           >
             <Wand2 size={13} />
-            <span>✨ AI Formula Generator</span>
+            <span>✨ AI Formula</span>
           </button>
 
           <span
@@ -166,6 +170,7 @@ export const ExcalidrawModule: React.FC = () => {
 
       {/* Main Full-Bleed Excalidraw Viewport */}
       <div
+        className="excalidraw-canvas-viewport"
         style={{
           flex: 1,
           minHeight: '680px',

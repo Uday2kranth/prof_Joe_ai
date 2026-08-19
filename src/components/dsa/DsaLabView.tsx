@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import katex from 'katex';
 import { DSA_CATEGORIES, DSA_ALGORITHMS } from './dsaData';
 import type { DsaCategory } from './types';
 import { SortingLab } from './modules/SortingLab';
@@ -25,8 +26,23 @@ export const DsaLabView: React.FC = () => {
   const [speed, setSpeed] = useState<number>(3); // 1x to 10x
   const [activeCodeTab, setActiveCodeTab] = useState<'pseudo' | 'python' | 'cpp' | 'java'>('python');
   const [isCopied, setIsCopied] = useState<boolean>(false);
+  const [mobileActiveTab, setMobileActiveTab] = useState<'visualizer' | 'code'>('visualizer');
 
   const activeAlgo = DSA_ALGORITHMS[activeAlgoId] || DSA_ALGORITHMS.bubble_sort;
+  const activeCatMeta = DSA_CATEGORIES.find(c => c.id === activeCategory) || DSA_CATEGORIES[0];
+
+  const renderMathProof = (mathFormula: string) => {
+    if (!mathFormula) return null;
+    try {
+      const html = katex.renderToString(mathFormula, {
+        throwOnError: false,
+        displayMode: true
+      });
+      return <div className="dsa-math-formula-katex" dangerouslySetInnerHTML={{ __html: html }} />;
+    } catch {
+      return <code style={{ fontSize: '0.8rem', color: '#e2e8f0', fontFamily: 'monospace' }}>{mathFormula}</code>;
+    }
+  };
 
   const handleCopyCode = () => {
     let codeStr = activeAlgo.pythonCode;
@@ -57,131 +73,111 @@ export const DsaLabView: React.FC = () => {
       background: '#070b14',
       color: '#f8fafc',
       padding: '16px 20px',
-      gap: '16px',
+      gap: '12px',
       overflowY: 'auto'
     }}>
-      {/* Top Main Category Navigation Deck */}
-      <div style={{
+      {/* Top Main Category & Global Controls Bar */}
+      <div className="dsa-header-card" style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: '12px',
-        padding: '12px 18px',
-        background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.8))',
-        borderRadius: '16px',
-        border: '1px solid rgba(255, 255, 255, 0.1)',
+        gap: '10px',
+        padding: '10px 14px',
+        background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.85))',
+        borderRadius: '14px',
+        border: '1px solid rgba(56, 189, 248, 0.25)',
         boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{
-            width: '42px',
-            height: '42px',
-            borderRadius: '12px',
-            background: 'linear-gradient(135deg, #0284c7, #0369a1)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            fontSize: '1.4rem',
-            boxShadow: '0 0 16px rgba(2, 132, 199, 0.6)'
-          }}>
-            ⚡
-          </div>
-          <div>
-            <h1 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 800, letterSpacing: '-0.02em', color: '#ffffff' }}>
-              Data Structures & Algorithms Laboratory (DSA Lab)
-            </h1>
-            <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
-              Interactive Visual Execution & Multi-Language Code Studio • Osmania University Curriculum
+        {/* Left: Category Selector Dropdown & Badge */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '1 1 260px', minWidth: 0, maxWidth: '100%', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 200px', minWidth: 0, maxWidth: '100%' }}>
+            <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
+              DSA:
             </span>
+            <select
+              value={activeCategory}
+              onChange={(e) => handleSelectCategory(e.target.value as DsaCategory)}
+              className="dsa-select-control"
+              style={{
+                minHeight: '38px',
+                padding: '6px 12px',
+                borderRadius: '10px',
+                background: 'rgba(30, 41, 59, 0.95)',
+                border: '1.5px solid #38bdf8',
+                color: '#f8fafc',
+                fontSize: '0.84rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                outline: 'none',
+                boxShadow: '0 0 12px rgba(56, 189, 248, 0.25)'
+              }}
+            >
+              {DSA_CATEGORIES.map(cat => (
+                <option key={cat.id} value={cat.id} style={{ background: '#0f172a', color: '#f8fafc' }}>
+                  {cat.icon} {cat.title} ({cat.count} Algos)
+                </option>
+              ))}
+            </select>
           </div>
+
+          {/* Active Category Meta Tag */}
+          <span className="dsa-meta-badge" style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '6px',
+            padding: '4px 8px',
+            borderRadius: '8px',
+            background: 'rgba(56, 189, 248, 0.12)',
+            border: '1px solid rgba(56, 189, 248, 0.3)',
+            color: '#38bdf8',
+            fontSize: '0.72rem',
+            fontWeight: 700
+          }}>
+            <span>{activeCatMeta.icon}</span>
+            <span>{activeCatMeta.desc}</span>
+          </span>
         </div>
 
-        {/* Global Speed Controller */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', background: 'rgba(0,0,0,0.3)', padding: '6px 14px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.06)' }}>
-          <Zap size={15} color="#38bdf8" />
-          <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Speed: <strong>{speed}x</strong></span>
+        {/* Right: Global Speed Controller */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.3)', padding: '5px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
+          <Zap size={14} color="#38bdf8" />
+          <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>Speed: <strong style={{ color: '#38bdf8' }}>{speed}x</strong></span>
           <input
             type="range"
             min={1}
             max={8}
             value={speed}
             onChange={(e) => setSpeed(Number(e.target.value))}
-            style={{ width: '90px', accentColor: '#38bdf8' }}
+            style={{ width: '70px', accentColor: '#38bdf8', cursor: 'pointer' }}
           />
         </div>
       </div>
 
-      {/* 7-Category Horizontal Tab Deck */}
-      <div style={{
-        display: 'flex',
-        gap: '8px',
-        overflowX: 'auto',
-        paddingBottom: '4px'
-      }}>
-        {DSA_CATEGORIES.map(cat => {
-          const isActive = activeCategory === cat.id;
-          return (
-            <button
-              key={cat.id}
-              onClick={() => handleSelectCategory(cat.id)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '10px 16px',
-                borderRadius: '12px',
-                background: isActive
-                  ? 'linear-gradient(135deg, rgba(56, 189, 248, 0.2), rgba(2, 132, 199, 0.25))'
-                  : 'rgba(15, 23, 42, 0.6)',
-                border: isActive
-                  ? '1px solid #38bdf8'
-                  : '1px solid rgba(255, 255, 255, 0.08)',
-                color: isActive ? '#ffffff' : '#94a3b8',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap',
-                fontWeight: isActive ? 800 : 600,
-                fontSize: '0.85rem',
-                boxShadow: isActive ? '0 0 14px rgba(56, 189, 248, 0.25)' : 'none',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              <span>{cat.icon}</span>
-              <span>{cat.title}</span>
-              <span style={{
-                fontSize: '0.7rem',
-                padding: '2px 6px',
-                borderRadius: '6px',
-                background: isActive ? '#38bdf8' : 'rgba(255,255,255,0.1)',
-                color: isActive ? '#0f172a' : '#94a3b8',
-                fontWeight: 800
-              }}>
-                {cat.count}
-              </span>
-            </button>
-          );
-        })}
+      {/* Mobile Navigation Tabs (Only visible on screens <= 1024px) */}
+      <div className="dsa-mobile-tab-nav">
+        <button
+          type="button"
+          onClick={() => setMobileActiveTab('visualizer')}
+          className={`dsa-mobile-tab-btn ${mobileActiveTab === 'visualizer' ? 'active' : ''}`}
+        >
+          <Zap size={15} />
+          <span>Visualizer & Animation</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileActiveTab('code')}
+          className={`dsa-mobile-tab-btn ${mobileActiveTab === 'code' ? 'active' : ''}`}
+        >
+          <Code2 size={15} />
+          <span>Math & Code Studio</span>
+        </button>
       </div>
 
       {/* Split Workspace Layout: Visualizer Canvas (Left/Center) + Telemetry & Code Deck (Right) */}
-      <div style={{
-        display: 'grid',
-        gridTemplateColumns: 'minmax(0, 1.4fr) minmax(360px, 0.8fr)',
-        gap: '16px',
-        flex: 1,
-        minHeight: '600px'
-      }}>
+      <div className="dsa-split-workspace">
         {/* Left Column: Interactive Visualizer Modules */}
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          background: 'rgba(15, 23, 42, 0.7)',
-          borderRadius: '16px',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          padding: '16px',
-          overflowY: 'auto',
-          overflowX: 'hidden'
-        }}>
+        <div className={`dsa-visualizer-panel ${mobileActiveTab === 'visualizer' ? 'mobile-active' : 'mobile-hidden'}`}>
           {activeCategory === 'sorting' && (
             <SortingLab
               activeAlgorithm={activeAlgoId}
@@ -247,12 +243,7 @@ export const DsaLabView: React.FC = () => {
         </div>
 
         {/* Right Column: Mathematical & Telemetry Deck + Multi-Language Code */}
-        <div style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '14px',
-          overflowY: 'auto'
-        }}>
+        <div className={`dsa-code-panel ${mobileActiveTab === 'code' ? 'mobile-active' : 'mobile-hidden'}`}>
           {/* Algorithm Info & Complexity Card */}
           <div style={{
             background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.8))',
@@ -349,9 +340,7 @@ export const DsaLabView: React.FC = () => {
                 <BookOpen size={13} />
                 <span>Mathematical Proof & Recurrence Relation:</span>
               </div>
-              <code style={{ fontSize: '0.8rem', color: '#e2e8f0', fontFamily: 'monospace' }}>
-                {activeAlgo.mathFormula}
-              </code>
+              {renderMathProof(activeAlgo.mathFormula)}
             </div>
           </div>
 

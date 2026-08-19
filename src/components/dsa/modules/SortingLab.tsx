@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import type { ArrayBar, StepLog } from '../types';
-import { Play, Pause, RotateCcw, Zap } from 'lucide-react';
+import { Play, Pause, RotateCcw, Zap, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface SortingLabProps {
   activeAlgorithm: string;
@@ -15,7 +15,7 @@ export const SortingLab: React.FC<SortingLabProps> = ({
   onSelectAlgorithm,
   speed
 }) => {
-  const [arraySize, setArraySize] = useState<number>(20);
+  const [arraySize, setArraySize] = useState<number>(8);
   const [array, setArray] = useState<ArrayBar[]>([]);
   const [activePreset, setActivePreset] = useState<OrderPreset>('random');
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -353,20 +353,31 @@ export const SortingLab: React.FC<SortingLabProps> = ({
     setSwaps(0);
   }, [activeAlgorithm]);
 
-  // Toptal-style Initial Order Generator
+  // Toptal & VisuAlgo-style Uniform Stepped Order Generator
   const generatePresetArray = useCallback((preset: OrderPreset, size: number) => {
     setActivePreset(preset);
     let values: number[] = [];
 
+    // Generates uniform, evenly stepped values from 12 to 96
+    const getSteppedValues = (n: number) => {
+      if (n <= 1) return [50];
+      return Array.from({ length: n }, (_, i) => Math.round(12 + (i / (n - 1)) * 84));
+    };
+
     if (preset === 'random') {
-      for (let i = 0; i < size; i++) {
-        values.push(Math.floor(Math.random() * 85) + 10);
+      values = getSteppedValues(size);
+      // Fisher-Yates shuffle for a perfectly unbiased, evenly distributed permutation
+      for (let i = values.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        const temp = values[i];
+        values[i] = values[j];
+        values[j] = temp;
       }
     } else if (preset === 'nearly_sorted') {
-      for (let i = 0; i < size; i++) {
-        values.push(10 + Math.floor((i / size) * 80));
-      }
-      for (let k = 0; k < Math.max(1, Math.floor(size * 0.15)); k++) {
+      values = getSteppedValues(size);
+      // Introduce 2-3 slight disorder swaps
+      const swapCount = Math.max(1, Math.floor(size * 0.12));
+      for (let k = 0; k < swapCount; k++) {
         const i1 = Math.floor(Math.random() * size);
         const i2 = Math.floor(Math.random() * size);
         const tmp = values[i1];
@@ -374,11 +385,10 @@ export const SortingLab: React.FC<SortingLabProps> = ({
         values[i2] = tmp;
       }
     } else if (preset === 'reversed') {
-      for (let i = 0; i < size; i++) {
-        values.push(95 - Math.floor((i / size) * 80));
-      }
+      values = getSteppedValues(size).reverse();
     } else if (preset === 'few_unique') {
-      const distinct = [20, 45, 70, 90];
+      // 4 clean, evenly spaced height tiers
+      const distinct = [22, 46, 70, 94];
       for (let i = 0; i < size; i++) {
         values.push(distinct[i % distinct.length]);
       }
@@ -392,7 +402,7 @@ export const SortingLab: React.FC<SortingLabProps> = ({
 
     const newArr: ArrayBar[] = values.map((val, idx) => ({
       value: val,
-      id: `bar-${idx}-${Date.now()}`,
+      id: `bar-${idx}-${Date.now()}-${Math.random()}`,
       state: 'default'
     }));
 
@@ -483,68 +493,82 @@ export const SortingLab: React.FC<SortingLabProps> = ({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
-      {/* 9 Sorting Algorithms Multi-Row Selector & Toptal Presets */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-        {/* Algorithms */}
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-          {[
-            { id: 'bubble_sort', name: 'Bubble Sort' },
-            { id: 'selection_sort', name: 'Selection Sort' },
-            { id: 'insertion_sort', name: 'Insertion Sort' },
-            { id: 'shell_sort', name: 'Shell Sort' },
-            { id: 'merge_sort', name: 'Merge Sort' },
-            { id: 'quick_sort', name: 'Quick Sort' },
-            { id: 'heap_sort', name: 'Heap Sort' },
-            { id: 'counting_sort', name: 'Counting Sort' },
-            { id: 'radix_sort', name: 'Radix Sort' }
-          ].map(algo => (
-            <button
-              key={algo.id}
-              onClick={() => onSelectAlgorithm(algo.id)}
-              style={{
-                padding: '5px 11px',
-                borderRadius: '8px',
-                border: activeAlgorithm === algo.id ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.1)',
-                background: activeAlgorithm === algo.id ? 'rgba(56, 189, 248, 0.2)' : 'rgba(15, 23, 42, 0.6)',
-                color: activeAlgorithm === algo.id ? '#38bdf8' : 'var(--text-secondary)',
-                fontSize: '0.78rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              {algo.name}
-            </button>
-          ))}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
+      {/* 9 Sorting Algorithms Dropdown & Initial Order Presets */}
+      <div className="dsa-header-card" style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '8px',
+        background: 'rgba(15, 23, 42, 0.75)',
+        padding: '8px 12px',
+        borderRadius: '12px',
+        border: '1px solid rgba(255,255,255,0.08)'
+      }}>
+        {/* Left: Sorting Algorithm Dropdown */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 200px', minWidth: 0, maxWidth: '100%' }}>
+          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
+            SORT:
+          </span>
+          <select
+            value={activeAlgorithm}
+            onChange={(e) => onSelectAlgorithm(e.target.value)}
+            className="dsa-select-control"
+            style={{
+              minHeight: '36px',
+              padding: '6px 10px',
+              borderRadius: '8px',
+              background: 'rgba(30, 41, 59, 0.95)',
+              border: '1.5px solid #38bdf8',
+              color: '#f8fafc',
+              fontSize: '0.82rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              outline: 'none',
+              boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)'
+            }}
+          >
+            <option value="bubble_sort">📶 Bubble Sort (Adjacent Swaps)</option>
+            <option value="selection_sort">🎯 Selection Sort (Min/Max Scanning)</option>
+            <option value="insertion_sort">📥 Insertion Sort (Shift & Insert)</option>
+            <option value="shell_sort">🐚 Shell Sort (Diminishing Gap)</option>
+            <option value="merge_sort">🔀 Merge Sort (Divide & Conquer O(n log n))</option>
+            <option value="quick_sort">⚡ Quick Sort (Lomuto Partitioning)</option>
+            <option value="heap_sort">🔺 Heap Sort (Binary Max-Heap)</option>
+            <option value="counting_sort">📊 Counting Sort (Non-Comparison O(n+k))</option>
+            <option value="radix_sort">🔢 Radix Sort (LSD Bucket Pass)</option>
+          </select>
         </div>
 
-        {/* Toptal Presets */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700 }}>Initial Order:</span>
-          {[
-            { id: 'random', label: '🎲 Random' },
-            { id: 'nearly_sorted', label: '📈 Nearly Sorted' },
-            { id: 'reversed', label: '📉 Reversed' },
-            { id: 'few_unique', label: '🔁 Few Unique' }
-          ].map(p => (
-            <button
-              key={p.id}
-              onClick={() => generatePresetArray(p.id as OrderPreset, arraySize)}
-              style={{
-                padding: '4px 10px',
-                borderRadius: '6px',
-                border: activePreset === p.id ? '1px solid #a855f7' : '1px solid rgba(255,255,255,0.08)',
-                background: activePreset === p.id ? 'rgba(168, 85, 247, 0.2)' : 'rgba(15, 23, 42, 0.6)',
-                color: activePreset === p.id ? '#c084fc' : '#94a3b8',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                cursor: 'pointer'
-              }}
-            >
-              {p.label}
-            </button>
-          ))}
+        {/* Right: Initial Order Presets */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
+          <span style={{ fontSize: '0.74rem', color: '#94a3b8', fontWeight: 700 }}>Order:</span>
+          <select
+            value={activePreset}
+            onChange={(e) => {
+              const p = e.target.value as OrderPreset;
+              setActivePreset(p);
+              generatePresetArray(p, arraySize);
+            }}
+            style={{
+              minHeight: '32px',
+              padding: '4px 8px',
+              borderRadius: '6px',
+              background: 'rgba(30, 41, 59, 0.95)',
+              border: '1px solid rgba(168, 85, 247, 0.5)',
+              color: '#c084fc',
+              fontSize: '0.76rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              outline: 'none'
+            }}
+          >
+            <option value="random">🎲 Random</option>
+            <option value="nearly_sorted">📈 Nearly Sorted</option>
+            <option value="reversed">📉 Reversed</option>
+            <option value="few_unique">🔁 Few Unique</option>
+          </select>
         </div>
       </div>
 
@@ -554,67 +578,84 @@ export const SortingLab: React.FC<SortingLabProps> = ({
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: '12px',
+        gap: '8px',
         background: 'rgba(15, 23, 42, 0.7)',
-        padding: '8px 14px',
-        borderRadius: '12px',
+        padding: '6px 12px',
+        borderRadius: '10px',
         border: '1px solid rgba(255,255,255,0.08)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <button
+            title={isPlaying ? 'Pause' : 'Auto Play'}
             onClick={() => setIsPlaying(!isPlaying)}
+            className="dsa-action-btn"
             style={{
-              padding: '6px 14px',
-              borderRadius: '8px',
               border: 'none',
               background: isPlaying ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #10b981, #059669)',
-              color: '#fff',
-              fontWeight: 800,
-              fontSize: '0.82rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              cursor: 'pointer'
+              color: '#fff'
             }}
           >
             {isPlaying ? <Pause size={14} /> : <Play size={14} />}
-            {isPlaying ? 'Pause' : 'Auto Play'}
+            <span className="dsa-btn-label">{isPlaying ? 'Pause' : 'Auto Play'}</span>
           </button>
 
           <button
+            title="Previous Step"
             onClick={handleStepBackward}
             disabled={currentStep === 0 || isPlaying}
-            style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.75rem', cursor: 'pointer', opacity: currentStep === 0 ? 0.4 : 1 }}
+            className="dsa-action-btn"
+            style={{
+              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(255,255,255,0.05)',
+              color: '#fff',
+              opacity: currentStep === 0 ? 0.4 : 1
+            }}
           >
-            Prev Step
+            <ChevronLeft size={14} />
+            <span className="dsa-btn-label">Prev</span>
           </button>
 
           <button
+            title="Next Step"
             onClick={handleStepForward}
             disabled={currentStep >= stepsHistoryRef.current.length - 1 || isPlaying}
-            style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.75rem', cursor: 'pointer', opacity: currentStep >= stepsHistoryRef.current.length - 1 ? 0.4 : 1 }}
+            className="dsa-action-btn"
+            style={{
+              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(255,255,255,0.05)',
+              color: '#fff',
+              opacity: currentStep >= stepsHistoryRef.current.length - 1 ? 0.4 : 1
+            }}
           >
-            Next Step
+            <ChevronRight size={14} />
+            <span className="dsa-btn-label">Next</span>
           </button>
 
           <button
+            title="Reset Array"
             onClick={handleReset}
-            style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+            className="dsa-action-btn"
+            style={{
+              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(255,255,255,0.05)',
+              color: 'var(--text-muted)'
+            }}
           >
-            <RotateCcw size={12} /> Reset
+            <RotateCcw size={13} />
+            <span className="dsa-btn-label">Reset</span>
           </button>
         </div>
 
         {/* Array Size Slider */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Size (N): {arraySize}</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>N: <strong style={{ color: '#38bdf8' }}>{arraySize}</strong></span>
           <input
             type="range"
-            min="10"
-            max="35"
+            min="5"
+            max="25"
             value={arraySize}
             onChange={(e) => setArraySize(parseInt(e.target.value, 10))}
-            style={{ width: '90px', accentColor: '#38bdf8' }}
+            style={{ width: '70px', accentColor: '#38bdf8' }}
           />
         </div>
       </div>
@@ -626,117 +667,138 @@ export const SortingLab: React.FC<SortingLabProps> = ({
         justifyContent: 'space-between',
         background: 'rgba(2, 132, 199, 0.1)',
         border: '1px solid rgba(56, 189, 248, 0.25)',
-        padding: '8px 14px',
-        borderRadius: '10px'
+        padding: '6px 12px',
+        borderRadius: '8px',
+        gap: '8px',
+        flexWrap: 'wrap'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Zap size={14} color="#38bdf8" />
-          <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#38bdf8' }}>
-            STEP {currentStep} / {Math.max(0, stepsHistoryRef.current.length - 1)}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
+          <Zap size={14} color="#38bdf8" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#38bdf8', flexShrink: 0 }}>
+            {currentStep}/{Math.max(0, stepsHistoryRef.current.length - 1)}
           </span>
-          <span style={{ fontSize: '0.8rem', color: '#f1f5f9', fontWeight: 600 }}>
+          <span style={{ fontSize: '0.76rem', color: '#f1f5f9', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {currentLog.description}
           </span>
         </div>
 
-        <div style={{ display: 'flex', gap: '14px' }}>
-          <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-            Comparisons: <strong style={{ color: '#38bdf8' }}>{comparisons}</strong>
+        <div style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
+          <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+            C: <strong style={{ color: '#38bdf8' }}>{comparisons}</strong>
           </span>
-          <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
-            Swaps / Shifts: <strong style={{ color: '#f59e0b' }}>{swaps}</strong>
+          <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+            S: <strong style={{ color: '#f59e0b' }}>{swaps}</strong>
           </span>
         </div>
       </div>
 
-      {/* Main Bar Chart Visualizer */}
+      {/* Main Bar Chart Visualizer Board */}
       <div style={{
         flex: 1,
-        minHeight: '360px',
+        minHeight: '260px',
         background: 'radial-gradient(ellipse at center, #0f172a 0%, #030712 100%)',
-        borderRadius: '16px',
+        borderRadius: '14px',
         border: '1px solid rgba(255,255,255,0.08)',
-        padding: '24px 18px 12px 18px',
+        padding: '16px 12px 8px 12px',
         display: 'flex',
-        alignItems: 'flex-end',
-        justifyContent: 'center',
-        gap: '4px',
-        position: 'relative'
+        flexDirection: 'column',
+        justifyContent: 'space-between',
+        gap: '8px'
       }}>
-        {array.map((bar, idx) => {
-          const heightPercent = Math.max(12, bar.value);
-          let bg = 'linear-gradient(180deg, #0284c7 0%, #0369a1 100%)';
-          let border = '#38bdf8';
-          let shadow = '0 0 8px rgba(56, 189, 248, 0.3)';
-
-          if (bar.state === 'comparing') {
-            bg = 'linear-gradient(180deg, #facc15 0%, #ca8a04 100%)';
-            border = '#fde047';
-            shadow = '0 0 16px rgba(250, 204, 21, 0.7)';
-          } else if (bar.state === 'swapping') {
-            bg = 'linear-gradient(180deg, #ef4444 0%, #b91c1c 100%)';
-            border = '#f87171';
-            shadow = '0 0 16px rgba(239, 68, 68, 0.8)';
-          } else if (bar.state === 'pivot') {
-            bg = 'linear-gradient(180deg, #a855f7 0%, #7e22ce 100%)';
-            border = '#c084fc';
-            shadow = '0 0 16px rgba(168, 85, 247, 0.8)';
-          } else if (bar.state === 'sorted') {
-            bg = 'linear-gradient(180deg, #10b981 0%, #047857 100%)';
-            border = '#34d399';
-            shadow = '0 0 8px rgba(16, 185, 129, 0.4)';
-          }
-
-          return (
-            <div
-              key={bar.id}
-              style={{
-                flex: 1,
-                maxWidth: '38px',
-                height: `${heightPercent * 2.8}px`,
-                background: bg,
-                border: `1.5px solid ${border}`,
-                borderRadius: '6px 6px 0 0',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                padding: '4px 0',
-                boxShadow: shadow,
-                transition: 'all 0.15s ease'
-              }}
-            >
-              <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#fff' }}>
-                {bar.value}
-              </span>
-              <span style={{ fontSize: '0.55rem', color: 'rgba(255,255,255,0.7)' }}>
-                {idx}
-              </span>
-            </div>
-          );
-        })}
-
-        {/* Legend */}
         <div style={{
-          position: 'absolute',
-          bottom: '8px',
           display: 'flex',
-          gap: '12px',
-          background: 'rgba(3, 7, 18, 0.85)',
-          padding: '4px 12px',
-          borderRadius: '20px',
-          border: '1px solid rgba(255,255,255,0.1)'
+          alignItems: 'flex-end',
+          justifyContent: 'center',
+          gap: array.length > 15 ? '2px' : '4px',
+          flex: 1,
+          width: '100%',
+          minHeight: '180px'
+        }}>
+          {(() => {
+            const allVals = array.map(b => b.value);
+            const minV = Math.min(...allVals, 1);
+            const maxV = Math.max(...allVals, 100);
+            const range = maxV === minV ? 1 : (maxV - minV);
+
+            return array.map((bar, idx) => {
+              const heightPercent = 18 + ((bar.value - minV) / range) * 76;
+              let bg = 'linear-gradient(180deg, #0284c7 0%, #0369a1 100%)';
+              let border = '#38bdf8';
+              let shadow = '0 0 8px rgba(56, 189, 248, 0.3)';
+
+              if (bar.state === 'comparing') {
+                bg = 'linear-gradient(180deg, #facc15 0%, #ca8a04 100%)';
+                border = '#fde047';
+                shadow = '0 0 16px rgba(250, 204, 21, 0.7)';
+              } else if (bar.state === 'swapping') {
+                bg = 'linear-gradient(180deg, #ef4444 0%, #b91c1c 100%)';
+                border = '#f87171';
+                shadow = '0 0 16px rgba(239, 68, 68, 0.8)';
+              } else if (bar.state === 'pivot') {
+                bg = 'linear-gradient(180deg, #a855f7 0%, #7e22ce 100%)';
+                border = '#c084fc';
+                shadow = '0 0 16px rgba(168, 85, 247, 0.8)';
+              } else if (bar.state === 'sorted') {
+                bg = 'linear-gradient(180deg, #10b981 0%, #047857 100%)';
+                border = '#34d399';
+                shadow = '0 0 8px rgba(16, 185, 129, 0.4)';
+              }
+
+              return (
+                <div
+                  key={bar.id}
+                  style={{
+                    flex: '1 1 0',
+                    maxWidth: array.length > 15 ? '22px' : '42px',
+                    minWidth: '4px',
+                    height: `${heightPercent}%`,
+                    background: bg,
+                    border: `1.5px solid ${border}`,
+                    borderRadius: '6px 6px 0 0',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    padding: '3px 0',
+                    boxShadow: shadow,
+                    transition: 'all 0.15s ease'
+                  }}
+                >
+                  {array.length <= 15 ? (
+                    <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#fff', textShadow: '0 1px 2px rgba(0,0,0,0.8)' }}>
+                      {bar.value}
+                    </span>
+                  ) : null}
+                  <span style={{ fontSize: '0.55rem', fontWeight: 700, color: 'rgba(255,255,255,0.85)' }}>
+                    {idx}
+                  </span>
+                </div>
+              );
+            });
+          })()}
+        </div>
+
+        {/* Non-Overlapping Bottom Legend */}
+        <div style={{
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '8px',
+          justifyContent: 'center',
+          background: 'rgba(3, 7, 18, 0.7)',
+          padding: '4px 10px',
+          borderRadius: '8px',
+          border: '1px solid rgba(255,255,255,0.06)'
         }}>
           {[
             { label: 'Default', color: '#0284c7' },
             { label: 'Comparing', color: '#facc15' },
-            { label: 'Swapping / Shifting', color: '#ef4444' },
-            { label: 'Pivot / Gap / Bucket', color: '#a855f7' },
-            { label: 'Sorted In Place', color: '#10b981' }
+            { label: 'Swapping', color: '#ef4444' },
+            { label: 'Pivot', color: '#a855f7' },
+            { label: 'Sorted', color: '#10b981' }
           ].map(leg => (
             <div key={leg.label} style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <div style={{ width: '8px', height: '8px', borderRadius: '2px', background: leg.color }} />
-              <span style={{ fontSize: '0.65rem', color: '#94a3b8', fontWeight: 600 }}>{leg.label}</span>
+              <div style={{ width: '7px', height: '7px', borderRadius: '2px', background: leg.color }} />
+              <span style={{ fontSize: '0.64rem', color: '#94a3b8', fontWeight: 600 }}>{leg.label}</span>
             </div>
           ))}
         </div>

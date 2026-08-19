@@ -158,37 +158,52 @@ export const DynamicProgrammingLab: React.FC<DynamicProgrammingLabProps> = ({
   };
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
-      {/* 4 DP Algorithm Tabs */}
-      <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-        {[
-          { id: 'knapsack', name: '🎒 0/1 Knapsack (2D Table)' },
-          { id: 'lcs', name: '🔤 Longest Common Subsequence (LCS)' },
-          { id: 'coin_change', name: '🪙 Making Change (Coin Change)' },
-          { id: 'fibonacci', name: '🔢 Fibonacci (Memoization vs Tabulation)' }
-        ].map(tab => (
-          <button
-            key={tab.id}
-            onClick={() => {
-              setActiveDpAlgo(tab.id as any);
-              onSelectAlgorithm(tab.id);
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
+      {/* Top DP Problem Selector Card */}
+      <div className="dsa-header-card" style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '8px',
+        background: 'rgba(15, 23, 42, 0.75)',
+        padding: '8px 12px',
+        borderRadius: '12px',
+        border: '1px solid rgba(255,255,255,0.08)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 200px', minWidth: 0, maxWidth: '100%', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
+            DP:
+          </span>
+          <select
+            value={activeDpAlgo}
+            onChange={(e) => {
+              const val = e.target.value as any;
+              setActiveDpAlgo(val);
+              onSelectAlgorithm(val);
               initAllTables();
             }}
+            className="dsa-select-control"
             style={{
-              padding: '5px 12px',
+              minHeight: '36px',
+              padding: '6px 10px',
               borderRadius: '8px',
-              border: activeDpAlgo === tab.id ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.1)',
-              background: activeDpAlgo === tab.id ? 'rgba(56, 189, 248, 0.2)' : 'rgba(15, 23, 42, 0.6)',
-              color: activeDpAlgo === tab.id ? '#38bdf8' : 'var(--text-secondary)',
-              fontSize: '0.78rem',
-              fontWeight: 700,
+              background: 'rgba(30, 41, 59, 0.95)',
+              border: '1.5px solid #38bdf8',
+              color: '#f8fafc',
+              fontSize: '0.82rem',
+              fontWeight: 800,
               cursor: 'pointer',
-              transition: 'all 0.2s ease'
+              outline: 'none',
+              boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)'
             }}
           >
-            {tab.name}
-          </button>
-        ))}
+            <option value="knapsack">🎒 0/1 Knapsack Problem (2D Table)</option>
+            <option value="lcs">🔤 Longest Common Subsequence (LCS Matrix)</option>
+            <option value="coin_change">🪙 Making Change (Coin Change 1D Table)</option>
+            <option value="fibonacci">🔢 Fibonacci DP (Memoization & Tabulation)</option>
+          </select>
+        </div>
       </div>
 
       {/* Control Action Bar */}
@@ -197,48 +212,39 @@ export const DynamicProgrammingLab: React.FC<DynamicProgrammingLabProps> = ({
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: '10px',
+        gap: '8px',
         background: 'rgba(15, 23, 42, 0.8)',
-        padding: '8px 14px',
-        borderRadius: '12px',
+        padding: '6px 12px',
+        borderRadius: '10px',
         border: '1px solid rgba(255,255,255,0.08)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <button
+            title="Compute Next Cell"
             onClick={stepForward}
+            className="dsa-action-btn"
             style={{
-              padding: '6px 14px',
-              borderRadius: '8px',
               border: 'none',
               background: 'linear-gradient(135deg, #10b981, #059669)',
-              color: '#fff',
-              fontWeight: 800,
-              fontSize: '0.8rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
+              color: '#fff'
             }}
           >
-            <Play size={13} /> Compute Next Cell
+            <Play size={13} />
+            <span className="dsa-btn-label">Compute Next</span>
           </button>
 
           <button
+            title="Reset Table"
             onClick={initAllTables}
+            className="dsa-action-btn"
             style={{
-              padding: '6px 12px',
-              borderRadius: '6px',
               border: '1px solid rgba(255,255,255,0.1)',
               background: 'rgba(255,255,255,0.05)',
-              color: 'var(--text-muted)',
-              fontSize: '0.75rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px'
+              color: 'var(--text-muted)'
             }}
           >
-            <RotateCcw size={12} /> Reset Table
+            <RotateCcw size={12} />
+            <span className="dsa-btn-label">Reset</span>
           </button>
         </div>
       </div>
@@ -247,14 +253,14 @@ export const DynamicProgrammingLab: React.FC<DynamicProgrammingLabProps> = ({
       <div style={{
         display: 'flex',
         alignItems: 'center',
-        gap: '8px',
+        gap: '6px',
         background: 'rgba(2, 132, 199, 0.1)',
         border: '1px solid rgba(56, 189, 248, 0.25)',
-        padding: '8px 14px',
-        borderRadius: '10px'
+        padding: '6px 12px',
+        borderRadius: '8px'
       }}>
-        <Zap size={14} color="#38bdf8" />
-        <span style={{ fontSize: '0.8rem', color: '#f1f5f9', fontWeight: 600 }}>
+        <Zap size={14} color="#38bdf8" style={{ flexShrink: 0 }} />
+        <span style={{ fontSize: '0.76rem', color: '#f1f5f9', fontWeight: 600 }}>
           {narrative}
         </span>
       </div>
@@ -262,11 +268,11 @@ export const DynamicProgrammingLab: React.FC<DynamicProgrammingLabProps> = ({
       {/* DP Table Viewport */}
       <div style={{
         flex: 1,
-        minHeight: '380px',
+        minHeight: '280px',
         background: 'radial-gradient(ellipse at center, #0f172a 0%, #030712 100%)',
-        borderRadius: '16px',
-        border: '1px solid rgba(255,255,255,0.1)',
-        padding: '16px',
+        borderRadius: '14px',
+        border: '1px solid rgba(255,255,255,0.08)',
+        padding: '12px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -275,27 +281,27 @@ export const DynamicProgrammingLab: React.FC<DynamicProgrammingLabProps> = ({
       }}>
         {/* 1. 0/1 KNAPSACK TABLE */}
         {activeDpAlgo === 'knapsack' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: 700 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center', maxWidth: '100%', overflowX: 'auto' }}>
+            <span style={{ fontSize: '0.74rem', color: '#38bdf8', fontWeight: 700 }}>
               Recurrence: DP[i][w] = max(val_i + DP[i-1][w - wt_i], DP[i-1][w])
             </span>
-            <table style={{ borderCollapse: 'collapse', textAlign: 'center', borderRadius: '8px', overflow: 'hidden', border: '1px solid #38bdf8' }}>
+            <table style={{ borderCollapse: 'collapse', textAlign: 'center', borderRadius: '8px', overflow: 'hidden', border: '1px solid #38bdf8', fontSize: '0.76rem' }}>
               <thead>
-                <tr style={{ background: '#0284c7', color: '#fff', fontSize: '0.78rem' }}>
-                  <th style={{ padding: '6px 10px' }}>Item \ Cap (W)</th>
+                <tr style={{ background: '#0284c7', color: '#fff' }}>
+                  <th style={{ padding: '4px 8px' }}>Item \ Cap (W)</th>
                   {Array(knapsackCapacity + 1).fill(0).map((_, w) => (
-                    <th key={`cap-${w}`} style={{ padding: '6px 10px' }}>{w}</th>
+                    <th key={`cap-${w}`} style={{ padding: '4px 8px' }}>{w}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {knapsackTable.map((row, rIdx) => (
                   <tr key={`k-row-${rIdx}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', background: rIdx % 2 === 0 ? '#1e293b' : '#0f172a' }}>
-                    <td style={{ padding: '6px 10px', fontWeight: 800, color: '#38bdf8', fontSize: '0.75rem' }}>
-                      {rIdx === 0 ? '0 (None)' : `${items[rIdx - 1].name} (w=${items[rIdx - 1].wt}, v=${items[rIdx - 1].val})`}
+                    <td style={{ padding: '4px 8px', fontWeight: 800, color: '#38bdf8', fontSize: '0.72rem' }}>
+                      {rIdx === 0 ? '0 (None)' : `${items[rIdx - 1].name} (w=${items[rIdx - 1].wt})`}
                     </td>
                     {row.map((val, cIdx) => (
-                      <td key={`k-cell-${rIdx}-${cIdx}`} style={{ padding: '6px 12px', color: val > 0 ? '#10b981' : 'rgba(255,255,255,0.4)', fontWeight: 800, fontSize: '0.85rem' }}>
+                      <td key={`k-cell-${rIdx}-${cIdx}`} style={{ padding: '4px 8px', color: val > 0 ? '#10b981' : 'rgba(255,255,255,0.4)', fontWeight: 800, fontSize: '0.8rem' }}>
                         {val}
                       </td>
                     ))}
@@ -308,28 +314,28 @@ export const DynamicProgrammingLab: React.FC<DynamicProgrammingLabProps> = ({
 
         {/* 2. LCS TABLE */}
         {activeDpAlgo === 'lcs' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: 700 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', alignItems: 'center', maxWidth: '100%', overflowX: 'auto' }}>
+            <span style={{ fontSize: '0.74rem', color: '#38bdf8', fontWeight: 700 }}>
               LCS Matrix: str1 = "{str1}" vs str2 = "{str2}"
             </span>
-            <table style={{ borderCollapse: 'collapse', textAlign: 'center', borderRadius: '8px', overflow: 'hidden', border: '1px solid #38bdf8' }}>
+            <table style={{ borderCollapse: 'collapse', textAlign: 'center', borderRadius: '8px', overflow: 'hidden', border: '1px solid #38bdf8', fontSize: '0.76rem' }}>
               <thead>
-                <tr style={{ background: '#0284c7', color: '#fff', fontSize: '0.78rem' }}>
-                  <th style={{ padding: '6px 10px' }}>str1 \ str2</th>
-                  <th style={{ padding: '6px 10px' }}>Ø</th>
+                <tr style={{ background: '#0284c7', color: '#fff' }}>
+                  <th style={{ padding: '4px 8px' }}>str1 \ str2</th>
+                  <th style={{ padding: '4px 8px' }}>Ø</th>
                   {str2.split('').map((c, idx) => (
-                    <th key={`str2-${idx}`} style={{ padding: '6px 10px' }}>{c}</th>
+                    <th key={`str2-${idx}`} style={{ padding: '4px 8px' }}>{c}</th>
                   ))}
                 </tr>
               </thead>
               <tbody>
                 {lcsTable.map((row, rIdx) => (
                   <tr key={`lcs-row-${rIdx}`} style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', background: rIdx % 2 === 0 ? '#1e293b' : '#0f172a' }}>
-                    <td style={{ padding: '6px 10px', fontWeight: 800, color: '#38bdf8', fontSize: '0.78rem' }}>
+                    <td style={{ padding: '4px 8px', fontWeight: 800, color: '#38bdf8', fontSize: '0.74rem' }}>
                       {rIdx === 0 ? 'Ø' : str1[rIdx - 1]}
                     </td>
                     {row.map((val, cIdx) => (
-                      <td key={`lcs-cell-${rIdx}-${cIdx}`} style={{ padding: '6px 10px', color: val > 0 ? '#10b981' : 'rgba(255,255,255,0.3)', fontWeight: 800, fontSize: '0.85rem' }}>
+                      <td key={`lcs-cell-${rIdx}-${cIdx}`} style={{ padding: '4px 8px', color: val > 0 ? '#10b981' : 'rgba(255,255,255,0.3)', fontWeight: 800, fontSize: '0.8rem' }}>
                         {val}
                       </td>
                     ))}
@@ -342,15 +348,15 @@ export const DynamicProgrammingLab: React.FC<DynamicProgrammingLabProps> = ({
 
         {/* 3. COIN CHANGE TABLE */}
         {activeDpAlgo === 'coin_change' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: 700 }}>
-              Available Denominations: [{coins.join('¢, ')}¢] | Target: {targetAmount}¢
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', maxWidth: '100%' }}>
+            <span style={{ fontSize: '0.74rem', color: '#38bdf8', fontWeight: 700 }}>
+              Coins: [{coins.join('¢, ')}¢] | Target: {targetAmount}¢
             </span>
-            <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', padding: '10px' }}>
+            <div style={{ display: 'flex', gap: '4px', overflowX: 'auto', padding: '6px', maxWidth: '100%' }}>
               {coinTable.map((val, amt) => (
-                <div key={`coin-${amt}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ fontSize: '0.7rem', color: '#38bdf8' }}>{amt}¢</span>
-                  <div style={{ width: '42px', height: '42px', borderRadius: '6px', background: val !== Infinity ? 'linear-gradient(135deg, #10b981, #059669)' : '#1e293b', border: '1px solid #38bdf8', color: '#fff', fontWeight: 800, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.9rem' }}>
+                <div key={`coin-${amt}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                  <span style={{ fontSize: '0.65rem', color: '#38bdf8' }}>{amt}¢</span>
+                  <div style={{ width: '36px', height: '36px', borderRadius: '6px', background: val !== Infinity ? 'linear-gradient(135deg, #10b981, #059669)' : '#1e293b', border: '1px solid #38bdf8', color: '#fff', fontWeight: 800, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.82rem' }}>
                     {val === Infinity ? '∞' : val}
                   </div>
                 </div>
@@ -361,15 +367,15 @@ export const DynamicProgrammingLab: React.FC<DynamicProgrammingLabProps> = ({
 
         {/* 4. FIBONACCI TABLE */}
         {activeDpAlgo === 'fibonacci' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px', alignItems: 'center' }}>
-            <span style={{ fontSize: '0.78rem', color: '#38bdf8', fontWeight: 700 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', alignItems: 'center', maxWidth: '100%' }}>
+            <span style={{ fontSize: '0.74rem', color: '#38bdf8', fontWeight: 700 }}>
               1D Tabulation Array: Fib(n) = Fib(n-1) + Fib(n-2)
             </span>
-            <div style={{ display: 'flex', gap: '8px' }}>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center' }}>
               {fibTable.map((val, idx) => (
-                <div key={`fib-${idx}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ fontSize: '0.7rem', color: '#38bdf8' }}>N={idx}</span>
-                  <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: 'linear-gradient(135deg, #0284c7, #0369a1)', border: '2px solid #38bdf8', color: '#fff', fontWeight: 800, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '1.1rem' }}>
+                <div key={`fib-${idx}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
+                  <span style={{ fontSize: '0.65rem', color: '#38bdf8' }}>N={idx}</span>
+                  <div style={{ width: '38px', height: '38px', borderRadius: '6px', background: 'linear-gradient(135deg, #0284c7, #0369a1)', border: '1.5px solid #38bdf8', color: '#fff', fontWeight: 800, display: 'flex', justifyContent: 'center', alignItems: 'center', fontSize: '0.95rem' }}>
                     {val}
                   </div>
                 </div>

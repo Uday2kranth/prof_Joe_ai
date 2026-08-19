@@ -1124,6 +1124,7 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({ userKeys =
   const [isAiGenerating, setIsAiGenerating] = useState<boolean>(false);
   const [aiError, setAiError] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [mobileActiveTab, setMobileActiveTab] = useState<'editor' | 'canvas'>('editor');
 
   // Recent Prompts History
   const [recentPrompts, setRecentPrompts] = useState<string[]>([
@@ -1542,9 +1543,29 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({ userKeys =
         </div>
       </div>
 
+      {/* Mobile Navigation Tabs (Only visible on screens <= 1024px) */}
+      <div className="diagram-mobile-tab-nav">
+        <button
+          type="button"
+          onClick={() => setMobileActiveTab('editor')}
+          className={`diagram-mobile-tab-btn ${mobileActiveTab === 'editor' ? 'active' : ''}`}
+        >
+          <Code2 size={15} />
+          <span>Prompt & Code Editor</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileActiveTab('canvas')}
+          className={`diagram-mobile-tab-btn ${mobileActiveTab === 'canvas' ? 'active' : ''}`}
+        >
+          <ImageIcon size={15} />
+          <span>Rendered Diagram Canvas</span>
+        </button>
+      </div>
+
       {/* ─── 2. MODE 1: COLLAPSIBLE TOP AI PROMPT DECK ─── */}
       {studioMode === 'quick_deck' && (
-        <div className="ai-prompt-deck">
+        <div className={`ai-prompt-deck diagram-pane-editor ${mobileActiveTab === 'editor' ? 'mobile-active' : 'mobile-hidden'}`}>
           <div className="prompt-deck-top">
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <div style={{ padding: '6px', borderRadius: '8px', background: 'rgba(6, 182, 212, 0.15)', color: '#38bdf8', display: 'flex' }}>
@@ -1770,7 +1791,7 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({ userKeys =
         /* ─── MODE 2: 3-COLUMN COPILOT WORKSPACE ─── */
         <div className="copilot-3col-grid">
           {/* Column 1: AI Copilot Chat Thread */}
-          <div className="copilot-chat-panel">
+          <div className={`copilot-chat-panel diagram-pane-editor ${mobileActiveTab === 'editor' ? 'mobile-active' : 'mobile-hidden'}`}>
             <div className="copilot-panel-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{ padding: '4px', borderRadius: '6px', background: 'rgba(168, 85, 247, 0.2)', color: '#c084fc', display: 'flex' }}>
@@ -1860,7 +1881,7 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({ userKeys =
 
           {/* Column 2: Code Editor Pane */}
           <div
-            className="editor-card card-box"
+            className={`editor-card card-box diagram-pane-editor ${mobileActiveTab === 'editor' ? 'mobile-active' : 'mobile-hidden'}`}
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -1918,7 +1939,7 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({ userKeys =
 
           {/* Column 3: Vector SVG Preview Pane */}
           <div
-            className="preview-card card-box"
+            className={`preview-card card-box diagram-pane-canvas ${mobileActiveTab === 'canvas' ? 'mobile-active' : 'mobile-hidden'}`}
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -2035,7 +2056,7 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({ userKeys =
         >
           {/* Left Side: Code Editor */}
           <div
-            className="editor-card card-box"
+            className={`editor-card card-box diagram-pane-editor ${mobileActiveTab === 'editor' ? 'mobile-active' : 'mobile-hidden'}`}
             style={{
               display: 'flex',
               flexDirection: 'column',
@@ -2110,7 +2131,7 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({ userKeys =
 
           {/* Right Side: Live SVG Preview */}
           <div
-            className="preview-card card-box"
+            className={`preview-card card-box diagram-pane-canvas ${mobileActiveTab === 'canvas' ? 'mobile-active' : 'mobile-hidden'}`}
             style={{
               display: 'flex',
               flexDirection: 'column',

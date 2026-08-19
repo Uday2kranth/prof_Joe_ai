@@ -37,6 +37,7 @@ import { marked } from 'marked';
 import DOMPurify from 'dompurify';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
+import { sanitizeLatexForKatex } from './MessageItem';
 import { PdfPreviewModal } from './PdfPreviewModal';
 import { printBubbleToPdf } from '../services/printPdfService';
 
@@ -64,6 +65,8 @@ interface LectureNotesStudioViewProps {
   customModels?: UserCustomModels;
   currentUser?: string;
   isDemoView?: boolean;
+  isExternalDrawerOpen?: boolean;
+  onCloseExternalDrawer?: () => void;
 }
 
 const PRESET_SUBJECTS = [
@@ -186,7 +189,9 @@ export const LectureNotesStudioView: React.FC<LectureNotesStudioViewProps> = ({
   userKeys,
   customModels = {},
   currentUser = 'guest',
-  isDemoView: _isDemoView = false
+  isDemoView: _isDemoView = false,
+  isExternalDrawerOpen,
+  onCloseExternalDrawer
 }) => {
   // 1. Isolated Session Storage (STRICT LANE - Zero mix with main chat)
   const storageKey = `chatterbot_lecture_sessions_${currentUser}`;
@@ -252,6 +257,11 @@ export const LectureNotesStudioView: React.FC<LectureNotesStudioViewProps> = ({
 
   // Left Control Deck Drawer State
   const [isControlDeckOpen, setIsControlDeckOpen] = useState<boolean>(false);
+  const effectiveControlDeckOpen = isExternalDrawerOpen ?? isControlDeckOpen;
+  const handleCloseControlDeck = () => {
+    setIsControlDeckOpen(false);
+    if (onCloseExternalDrawer) onCloseExternalDrawer();
+  };
   const [controlDeckSearchQuery, setControlDeckSearchQuery] = useState<string>('');
   const [showClearConfirm, setShowClearConfirm] = useState<boolean>(false);
 
@@ -490,9 +500,13 @@ export const LectureNotesStudioView: React.FC<LectureNotesStudioViewProps> = ({
   };
 
   const handleNewLectureSession = () => {
+    const sessionName = window.prompt('Enter a title for this new lecture note session:', topicInput || 'New Lecture Note');
+    if (sessionName === null) return; // User clicked cancel
+    const finalTitle = sessionName.trim() || 'New Lecture Note';
+
     const newSess: LectureNoteSession = {
       id: `lecture-sess-${Date.now()}`,
-      title: 'New Lecture Note',
+      title: finalTitle,
       subject: selectedSubject,
       customSubjectName: '',
       topic: '',
@@ -507,7 +521,7 @@ export const LectureNotesStudioView: React.FC<LectureNotesStudioViewProps> = ({
     };
     setSessions([newSess, ...sessions]);
     setActiveSessionId(newSess.id);
-    setIsControlDeckOpen(false);
+    handleCloseControlDeck();
   };
 
   const handleDeleteSession = (e: React.MouseEvent, id: string) => {
@@ -859,9 +873,10 @@ Begin IMMEDIATELY on Line 1 with the next chapter, delivering full theoretical r
     processed = processed.replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
       const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
       try {
+        const sanitized = sanitizeLatexForKatex(math);
         mathMap.set(
           token,
-          `<div class="katex-display katex-block">${katex.renderToString(math.trim(), {
+          `<div class="katex-display katex-block">${katex.renderToString(sanitized, {
             displayMode: true,
             throwOnError: false
           })}</div>`
@@ -875,9 +890,10 @@ Begin IMMEDIATELY on Line 1 with the next chapter, delivering full theoretical r
     processed = processed.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => {
       const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
       try {
+        const sanitized = sanitizeLatexForKatex(math);
         mathMap.set(
           token,
-          `<div class="katex-display katex-block">${katex.renderToString(math.trim(), {
+          `<div class="katex-display katex-block">${katex.renderToString(sanitized, {
             displayMode: true,
             throwOnError: false
           })}</div>`
@@ -892,9 +908,10 @@ Begin IMMEDIATELY on Line 1 with the next chapter, delivering full theoretical r
     processed = processed.replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => {
       const token = `KATEXINLINETOKEN${tokenIdx++}ENDTOKEN`;
       try {
+        const sanitized = sanitizeLatexForKatex(math);
         mathMap.set(
           token,
-          `<span class="katex-inline">${katex.renderToString(math.trim(), {
+          `<span class="katex-inline">${katex.renderToString(sanitized, {
             displayMode: false,
             throwOnError: false
           })}</span>`
@@ -908,9 +925,10 @@ Begin IMMEDIATELY on Line 1 with the next chapter, delivering full theoretical r
     processed = processed.replace(/\$([^\$\n]+?)\$/g, (_, math) => {
       const token = `KATEXINLINETOKEN${tokenIdx++}ENDTOKEN`;
       try {
+        const sanitized = sanitizeLatexForKatex(math);
         mathMap.set(
           token,
-          `<span class="katex-inline">${katex.renderToString(math.trim(), {
+          `<span class="katex-inline">${katex.renderToString(sanitized, {
             displayMode: false,
             throwOnError: false
           })}</span>`
@@ -936,8 +954,8 @@ Begin IMMEDIATELY on Line 1 with the next chapter, delivering full theoretical r
       // Check if line contains bare LaTeX math without existing KATEX token
       const hasMathKeywords =
         trimmed.startsWith('\\') ||
-        /^[a-zA-Z_]\s*(\([^\)]*\))?\s*=\s*/.test(trimmed) && (trimmed.includes('\\') || trimmed.includes('^') || trimmed.includes('_')) ||
-        /\\(frac|sum|prod|int|sqrt|mathbf|mathcal|mathbb|boldsymbol|nabla|partial|alpha|beta|gamma|delta|epsilon|theta|lambda|mu|sigma|omega|arg|min|max|vec|hat|tilde|in|subseteq|times|pm|le|ge|neq|approx|to|rightarrow|implies|mid|vert|parallel|mathbb)/.test(trimmed);
+        (/^[a-zA-Z_]\s*(\([^\)]*\))?\s*=\s*/.test(trimmed) && (trimmed.includes('\\') || trimmed.includes('^') || trimmed.includes('_'))) ||
+        /\\(begin|bmatrix|pmatrix|vmatrix|matrix|align|equation|cases|frac|sum|prod|int|sqrt|mathbf|mathcal|mathbb|boldsymbol|nabla|partial|alpha|beta|gamma|delta|epsilon|theta|lambda|mu|sigma|omega|arg|min|max|vec|hat|tilde|in|subseteq|times|pm|le|ge|neq|approx|to|rightarrow|implies|mid|vert|parallel|mathbb)/.test(trimmed);
 
       const isStandaloneFormula =
         !line.includes('KATEX') &&
@@ -956,9 +974,10 @@ Begin IMMEDIATELY on Line 1 with the next chapter, delivering full theoretical r
       if (isStandaloneFormula) {
         const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
         try {
+          const sanitized = sanitizeLatexForKatex(trimmed);
           mathMap.set(
             token,
-            `<div class="katex-display katex-block">${katex.renderToString(trimmed, {
+            `<div class="katex-display katex-block">${katex.renderToString(sanitized, {
               displayMode: true,
               throwOnError: false
             })}</div>`
@@ -1702,40 +1721,9 @@ Begin IMMEDIATELY on Line 1 with the next chapter, delivering full theoretical r
         )}
       </div>
 
-      {/* 🧭 Vertical Navigation Micro-Dock (Stationed on Desktop Right Margin) */}
-      {generatedNotes && outlineHeadings.length > 0 && (
-        <div className="parchment-vertical-micro-dock" aria-label="Document Navigation Dock">
-          <button
-            type="button"
-            onClick={handleScrollToTop}
-            className="micro-dock-btn"
-            title="Scroll to Top of Document"
-          >
-            <ChevronUp size={18} />
-          </button>
-          <button
-            type="button"
-            onClick={() => setIsOutlineOpen(true)}
-            className="micro-dock-btn outline-active"
-            title={`Open Chapter Outline (${outlineHeadings.length} Chapters)`}
-          >
-            <BookOpen size={18} />
-            <span className="micro-dock-count">{outlineHeadings.length}</span>
-          </button>
-          <button
-            type="button"
-            onClick={() => composerRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-            className="micro-dock-btn"
-            title="Jump to Composer & 2×2 Bento Actions"
-          >
-            <ChevronDown size={18} />
-          </button>
-        </div>
-      )}
-
       {/* 📜 UNIFIED LEFT-SIDE LECTURE CONTROL DECK DRAWER (100% Exact Matching Screenshot 1 & Bento Architecture) */}
-      {isControlDeckOpen && (
-        <div className="demo-drawer-overlay" onClick={() => setIsControlDeckOpen(false)} style={{ zIndex: 999999 }}>
+      {effectiveControlDeckOpen && (
+        <div className="demo-drawer-overlay" onClick={handleCloseControlDeck} style={{ zIndex: 999999 }}>
           <aside
             className="demo-chat-history-drawer"
             onClick={(e) => e.stopPropagation()}
@@ -1749,7 +1737,7 @@ Begin IMMEDIATELY on Line 1 with the next chapter, delivering full theoretical r
               </div>
               <button
                 type="button"
-                onClick={() => setIsControlDeckOpen(false)}
+                onClick={handleCloseControlDeck}
                 className="demo-icon-btn"
                 aria-label="Close Lecture Control Deck"
               >
@@ -1814,7 +1802,7 @@ Begin IMMEDIATELY on Line 1 with the next chapter, delivering full theoretical r
                   onClick={() => {
                     if (generatedNotes) {
                       setIsPreviewModalOpen(true);
-                      setIsControlDeckOpen(false);
+                      handleCloseControlDeck();
                     }
                   }}
                   title="Open styled in-app Document Preview Modal"
@@ -1835,7 +1823,7 @@ Begin IMMEDIATELY on Line 1 with the next chapter, delivering full theoretical r
                   onClick={() => {
                     if (generatedNotes) {
                       handlePrint();
-                      setIsControlDeckOpen(false);
+                      handleCloseControlDeck();
                     }
                   }}
                   title="Open System Native Chrome Print Preview Dialog"
@@ -1930,7 +1918,7 @@ Begin IMMEDIATELY on Line 1 with the next chapter, delivering full theoretical r
                       className={`demo-session-item ${isActive ? 'active' : ''}`}
                       onClick={() => {
                         setActiveSessionId(s.id);
-                        setIsControlDeckOpen(false);
+                        handleCloseControlDeck();
                       }}
                     >
                       <div className="demo-session-info">

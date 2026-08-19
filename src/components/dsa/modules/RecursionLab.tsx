@@ -333,46 +333,58 @@ export const RecursionLab: React.FC<RecursionLabProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
-      {/* Top Concept Mode Selector */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
-        <div style={{ display: 'flex', gap: '6px' }}>
-          {[
-            { id: 'fibonacci', name: '🔢 Fibonacci Tree (Binary Branching)' },
-            { id: 'factorial', name: '📦 Factorial Tree (Linear Unwinding)' }
-          ].map(tab => (
-            <button
-              key={tab.id}
-              onClick={() => setActiveMode(tab.id as any)}
-              style={{
-                padding: '5px 13px',
-                borderRadius: '8px',
-                border: activeMode === tab.id ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.1)',
-                background: activeMode === tab.id ? 'rgba(56, 189, 248, 0.2)' : 'rgba(15, 23, 42, 0.6)',
-                color: activeMode === tab.id ? '#38bdf8' : 'var(--text-secondary)',
-                fontSize: '0.78rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              {tab.name}
-            </button>
-          ))}
+      {/* Model Selection Header */}
+      <div className="dsa-header-card" style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '8px',
+        background: 'rgba(15, 23, 42, 0.75)',
+        padding: '8px 12px',
+        borderRadius: '12px',
+        border: '1px solid rgba(255,255,255,0.08)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 200px', minWidth: 0, maxWidth: '100%', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
+            MODEL:
+          </span>
+          <select
+            value={activeMode}
+            onChange={(e) => setActiveMode(e.target.value as any)}
+            className="dsa-select-control"
+            style={{
+              minHeight: '36px',
+              padding: '6px 10px',
+              borderRadius: '8px',
+              background: 'rgba(30, 41, 59, 0.95)',
+              border: '1.5px solid #38bdf8',
+              color: '#f8fafc',
+              fontSize: '0.82rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              outline: 'none',
+              boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)'
+            }}
+          >
+            <option value="fibonacci">🔢 Fibonacci Tree (Binary Branching)</option>
+            <option value="factorial">📦 Factorial Tree (Linear Unwinding)</option>
+          </select>
         </div>
 
         {/* Legend */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px', background: 'rgba(15, 23, 42, 0.8)', padding: '4px 12px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(15, 23, 42, 0.8)', padding: '4px 8px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.08)', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#c084fc' }} />
-            <span style={{ fontSize: '0.7rem', color: '#cbd5e1' }}>On the call stack</span>
+            <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#c084fc' }} />
+            <span style={{ fontSize: '0.68rem', color: '#cbd5e1', fontWeight: 600 }}>Stack</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#fbbf24' }} />
-            <span style={{ fontSize: '0.7rem', color: '#cbd5e1' }}>Evaluating</span>
+            <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#fbbf24' }} />
+            <span style={{ fontSize: '0.68rem', color: '#cbd5e1', fontWeight: 600 }}>Eval</span>
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#34d399' }} />
-            <span style={{ fontSize: '0.7rem', color: '#cbd5e1' }}>Returned</span>
+            <div style={{ width: '7px', height: '7px', borderRadius: '50%', background: '#34d399' }} />
+            <span style={{ fontSize: '0.68rem', color: '#cbd5e1', fontWeight: 600 }}>Done</span>
           </div>
         </div>
       </div>
@@ -380,28 +392,28 @@ export const RecursionLab: React.FC<RecursionLabProps> = ({
       {/* Main Interactive Stage Box */}
       <div style={{
         flex: 1,
-        minHeight: '380px',
+        minHeight: '280px',
         background: 'radial-gradient(ellipse at center, #0f172a 0%, #030712 100%)',
-        borderRadius: '16px',
-        border: '1px solid rgba(255,255,255,0.1)',
-        padding: '16px',
+        borderRadius: '14px',
+        border: '1px solid rgba(255,255,255,0.08)',
+        padding: '12px',
         display: 'flex',
         flexDirection: 'column',
         position: 'relative'
       }}>
         {/* Title Header */}
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#f8fafc' }}>
-            Calling {activeMode === 'fibonacci' ? `fib(${sizeN})` : `fact(${sizeN})`} — watch the calls branch out
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+          <span style={{ fontSize: '0.8rem', fontWeight: 800, color: '#f8fafc' }}>
+            {activeMode === 'fibonacci' ? `fib(${sizeN})` : `fact(${sizeN})`} — Recursive Call Tree
           </span>
-          <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: 700 }}>
+          <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: 700 }}>
             {progressPercent}% Complete
           </span>
         </div>
 
         {/* SVG Call Tree Canvas */}
-        <div style={{ flex: 1, minHeight: '230px', display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
-          <svg viewBox="0 0 800 280" style={{ width: '100%', height: '280px' }}>
+        <div style={{ flex: 1, minHeight: '200px', display: 'flex', justifyContent: 'center', alignItems: 'center', overflow: 'hidden' }}>
+          <svg viewBox="0 0 800 280" style={{ width: '100%', height: '240px' }}>
             {renderLines(treeData)}
             {renderNodes(treeData)}
           </svg>
@@ -411,29 +423,29 @@ export const RecursionLab: React.FC<RecursionLabProps> = ({
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
-          padding: '8px 14px',
+          gap: '6px',
+          padding: '6px 10px',
           background: 'rgba(3, 7, 18, 0.85)',
-          borderRadius: '10px',
+          borderRadius: '8px',
           border: '1px solid rgba(255, 255, 255, 0.08)',
-          marginTop: '6px',
+          marginTop: '4px',
           overflowX: 'auto'
         }}>
-          <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#94a3b8', whiteSpace: 'nowrap' }}>
-            Call stack:
+          <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#94a3b8', whiteSpace: 'nowrap' }}>
+            Stack:
           </span>
           {currentSnap.callStack.length === 0 ? (
-            <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.3)' }}>[Empty - Computation Finished]</span>
+            <span style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.3)' }}>[Empty - Done]</span>
           ) : (
             currentSnap.callStack.map((frame, idx) => (
               <React.Fragment key={`frame-${idx}`}>
                 <div style={{
-                  padding: '3px 10px',
-                  borderRadius: '14px',
+                  padding: '2px 8px',
+                  borderRadius: '10px',
                   background: 'linear-gradient(135deg, #7e22ce, #581c87)',
                   border: '1px solid #c084fc',
                   color: '#fff',
-                  fontSize: '0.75rem',
+                  fontSize: '0.7rem',
                   fontWeight: 800,
                   boxShadow: '0 0 8px rgba(192, 132, 252, 0.4)',
                   whiteSpace: 'nowrap'
@@ -441,7 +453,7 @@ export const RecursionLab: React.FC<RecursionLabProps> = ({
                   {frame}
                 </div>
                 {idx < currentSnap.callStack.length - 1 && (
-                  <span style={{ color: '#94a3b8', fontSize: '0.7rem' }}>›</span>
+                  <span style={{ color: '#94a3b8', fontSize: '0.65rem' }}>›</span>
                 )}
               </React.Fragment>
             ))
@@ -450,7 +462,7 @@ export const RecursionLab: React.FC<RecursionLabProps> = ({
       </div>
 
       {/* Progress Scrubber Slider */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px', padding: '0 4px' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '0 4px' }}>
         <input
           type="range"
           min="0"
@@ -462,8 +474,8 @@ export const RecursionLab: React.FC<RecursionLabProps> = ({
           }}
           style={{ flex: 1, accentColor: '#c084fc', cursor: 'pointer' }}
         />
-        <span style={{ fontSize: '0.75rem', color: '#94a3b8', minWidth: '75px', textAlign: 'right' }}>
-          Step {currentStep} / {Math.max(0, steps.length - 1)}
+        <span style={{ fontSize: '0.72rem', color: '#94a3b8', minWidth: '65px', textAlign: 'right' }}>
+          {currentStep}/{Math.max(0, steps.length - 1)}
         </span>
       </div>
 
@@ -473,87 +485,102 @@ export const RecursionLab: React.FC<RecursionLabProps> = ({
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: '12px',
+        gap: '8px',
         background: 'rgba(15, 23, 42, 0.8)',
-        padding: '10px 16px',
-        borderRadius: '12px',
+        padding: '6px 12px',
+        borderRadius: '10px',
         border: '1px solid rgba(255,255,255,0.08)'
       }}>
         {/* Playback Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <button
+            title={isPlaying ? 'Pause' : 'Play'}
             onClick={() => setIsPlaying(!isPlaying)}
+            className="dsa-action-btn"
             style={{
-              padding: '6px 16px',
-              borderRadius: '8px',
               border: 'none',
               background: isPlaying ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #0284c7, #0369a1)',
-              color: '#fff',
-              fontWeight: 800,
-              fontSize: '0.82rem',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              cursor: 'pointer'
+              color: '#fff'
             }}
           >
-            {isPlaying ? <Pause size={14} /> : <Play size={14} />}
-            {isPlaying ? 'Pause' : 'Play'}
+            {isPlaying ? <Pause size={13} /> : <Play size={13} />}
+            <span className="dsa-btn-label">{isPlaying ? 'Pause' : 'Play'}</span>
           </button>
 
           <button
+            title="Previous Step"
             onClick={() => {
               setIsPlaying(false);
               if (currentStep > 0) setCurrentStep(c => c - 1);
             }}
             disabled={currentStep === 0}
-            style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.75rem', cursor: 'pointer', opacity: currentStep === 0 ? 0.4 : 1 }}
+            className="dsa-action-btn"
+            style={{
+              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(255,255,255,0.05)',
+              color: '#fff',
+              opacity: currentStep === 0 ? 0.4 : 1
+            }}
           >
-            ‹ Prev
+            ‹<span className="dsa-btn-label"> Prev</span>
           </button>
 
           <button
+            title="Next Step"
             onClick={() => {
               setIsPlaying(false);
               if (currentStep < steps.length - 1) setCurrentStep(c => c + 1);
             }}
             disabled={currentStep >= steps.length - 1}
-            style={{ padding: '6px 12px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.75rem', cursor: 'pointer', opacity: currentStep >= steps.length - 1 ? 0.4 : 1 }}
+            className="dsa-action-btn"
+            style={{
+              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(255,255,255,0.05)',
+              color: '#fff',
+              opacity: currentStep >= steps.length - 1 ? 0.4 : 1
+            }}
           >
-            Next ›
+            <span className="dsa-btn-label">Next </span>›
           </button>
 
           <button
+            title="Reset"
             onClick={handleReset}
-            style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+            className="dsa-action-btn"
+            style={{
+              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(255,255,255,0.05)',
+              color: 'var(--text-muted)'
+            }}
           >
-            <RotateCcw size={12} /> Reset
+            <RotateCcw size={12} />
+            <span className="dsa-btn-label">Reset</span>
           </button>
         </div>
 
         {/* Speed & Size Sliders */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Speed: {localSpeed}x</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Speed: {localSpeed}x</span>
             <input
               type="range"
               min="1"
               max="5"
               value={localSpeed}
               onChange={(e) => setLocalSpeed(parseInt(e.target.value, 10))}
-              style={{ width: '65px', accentColor: '#38bdf8' }}
+              style={{ width: '50px', accentColor: '#38bdf8' }}
             />
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Size n = {sizeN}</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>n = {sizeN}</span>
             <input
               type="range"
               min="2"
-              max="6"
+              max="5"
               value={sizeN}
               onChange={(e) => setSizeN(parseInt(e.target.value, 10))}
-              style={{ width: '75px', accentColor: '#c084fc' }}
+              style={{ width: '55px', accentColor: '#c084fc' }}
             />
           </div>
         </div>

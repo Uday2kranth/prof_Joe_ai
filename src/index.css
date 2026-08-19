@@ -8748,6 +8748,941 @@ body {
   }
 }
 
+/* ==========================================================================
+   DSA Laboratory Mobile Dual-View & KaTeX Math Styling
+   ========================================================================== */
+.dsa-mobile-tab-nav {
+  display: none !important;
+}
+
+.dsa-split-workspace {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(360px, 0.8fr);
+  gap: 16px;
+  flex: 1;
+  min-height: 600px;
+}
+
+.dsa-visualizer-panel {
+  display: flex;
+  flex-direction: column;
+  background: rgba(15, 23, 42, 0.7);
+  border-radius: 16px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 16px;
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+.dsa-code-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  overflow-y: auto;
+}
+
+.dsa-math-formula-katex {
+  overflow-x: auto;
+  padding: 4px 0;
+  color: #e0f2fe;
+}
+
+.dsa-math-formula-katex .katex-display {
+  margin: 4px 0 !important;
+}
+
+@media (max-width: 1024px) {
+  .dsa-mobile-tab-nav {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 6px;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-shrink: 0;
+  }
+
+  .dsa-mobile-tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-secondary, #94a3b8);
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .dsa-mobile-tab-btn.active {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(168, 85, 247, 0.25));
+    border-color: rgba(6, 182, 212, 0.5);
+    color: var(--accent-cyan, #38bdf8);
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
+  }
+
+  .dsa-split-workspace {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: auto !important;
+    width: 100% !important;
+    gap: 0 !important;
+  }
+
+  .dsa-visualizer-panel.mobile-hidden,
+  .dsa-code-panel.mobile-hidden {
+    display: none !important;
+  }
+
+  .dsa-visualizer-panel.mobile-active,
+  .dsa-code-panel.mobile-active {
+    display: flex !important;
+    width: 100% !important;
+    flex: 1 !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .dsa-mobile-tab-nav {
+    display: none !important;
+  }
+  .dsa-visualizer-panel,
+  .dsa-code-panel,
+  .dsa-visualizer-panel.mobile-hidden,
+  .dsa-code-panel.mobile-hidden {
+    display: flex !important;
+  }
+}
+
+/* ==========================================================================
+   DSA Laboratory Responsive Dropdowns, Icon-First Buttons & Visual Scaling
+   ========================================================================== */
+.dsa-header-card {
+  width: 100%;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.dsa-select-control {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  box-sizing: border-box;
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
+}
+
+.dsa-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 6px 12px;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.dsa-canvas-box {
+  width: 100%;
+  max-width: 100%;
+  box-sizing: border-box;
+  overflow-x: auto;
+  overflow-y: hidden;
+  position: relative;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (max-width: 768px) {
+  .dsa-btn-label {
+    display: none !important;
+  }
+  .dsa-action-btn {
+    padding: 6px 8px !important;
+    min-width: 36px !important;
+    min-height: 36px !important;
+  }
+  .dsa-select-control {
+    font-size: 0.8rem !important;
+    padding: 6px 8px !important;
+  }
+  .dsa-meta-badge {
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+    white-space: nowrap !important;
+  }
+}
+
+/* ==========================================================================
+   Algorithmic Lab Module (Flow Lab) Mobile Dual-View & Grid Optimization
+   ========================================================================== */
+.flowlab-mobile-tab-nav {
+  display: none !important;
+}
+
+.flowlab-main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 12px;
+  flex: 1;
+  min-height: 680px;
+  height: calc(100vh - 210px);
+}
+
+.flowlab-canvas-panel {
+  height: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  position: relative;
+  background: #0a0f1d;
+  display: flex;
+  flex-direction: column;
+}
+
+.flowlab-log-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  background: rgba(15, 23, 42, 0.95);
+  border-radius: 16px;
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  padding: 14px;
+  overflow: hidden;
+}
+
+@media (max-width: 1024px) {
+  .flowlab-mobile-tab-nav {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 6px;
+    gap: 8px;
+    margin-bottom: 8px;
+    flex-shrink: 0;
+  }
+
+  .flowlab-mobile-tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-secondary, #94a3b8);
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .flowlab-mobile-tab-btn.active {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(168, 85, 247, 0.25));
+    border-color: rgba(6, 182, 212, 0.5);
+    color: var(--accent-cyan, #38bdf8);
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
+  }
+
+  .flowlab-main-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    min-height: 520px !important;
+    height: calc(100vh - 200px) !important;
+    width: 100% !important;
+    gap: 0 !important;
+  }
+
+  .flowlab-canvas-panel.mobile-hidden,
+  .flowlab-log-panel.mobile-hidden {
+    display: none !important;
+  }
+
+  .flowlab-canvas-panel.mobile-active,
+  .flowlab-log-panel.mobile-active {
+    display: flex !important;
+    width: 100% !important;
+    flex: 1 1 auto !important;
+    height: 100% !important;
+    min-height: 520px !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .flowlab-mobile-tab-nav,
+  .ds-mobile-tab-nav,
+  .neural-mobile-tab-nav,
+  .stat-opt-mobile-tab-nav {
+    display: none !important;
+  }
+  .flowlab-canvas-panel,
+  .flowlab-log-panel,
+  .flowlab-canvas-panel.mobile-hidden,
+  .flowlab-log-panel.mobile-hidden,
+  .ds-canvas-panel,
+  .ds-controls-panel,
+  .ds-canvas-panel.mobile-hidden,
+  .ds-controls-panel.mobile-hidden,
+  .neural-canvas-panel,
+  .neural-controls-panel,
+  .neural-canvas-panel.mobile-hidden,
+  .neural-controls-panel.mobile-hidden,
+  .stat-opt-canvas-panel,
+  .stat-opt-controls-panel,
+  .stat-opt-canvas-panel.mobile-hidden,
+  .stat-opt-controls-panel.mobile-hidden {
+    display: flex !important;
+  }
+}
+
+/* ==========================================================================
+   Interactive Sandbox Modules Desktop Baseline & Mobile Dual-View Switchers
+   ========================================================================== */
+
+/* 1. Data Structures Workbench */
+.ds-workbench-grid {
+  display: grid;
+  grid-template-columns: 1fr 370px;
+  gap: 16px;
+  flex: 1;
+  min-height: 640px;
+  width: 100%;
+}
+
+.ds-canvas-panel {
+  background: #0b1120;
+  border-radius: 16px;
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  padding: 20px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+}
+
+.ds-controls-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  min-width: 0;
+}
+
+.ds-mobile-tab-nav {
+  display: none;
+  width: 100%;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 6px;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.ds-mobile-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.ds-mobile-tab-btn.active {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(168, 85, 247, 0.25));
+  border-color: rgba(6, 182, 212, 0.5);
+  color: var(--accent-cyan, #38bdf8);
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
+}
+
+/* 2. Neural Simulator Workbench */
+.neural-workbench-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 390px;
+  gap: 12px;
+  flex: 1;
+  min-height: 680px;
+  height: calc(100vh - 210px);
+  width: 100%;
+}
+
+.neural-canvas-panel {
+  height: 100%;
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  position: relative;
+  background: #0a0f1d;
+  min-width: 0;
+}
+
+.neural-controls-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow-y: auto;
+  padding-right: 4px;
+  min-width: 0;
+}
+
+.neural-mobile-tab-nav {
+  display: none;
+  width: 100%;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 6px;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.neural-mobile-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.neural-mobile-tab-btn.active {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(168, 85, 247, 0.25));
+  border-color: rgba(6, 182, 212, 0.5);
+  color: var(--accent-cyan, #38bdf8);
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
+}
+
+/* 3. Statistical Optimization Workbench */
+.stat-opt-workbench-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 360px;
+  gap: 14px;
+  min-height: 680px;
+  width: 100%;
+}
+
+.stat-opt-canvas-panel {
+  position: relative;
+  background: #090d16;
+  border-radius: 16px;
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  overflow: hidden;
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 0;
+}
+
+.stat-opt-controls-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  background: rgba(15, 23, 42, 0.95);
+  border-radius: 16px;
+  border: 1px solid rgba(51, 65, 85, 0.8);
+  padding: 16px;
+  overflow-y: auto;
+  min-width: 0;
+}
+
+.stat-opt-mobile-tab-nav {
+  display: none;
+  width: 100%;
+  background: rgba(15, 23, 42, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 6px;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.stat-opt-mobile-tab-btn {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid transparent;
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-secondary, #94a3b8);
+  font-size: 0.8rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.stat-opt-mobile-tab-btn.active {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(168, 85, 247, 0.25));
+  border-color: rgba(6, 182, 212, 0.5);
+  color: var(--accent-cyan, #38bdf8);
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
+}
+
+/* 4. Whiteboard & Excalidraw baseline */
+.whiteboard-top-deck {
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.whiteboard-action-strip {
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.whiteboard-action-strip::-webkit-scrollbar {
+  display: none;
+}
+
+/* ==========================================================================
+   Interactive Sandbox Master 7-Module Bar & Header Optimization
+   ========================================================================== */
+.interactive-sandbox-container {
+  max-width: 1680px;
+  margin: 0 auto;
+  min-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.sandbox-header {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  padding: 14px 18px;
+  background: rgba(15, 23, 42, 0.85);
+  border: 1px solid rgba(51, 65, 85, 0.7);
+  border-radius: 16px;
+  backdrop-filter: blur(16px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4);
+}
+
+.sandbox-module-switcher-deck {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px;
+  border-radius: 14px;
+  background: rgba(2, 6, 23, 0.75);
+  border: 1px solid rgba(51, 65, 85, 0.7);
+  backdrop-filter: blur(12px);
+  flex-wrap: wrap;
+}
+
+.sandbox-module-pill-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 16px;
+  min-height: 40px;
+  border-radius: 10px;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+.sandbox-module-pill-btn:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  transform: translateY(-1px);
+}
+
+.sandbox-header-subtitle {
+  font-size: 0.8rem;
+  color: #94a3b8;
+  margin: 2px 0 0 0;
+  line-height: 1.4;
+}
+
+.module-label-desktop {
+  display: inline;
+}
+.module-label-mobile {
+  display: none;
+}
+
+@media (max-width: 1024px) {
+  html, body, #root, .app-layout {
+    max-width: 100vw !important;
+    overflow-x: hidden !important;
+  }
+
+  .interactive-sandbox-container {
+    padding: 6px 8px !important;
+    gap: 8px !important;
+    min-height: calc(100vh - 55px) !important;
+    max-width: 100vw !important;
+    width: 100% !important;
+    overflow-x: hidden !important;
+    box-sizing: border-box !important;
+  }
+
+  .sandbox-header {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    padding: 8px 10px !important;
+    background: rgba(15, 23, 42, 0.9) !important;
+    border-radius: 12px !important;
+    border: 1px solid rgba(51, 65, 85, 0.6) !important;
+    box-sizing: border-box !important;
+    width: 100% !important;
+    max-width: 100% !important;
+  }
+
+  .sandbox-header-subtitle {
+    display: none !important;
+  }
+
+  .sandbox-header-top-row {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  .module-label-desktop {
+    display: none !important;
+  }
+  .module-label-mobile {
+    display: inline !important;
+  }
+
+  .sandbox-module-switcher-deck {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    padding: 4px 6px !important;
+    box-sizing: border-box !important;
+    gap: 6px !important;
+    background: rgba(2, 6, 23, 0.9) !important;
+    border-radius: 10px !important;
+    min-height: 48px !important;
+  }
+
+  .sandbox-module-switcher-deck::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .sandbox-module-pill-btn {
+    padding: 6px 12px !important;
+    min-height: 38px !important;
+    font-size: 0.78rem !important;
+    border-radius: 8px !important;
+    gap: 6px !important;
+  }
+
+  /* FlowLab mobile constraints */
+  .flowlab-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+    gap: 6px !important;
+  }
+
+  .flowlab-control-bar {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 6px 8px !important;
+    gap: 6px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+  }
+
+  .flowlab-preset-select {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    font-size: 0.72rem !important;
+    padding: 5px 8px !important;
+  }
+
+  .flowlab-mobile-tab-nav {
+    display: flex !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    padding: 4px !important;
+    gap: 4px !important;
+    margin-bottom: 4px !important;
+    background: rgba(15, 23, 42, 0.95) !important;
+    border-radius: 10px !important;
+  }
+
+  .flowlab-mobile-tab-btn {
+    flex: 1 1 50% !important;
+    min-width: 0 !important;
+    box-sizing: border-box !important;
+    padding: 6px 4px !important;
+    font-size: 0.72rem !important;
+    border-radius: 8px !important;
+    gap: 4px !important;
+  }
+
+  /* Smart Teaching Board mobile constraints */
+  .smart-board-container {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+  }
+
+  .smart-board-top-toolbar {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    padding: 4px 6px !important;
+    gap: 6px !important;
+  }
+
+  .smart-board-top-toolbar::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  .smart-board-bottom-bar {
+    width: 100% !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+    padding: 4px 6px !important;
+    gap: 6px !important;
+  }
+
+  .smart-board-bottom-bar::-webkit-scrollbar {
+    display: none !important;
+  }
+
+  /* Data Structures Mobile */
+  .ds-mobile-tab-nav {
+    display: flex !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+  }
+  .ds-mobile-tab-btn {
+    flex: 1 1 50% !important;
+    font-size: 0.72rem !important;
+    padding: 6px 4px !important;
+  }
+  .ds-workbench-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    min-height: auto !important;
+    gap: 8px !important;
+  }
+  .ds-canvas-panel.mobile-hidden,
+  .ds-controls-panel.mobile-hidden {
+    display: none !important;
+  }
+  .ds-canvas-panel.mobile-active,
+  .ds-controls-panel.mobile-active {
+    display: flex !important;
+    width: 100% !important;
+    flex: 1 1 auto !important;
+  }
+
+  /* Neural Simulator Mobile (3-Pill Navigation & Segmented Cards) */
+  .neural-mobile-tab-nav {
+    display: flex !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    gap: 4px !important;
+    padding: 4px !important;
+  }
+  .neural-mobile-tab-btn {
+    flex: 1 1 33.333% !important;
+    min-width: 0 !important;
+    font-size: 0.7rem !important;
+    padding: 6px 3px !important;
+    gap: 4px !important;
+    white-space: nowrap !important;
+  }
+  .neural-mobile-tab-btn span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .neural-workbench-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    min-height: auto !important;
+    height: auto !important;
+    gap: 8px !important;
+  }
+  .neural-canvas-panel.mobile-hidden,
+  .neural-controls-panel.mobile-hidden {
+    display: none !important;
+  }
+  .neural-canvas-panel.mobile-active,
+  .neural-controls-panel.mobile-active {
+    display: flex !important;
+    width: 100% !important;
+    flex: 1 1 auto !important;
+    min-height: 480px !important;
+  }
+  .neural-card-telemetry.mobile-card-hidden,
+  .neural-card-hyperparams.mobile-card-hidden,
+  .neural-card-theory.mobile-card-hidden {
+    display: none !important;
+  }
+  .neural-card-telemetry.mobile-card-visible,
+  .neural-card-hyperparams.mobile-card-visible,
+  .neural-card-theory.mobile-card-visible {
+    display: flex !important;
+  }
+
+  /* Statistical Optimization Mobile (3-Pill Navigation & Segmented Cards) */
+  .stat-opt-mobile-tab-nav {
+    display: flex !important;
+    width: 100% !important;
+    box-sizing: border-box !important;
+    gap: 4px !important;
+    padding: 4px !important;
+  }
+  .stat-opt-mobile-tab-btn {
+    flex: 1 1 33.333% !important;
+    min-width: 0 !important;
+    font-size: 0.7rem !important;
+    padding: 6px 3px !important;
+    gap: 4px !important;
+    white-space: nowrap !important;
+  }
+  .stat-opt-mobile-tab-btn span {
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .stat-opt-workbench-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    min-height: auto !important;
+    gap: 8px !important;
+  }
+  .stat-opt-canvas-panel.mobile-hidden,
+  .stat-opt-controls-panel.mobile-hidden {
+    display: none !important;
+  }
+  .stat-opt-canvas-panel.mobile-active,
+  .stat-opt-controls-panel.mobile-active {
+    display: flex !important;
+    width: 100% !important;
+    flex: 1 1 auto !important;
+    min-height: 460px !important;
+  }
+  .stat-opt-card-telemetry.mobile-card-hidden,
+  .stat-opt-card-params.mobile-card-hidden,
+  .stat-opt-card-theory.mobile-card-hidden {
+    display: none !important;
+  }
+  .stat-opt-card-telemetry.mobile-card-visible,
+  .stat-opt-card-params.mobile-card-visible,
+  .stat-opt-card-theory.mobile-card-visible {
+    display: flex !important;
+  }
+
+  /* Whiteboard Mobile */
+  .whiteboard-top-deck {
+    padding: 6px 8px !important;
+    gap: 6px !important;
+  }
+  .whiteboard-top-row {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 6px !important;
+  }
+  .whiteboard-action-strip {
+    overflow-x: auto !important;
+    padding-bottom: 2px !important;
+  }
+  .whiteboard-canvas-viewport {
+    min-height: 480px !important;
+    height: calc(100vh - 220px) !important;
+  }
+  .whiteboard-left-toolbar {
+    top: 8px !important;
+    left: 8px !important;
+    padding: 4px !important;
+    gap: 4px !important;
+    transform: scale(0.9);
+    transform-origin: top left;
+  }
+
+  /* Excalidraw Mobile */
+  .excalidraw-header-bar {
+    padding: 6px 8px !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 6px !important;
+  }
+  .excalidraw-canvas-viewport {
+    min-height: 480px !important;
+    height: calc(100vh - 180px) !important;
+  }
+}
+
 /* Mobile Touch & Native Hardware Accelerated Scrolling Optimizations */
 .chat-messages-container {
   flex: 1 1 0%;
@@ -11190,6 +12125,251 @@ body {
   }
 }
 
+/* ==========================================================================
+   Kroki Diagram Studio Mobile Dual-View & Grid Optimization
+   ========================================================================== */
+.diagram-mobile-tab-nav {
+  display: none !important;
+}
 
+@media (max-width: 1024px) {
+  .diagram-studio-container {
+    padding: 12px 14px !important;
+    gap: 12px !important;
+  }
 
+  .studio-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
 
+  .studio-mode-pillbar {
+    width: 100% !important;
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+
+  .studio-controls {
+    width: 100% !important;
+    overflow-x: auto !important;
+    flex-wrap: nowrap !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+
+  .diagram-mobile-tab-nav {
+    display: flex !important;
+    align-items: center;
+    justify-content: center;
+    background: rgba(15, 23, 42, 0.95);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    padding: 6px;
+    gap: 8px;
+    margin-bottom: 4px;
+    flex-shrink: 0;
+  }
+
+  .diagram-mobile-tab-btn {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    border: 1px solid transparent;
+    background: rgba(255, 255, 255, 0.04);
+    color: var(--text-secondary, #94a3b8);
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s ease;
+  }
+
+  .diagram-mobile-tab-btn.active {
+    background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(168, 85, 247, 0.25));
+    border-color: rgba(6, 182, 212, 0.5);
+    color: var(--accent-cyan, #38bdf8);
+    box-shadow: 0 0 12px rgba(6, 182, 212, 0.2);
+  }
+
+  .diagram-studio-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    gap: 0 !important;
+  }
+
+  .copilot-3col-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    height: auto !important;
+    gap: 0 !important;
+  }
+
+  .diagram-pane-editor.mobile-hidden,
+  .diagram-pane-canvas.mobile-hidden {
+    display: none !important;
+  }
+
+  .diagram-pane-editor.mobile-active,
+  .diagram-pane-canvas.mobile-active {
+    display: flex !important;
+    width: 100% !important;
+    flex: 1 !important;
+  }
+}
+
+@media (min-width: 1025px) {
+  .diagram-mobile-tab-nav {
+    display: none !important;
+  }
+  .diagram-pane-editor,
+  .diagram-pane-canvas,
+  .diagram-pane-editor.mobile-hidden,
+  .diagram-pane-canvas.mobile-hidden {
+    display: flex !important;
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════
+   🌐 RESPONSIVE DSA LAB & INTERACTIVE SANDBOX SYSTEM DIRECTIVES
+   ═══════════════════════════════════════════════════════════════ */
+
+.dsa-header-card {
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+}
+
+.dsa-select-control {
+  box-sizing: border-box;
+  max-width: 100%;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%2338bdf8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  background-size: 14px;
+  padding-right: 32px !important;
+}
+
+.dsa-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  min-height: 34px;
+  padding: 5px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 700;
+  cursor: pointer;
+  outline: none;
+  transition: all 0.18s ease;
+  white-space: nowrap;
+  flex-shrink: 0;
+  box-sizing: border-box;
+}
+
+.dsa-action-btn:hover {
+  filter: brightness(1.15);
+  transform: translateY(-1px);
+}
+
+.dsa-action-btn:active {
+  transform: translateY(0);
+}
+
+.dsa-btn-label {
+  display: inline;
+}
+
+/* Responsive Breakpoint for Mobile & Narrow Screen Views (<= 768px) */
+@media (max-width: 768px) {
+  .module-label-desktop {
+    display: none !important;
+  }
+
+  .module-label-mobile {
+    display: inline !important;
+  }
+
+  .sandbox-header-subtitle {
+    display: none !important;
+  }
+
+  .sandbox-mobile-select-wrap {
+    display: flex !important;
+  }
+
+  .sandbox-module-switcher-deck {
+    display: none !important;
+  }
+
+  /* Compact button styling on mobile: keep icon visible, collapse text label */
+  .dsa-action-btn {
+    min-height: 32px !important;
+    padding: 5px 8px !important;
+    font-size: 0.72rem !important;
+  }
+
+  .dsa-btn-label {
+    display: none !important;
+  }
+
+  /* Control bars wrap cleanly */
+  .flowlab-control-bar,
+  .dsa-header-card {
+    padding: 8px 10px !important;
+    gap: 6px !important;
+    width: 100% !important;
+  }
+
+  /* Workbenches & Canvas layout */
+  .flowlab-main-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    height: calc(100vh - 200px) !important;
+    min-height: 520px !important;
+    gap: 0 !important;
+  }
+
+  .neural-workbench-grid,
+  .stat-opt-workbench-grid {
+    display: flex !important;
+    flex-direction: column !important;
+    width: 100% !important;
+    height: auto !important;
+    gap: 8px !important;
+  }
+
+  .neural-canvas-panel,
+  .flowlab-canvas-panel,
+  .stat-opt-canvas-panel {
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+  }
+
+  .flowlab-canvas-panel.mobile-active {
+    display: flex !important;
+    flex: 1 !important;
+    height: 100% !important;
+    min-height: 500px !important;
+  }
+
+  .neural-canvas-panel canvas,
+  .stat-opt-canvas-panel canvas {
+    max-width: 100% !important;
+    height: auto !important;
+  }
+}

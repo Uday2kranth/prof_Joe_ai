@@ -6,6 +6,7 @@ import {
   MiniMap,
   useNodesState,
   useEdgesState,
+  useReactFlow,
   addEdge,
   type Connection,
   type Edge,
@@ -1616,6 +1617,26 @@ export const ALGORITHM_REGISTRY: Record<AlgorithmPreset, PresetAlgorithmDefiniti
 };
 
 // ────────────────────────────────────────────────────────────────────────────
+// AUTOMATIC VIEWPORT FITTER ON MOBILE & PRESET SWITCH
+// ────────────────────────────────────────────────────────────────────────────
+const FlowAutoFitter: React.FC<{ activePreset: string; stepIndex: number; mobileTab: string }> = ({
+  activePreset,
+  stepIndex,
+  mobileTab
+}) => {
+  const { fitView } = useReactFlow();
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      fitView({ padding: 0.25, duration: 250 });
+    }, 60);
+    return () => clearTimeout(timer);
+  }, [activePreset, stepIndex, mobileTab, fitView]);
+
+  return null;
+};
+
+// ────────────────────────────────────────────────────────────────────────────
 // MAIN COMPONENT
 // ────────────────────────────────────────────────────────────────────────────
 export const AlgorithmicLabModule: React.FC = () => {
@@ -1729,6 +1750,7 @@ export const AlgorithmicLabModule: React.FC = () => {
 
   const [nodes, setNodes, onNodesChange] = useNodesState(styledNodes);
   const [edges, setEdges, onEdgesChange] = useEdgesState(styledEdges);
+  const [mobileActiveTab, setMobileActiveTab] = useState<'canvas' | 'log'>('canvas');
 
   // Synchronize internal React Flow state on change
   useEffect(() => {
@@ -1801,98 +1823,97 @@ export const AlgorithmicLabModule: React.FC = () => {
 
   return (
     <ReactFlowProvider>
-      <div
-        style={{
-          display: 'flex',
-          flexDirection: 'column',
-          gap: '12px',
-          width: '100%',
-          height: '100%',
-          minHeight: '720px'
-        }}
-      >
-        {/* ─── Top Control Bar: Algorithm Preset + Underlying DS Matrix + Stepping Controls ─── */}
+      <div className="flowlab-container">
+        {/* ─── Top Control Bar: Algorithm Preset Select + DS Switcher + Stepping Controls ─── */}
         <div
+          className="flowlab-control-bar dsa-header-card"
           style={{
             display: 'flex',
-            flexWrap: 'wrap',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: '12px',
-            padding: '12px 18px',
-            background: 'rgba(15, 23, 42, 0.95)',
-            borderRadius: '16px',
-            border: '1px solid rgba(51, 65, 85, 0.8)',
-            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+            gap: '10px',
+            padding: '10px 14px',
+            background: 'rgba(15, 23, 42, 0.85)',
+            border: '1px solid rgba(51, 65, 85, 0.7)',
+            borderRadius: '14px',
+            backdropFilter: 'blur(16px)',
+            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+            flexWrap: 'wrap',
+            minWidth: 0,
+            maxWidth: '100%'
           }}
         >
           {/* Left: Algorithm Preset Dropdown */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-              DSA ALGORITHM:
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', flex: '1 1 260px', minWidth: 0, maxWidth: '100%' }}>
+            <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
+              ALGORITHM:
             </span>
             <select
               value={selectedPreset}
               onChange={(e) => handleSelectPreset(e.target.value as AlgorithmPreset)}
+              className="flowlab-preset-select dsa-select-control"
               style={{
-                padding: '6px 14px',
-                borderRadius: '10px',
-                background: '#1e293b',
-                border: '1px solid #0284c7',
+                minHeight: '36px',
+                padding: '6px 12px',
+                borderRadius: '8px',
+                background: 'rgba(30, 41, 59, 0.95)',
+                border: '1.5px solid rgba(56, 189, 248, 0.5)',
                 color: '#f8fafc',
-                fontSize: '0.8rem',
+                fontSize: '0.82rem',
                 fontWeight: 700,
                 cursor: 'pointer',
                 outline: 'none',
-                boxShadow: '0 0 10px rgba(2, 132, 199, 0.3)'
+                boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)',
+                minWidth: 0,
+                width: '100%'
               }}
             >
               <optgroup label="🕸️ Graph Algorithms">
-                <option value="graph_bfs">🔵 Breadth-First Search (Level-Order Spanning Tree)</option>
-                <option value="graph_dfs">🟣 Depth-First Search (Deep Call Stack Tree)</option>
-                <option value="graph_dijkstra">🟡 Dijkstra Shortest Path (Min-Heap Relaxation)</option>
-                <option value="topological_sort">🧭 Topological Sort (DAG Dependency Ordering)</option>
+                <option value="graph_bfs">🔵 Breadth-First Search (BFS)</option>
+                <option value="graph_dfs">🟣 Depth-First Search (DFS)</option>
+                <option value="graph_dijkstra">🟡 Dijkstra Shortest Path</option>
+                <option value="topological_sort">🧭 Topological Sort</option>
               </optgroup>
               <optgroup label="🔍 Searching & Pattern Matching">
-                <option value="binary_search">⚡ Binary Search (Divide & Conquer Pointer Halving)</option>
-                <option value="linear_search">➡️ Linear Search (Sequential Brute Scan)</option>
-                <option value="brute_force_search">🔤 Brute Force String Match (Sliding Text Window)</option>
-                <option value="kmp_string_match">🎯 KMP Pattern Match (π-LPS Array)</option>
+                <option value="binary_search">⚡ Binary Search</option>
+                <option value="linear_search">➡️ Linear Search</option>
+                <option value="brute_force_search">🔤 Brute Force String Match</option>
+                <option value="kmp_string_match">🎯 KMP Pattern Match</option>
               </optgroup>
               <optgroup label="📊 Sorting & Divide and Conquer">
-                <option value="merge_sort">📊 Merge Sort (Recursive Subarray Tree)</option>
-                <option value="quick_sort">⚡ Quick Sort (Partition Pivot Swaps)</option>
-                <option value="randomized_quicksort">🎲 Randomized QuickSort (Dynamic Pivot Selection)</option>
-                <option value="bubble_sort">🫧 Bubble Sort (Adjacent Pair Swaps)</option>
-                <option value="insertion_sort">📥 Insertion Sort (Sorted Sublist Shifts)</option>
-                <option value="heap_sort">🔺 Heap Sort (Max-Heapify Down)</option>
+                <option value="merge_sort">📊 Merge Sort</option>
+                <option value="quick_sort">⚡ Quick Sort</option>
+                <option value="randomized_quicksort">🎲 Randomized QuickSort</option>
+                <option value="bubble_sort">🫧 Bubble Sort</option>
+                <option value="insertion_sort">📥 Insertion Sort</option>
+                <option value="heap_sort">🔺 Heap Sort</option>
               </optgroup>
               <optgroup label="🎒 Dynamic Programming">
-                <option value="knapsack_dp">🎒 0/1 Knapsack DP (2D Recurrence Grid Table)</option>
-                <option value="lcs_dp">🧬 Longest Common Subsequence (2D Matrix Match)</option>
-                <option value="matrix_chain_dp">⛓️ Matrix Chain Multiplication (Optimal Parenthesization)</option>
+                <option value="knapsack_dp">🎒 0/1 Knapsack DP</option>
+                <option value="lcs_dp">🧬 Longest Common Subsequence</option>
+                <option value="matrix_chain_dp">⛓️ Matrix Chain Multiplication</option>
               </optgroup>
               <optgroup label="🌿 Greedy Algorithms">
-                <option value="huffman_coding">🌲 Huffman Coding (Frequency Priority Tree)</option>
-                <option value="fractional_knapsack">⚖️ Fractional Knapsack (Value/Weight Greedy Sorting)</option>
+                <option value="huffman_coding">🌲 Huffman Coding</option>
+                <option value="fractional_knapsack">⚖️ Fractional Knapsack</option>
               </optgroup>
               <optgroup label="👑 Backtracking">
-                <option value="n_queens_backtracking">👑 N-Queens Backtracking (Conflict Prune Tree)</option>
-                <option value="subset_sum_backtracking">➕ Subset Sum (Decision Branching)</option>
+                <option value="n_queens_backtracking">👑 N-Queens Backtracking</option>
+                <option value="subset_sum_backtracking">➕ Subset Sum</option>
               </optgroup>
               <optgroup label="🔑 Hashing & Hash Tables">
-                <option value="hashing_chaining">🔗 Separate Chaining (Linked Bucket Lists)</option>
-                <option value="hashing_probing">📍 Open Addressing (Linear & Quadratic Probing)</option>
+                <option value="hashing_chaining">🔗 Separate Chaining</option>
+                <option value="hashing_probing">📍 Open Addressing</option>
               </optgroup>
             </select>
 
             {/* Dynamic Underlying Data Structure Selector */}
             {currentPresetDef.availableDs.length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '8px', paddingLeft: '8px', borderLeft: '1px solid rgba(51, 65, 85, 0.6)' }}>
-                <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 600 }}>
-                  UNDERLYING DS:
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none', padding: '2px 0', maxWidth: '100%' }}>
+                <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700, flexShrink: 0 }}>
+                  DS:
                 </span>
-                <div style={{ display: 'flex', gap: '4px' }}>
+                <div style={{ display: 'flex', gap: '4px', flexShrink: 0 }}>
                   {currentPresetDef.availableDs.map(ds => (
                     <button
                       key={ds.id}
@@ -1900,15 +1921,17 @@ export const AlgorithmicLabModule: React.FC = () => {
                       onClick={() => setSelectedDsRepresentation(ds.id)}
                       title={ds.description}
                       style={{
-                        padding: '4px 10px',
+                        minHeight: '30px',
+                        padding: '3px 8px',
                         borderRadius: '6px',
-                        fontSize: '0.7rem',
+                        fontSize: '0.72rem',
                         fontWeight: 700,
                         background: selectedDsRepresentation === ds.id ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)',
                         border: selectedDsRepresentation === ds.id ? '1px solid #38bdf8' : '1px solid rgba(51, 65, 85, 0.6)',
                         color: selectedDsRepresentation === ds.id ? '#38bdf8' : '#94a3b8',
                         cursor: 'pointer',
-                        transition: 'all 0.2s ease'
+                        transition: 'all 0.2s ease',
+                        whiteSpace: 'nowrap'
                       }}
                     >
                       {ds.label}
@@ -1920,118 +1943,101 @@ export const AlgorithmicLabModule: React.FC = () => {
           </div>
 
           {/* Right: Stepping Controls */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
             <button
               type="button"
               onClick={stepBackward}
               disabled={currentStepIndex === 0 || isPlaying}
+              className="dsa-action-btn"
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '6px 12px',
-                borderRadius: '8px',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                background: currentStepIndex === 0 ? 'rgba(30, 41, 59, 0.5)' : 'rgba(30, 41, 59, 0.9)',
+                background: currentStepIndex === 0 ? 'rgba(30, 41, 59, 0.4)' : 'rgba(30, 41, 59, 0.85)',
                 border: '1px solid rgba(51, 65, 85, 0.8)',
                 color: currentStepIndex === 0 ? '#64748b' : '#cbd5e1',
                 cursor: currentStepIndex === 0 ? 'not-allowed' : 'pointer'
               }}
+              title="Previous Step"
             >
-              <SkipBack size={13} />
-              <span>Prev Step</span>
+              <SkipBack size={14} />
+              <span className="dsa-btn-label">Prev</span>
             </button>
 
             <button
               type="button"
               onClick={stepForward}
               disabled={currentStepIndex >= currentPresetDef.steps.length - 1 || isPlaying}
+              className="dsa-action-btn"
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '6px 12px',
-                borderRadius: '8px',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                background: currentStepIndex >= currentPresetDef.steps.length - 1 ? 'rgba(30, 41, 59, 0.5)' : 'rgba(2, 132, 199, 0.2)',
+                background: currentStepIndex >= currentPresetDef.steps.length - 1 ? 'rgba(30, 41, 59, 0.4)' : 'rgba(2, 132, 199, 0.2)',
                 border: '1px solid #0284c7',
                 color: currentStepIndex >= currentPresetDef.steps.length - 1 ? '#64748b' : '#38bdf8',
                 cursor: currentStepIndex >= currentPresetDef.steps.length - 1 ? 'not-allowed' : 'pointer'
               }}
+              title="Next Step"
             >
-              <span>Next Step</span>
-              <SkipForward size={13} />
+              <span className="dsa-btn-label">Next</span>
+              <SkipForward size={14} />
             </button>
 
             <button
               type="button"
               onClick={toggleAutoPlay}
+              className="dsa-action-btn"
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                padding: '6px 14px',
-                borderRadius: '8px',
-                fontSize: '0.75rem',
-                fontWeight: 700,
                 background: isPlaying ? 'linear-gradient(135deg, #f59e0b, #ef4444)' : 'linear-gradient(135deg, #0284c7, #06b6d4)',
                 border: 'none',
                 color: '#ffffff',
-                cursor: 'pointer'
+                boxShadow: isPlaying ? '0 0 12px rgba(245, 158, 11, 0.3)' : '0 0 12px rgba(6, 182, 212, 0.3)'
               }}
+              title={isPlaying ? 'Pause Auto-Play' : 'Start Auto-Play'}
             >
               {isPlaying ? <Pause size={14} /> : <Play size={14} />}
-              <span>{isPlaying ? 'Pause' : 'Auto Play'}</span>
+              <span className="dsa-btn-label">{isPlaying ? 'Pause' : 'Play'}</span>
             </button>
 
             <button
               type="button"
               onClick={resetSimulation}
+              className="dsa-action-btn"
               style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '6px 10px',
-                borderRadius: '8px',
-                fontSize: '0.75rem',
-                fontWeight: 600,
                 background: 'rgba(30, 41, 59, 0.8)',
                 border: '1px solid rgba(51, 65, 85, 0.8)',
-                color: '#94a3b8',
-                cursor: 'pointer'
+                color: '#94a3b8'
               }}
+              title="Reset Simulation"
             >
-              <RotateCcw size={13} />
-              <span>Reset</span>
+              <RotateCcw size={14} />
+              <span className="dsa-btn-label">Reset</span>
             </button>
           </div>
         </div>
 
-        {/* ─── Main Grid: Left React Flow Viewport + Right Execution Log ─── */}
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: 'minmax(0, 1fr) 360px',
-            gap: '12px',
-            flex: 1,
-            minHeight: '680px',
-            height: 'calc(100vh - 210px)'
-          }}
-        >
-          {/* Left Interactive React Flow Viewport */}
-          <div
-            style={{
-              height: '100%',
-              borderRadius: '16px',
-              overflow: 'hidden',
-              border: '1px solid rgba(51, 65, 85, 0.8)',
-              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
-              position: 'relative',
-              background: '#0a0f1d'
+        {/* Mobile Dual-View Switcher (Only visible on screens <= 1024px) */}
+        <div className="flowlab-mobile-tab-nav">
+          <button
+            type="button"
+            onClick={() => {
+              setMobileActiveTab('canvas');
+              setTimeout(() => window.dispatchEvent(new Event('resize')), 50);
             }}
+            className={`flowlab-mobile-tab-btn ${mobileActiveTab === 'canvas' ? 'active' : ''}`}
           >
+            <Sparkles size={15} />
+            <span>Graph Flow Canvas</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => setMobileActiveTab('log')}
+            className={`flowlab-mobile-tab-btn ${mobileActiveTab === 'log' ? 'active' : ''}`}
+          >
+            <Info size={15} />
+            <span>Execution Log & Memory</span>
+          </button>
+        </div>
+
+        {/* ─── Main Grid: Left React Flow Viewport + Right Execution Log ─── */}
+        <div className="flowlab-main-grid">
+          {/* Left Interactive React Flow Viewport */}
+          <div className={`flowlab-canvas-panel ${mobileActiveTab === 'canvas' ? 'mobile-active' : 'mobile-hidden'}`}>
             <ReactFlow
               nodes={nodes}
               edges={edges}
@@ -2043,6 +2049,7 @@ export const AlgorithmicLabModule: React.FC = () => {
               defaultEdgeOptions={{ type: 'smoothstep' }}
               attributionPosition="bottom-right"
             >
+              <FlowAutoFitter activePreset={selectedPreset} stepIndex={currentStepIndex} mobileTab={mobileActiveTab} />
               <Background color="#1e293b" gap={20} size={1.5} variant={BackgroundVariant.Dots} />
               <Controls
                 style={{
@@ -2084,18 +2091,7 @@ export const AlgorithmicLabModule: React.FC = () => {
           </div>
 
           {/* Right Algorithm Execution Log & Telemetry Panel */}
-          <div
-            style={{
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px',
-              background: 'rgba(15, 23, 42, 0.95)',
-              borderRadius: '16px',
-              border: '1px solid rgba(51, 65, 85, 0.8)',
-              padding: '14px',
-              overflow: 'hidden'
-            }}
-          >
+          <div className={`flowlab-log-panel ${mobileActiveTab === 'log' ? 'mobile-active' : 'mobile-hidden'}`}>
             {/* Header */}
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(51, 65, 85, 0.6)', paddingBottom: '8px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

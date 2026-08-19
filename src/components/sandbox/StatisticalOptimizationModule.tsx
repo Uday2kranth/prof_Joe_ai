@@ -216,6 +216,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
   const [selectedModel, setSelectedModel] = useState<StatOptModelType>('clt_sampling');
   const [activePillar, setActivePillar] = useState<StatOptPillarType>('inference');
   const [isSimulating, setIsSimulating] = useState<boolean>(true);
+  const [mobileActiveTab, setMobileActiveTab] = useState<'canvas' | 'controls' | 'telemetry'>('canvas');
 
   // ─── Pillar 1: CLT State ───
   const [cltPopDist, setCltPopDist] = useState<'uniform' | 'exponential' | 'bimodal' | 'triangular'>('exponential');
@@ -1636,7 +1637,9 @@ export const StatisticalOptimizationModule: React.FC = () => {
       }}
     >
       {/* ─── Top Category / Pillar Bar ─── */}
+      {/* ─── Top Control Bar: Pillar Selector + Model Dropdown + Global Actions ─── */}
       <div
+        className="dsa-header-card"
         style={{
           display: 'flex',
           flexWrap: 'wrap',
@@ -1647,201 +1650,148 @@ export const StatisticalOptimizationModule: React.FC = () => {
           background: 'rgba(15, 23, 42, 0.85)',
           borderRadius: '14px',
           border: '1px solid rgba(51, 65, 85, 0.7)',
-          backdropFilter: 'blur(10px)'
+          backdropFilter: 'blur(10px)',
+          minWidth: 0,
+          maxWidth: '100%'
         }}
       >
-        {/* Academic Pillar Tabs */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
-          {[
-            { id: 'inference', label: '1. Inference & CLT', icon: BarChart2, count: 6 },
-            { id: 'stochastic', label: '2. Stochastic & Bayes', icon: Shuffle, count: 2 },
-            { id: 'continuous_opt', label: '3. Continuous Opt', icon: TrendingUp, count: 3 },
-            { id: 'linear_matrix', label: '4. Simplex & PCA', icon: Compass, count: 4 }
-          ].map(p => {
-            const Icon = p.icon;
-            const isActive = activePillar === p.id;
-            return (
-              <button
-                key={p.id}
-                type="button"
-                onClick={() => {
-                  setActivePillar(p.id as StatOptPillarType);
-                  const firstInPillar = STAT_OPT_MODELS.find(m => m.pillar === p.id);
-                  if (firstInPillar) setSelectedModel(firstInPillar.id);
-                }}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px',
-                  padding: '6px 12px',
-                  borderRadius: '8px',
-                  fontSize: '0.75rem',
-                  fontWeight: 700,
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease',
-                  background: isActive ? 'rgba(56, 189, 248, 0.2)' : 'transparent',
-                  color: isActive ? '#38bdf8' : '#94a3b8',
-                  border: isActive ? '1px solid #38bdf8' : '1px solid transparent'
-                }}
-              >
-                <Icon size={14} />
-                <span>{p.label}</span>
-                <span
-                  style={{
-                    fontSize: '0.65rem',
-                    padding: '1px 5px',
-                    borderRadius: '4px',
-                    background: isActive ? '#38bdf8' : 'rgba(51, 65, 85, 0.8)',
-                    color: isActive ? '#0f172a' : '#cbd5e1'
-                  }}
-                >
-                  {p.count}
-                </span>
-              </button>
-            );
-          })}
+        {/* Mobile & Compact View: Grouped Model Selector Dropdown */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '1 1 260px', minWidth: 0, maxWidth: '100%' }}>
+          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
+            MODEL:
+          </span>
+          <select
+            value={selectedModel}
+            onChange={(e) => {
+              const newModelId = e.target.value as StatOptModelId;
+              setSelectedModel(newModelId);
+              const found = STAT_OPT_MODELS.find(m => m.id === newModelId);
+              if (found) setActivePillar(found.pillar);
+            }}
+            className="dsa-select-control"
+            style={{
+              minHeight: '36px',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              background: 'rgba(30, 41, 59, 0.95)',
+              border: '1.5px solid #38bdf8',
+              color: '#f8fafc',
+              fontSize: '0.82rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              outline: 'none',
+              boxShadow: '0 0 10px rgba(56, 189, 248, 0.25)',
+              minWidth: 0,
+              width: '100%'
+            }}
+          >
+            <optgroup label="1. 📊 Statistical Inference & Sampling">
+              <option value="clt_simulation">Central Limit Theorem (Sampling Distributions)</option>
+              <option value="hypothesis_testing">Hypothesis Testing (Z-Test, T-Test, Type I/II)</option>
+              <option value="confidence_intervals">Confidence Intervals (Frequentist Coverage)</option>
+              <option value="mle_estimator">Maximum Likelihood Estimation (Likelihood Surfaces)</option>
+              <option value="bayesian_inference">Bayesian Inference (Beta-Binomial Conjugate)</option>
+              <option value="bootstrap_resampling">Bootstrap Resampling (Empirical Confidence)</option>
+            </optgroup>
+            <optgroup label="2. 🎲 Stochastic Processes & Bayesian Probability">
+              <option value="mcmc_metropolis">MCMC Metropolis-Hastings (Target Sampler)</option>
+              <option value="em_algorithm">Expectation-Maximization (Gaussian Mixture)</option>
+            </optgroup>
+            <optgroup label="3. ⚡ Continuous & Numerical Optimization">
+              <option value="gradient_descent_variants">Gradient Descent Variants (SGD, Momentum, Adam)</option>
+              <option value="newton_raphson">Newton-Raphson Optimization (Quadratic Fit)</option>
+              <option value="lagrange_multipliers">Lagrange Multipliers (Constrained Contours)</option>
+            </optgroup>
+            <optgroup label="4. 📐 Operations Research & Matrix Decompositions">
+              <option value="simplex_lp">Simplex Linear Programming (Feasible Polytope)</option>
+              <option value="pca_svd">PCA & SVD (Variance Ellipsoids)</option>
+              <option value="lda_analysis">Linear Discriminant Analysis (Fisher Criterion)</option>
+              <option value="kalman_filter">Kalman Filter (Dynamic State Estimation)</option>
+            </optgroup>
+          </select>
         </div>
 
         {/* Global Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
           <button
             type="button"
             onClick={() => setIsSimulating(!isSimulating)}
+            className="dsa-action-btn"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 12px',
-              borderRadius: '8px',
-              fontSize: '0.75rem',
-              fontWeight: 700,
               background: isSimulating ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)',
               color: isSimulating ? '#f87171' : '#34d399',
-              border: isSimulating ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(16, 185, 129, 0.4)',
-              cursor: 'pointer'
+              border: isSimulating ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(16, 185, 129, 0.4)'
             }}
+            title={isSimulating ? 'Pause Loop' : 'Run Live'}
           >
-            {isSimulating ? <Pause size={13} /> : <Play size={13} />}
-            <span>{isSimulating ? 'Pause Loop' : 'Run Live'}</span>
+            {isSimulating ? <Pause size={15} /> : <Play size={15} />}
+            <span className="dsa-btn-label">{isSimulating ? 'Pause' : 'Run'}</span>
           </button>
 
           <button
             type="button"
             onClick={performStep}
+            className="dsa-action-btn"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px',
-              padding: '6px 12px',
-              borderRadius: '8px',
-              fontSize: '0.75rem',
-              fontWeight: 700,
               background: 'rgba(56, 189, 248, 0.15)',
               color: '#38bdf8',
-              border: '1px solid rgba(56, 189, 248, 0.4)',
-              cursor: 'pointer'
+              border: '1px solid rgba(56, 189, 248, 0.4)'
             }}
+            title="Step Simulation Forward (+1)"
           >
-            <ChevronRight size={14} />
-            <span>Step +1</span>
+            <ChevronRight size={15} />
+            <span className="dsa-btn-label">Step +1</span>
           </button>
 
           <button
             type="button"
             onClick={reseedData}
+            className="dsa-action-btn"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '5px',
-              padding: '6px 10px',
-              borderRadius: '8px',
-              fontSize: '0.75rem',
-              fontWeight: 700,
               background: 'rgba(51, 65, 85, 0.5)',
               color: '#cbd5e1',
-              border: '1px solid rgba(100, 116, 139, 0.4)',
-              cursor: 'pointer'
+              border: '1px solid rgba(100, 116, 139, 0.4)'
             }}
+            title="Reset Simulation & Reseed"
           >
-            <RotateCcw size={13} />
-            <span>Reset</span>
+            <RotateCcw size={15} />
+            <span className="dsa-btn-label">Reset</span>
           </button>
         </div>
       </div>
 
-      {/* ─── Active Model Selection Pill Deck ─── */}
-      <div
-        style={{
-          display: 'flex',
-          gap: '6px',
-          overflowX: 'auto',
-          paddingBottom: '4px'
-        }}
-      >
-        {STAT_OPT_MODELS.filter(m => m.pillar === activePillar).map(m => {
-          const isSelected = selectedModel === m.id;
-          return (
-            <button
-              key={m.id}
-              type="button"
-              onClick={() => setSelectedModel(m.id)}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                padding: '6px 12px',
-                borderRadius: '8px',
-                fontSize: '0.75rem',
-                fontWeight: 600,
-                whiteSpace: 'nowrap',
-                cursor: 'pointer',
-                transition: 'all 0.15s ease',
-                background: isSelected ? 'rgba(56, 189, 248, 0.22)' : 'rgba(15, 23, 42, 0.7)',
-                color: isSelected ? '#38bdf8' : '#94a3b8',
-                border: isSelected ? '1px solid #38bdf8' : '1px solid rgba(51, 65, 85, 0.5)'
-              }}
-            >
-              <span>{m.name}</span>
-              <span
-                style={{
-                  fontSize: '0.62rem',
-                  fontWeight: 800,
-                  padding: '1px 5px',
-                  borderRadius: '4px',
-                  background: isSelected ? m.badgeColor : 'rgba(51, 65, 85, 0.6)',
-                  color: isSelected ? '#0f172a' : m.badgeColor
-                }}
-              >
-                {m.badge}
-              </span>
-            </button>
-          );
-        })}
+      {/* ─── Mobile Segmented 3-Pill Switcher ─── */}
+      <div className="stat-opt-mobile-tab-nav">
+        <button
+          type="button"
+          onClick={() => setMobileActiveTab('canvas')}
+          className={`stat-opt-mobile-tab-btn ${mobileActiveTab === 'canvas' ? 'active' : ''}`}
+        >
+          <BarChart2 size={14} />
+          <span>Simulation Canvas</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileActiveTab('controls')}
+          className={`stat-opt-mobile-tab-btn ${mobileActiveTab === 'controls' ? 'active' : ''}`}
+        >
+          <Sliders size={14} />
+          <span>Model Parameters</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileActiveTab('telemetry')}
+          className={`stat-opt-mobile-tab-btn ${mobileActiveTab === 'telemetry' ? 'active' : ''}`}
+        >
+          <Sparkles size={14} />
+          <span>Telemetry & Theory</span>
+        </button>
       </div>
 
       {/* ─── Main 2-Column Lab Grid ─── */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) 360px',
-          gap: '14px',
-          minHeight: '680px'
-        }}
-      >
+      <div className="stat-opt-workbench-grid">
         {/* Left Interactive Canvas Viewport */}
-        <div
-          style={{
-            position: 'relative',
-            background: '#090d16',
-            borderRadius: '16px',
-            border: '1px solid rgba(51, 65, 85, 0.8)',
-            overflow: 'hidden',
-            boxShadow: '0 12px 36px rgba(0, 0, 0, 0.6)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center'
-          }}
-        >
+        <div className={`stat-opt-canvas-panel ${mobileActiveTab === 'canvas' ? 'mobile-active' : 'mobile-hidden'}`}>
           <canvas
             ref={canvasRef}
             width={900}
@@ -1949,18 +1899,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
         </div>
 
         {/* Right Telemetry, Controls & Exam Notes Panel */}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-            background: 'rgba(15, 23, 42, 0.95)',
-            borderRadius: '16px',
-            border: '1px solid rgba(51, 65, 85, 0.8)',
-            padding: '16px',
-            overflowY: 'auto'
-          }}
-        >
+        <div className={`stat-opt-controls-panel ${mobileActiveTab !== 'canvas' ? 'mobile-active' : 'mobile-hidden'}`}>
           {/* Header */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid rgba(51, 65, 85, 0.6)', paddingBottom: '10px' }}>
             <Activity size={16} color="#38bdf8" />
@@ -1973,6 +1912,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
           </div>
 
           {/* TELEMETRY CARDS */}
+          <div className={`stat-opt-card-telemetry ${mobileActiveTab === 'telemetry' ? 'mobile-card-visible' : 'mobile-card-hidden'}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {selectedModel === 'clt_sampling' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
               <div>
@@ -2246,9 +2186,10 @@ export const StatisticalOptimizationModule: React.FC = () => {
               </div>
             </div>
           )}
+          </div>
 
           {/* DYNAMIC CONTROLS SECTION */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div className={`stat-opt-card-params ${mobileActiveTab === 'controls' ? 'mobile-card-visible' : 'mobile-card-hidden'}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 700, color: '#cbd5e1' }}>
               <Sliders size={13} color="#38bdf8" />
               <span>Interactive Controls</span>
@@ -3012,6 +2953,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
 
           {/* Academic & University Exam Takeaway Box */}
           <div
+            className={`stat-opt-card-theory ${mobileActiveTab === 'telemetry' ? 'mobile-card-visible' : 'mobile-card-hidden'}`}
             style={{
               marginTop: 'auto',
               padding: '12px',

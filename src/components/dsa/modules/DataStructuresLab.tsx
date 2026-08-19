@@ -1398,48 +1398,80 @@ export const DataStructuresLab: React.FC<DataStructuresLabProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%', overflowY: 'auto', paddingRight: '6px' }}>
-      {/* Top Selector Grid */}
-      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', background: 'rgba(15, 23, 42, 0.6)', padding: '10px', borderRadius: '12px', border: '1px solid rgba(255,255,255,0.06)' }}>
-        {Object.entries(DS_TABS_MAP).map(([tabId, label]) => {
-          const isActive = activeDs === tabId;
-          return (
-            <button
-              key={tabId}
-              onClick={() => handleSelectDs(tabId)}
-              style={{
-                padding: '6px 12px',
-                borderRadius: '8px',
-                border: isActive ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.08)',
-                background: isActive ? 'rgba(56, 189, 248, 0.15)' : 'rgba(30, 41, 59, 0.5)',
-                color: isActive ? '#38bdf8' : '#94a3b8',
-                fontWeight: isActive ? 800 : 600,
-                fontSize: '0.78rem',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px'
-              }}
-            >
-              {label}
-            </button>
-          );
-        })}
+      {/* Top Selector Bar */}
+      <div className="dsa-header-card" style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '8px',
+        background: 'rgba(15, 23, 42, 0.75)',
+        padding: '8px 12px',
+        borderRadius: '12px',
+        border: '1px solid rgba(255,255,255,0.08)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 200px', minWidth: 0, maxWidth: '100%', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
+            DS:
+          </span>
+          <select
+            value={activeDs}
+            onChange={(e) => handleSelectDs(e.target.value)}
+            className="dsa-select-control"
+            style={{
+              minHeight: '36px',
+              padding: '6px 10px',
+              borderRadius: '8px',
+              background: 'rgba(30, 41, 59, 0.95)',
+              border: '1.5px solid #38bdf8',
+              color: '#f8fafc',
+              fontSize: '0.82rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              outline: 'none',
+              boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)'
+            }}
+          >
+            <optgroup label="── Linear Data Structures ──">
+              <option value="array_ds">📊 Array (Contiguous Memory & Rotation)</option>
+              <option value="string_ds">🔤 String & Palindrome Checking</option>
+              <option value="singly_linked_list">➡️ Singly Linked List (Pointers)</option>
+              <option value="doubly_linked_list">↔️ Doubly Linked List (Prev/Next)</option>
+              <option value="circular_linked_list">🔄 Circular Linked List (Ring)</option>
+              <option value="stack_ds">🥞 Stack (LIFO Reactor & Parentheses)</option>
+              <option value="queue_ds">🚶 Queue (FIFO & Ring Buffer)</option>
+            </optgroup>
+            <optgroup label="── Hashing & Disjoint Sets ──">
+              <option value="hash_table">#️⃣ Hash Table (Chaining & Probing)</option>
+              <option value="disjoint_set_ds">🔗 Disjoint Sets (Union-Find & Compression)</option>
+            </optgroup>
+            <optgroup label="── Trees & Hierarchies ──">
+              <option value="binary_tree_ds">🌲 Binary Tree (Hierarchy & Traversals)</option>
+              <option value="bst_ds">🔍 Binary Search Tree (BST Operations)</option>
+              <option value="avl_ds">⚖️ AVL Tree (Self-Balancing Rotations)</option>
+              <option value="rbtree_ds">🔴⚫ Red-Black Tree (Color Balancing)</option>
+              <option value="segment_tree_ds">📊 Segment Tree (Range Queries)</option>
+              <option value="trie_ds">🔠 Trie (Prefix Tree & Auto-Suggest)</option>
+              <option value="b_tree_ds">📚 B-Tree (2-3-4 Multi-Way Tree)</option>
+            </optgroup>
+            <optgroup label="── Heaps & Priority Queues ──">
+              <option value="heap_ds">🔺 Heap (Priority Queue & HeapSort)</option>
+            </optgroup>
+          </select>
+        </div>
+
         <button
+          title="Complexity Matrix Cheatsheet"
           onClick={() => setShowCheatsheet(!showCheatsheet)}
+          className="dsa-action-btn"
           style={{
-            marginLeft: 'auto',
-            padding: '6px 12px',
-            borderRadius: '8px',
             border: '1px solid rgba(56, 189, 248, 0.4)',
-            background: showCheatsheet ? '#0284c7' : 'rgba(56, 189, 248, 0.1)',
-            color: showCheatsheet ? '#fff' : '#38bdf8',
-            fontSize: '0.78rem',
-            fontWeight: 700,
-            cursor: 'pointer'
+            background: showCheatsheet ? '#0284c7' : 'rgba(56, 189, 248, 0.12)',
+            color: showCheatsheet ? '#fff' : '#38bdf8'
           }}
         >
-          Complexity Matrix
+          <span className="dsa-btn-label">Complexity Matrix</span>
+          <span style={{ fontSize: '0.74rem' }}>⚡</span>
         </button>
       </div>
 
@@ -1448,9 +1480,9 @@ export const DataStructuresLab: React.FC<DataStructuresLabProps> = ({
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
-        gap: '8px',
-        padding: '10px 14px',
-        borderRadius: '12px',
+        gap: '6px',
+        padding: '8px 12px',
+        borderRadius: '10px',
         background: '#090d16',
         border: '1px solid rgba(255,255,255,0.08)'
       }}>
@@ -1458,90 +1490,90 @@ export const DataStructuresLab: React.FC<DataStructuresLabProps> = ({
         {activeDs === 'array_ds' && (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Val:</span>
-              <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} style={{ width: '50px', padding: '5px 8px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.8rem' }} />
+              <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>Val:</span>
+              <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} style={{ width: '42px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Idx:</span>
-              <input type="text" value={indexInput} onChange={e => setIndexInput(e.target.value)} style={{ width: '40px', padding: '5px 8px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.8rem' }} />
+              <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>Idx:</span>
+              <input type="text" value={indexInput} onChange={e => setIndexInput(e.target.value)} style={{ width: '34px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
             </div>
-            <button onClick={handleArrayInsert} style={{ padding: '6px 10px', borderRadius: '6px', background: '#0284c7', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Insert</button>
-            <button onClick={handleArrayUpdate} style={{ padding: '6px 10px', borderRadius: '6px', background: '#059669', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Update [i]</button>
-            <button onClick={handleArrayDelete} style={{ padding: '6px 10px', borderRadius: '6px', background: '#dc2626', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Delete</button>
-            <button onClick={handleArrayLinearSearch} style={{ padding: '6px 10px', borderRadius: '6px', background: '#7c3aed', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Linear Search</button>
-            <button onClick={handleArrayBinarySearch} style={{ padding: '6px 10px', borderRadius: '6px', background: '#d97706', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Binary Search</button>
-            <button onClick={() => handleArrayRotate('left')} style={{ padding: '6px 8px', borderRadius: '6px', background: '#334155', color: '#fff', fontSize: '0.75rem', border: 'none', cursor: 'pointer' }}>↶ Shift L</button>
-            <button onClick={() => handleArrayRotate('right')} style={{ padding: '6px 8px', borderRadius: '6px', background: '#334155', color: '#fff', fontSize: '0.75rem', border: 'none', cursor: 'pointer' }}>↷ Shift R</button>
-            <button onClick={() => setShowPrefixSum(!showPrefixSum)} style={{ marginLeft: 'auto', padding: '6px 10px', borderRadius: '6px', background: showPrefixSum ? '#0284c7' : 'rgba(255,255,255,0.06)', color: showPrefixSum ? '#fff' : '#38bdf8', fontSize: '0.75rem', border: '1px solid rgba(56,189,248,0.3)', cursor: 'pointer' }}>Prefix Sum Array</button>
+            <button title="Insert Element at Index" onClick={handleArrayInsert} className="dsa-action-btn" style={{ background: '#0284c7', color: '#fff', border: 'none' }}>+<span className="dsa-btn-label"> Insert</span></button>
+            <button title="Update Element at Index" onClick={handleArrayUpdate} className="dsa-action-btn" style={{ background: '#059669', color: '#fff', border: 'none' }}>✎<span className="dsa-btn-label"> Update [i]</span></button>
+            <button title="Delete Element at Index" onClick={handleArrayDelete} className="dsa-action-btn" style={{ background: '#dc2626', color: '#fff', border: 'none' }}>🗑<span className="dsa-btn-label"> Delete</span></button>
+            <button title="Linear Search" onClick={handleArrayLinearSearch} className="dsa-action-btn" style={{ background: '#7c3aed', color: '#fff', border: 'none' }}>🔍<span className="dsa-btn-label"> Linear</span></button>
+            <button title="Binary Search" onClick={handleArrayBinarySearch} className="dsa-action-btn" style={{ background: '#d97706', color: '#fff', border: 'none' }}>⚡<span className="dsa-btn-label"> Binary</span></button>
+            <button title="Shift Left" onClick={() => handleArrayRotate('left')} className="dsa-action-btn" style={{ background: '#334155', color: '#fff', border: 'none' }}>↶<span className="dsa-btn-label"> L</span></button>
+            <button title="Shift Right" onClick={() => handleArrayRotate('right')} className="dsa-action-btn" style={{ background: '#334155', color: '#fff', border: 'none' }}>↷<span className="dsa-btn-label"> R</span></button>
+            <button title="Prefix Sum Array" onClick={() => setShowPrefixSum(!showPrefixSum)} className="dsa-action-btn" style={{ marginLeft: 'auto', background: showPrefixSum ? '#0284c7' : 'rgba(255,255,255,0.06)', color: showPrefixSum ? '#fff' : '#38bdf8', border: '1px solid rgba(56,189,248,0.3)' }}>∑<span className="dsa-btn-label"> Prefix Sum</span></button>
           </>
         )}
 
         {/* 2. STRING CONTROLS */}
         {activeDs === 'string_ds' && (
           <>
-            <input type="text" value={stringBuffer} onChange={e => setStringBuffer(e.target.value)} placeholder="String" style={{ width: '110px', padding: '5px 8px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.8rem' }} />
-            <button onClick={handleStringReverse} style={{ padding: '6px 10px', borderRadius: '6px', background: '#0284c7', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Reverse</button>
-            <button onClick={handleStringPalindrome} style={{ padding: '6px 10px', borderRadius: '6px', background: '#059669', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Palindrome</button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '6px' }}>
-              <input type="text" value={patternInput} onChange={e => setPatternInput(e.target.value)} placeholder="Pattern" style={{ width: '65px', padding: '5px 8px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.8rem' }} />
-              <button onClick={handleStringKmpSearch} style={{ padding: '6px 10px', borderRadius: '6px', background: '#7c3aed', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>KMP Search</button>
+            <input type="text" value={stringBuffer} onChange={e => setStringBuffer(e.target.value)} placeholder="String" style={{ width: '90px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
+            <button title="Reverse String" onClick={handleStringReverse} className="dsa-action-btn" style={{ background: '#0284c7', color: '#fff', border: 'none' }}>⇄<span className="dsa-btn-label"> Reverse</span></button>
+            <button title="Check Palindrome" onClick={handleStringPalindrome} className="dsa-action-btn" style={{ background: '#059669', color: '#fff', border: 'none' }}>🪞<span className="dsa-btn-label"> Palindrome</span></button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+              <input type="text" value={patternInput} onChange={e => setPatternInput(e.target.value)} placeholder="Pattern" style={{ width: '55px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
+              <button title="KMP Search Pattern" onClick={handleStringKmpSearch} className="dsa-action-btn" style={{ background: '#7c3aed', color: '#fff', border: 'none' }}>🔍<span className="dsa-btn-label"> KMP</span></button>
             </div>
-            <button onClick={handleStringCompress} style={{ padding: '6px 10px', borderRadius: '6px', background: '#d97706', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Run-Length Encode</button>
+            <button title="Run-Length Encode" onClick={handleStringCompress} className="dsa-action-btn" style={{ background: '#d97706', color: '#fff', border: 'none' }}>🗜<span className="dsa-btn-label"> RLE</span></button>
           </>
         )}
 
         {/* 3. SLL CONTROLS */}
         {activeDs === 'singly_linked_list' && (
           <>
-            <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Val" style={{ width: '50px', padding: '5px 8px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.8rem' }} />
-            <input type="text" value={indexInput} onChange={e => setIndexInput(e.target.value)} placeholder="Idx" style={{ width: '40px', padding: '5px 8px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.8rem' }} />
-            <button onClick={handleSllPrepend} style={{ padding: '6px 10px', borderRadius: '6px', background: '#059669', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>⇤ Prepend</button>
-            <button onClick={handleSllAppend} style={{ padding: '6px 10px', borderRadius: '6px', background: '#0284c7', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Append ⇥</button>
-            <button onClick={handleSllInsertAt} style={{ padding: '6px 10px', borderRadius: '6px', background: '#7c3aed', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Insert [i]</button>
-            <button onClick={handleSllDeleteVal} style={{ padding: '6px 10px', borderRadius: '6px', background: '#dc2626', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Delete Val</button>
-            <button onClick={handleSllFindMiddle} style={{ padding: '6px 10px', borderRadius: '6px', background: '#d97706', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Find Middle (Tortoise/Hare)</button>
-            <button onClick={handleSllReverse} style={{ padding: '6px 10px', borderRadius: '6px', background: '#475569', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>↻ Reverse</button>
+            <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Val" style={{ width: '42px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
+            <input type="text" value={indexInput} onChange={e => setIndexInput(e.target.value)} placeholder="Idx" style={{ width: '34px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
+            <button title="Prepend Head" onClick={handleSllPrepend} className="dsa-action-btn" style={{ background: '#059669', color: '#fff', border: 'none' }}>⇤<span className="dsa-btn-label"> Prepend</span></button>
+            <button title="Append Tail" onClick={handleSllAppend} className="dsa-action-btn" style={{ background: '#0284c7', color: '#fff', border: 'none' }}>⇥<span className="dsa-btn-label"> Append</span></button>
+            <button title="Insert at Index" onClick={handleSllInsertAt} className="dsa-action-btn" style={{ background: '#7c3aed', color: '#fff', border: 'none' }}>+<span className="dsa-btn-label"> [i]</span></button>
+            <button title="Delete Value" onClick={handleSllDeleteVal} className="dsa-action-btn" style={{ background: '#dc2626', color: '#fff', border: 'none' }}>🗑<span className="dsa-btn-label"> Del</span></button>
+            <button title="Find Middle Node" onClick={handleSllFindMiddle} className="dsa-action-btn" style={{ background: '#d97706', color: '#fff', border: 'none' }}>🐢<span className="dsa-btn-label"> Middle</span></button>
+            <button title="Reverse SLL" onClick={handleSllReverse} className="dsa-action-btn" style={{ background: '#475569', color: '#fff', border: 'none' }}>↻<span className="dsa-btn-label"> Reverse</span></button>
           </>
         )}
 
         {/* 4. DLL CONTROLS */}
         {activeDs === 'doubly_linked_list' && (
           <>
-            <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Val" style={{ width: '50px', padding: '5px 8px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.8rem' }} />
-            <button onClick={handleDllPrepend} style={{ padding: '6px 10px', borderRadius: '6px', background: '#059669', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Prepend Head</button>
-            <button onClick={handleDllAppend} style={{ padding: '6px 10px', borderRadius: '6px', background: '#0284c7', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Append Tail</button>
-            <button onClick={handleDllReverse} style={{ padding: '6px 10px', borderRadius: '6px', background: '#7c3aed', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>↻ Reverse DLL</button>
+            <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Val" style={{ width: '42px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
+            <button title="Prepend Head" onClick={handleDllPrepend} className="dsa-action-btn" style={{ background: '#059669', color: '#fff', border: 'none' }}>⇤<span className="dsa-btn-label"> Head</span></button>
+            <button title="Append Tail" onClick={handleDllAppend} className="dsa-action-btn" style={{ background: '#0284c7', color: '#fff', border: 'none' }}>⇥<span className="dsa-btn-label"> Tail</span></button>
+            <button title="Reverse DLL" onClick={handleDllReverse} className="dsa-action-btn" style={{ background: '#7c3aed', color: '#fff', border: 'none' }}>↻<span className="dsa-btn-label"> Reverse</span></button>
           </>
         )}
 
         {/* 5. CLL CONTROLS */}
         {activeDs === 'circular_linked_list' && (
           <>
-            <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Val" style={{ width: '50px', padding: '5px 8px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.8rem' }} />
-            <button onClick={handleCllInsertTail} style={{ padding: '6px 10px', borderRadius: '6px', background: '#059669', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Insert Tail</button>
-            <button onClick={handleCllJosephus} style={{ padding: '6px 12px', borderRadius: '6px', background: '#7c3aed', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>👑 Josephus Problem (Step=3)</button>
+            <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Val" style={{ width: '42px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
+            <button title="Insert Tail" onClick={handleCllInsertTail} className="dsa-action-btn" style={{ background: '#059669', color: '#fff', border: 'none' }}>+<span className="dsa-btn-label"> Insert</span></button>
+            <button title="Josephus Problem (Step=3)" onClick={handleCllJosephus} className="dsa-action-btn" style={{ background: '#7c3aed', color: '#fff', border: 'none' }}>👑<span className="dsa-btn-label"> Josephus</span></button>
           </>
         )}
 
         {/* 6. STACK CONTROLS */}
         {activeDs === 'stack_ds' && (
           <>
-            <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Capsule" style={{ width: '60px', padding: '5px 8px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.8rem' }} />
-            <button onClick={handleStackPush} style={{ padding: '6px 10px', borderRadius: '6px', background: '#059669', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Push Top</button>
-            <button onClick={handleStackPop} style={{ padding: '6px 10px', borderRadius: '6px', background: '#dc2626', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Pop Top</button>
-            <button onClick={handleStackPeek} style={{ padding: '6px 10px', borderRadius: '6px', background: '#d97706', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Peek Top</button>
-            <button onClick={handleStackParenCheck} style={{ padding: '6px 12px', borderRadius: '6px', background: '#7c3aed', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Validate "{`{[()]}`}"</button>
+            <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Val" style={{ width: '48px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
+            <button title="Push to Top" onClick={handleStackPush} className="dsa-action-btn" style={{ background: '#059669', color: '#fff', border: 'none' }}>⬆<span className="dsa-btn-label"> Push</span></button>
+            <button title="Pop from Top" onClick={handleStackPop} className="dsa-action-btn" style={{ background: '#dc2626', color: '#fff', border: 'none' }}>⬇<span className="dsa-btn-label"> Pop</span></button>
+            <button title="Peek Top" onClick={handleStackPeek} className="dsa-action-btn" style={{ background: '#d97706', color: '#fff', border: 'none' }}>👁<span className="dsa-btn-label"> Peek</span></button>
+            <button title="Validate Parentheses" onClick={handleStackParenCheck} className="dsa-action-btn" style={{ background: '#7c3aed', color: '#fff', border: 'none' }}>✔<span className="dsa-btn-label"> () Check</span></button>
           </>
         )}
 
         {/* 7. QUEUE CONTROLS */}
         {activeDs === 'queue_ds' && (
           <>
-            <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Item" style={{ width: '60px', padding: '5px 8px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.8rem' }} />
-            <button onClick={handleQueueEnqueueRear} style={{ padding: '6px 10px', borderRadius: '6px', background: '#059669', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Enqueue Rear</button>
-            <button onClick={handleQueueDequeueFront} style={{ padding: '6px 10px', borderRadius: '6px', background: '#dc2626', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Dequeue Front</button>
-            <button onClick={handleQueueEnqueueFront} style={{ padding: '6px 10px', borderRadius: '6px', background: '#0284c7', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Deque Push Front</button>
-            <button onClick={handleQueueDequeueRear} style={{ padding: '6px 10px', borderRadius: '6px', background: '#7c3aed', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Deque Pop Rear</button>
+            <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Val" style={{ width: '48px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
+            <button title="Enqueue Rear" onClick={handleQueueEnqueueRear} className="dsa-action-btn" style={{ background: '#059669', color: '#fff', border: 'none' }}>+<span className="dsa-btn-label"> Enqueue</span></button>
+            <button title="Dequeue Front" onClick={handleQueueDequeueFront} className="dsa-action-btn" style={{ background: '#dc2626', color: '#fff', border: 'none' }}>-<span className="dsa-btn-label"> Dequeue</span></button>
+            <button title="Deque Push Front" onClick={handleQueueEnqueueFront} className="dsa-action-btn" style={{ background: '#0284c7', color: '#fff', border: 'none' }}>⇤<span className="dsa-btn-label"> PushFront</span></button>
+            <button title="Deque Pop Rear" onClick={handleQueueDequeueRear} className="dsa-action-btn" style={{ background: '#7c3aed', color: '#fff', border: 'none' }}>⇥<span className="dsa-btn-label"> PopRear</span></button>
           </>
         )}
 
@@ -1550,33 +1582,33 @@ export const DataStructuresLab: React.FC<DataStructuresLabProps> = ({
           <>
             {hashMode === 'hash_map' ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <input type="text" value={keyInput} onChange={e => setKeyInput(e.target.value)} placeholder="Key" style={{ width: '70px', padding: '5px 8px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.8rem' }} />
-                <input type="text" value={valueInput} onChange={e => setValueInput(e.target.value)} placeholder="Val" style={{ width: '70px', padding: '5px 8px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.8rem' }} />
-                <button onClick={handleHashMapPut} style={{ padding: '6px 10px', borderRadius: '6px', background: '#059669', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Put(K, V)</button>
+                <input type="text" value={keyInput} onChange={e => setKeyInput(e.target.value)} placeholder="Key" style={{ width: '50px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
+                <input type="text" value={valueInput} onChange={e => setValueInput(e.target.value)} placeholder="Val" style={{ width: '50px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
+                <button title="Put Key-Value" onClick={handleHashMapPut} className="dsa-action-btn" style={{ background: '#059669', color: '#fff', border: 'none' }}>+<span className="dsa-btn-label"> Put</span></button>
               </div>
             ) : (
               <>
-                <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Key" style={{ width: '50px', padding: '5px 8px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.8rem' }} />
-                <button onClick={handleHashInsert} style={{ padding: '6px 10px', borderRadius: '6px', background: '#0284c7', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Insert Key</button>
+                <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Key" style={{ width: '42px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
+                <button title="Insert Key" onClick={handleHashInsert} className="dsa-action-btn" style={{ background: '#0284c7', color: '#fff', border: 'none' }}>+<span className="dsa-btn-label"> Insert</span></button>
               </>
             )}
-            <div style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
+            <div style={{ display: 'flex', gap: '3px', marginLeft: 'auto' }}>
               {(['chaining', 'linear_probing', 'quadratic_probing', 'hash_map'] as const).map(m => (
                 <button
                   key={m}
+                  title={m}
                   onClick={() => setHashMode(m)}
+                  className="dsa-action-btn"
                   style={{
-                    padding: '4px 8px',
+                    padding: '3px 6px',
                     borderRadius: '6px',
                     background: hashMode === m ? '#0284c7' : 'rgba(255,255,255,0.06)',
                     color: hashMode === m ? '#fff' : '#94a3b8',
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    border: 'none',
-                    cursor: 'pointer'
+                    fontSize: '0.7rem',
+                    border: 'none'
                   }}
                 >
-                  {m === 'chaining' ? 'Chaining' : m === 'linear_probing' ? 'Linear' : m === 'quadratic_probing' ? 'Quadratic' : 'Map'}
+                  {m === 'chaining' ? 'Chain' : m === 'linear_probing' ? 'Linear' : m === 'quadratic_probing' ? 'Quad' : 'Map'}
                 </button>
               ))}
             </div>
@@ -1586,73 +1618,72 @@ export const DataStructuresLab: React.FC<DataStructuresLabProps> = ({
         {/* 9. BINARY TREE CONTROLS */}
         {activeDs === 'binary_tree_ds' && (
           <>
-            <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Val" style={{ width: '50px', padding: '5px 8px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.8rem' }} />
-            <button onClick={handleBinaryTreeInsert} style={{ padding: '6px 10px', borderRadius: '6px', background: '#059669', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Insert</button>
-            <button onClick={handleBinaryTreeInvert} style={{ padding: '6px 10px', borderRadius: '6px', background: '#0284c7', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Invert / Mirror</button>
-            <button onClick={() => handleBinaryTreeTraverse('inorder')} style={{ padding: '6px 8px', borderRadius: '6px', background: '#7c3aed', color: '#fff', fontWeight: 700, fontSize: '0.75rem', border: 'none', cursor: 'pointer' }}>Inorder</button>
-            <button onClick={() => handleBinaryTreeTraverse('preorder')} style={{ padding: '6px 8px', borderRadius: '6px', background: '#7c3aed', color: '#fff', fontWeight: 700, fontSize: '0.75rem', border: 'none', cursor: 'pointer' }}>Preorder</button>
-            <button onClick={() => handleBinaryTreeTraverse('postorder')} style={{ padding: '6px 8px', borderRadius: '6px', background: '#7c3aed', color: '#fff', fontWeight: 700, fontSize: '0.75rem', border: 'none', cursor: 'pointer' }}>Postorder</button>
-            <button onClick={() => handleBinaryTreeTraverse('bfs')} style={{ padding: '6px 8px', borderRadius: '6px', background: '#d97706', color: '#fff', fontWeight: 700, fontSize: '0.75rem', border: 'none', cursor: 'pointer' }}>BFS Level</button>
+            <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Val" style={{ width: '42px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
+            <button title="Insert Node" onClick={handleBinaryTreeInsert} className="dsa-action-btn" style={{ background: '#059669', color: '#fff', border: 'none' }}>+<span className="dsa-btn-label"> Insert</span></button>
+            <button title="Invert / Mirror Tree" onClick={handleBinaryTreeInvert} className="dsa-action-btn" style={{ background: '#0284c7', color: '#fff', border: 'none' }}>🪞<span className="dsa-btn-label"> Invert</span></button>
+            <button title="Inorder Traversal" onClick={() => handleBinaryTreeTraverse('inorder')} className="dsa-action-btn" style={{ background: '#7c3aed', color: '#fff', border: 'none' }}>In<span className="dsa-btn-label">order</span></button>
+            <button title="Preorder Traversal" onClick={() => handleBinaryTreeTraverse('preorder')} className="dsa-action-btn" style={{ background: '#7c3aed', color: '#fff', border: 'none' }}>Pre<span className="dsa-btn-label">order</span></button>
+            <button title="Postorder Traversal" onClick={() => handleBinaryTreeTraverse('postorder')} className="dsa-action-btn" style={{ background: '#7c3aed', color: '#fff', border: 'none' }}>Post<span className="dsa-btn-label">order</span></button>
+            <button title="BFS Level Order" onClick={() => handleBinaryTreeTraverse('bfs')} className="dsa-action-btn" style={{ background: '#d97706', color: '#fff', border: 'none' }}>BFS</button>
           </>
         )}
 
         {/* 10. BST CONTROLS */}
         {activeDs === 'bst_ds' && (
           <>
-            <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Val" style={{ width: '50px', padding: '5px 8px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.8rem' }} />
-            <button onClick={() => { const v = parseInt(inputValue, 10); if (!isNaN(v)) insertBstKey(v); }} style={{ padding: '6px 10px', borderRadius: '6px', background: '#059669', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Insert BST</button>
-            <button onClick={handleBstSearch} style={{ padding: '6px 10px', borderRadius: '6px', background: '#0284c7', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Search Path</button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '6px' }}>
-              <input type="text" value={indexInput} onChange={e => setIndexInput(e.target.value)} placeholder="k" style={{ width: '32px', padding: '5px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
-              <button onClick={handleBstKthSmallest} style={{ padding: '6px 8px', borderRadius: '6px', background: '#7c3aed', color: '#fff', fontWeight: 700, fontSize: '0.75rem', border: 'none', cursor: 'pointer' }}>K-th Smallest</button>
+            <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Val" style={{ width: '42px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
+            <button title="Insert BST Key" onClick={() => { const v = parseInt(inputValue, 10); if (!isNaN(v)) insertBstKey(v); }} className="dsa-action-btn" style={{ background: '#059669', color: '#fff', border: 'none' }}>+<span className="dsa-btn-label"> Insert</span></button>
+            <button title="Search Path" onClick={handleBstSearch} className="dsa-action-btn" style={{ background: '#0284c7', color: '#fff', border: 'none' }}>🔍<span className="dsa-btn-label"> Search</span></button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+              <input type="text" value={indexInput} onChange={e => setIndexInput(e.target.value)} placeholder="k" style={{ width: '28px', padding: '4px 4px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.76rem' }} />
+              <button title="K-th Smallest" onClick={handleBstKthSmallest} className="dsa-action-btn" style={{ background: '#7c3aed', color: '#fff', border: 'none' }}>k-th</button>
             </div>
-            <button onClick={() => { setBstKeys([50, 30, 70, 20, 40, 60, 80]); setActiveBstNode(null); }} style={{ marginLeft: 'auto', padding: '6px 8px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)', color: '#38bdf8', fontSize: '0.75rem', border: '1px solid rgba(56,189,248,0.3)', cursor: 'pointer' }}>✦ Example</button>
+            <button title="Load Example BST" onClick={() => { setBstKeys([50, 30, 70, 20, 40, 60, 80]); setActiveBstNode(null); }} className="dsa-action-btn" style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.06)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.3)' }}>✦<span className="dsa-btn-label"> Ex</span></button>
           </>
         )}
 
         {/* 11. AVL CONTROLS */}
         {activeDs === 'avl_ds' && (
           <>
-            <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Val" style={{ width: '50px', padding: '5px 8px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.8rem' }} />
-            <button onClick={handleAvlInsert} style={{ padding: '6px 10px', borderRadius: '6px', background: '#059669', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Insert & Balance</button>
-            <button onClick={handleAvlSearch} style={{ padding: '6px 10px', borderRadius: '6px', background: '#0284c7', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Search</button>
+            <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Val" style={{ width: '42px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
+            <button title="Insert & Self Balance" onClick={handleAvlInsert} className="dsa-action-btn" style={{ background: '#059669', color: '#fff', border: 'none' }}>+<span className="dsa-btn-label"> Insert</span></button>
+            <button title="Search AVL" onClick={handleAvlSearch} className="dsa-action-btn" style={{ background: '#0284c7', color: '#fff', border: 'none' }}>🔍<span className="dsa-btn-label"> Search</span></button>
             {lastRotation && (
-              <span style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: 700, background: 'rgba(245,158,11,0.15)', padding: '3px 6px', borderRadius: '6px' }}>
+              <span style={{ fontSize: '0.7rem', color: '#fbbf24', fontWeight: 700, background: 'rgba(245,158,11,0.15)', padding: '2px 5px', borderRadius: '4px' }}>
                 ⚡ {lastRotation}
               </span>
             )}
-            <button onClick={() => { setAvlKeys([50, 25, 75, 12, 35, 65, 90]); setLastRotation(null); }} style={{ marginLeft: 'auto', padding: '6px 8px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)', color: '#38bdf8', fontSize: '0.75rem', border: '1px solid rgba(56,189,248,0.3)', cursor: 'pointer' }}>✦ Example</button>
+            <button title="Load Example AVL" onClick={() => { setAvlKeys([50, 25, 75, 12, 35, 65, 90]); setLastRotation(null); }} className="dsa-action-btn" style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.06)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.3)' }}>✦<span className="dsa-btn-label"> Ex</span></button>
           </>
         )}
 
         {/* 12. RED-BLACK CONTROLS */}
         {activeDs === 'rbtree_ds' && (
           <>
-            <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Val" style={{ width: '50px', padding: '5px 8px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.8rem' }} />
-            <button onClick={handleRbInsert} style={{ padding: '6px 10px', borderRadius: '6px', background: '#dc2626', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Insert Red-Black</button>
-            <button onClick={() => { setRbKeys([20, 10, 30, 5, 15, 25, 40]); setActiveRbNode(null); }} style={{ marginLeft: 'auto', padding: '6px 8px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)', color: '#38bdf8', fontSize: '0.75rem', border: '1px solid rgba(56,189,248,0.3)', cursor: 'pointer' }}>✦ Example</button>
+            <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Val" style={{ width: '42px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
+            <button title="Insert Red-Black Node" onClick={handleRbInsert} className="dsa-action-btn" style={{ background: '#dc2626', color: '#fff', border: 'none' }}>+<span className="dsa-btn-label"> Insert</span></button>
+            <button title="Load Example RB Tree" onClick={() => { setRbKeys([20, 10, 30, 5, 15, 25, 40]); setActiveRbNode(null); }} className="dsa-action-btn" style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.06)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.3)' }}>✦<span className="dsa-btn-label"> Ex</span></button>
           </>
         )}
 
         {/* 13. SEGMENT TREE CONTROLS */}
         {activeDs === 'segment_tree_ds' && (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Query [L, R]:</span>
-              <input type="text" value={rangeLeft} onChange={e => setRangeLeft(e.target.value)} style={{ width: '34px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
-              <span style={{ color: '#94a3b8' }}>to</span>
-              <input type="text" value={rangeRight} onChange={e => setRangeRight(e.target.value)} style={{ width: '34px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+              <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>[L,R]:</span>
+              <input type="text" value={rangeLeft} onChange={e => setRangeLeft(e.target.value)} style={{ width: '26px', padding: '3px 4px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.76rem' }} />
+              <span style={{ color: '#94a3b8' }}>-</span>
+              <input type="text" value={rangeRight} onChange={e => setRangeRight(e.target.value)} style={{ width: '26px', padding: '3px 4px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.76rem' }} />
             </div>
-            <button onClick={handleSegRangeQuery} style={{ padding: '6px 10px', borderRadius: '6px', background: '#0284c7', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Query</button>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginLeft: '6px' }}>
-              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>A[i]=v:</span>
-              <input type="text" value={indexInput} onChange={e => setIndexInput(e.target.value)} placeholder="i" style={{ width: '30px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
-              <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="v" style={{ width: '38px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
-              <button onClick={handleSegPointUpdate} style={{ padding: '6px 8px', borderRadius: '6px', background: '#059669', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Update</button>
+            <button title="Range Query" onClick={handleSegRangeQuery} className="dsa-action-btn" style={{ background: '#0284c7', color: '#fff', border: 'none' }}>🔍<span className="dsa-btn-label"> Query</span></button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+              <input type="text" value={indexInput} onChange={e => setIndexInput(e.target.value)} placeholder="i" style={{ width: '24px', padding: '3px 4px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.76rem' }} />
+              <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="v" style={{ width: '28px', padding: '3px 4px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.76rem' }} />
+              <button title="Point Update" onClick={handleSegPointUpdate} className="dsa-action-btn" style={{ background: '#059669', color: '#fff', border: 'none' }}>✎<span className="dsa-btn-label"> Set</span></button>
             </div>
-            <div style={{ display: 'flex', gap: '4px', marginLeft: 'auto' }}>
+            <div style={{ display: 'flex', gap: '3px', marginLeft: 'auto' }}>
               {(['sum', 'min', 'max'] as const).map(m => (
-                <button key={m} onClick={() => { setSegMode(m); setActiveSegNodes({}); setSegQueryResult(null); }} style={{ padding: '4px 8px', borderRadius: '6px', background: segMode === m ? '#7c3aed' : 'rgba(255,255,255,0.06)', color: '#fff', fontSize: '0.72rem', fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                <button key={m} title={m} onClick={() => { setSegMode(m); setActiveSegNodes({}); setSegQueryResult(null); }} className="dsa-action-btn" style={{ padding: '3px 6px', borderRadius: '6px', background: segMode === m ? '#7c3aed' : 'rgba(255,255,255,0.06)', color: '#fff', fontSize: '0.7rem', border: 'none' }}>
                   {m.toUpperCase()}
                 </button>
               ))}
@@ -1663,24 +1694,24 @@ export const DataStructuresLab: React.FC<DataStructuresLabProps> = ({
         {/* 14. TRIE CONTROLS */}
         {activeDs === 'trie_ds' && (
           <>
-            <input type="text" value={strValue} onChange={e => setStrValue(e.target.value)} placeholder="word / prefix" style={{ width: '120px', padding: '5px 8px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.8rem' }} />
-            <button onClick={handleTrieInsert} style={{ padding: '6px 10px', borderRadius: '6px', background: '#059669', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Insert Word</button>
-            <button onClick={handleTrieSearch} style={{ padding: '6px 10px', borderRadius: '6px', background: '#0284c7', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Search Word</button>
-            <button onClick={handleTriePrefixSearch} style={{ padding: '6px 10px', borderRadius: '6px', background: '#7c3aed', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Prefix (Autocomplete)</button>
-            <button onClick={() => { setTrieWords(['kranth', 'uday', 'cat', 'car', 'card', 'care']); setTrieActivePath([]); }} style={{ marginLeft: 'auto', padding: '6px 8px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)', color: '#38bdf8', fontSize: '0.75rem', border: '1px solid rgba(56,189,248,0.3)', cursor: 'pointer' }}>✦ Example</button>
+            <input type="text" value={strValue} onChange={e => setStrValue(e.target.value)} placeholder="word" style={{ width: '80px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
+            <button title="Insert Word" onClick={handleTrieInsert} className="dsa-action-btn" style={{ background: '#059669', color: '#fff', border: 'none' }}>+<span className="dsa-btn-label"> Insert</span></button>
+            <button title="Search Word" onClick={handleTrieSearch} className="dsa-action-btn" style={{ background: '#0284c7', color: '#fff', border: 'none' }}>🔍<span className="dsa-btn-label"> Word</span></button>
+            <button title="Prefix Autocomplete" onClick={handleTriePrefixSearch} className="dsa-action-btn" style={{ background: '#7c3aed', color: '#fff', border: 'none' }}>⚡<span className="dsa-btn-label"> Prefix</span></button>
+            <button title="Load Example Trie" onClick={() => { setTrieWords(['kranth', 'uday', 'cat', 'car', 'card', 'care']); setTrieActivePath([]); }} className="dsa-action-btn" style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.06)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.3)' }}>✦<span className="dsa-btn-label"> Ex</span></button>
           </>
         )}
 
         {/* 15. HEAP CONTROLS */}
         {activeDs === 'heap_ds' && (
           <>
-            <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Val" style={{ width: '50px', padding: '5px 8px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.8rem' }} />
-            <button onClick={handleHeapPush} style={{ padding: '6px 10px', borderRadius: '6px', background: '#059669', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Push (Bubble Up)</button>
-            <button onClick={handleHeapExtractRoot} style={{ padding: '6px 10px', borderRadius: '6px', background: '#dc2626', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Extract Root</button>
-            <button onClick={handleHeapify} style={{ padding: '6px 10px', borderRadius: '6px', background: '#7c3aed', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Heapify O(n)</button>
-            <button onClick={handleHeapSort} style={{ padding: '6px 10px', borderRadius: '6px', background: '#d97706', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>⚡ Heap Sort</button>
-            <button onClick={() => { setHeapType(heapType === 'min' ? 'max' : 'min'); setActiveHeapIndex(null); }} style={{ marginLeft: 'auto', padding: '6px 10px', borderRadius: '6px', background: 'rgba(56,189,248,0.15)', color: '#38bdf8', fontSize: '0.75rem', border: '1px solid #38bdf8', cursor: 'pointer', fontWeight: 800 }}>
-              Mode: {heapType === 'min' ? '🔺 Min-Heap' : '🔻 Max-Heap'}
+            <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Val" style={{ width: '42px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
+            <button title="Push (Bubble Up)" onClick={handleHeapPush} className="dsa-action-btn" style={{ background: '#059669', color: '#fff', border: 'none' }}>+<span className="dsa-btn-label"> Push</span></button>
+            <button title="Extract Root" onClick={handleHeapExtractRoot} className="dsa-action-btn" style={{ background: '#dc2626', color: '#fff', border: 'none' }}>-<span className="dsa-btn-label"> Pop</span></button>
+            <button title="Heapify O(n)" onClick={handleHeapify} className="dsa-action-btn" style={{ background: '#7c3aed', color: '#fff', border: 'none' }}>⚡<span className="dsa-btn-label"> Heapify</span></button>
+            <button title="Heap Sort" onClick={handleHeapSort} className="dsa-action-btn" style={{ background: '#d97706', color: '#fff', border: 'none' }}>📶<span className="dsa-btn-label"> Sort</span></button>
+            <button title="Toggle Min/Max" onClick={() => { setHeapType(heapType === 'min' ? 'max' : 'min'); setActiveHeapIndex(null); }} className="dsa-action-btn" style={{ marginLeft: 'auto', background: 'rgba(56,189,248,0.15)', color: '#38bdf8', border: '1px solid #38bdf8' }}>
+              {heapType === 'min' ? '🔺 Min' : '🔻 Max'}
             </button>
           </>
         )}
@@ -1688,26 +1719,26 @@ export const DataStructuresLab: React.FC<DataStructuresLabProps> = ({
         {/* 16. B-TREE CONTROLS */}
         {activeDs === 'b_tree_ds' && (
           <>
-            <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Key" style={{ width: '50px', padding: '5px 8px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.8rem' }} />
-            <button onClick={handleBTreeInsert} style={{ padding: '6px 10px', borderRadius: '6px', background: '#059669', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Insert Key</button>
-            <button onClick={handleBTreeSearch} style={{ padding: '6px 10px', borderRadius: '6px', background: '#0284c7', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Multi-Way Search</button>
-            <button onClick={() => { setBTreeKeys([10, 20, 30, 40, 50, 60, 70, 80]); setActiveBTreeNodeId(null); }} style={{ marginLeft: 'auto', padding: '6px 8px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)', color: '#38bdf8', fontSize: '0.75rem', border: '1px solid rgba(56,189,248,0.3)', cursor: 'pointer' }}>✦ Example</button>
+            <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} placeholder="Key" style={{ width: '42px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
+            <button title="Insert Key" onClick={handleBTreeInsert} className="dsa-action-btn" style={{ background: '#059669', color: '#fff', border: 'none' }}>+<span className="dsa-btn-label"> Insert</span></button>
+            <button title="Multi-Way Search" onClick={handleBTreeSearch} className="dsa-action-btn" style={{ background: '#0284c7', color: '#fff', border: 'none' }}>🔍<span className="dsa-btn-label"> Search</span></button>
+            <button title="Load Example B-Tree" onClick={() => { setBTreeKeys([10, 20, 30, 40, 50, 60, 70, 80]); setActiveBTreeNodeId(null); }} className="dsa-action-btn" style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.06)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.3)' }}>✦<span className="dsa-btn-label"> Ex</span></button>
           </>
         )}
 
         {/* 17. DISJOINT SETS CONTROLS */}
         {activeDs === 'disjoint_set_ds' && (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>u:</span>
-              <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} style={{ width: '32px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
+              <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>u:</span>
+              <input type="text" value={inputValue} onChange={e => setInputValue(e.target.value)} style={{ width: '26px', padding: '3px 4px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.76rem' }} />
               <span style={{ color: '#94a3b8' }}>v:</span>
-              <input type="text" value={secondaryInput} onChange={e => setSecondaryInput(e.target.value)} style={{ width: '32px', padding: '4px 6px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.78rem' }} />
+              <input type="text" value={secondaryInput} onChange={e => setSecondaryInput(e.target.value)} style={{ width: '26px', padding: '3px 4px', borderRadius: '6px', background: '#1e293b', border: '1px solid #334155', color: '#fff', fontSize: '0.76rem' }} />
             </div>
-            <button onClick={handleDsuUnion} style={{ padding: '6px 10px', borderRadius: '6px', background: '#059669', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Union(u, v)</button>
-            <button onClick={handleDsuFindWithCompression} style={{ padding: '6px 10px', borderRadius: '6px', background: '#0284c7', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Find + Compress</button>
-            <button onClick={handleDsuConnectedQuery} style={{ padding: '6px 8px', borderRadius: '6px', background: '#7c3aed', color: '#fff', fontWeight: 700, fontSize: '0.78rem', border: 'none', cursor: 'pointer' }}>Connected?</button>
-            <button onClick={() => { setDsuParent([0, 0, 0, 3, 3, 5, 5, 5]); setDsuRank([2, 0, 0, 1, 0, 1, 0, 0]); setActiveDsuNodes([]); }} style={{ marginLeft: 'auto', padding: '6px 8px', borderRadius: '6px', background: 'rgba(255,255,255,0.06)', color: '#38bdf8', fontSize: '0.72rem', border: '1px solid rgba(56,189,248,0.3)', cursor: 'pointer' }}>✦ Example Forest</button>
+            <button title="Union(u, v)" onClick={handleDsuUnion} className="dsa-action-btn" style={{ background: '#059669', color: '#fff', border: 'none' }}>🔗<span className="dsa-btn-label"> Union</span></button>
+            <button title="Find with Path Compression" onClick={handleDsuFindWithCompression} className="dsa-action-btn" style={{ background: '#0284c7', color: '#fff', border: 'none' }}>⚡<span className="dsa-btn-label"> Find</span></button>
+            <button title="Check Connected?" onClick={handleDsuConnectedQuery} className="dsa-action-btn" style={{ background: '#7c3aed', color: '#fff', border: 'none' }}>?<span className="dsa-btn-label"> Connected</span></button>
+            <button title="Load Example Forest" onClick={() => { setDsuParent([0, 0, 0, 3, 3, 5, 5, 5]); setDsuRank([2, 0, 0, 1, 0, 1, 0, 0]); setActiveDsuNodes([]); }} className="dsa-action-btn" style={{ marginLeft: 'auto', background: 'rgba(255,255,255,0.06)', color: '#38bdf8', border: '1px solid rgba(56,189,248,0.3)' }}>✦<span className="dsa-btn-label"> Forest</span></button>
           </>
         )}
       </div>
@@ -1761,40 +1792,40 @@ export const DataStructuresLab: React.FC<DataStructuresLabProps> = ({
                       <span style={{ fontSize: '0.72rem', color: '#64748b', fontFamily: 'monospace' }}>[{idx}]</span>
                     )}
                     <div style={{
-                      width: '54px',
-                      height: '54px',
-                      borderRadius: '10px',
+                      width: '42px',
+                      height: '42px',
+                      borderRadius: '8px',
                       background: isHighlighted ? '#f59e0b' : hasValue ? '#0284c7' : 'rgba(30, 41, 59, 0.4)',
                       border: isHighlighted ? '2px solid #fbbf24' : hasValue ? '1px solid #38bdf8' : '1px dashed #334155',
                       color: hasValue ? '#ffffff' : '#475569',
                       fontWeight: 800,
-                      fontSize: '1.2rem',
+                      fontSize: '1rem',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      boxShadow: isHighlighted ? '0 0 18px rgba(245, 158, 11, 0.6)' : hasValue ? '0 0 10px rgba(2, 132, 199, 0.3)' : 'none',
+                      boxShadow: isHighlighted ? '0 0 14px rgba(245, 158, 11, 0.6)' : hasValue ? '0 0 8px rgba(2, 132, 199, 0.3)' : 'none',
                       transition: 'all 0.3s ease'
                     }}>
                       {val}
                     </div>
-                    <span style={{ fontSize: '0.62rem', color: '#475569', fontFamily: 'monospace' }}>{address}</span>
+                    <span style={{ fontSize: '0.6rem', color: '#475569', fontFamily: 'monospace' }}>{address}</span>
                   </div>
                 );
               })}
             </div>
 
             {showPrefixSum && (
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', background: 'rgba(15,23,42,0.6)', padding: '10px 16px', borderRadius: '8px', border: '1px solid rgba(56,189,248,0.2)' }}>
-                <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: 700 }}>Prefix Sum Array P[i] = ∑ A[0..i] (Range Queries in O(1)):</span>
-                <div style={{ display: 'flex', gap: '8px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', background: 'rgba(15,23,42,0.6)', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(56,189,248,0.2)' }}>
+                <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: 700 }}>Prefix Sum Array P[i] = ∑ A[0..i] (Range Queries in O(1)):</span>
+                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center' }}>
                   {(() => {
                     let sum = 0;
                     return arrayData.map((v, i) => {
                       sum += v;
                       return (
                         <div key={`pref-${i}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                          <span style={{ fontSize: '0.65rem', color: '#64748b' }}>P[{i}]</span>
-                          <span style={{ padding: '4px 8px', background: '#059669', color: '#fff', borderRadius: '6px', fontWeight: 700, fontSize: '0.85rem' }}>{sum}</span>
+                          <span style={{ fontSize: '0.62rem', color: '#64748b' }}>P[{i}]</span>
+                          <span style={{ padding: '3px 6px', background: '#059669', color: '#fff', borderRadius: '4px', fontWeight: 700, fontSize: '0.78rem' }}>{sum}</span>
                         </div>
                       );
                     });
@@ -1802,7 +1833,7 @@ export const DataStructuresLab: React.FC<DataStructuresLabProps> = ({
                 </div>
               </div>
             )}
-            <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+            <div style={{ fontSize: '0.74rem', color: '#94a3b8' }}>
               Size = <strong>{arrayData.length}</strong> / Capacity = <strong>{arrayCapacity}</strong> · 4 Bytes/Slot
             </div>
           </div>
@@ -1810,50 +1841,50 @@ export const DataStructuresLab: React.FC<DataStructuresLabProps> = ({
 
         {/* 2. STRING CANVAS */}
         {activeDs === 'string_ds' && (
-          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '24px' }}>
-            <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'center' }}>
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '20px' }}>
+            <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', justifyContent: 'center' }}>
               {stringBuffer.split('').map((char, idx) => {
                 const isLeft = stringPointers.left === idx;
                 const isRight = stringPointers.right === idx;
                 const isHighlighted = isLeft || isRight;
 
                 return (
-                  <div key={`str-char-${idx}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                    {isLeft && <span style={{ fontSize: '0.75rem', color: '#38bdf8', fontWeight: 800 }}>▼ L</span>}
-                    {isRight && <span style={{ fontSize: '0.75rem', color: '#f43f5e', fontWeight: 800 }}>▼ R</span>}
-                    {!isHighlighted && <span style={{ fontSize: '0.72rem', color: '#64748b' }}>[{idx}]</span>}
+                  <div key={`str-char-${idx}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                    {isLeft && <span style={{ fontSize: '0.72rem', color: '#38bdf8', fontWeight: 800 }}>▼ L</span>}
+                    {isRight && <span style={{ fontSize: '0.72rem', color: '#f43f5e', fontWeight: 800 }}>▼ R</span>}
+                    {!isHighlighted && <span style={{ fontSize: '0.68rem', color: '#64748b' }}>[{idx}]</span>}
 
                     <div style={{
-                      width: '48px',
-                      height: '56px',
-                      borderRadius: '10px',
+                      width: '38px',
+                      height: '46px',
+                      borderRadius: '8px',
                       background: isHighlighted ? '#1e1b4b' : '#0f172a',
                       border: isHighlighted ? '2px solid #a855f7' : '1px solid #334155',
                       color: isHighlighted ? '#c084fc' : '#ffffff',
-                      fontSize: '1.4rem',
+                      fontSize: '1.15rem',
                       fontWeight: 800,
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      boxShadow: isHighlighted ? '0 0 16px rgba(168, 85, 247, 0.5)' : 'none'
+                      boxShadow: isHighlighted ? '0 0 14px rgba(168, 85, 247, 0.5)' : 'none'
                     }}>
                       '{char}'
                     </div>
-                    <span style={{ fontSize: '0.65rem', color: '#64748b', fontFamily: 'monospace' }}>
+                    <span style={{ fontSize: '0.6rem', color: '#64748b', fontFamily: 'monospace' }}>
                       ASCII {char.charCodeAt(0)}
                     </span>
                   </div>
                 );
               })}
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
-                <span style={{ fontSize: '0.72rem', color: '#64748b' }}>[{stringBuffer.length}]</span>
-                <div style={{ width: '48px', height: '56px', borderRadius: '10px', background: 'rgba(255,255,255,0.03)', border: '1px dashed #334155', color: '#64748b', fontSize: '0.85rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                <span style={{ fontSize: '0.68rem', color: '#64748b' }}>[{stringBuffer.length}]</span>
+                <div style={{ width: '38px', height: '46px', borderRadius: '8px', background: 'rgba(255,255,255,0.03)', border: '1px dashed #334155', color: '#64748b', fontSize: '0.78rem', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                   \0
                 </div>
-                <span style={{ fontSize: '0.65rem', color: '#475569' }}>NULL</span>
+                <span style={{ fontSize: '0.6rem', color: '#475569' }}>NULL</span>
               </div>
             </div>
-            <span style={{ fontSize: '0.8rem', color: '#94a3b8' }}>Length = <strong>{stringBuffer.length}</strong> chars · Terminated with Null Byte (\0)</span>
+            <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Length = <strong>{stringBuffer.length}</strong> chars · Terminated with Null Byte (\0)</span>
           </div>
         )}
 

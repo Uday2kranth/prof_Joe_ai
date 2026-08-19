@@ -1,267 +1,207 @@
 import React, { useState } from 'react';
 import {
-  FlaskConical, Network, Activity, Sparkles, Layers, Database, BarChart3
+  FlaskConical, Activity, Sparkles, Layers, BarChart3
 } from 'lucide-react';
-import { AlgorithmicLabModule } from './sandbox/AlgorithmicLabModule';
-import { DataStructuresModule } from './sandbox/DataStructuresModule';
 import { NeuralSimulatorModule } from './sandbox/NeuralSimulatorModule';
 import { StatisticalOptimizationModule } from './sandbox/StatisticalOptimizationModule';
 import { WhiteboardModule } from './sandbox/WhiteboardModule';
 import { ExcalidrawModule } from './sandbox/ExcalidrawModule';
+import { SmartTeachingBoardModule } from './sandbox/SmartTeachingBoardModule';
 
 export type SandboxModuleType = 
-  | 'algorithms'
-  | 'datastructures'
+  | 'smart_teaching_board'
   | 'neural_physics'
   | 'statistical_optimization'
   | 'academic_whiteboard'
   | 'excalidraw';
 
 export const InteractiveSandboxView: React.FC = () => {
-  const [activeModule, setActiveModule] = useState<SandboxModuleType>('algorithms');
+  const [activeModule, setActiveModule] = useState<SandboxModuleType>('smart_teaching_board');
 
   return (
-    <div
-      className="interactive-sandbox-container"
-      style={{
-        padding: '18px 24px',
-        maxWidth: '1600px',
-        margin: '0 auto',
-        minHeight: 'calc(100vh - 80px)',
-        display: 'flex',
-        flexDirection: 'column',
-        gap: '16px'
-      }}
-    >
+    <div className="interactive-sandbox-container">
       {/* ─── Top Header & Master Module Switcher ─── */}
-      <div
-        className="sandbox-header"
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '16px'
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '44px',
-              height: '44px',
-              borderRadius: '12px',
-              background: 'rgba(168, 85, 247, 0.15)',
-              border: '1px solid rgba(168, 85, 247, 0.35)',
-              color: '#c084fc'
-            }}
-          >
-            <FlaskConical size={24} />
-          </div>
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, color: '#f8fafc', margin: 0 }}>
-                Interactive Learning Sandbox & Whiteboard Lab
-              </h2>
-              <span
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  padding: '2px 8px',
-                  borderRadius: '9999px',
-                  fontSize: '0.68rem',
-                  fontWeight: 700,
-                  background: 'rgba(56, 189, 248, 0.18)',
-                  color: '#38bdf8',
-                  border: '1px solid rgba(56, 189, 248, 0.4)',
-                  textTransform: 'uppercase',
-                  letterSpacing: '0.05em'
-                }}
-              >
-                6 LAB MODULES ACTIVE • PERSISTENT STATE
-              </span>
+      <div className="sandbox-header">
+        <div className="sandbox-header-top-row">
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                width: '32px',
+                height: '32px',
+                borderRadius: '8px',
+                background: 'rgba(168, 85, 247, 0.15)',
+                border: '1px solid rgba(168, 85, 247, 0.35)',
+                color: '#c084fc',
+                flexShrink: 0
+              }}
+            >
+              <FlaskConical size={16} />
             </div>
-            <p style={{ fontSize: '0.75rem', color: '#94a3b8', margin: '2px 0 0 0' }}>
-              Hands-on experimentation deck for Algorithms, Data Structures, Neural Gradients, Statistical Optimization, KaTeX Chalkboards & Vector Whiteboards
-            </p>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
+                <h2 style={{ fontSize: '1rem', fontWeight: 700, color: '#f8fafc', margin: 0 }}>
+                  <span className="module-label-desktop">Interactive Learning Sandbox & Whiteboard Lab</span>
+                  <span className="module-label-mobile">Interactive Sandbox</span>
+                </h2>
+                <span
+                  className="module-label-desktop"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    padding: '2px 8px',
+                    borderRadius: '9999px',
+                    fontSize: '0.65rem',
+                    fontWeight: 700,
+                    background: 'rgba(56, 189, 248, 0.18)',
+                    color: '#38bdf8',
+                    border: '1px solid rgba(56, 189, 248, 0.4)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.05em',
+                    whiteSpace: 'nowrap'
+                  }}
+                >
+                  5 LAB MODULES ACTIVE
+                </span>
+              </div>
+              <p className="sandbox-header-subtitle">
+                Hands-on experimentation deck for 120+ Teaching Gizmos, Neural Gradients, Statistical Optimization, KaTeX Chalkboards & Vector Whiteboards
+              </p>
+            </div>
           </div>
         </div>
 
-        {/* Master Module 6-Pill Switcher */}
-        <div
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: '6px',
-            padding: '4px',
-            borderRadius: '12px',
-            background: 'rgba(15, 23, 42, 0.85)',
-            border: '1px solid rgba(51, 65, 85, 0.6)',
-            backdropFilter: 'blur(8px)',
-            flexWrap: 'wrap'
-          }}
-        >
-          {/* Module 1: Algorithms */}
+        {/* Mobile-First Dropdown Switcher (Visible on Mobile & Narrow Screens) */}
+        <div className="sandbox-mobile-select-wrap dsa-header-card" style={{ display: 'none', alignItems: 'center', gap: '8px', width: '100%', minWidth: 0, maxWidth: '100%' }}>
+          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
+            MODULE:
+          </span>
+          <select
+            value={activeModule}
+            onChange={(e) => setActiveModule(e.target.value as SandboxModuleType)}
+            className="dsa-select-control"
+            style={{
+              minHeight: '36px',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              background: 'rgba(30, 41, 59, 0.95)',
+              border: '1.5px solid #a855f7',
+              color: '#f8fafc',
+              fontSize: '0.82rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              outline: 'none',
+              boxShadow: '0 0 10px rgba(168, 85, 247, 0.25)'
+            }}
+          >
+            <option value="smart_teaching_board">🌟 Smart Teaching Board & Gizmos</option>
+            <option value="neural_physics">⚡ Data Science & AI Simulator</option>
+            <option value="statistical_optimization">📊 Statistical & Optimization Lab</option>
+            <option value="academic_whiteboard">🖌️ Prof. Joe Academic Board</option>
+            <option value="excalidraw">✏️ Excalidraw Engine (Free MIT)</option>
+          </select>
+        </div>
+
+        {/* Master Module Switcher Pills (Desktop View) */}
+        <div className="sandbox-module-switcher-deck">
+          {/* Module 1: Smart Teaching Board & Gizmos Studio */}
           <button
             type="button"
-            onClick={() => setActiveModule('algorithms')}
+            onClick={() => setActiveModule('smart_teaching_board')}
+            className="sandbox-module-pill-btn"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 14px',
-              borderRadius: '8px',
-              fontSize: '0.78rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              background: activeModule === 'algorithms' ? 'rgba(6, 182, 212, 0.2)' : 'transparent',
-              color: activeModule === 'algorithms' ? '#38bdf8' : '#94a3b8',
-              border: activeModule === 'algorithms' ? '1px solid rgba(6, 182, 212, 0.4)' : '1px solid transparent',
-              boxShadow: activeModule === 'algorithms' ? '0 0 12px rgba(6, 182, 212, 0.15)' : 'none'
+              background: activeModule === 'smart_teaching_board' ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(168, 85, 247, 0.3))' : 'transparent',
+              color: activeModule === 'smart_teaching_board' ? '#38bdf8' : '#94a3b8',
+              border: activeModule === 'smart_teaching_board' ? '1px solid rgba(56, 189, 248, 0.6)' : '1px solid transparent',
+              boxShadow: activeModule === 'smart_teaching_board' ? '0 0 14px rgba(6, 182, 212, 0.3)' : 'none'
             }}
-            title="Module 1: Visual Algorithm & Flow Lab"
+            title="🌟 Prof. Joe Smart Teaching Board with 120+ Gizmos, Animations & AI Multi-Object Auto-Layout"
           >
-            <Network size={14} />
-            <span>🧩 Visual Algorithm & Flow Lab</span>
+            <Sparkles size={16} className="text-cyan-400" />
+            <span className="module-label-desktop">🌟 Smart Teaching Board & Gizmos</span>
+            <span className="module-label-mobile">🌟 Smart Board</span>
           </button>
 
-          {/* Module 2: Data Structures */}
-          <button
-            type="button"
-            onClick={() => setActiveModule('datastructures')}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 14px',
-              borderRadius: '8px',
-              fontSize: '0.78rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              background: activeModule === 'datastructures' ? 'rgba(16, 185, 129, 0.2)' : 'transparent',
-              color: activeModule === 'datastructures' ? '#34d399' : '#94a3b8',
-              border: activeModule === 'datastructures' ? '1px solid rgba(16, 185, 129, 0.4)' : '1px solid transparent',
-              boxShadow: activeModule === 'datastructures' ? '0 0 12px rgba(16, 185, 129, 0.15)' : 'none'
-            }}
-            title="Module 2: Interactive Data Structures Lab"
-          >
-            <Database size={14} />
-            <span>🏗️ Data Structures Lab</span>
-          </button>
-
-          {/* Module 3: Neural Simulator */}
+          {/* Module 2: Neural Simulator */}
           <button
             type="button"
             onClick={() => setActiveModule('neural_physics')}
+            className="sandbox-module-pill-btn"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 14px',
-              borderRadius: '8px',
-              fontSize: '0.78rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              background: activeModule === 'neural_physics' ? 'rgba(245, 158, 11, 0.2)' : 'transparent',
+              background: activeModule === 'neural_physics' ? 'rgba(245, 158, 11, 0.25)' : 'transparent',
               color: activeModule === 'neural_physics' ? '#fbbf24' : '#94a3b8',
-              border: activeModule === 'neural_physics' ? '1px solid rgba(245, 158, 11, 0.4)' : '1px solid transparent',
-              boxShadow: activeModule === 'neural_physics' ? '0 0 12px rgba(245, 158, 11, 0.15)' : 'none'
+              border: activeModule === 'neural_physics' ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid transparent',
+              boxShadow: activeModule === 'neural_physics' ? '0 0 12px rgba(245, 158, 11, 0.2)' : 'none'
             }}
-            title="Module 3: Real-Time Data Science, Machine Learning & AI Simulator"
+            title="Real-Time Data Science, Machine Learning & AI Simulator"
           >
-            <Activity size={14} />
-            <span>⚡ Data Science & AI Simulator</span>
+            <Activity size={16} />
+            <span className="module-label-desktop">⚡ Data Science & AI Simulator</span>
+            <span className="module-label-mobile">⚡ Neural AI</span>
           </button>
 
-          {/* Module 4: Statistical & Optimization Lab */}
+          {/* Module 3: Statistical & Optimization Lab */}
           <button
             type="button"
             onClick={() => setActiveModule('statistical_optimization')}
+            className="sandbox-module-pill-btn"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 14px',
-              borderRadius: '8px',
-              fontSize: '0.78rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
               background: activeModule === 'statistical_optimization' ? 'rgba(56, 189, 248, 0.25)' : 'transparent',
               color: activeModule === 'statistical_optimization' ? '#38bdf8' : '#94a3b8',
-              border: activeModule === 'statistical_optimization' ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid transparent',
+              border: activeModule === 'statistical_optimization' ? '1px solid rgba(56, 189, 248, 0.5)' : '1px solid transparent',
               boxShadow: activeModule === 'statistical_optimization' ? '0 0 12px rgba(56, 189, 248, 0.2)' : 'none'
             }}
-            title="Module 4: Statistical, Probabilistic & Numerical Optimization Lab (MLE, MAP, EM, MCMC, Adam/SGD, Newton-Raphson, Lagrange, LDA, SVD)"
+            title="Statistical, Probabilistic & Numerical Optimization Lab (MLE, MAP, EM, MCMC, Adam/SGD, Newton-Raphson, Lagrange, LDA, SVD)"
           >
-            <BarChart3 size={14} />
-            <span>📊 Statistical & Optimization Lab</span>
+            <BarChart3 size={16} />
+            <span className="module-label-desktop">📊 Statistical & Optimization Lab</span>
+            <span className="module-label-mobile">📊 Statistics</span>
           </button>
 
-          {/* Module 5: Prof. Joe Academic Board */}
+          {/* Module 4: Prof. Joe Academic Board */}
           <button
             type="button"
             onClick={() => setActiveModule('academic_whiteboard')}
+            className="sandbox-module-pill-btn"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 14px',
-              borderRadius: '8px',
-              fontSize: '0.78rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              background: activeModule === 'academic_whiteboard' ? 'rgba(192, 132, 252, 0.2)' : 'transparent',
+              background: activeModule === 'academic_whiteboard' ? 'rgba(192, 132, 252, 0.25)' : 'transparent',
               color: activeModule === 'academic_whiteboard' ? '#c084fc' : '#94a3b8',
-              border: activeModule === 'academic_whiteboard' ? '1px solid rgba(192, 132, 252, 0.4)' : '1px solid transparent',
-              boxShadow: activeModule === 'academic_whiteboard' ? '0 0 12px rgba(192, 132, 252, 0.15)' : 'none'
+              border: activeModule === 'academic_whiteboard' ? '1px solid rgba(192, 132, 252, 0.5)' : '1px solid transparent',
+              boxShadow: activeModule === 'academic_whiteboard' ? '0 0 12px rgba(192, 132, 252, 0.2)' : 'none'
             }}
-            title="Module 5: Dedicated Prof. Joe Academic Chalkboard with Draggable KaTeX Math Cards & Sticky Notes"
+            title="Dedicated Prof. Joe Academic Chalkboard with Draggable KaTeX Math Cards & Sticky Notes"
           >
-            <Sparkles size={14} />
-            <span>🖌️ Prof. Joe Academic Board</span>
+            <Sparkles size={16} />
+            <span className="module-label-desktop">🖌️ Prof. Joe Academic Board</span>
+            <span className="module-label-mobile">🖌️ KaTeX Board</span>
           </button>
 
-          {/* Module 6: Excalidraw MIT Engine */}
+          {/* Module 5: Excalidraw MIT Engine */}
           <button
             type="button"
             onClick={() => setActiveModule('excalidraw')}
+            className="sandbox-module-pill-btn"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 14px',
-              borderRadius: '8px',
-              fontSize: '0.78rem',
-              fontWeight: 600,
-              cursor: 'pointer',
-              transition: 'all 0.2s ease',
-              background: activeModule === 'excalidraw' ? 'rgba(244, 63, 94, 0.2)' : 'transparent',
-              color: activeModule === 'excalidraw' ? '#f43f5e' : '#94a3b8',
-              border: activeModule === 'excalidraw' ? '1px solid rgba(244, 63, 94, 0.4)' : '1px solid transparent',
-              boxShadow: activeModule === 'excalidraw' ? '0 0 12px rgba(244, 63, 94, 0.15)' : 'none'
+              background: activeModule === 'excalidraw' ? 'rgba(236, 72, 153, 0.25)' : 'transparent',
+              color: activeModule === 'excalidraw' ? '#f472b6' : '#94a3b8',
+              border: activeModule === 'excalidraw' ? '1px solid rgba(236, 72, 153, 0.5)' : '1px solid transparent',
+              boxShadow: activeModule === 'excalidraw' ? '0 0 12px rgba(236, 72, 153, 0.2)' : 'none'
             }}
-            title="Module 6: Excalidraw Hand-Drawn Vector Diagramming Suite (100% Free MIT)"
+            title="Excalidraw Hand-Drawn Vector Diagramming Suite (100% Free MIT)"
           >
-            <Layers size={14} />
-            <span>✏️ Excalidraw Engine (Free MIT)</span>
+            <Layers size={16} />
+            <span className="module-label-desktop">✏️ Excalidraw Engine (Free MIT)</span>
+            <span className="module-label-mobile">✏️ Excalidraw</span>
           </button>
         </div>
       </div>
 
       {/* ─── Persistent Active Module Rendering (Preserves 100% State Across Tabs) ─── */}
       <div style={{ flex: 1, minHeight: '600px', position: 'relative' }}>
-        <div style={{ display: activeModule === 'algorithms' ? 'flex' : 'none', flexDirection: 'column', height: '100%' }}>
-          <AlgorithmicLabModule />
-        </div>
-        <div style={{ display: activeModule === 'datastructures' ? 'flex' : 'none', flexDirection: 'column', height: '100%' }}>
-          <DataStructuresModule />
+        <div style={{ display: activeModule === 'smart_teaching_board' ? 'flex' : 'none', flexDirection: 'column', height: '100%' }}>
+          <SmartTeachingBoardModule />
         </div>
         <div style={{ display: activeModule === 'neural_physics' ? 'flex' : 'none', flexDirection: 'column', height: '100%' }}>
           <NeuralSimulatorModule />
@@ -279,4 +219,3 @@ export const InteractiveSandboxView: React.FC = () => {
     </div>
   );
 };
-

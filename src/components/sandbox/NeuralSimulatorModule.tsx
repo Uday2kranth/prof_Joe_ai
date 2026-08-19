@@ -8,6 +8,7 @@ import {
   StepForward,
   Gauge,
   Activity,
+  BarChart2,
   Eye
 } from 'lucide-react';
 
@@ -57,6 +58,7 @@ export const NeuralSimulatorModule: React.FC = () => {
   const [dataset] = useState<DatasetType>('circle');
   const [simSpeed, setSimSpeed] = useState<number>(1.0); // 0.1x to 3.0x
   const [activePlacementClass, setActivePlacementClass] = useState<number>(0);
+  const [mobileActiveTab, setMobileActiveTab] = useState<'canvas' | 'controls' | 'telemetry'>('canvas');
 
   // ─── 1. K-Means Clustering State ───
   const [numClusters, setNumClusters] = useState<number>(3);
@@ -11352,6 +11354,7 @@ export const NeuralSimulatorModule: React.FC = () => {
     >
       {/* ─── Top Control Bar: Model Preset + Operational Mode + Speed Control ─── */}
       <div
+        className="dsa-header-card"
         style={{
           display: 'flex',
           flexWrap: 'wrap',
@@ -11362,13 +11365,15 @@ export const NeuralSimulatorModule: React.FC = () => {
           background: 'rgba(15, 23, 42, 0.95)',
           borderRadius: '16px',
           border: '1px solid rgba(51, 65, 85, 0.8)',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)'
+          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+          minWidth: 0,
+          maxWidth: '100%'
         }}
       >
         {/* Left: Model Preset Selector */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-            DATA SCIENCE & AI MODEL:
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', flex: '1 1 280px', minWidth: 0, maxWidth: '100%' }}>
+          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
+            MODEL:
           </span>
           <select
             value={selectedModel}
@@ -11377,17 +11382,21 @@ export const NeuralSimulatorModule: React.FC = () => {
               setKmeansConverged(false);
               setKmeansIterations(0);
             }}
+            className="dsa-select-control"
             style={{
-              padding: '6px 14px',
-              borderRadius: '10px',
-              background: '#1e293b',
-              border: '1px solid #a855f7',
+              minHeight: '36px',
+              padding: '6px 12px',
+              borderRadius: '8px',
+              background: 'rgba(30, 41, 59, 0.95)',
+              border: '1.5px solid #a855f7',
               color: '#f8fafc',
-              fontSize: '0.8rem',
-              fontWeight: 700,
+              fontSize: '0.82rem',
+              fontWeight: 800,
               cursor: 'pointer',
               outline: 'none',
-              boxShadow: '0 0 10px rgba(168, 85, 247, 0.3)'
+              boxShadow: '0 0 10px rgba(168, 85, 247, 0.3)',
+              minWidth: 0,
+              width: '100%'
             }}
           >
             <optgroup label="🧭 Dimensionality Reduction & Clustering">
@@ -11427,17 +11436,18 @@ export const NeuralSimulatorModule: React.FC = () => {
           </select>
 
           {/* Operational Mode Toggle */}
-          <div style={{ display: 'flex', background: 'rgba(30, 41, 59, 0.8)', padding: '2px', borderRadius: '8px', border: '1px solid rgba(51, 65, 85, 0.8)', marginLeft: '6px' }}>
+          <div style={{ display: 'flex', background: 'rgba(30, 41, 59, 0.85)', padding: '3px', borderRadius: '8px', border: '1px solid rgba(51, 65, 85, 0.8)', marginLeft: '6px' }}>
             <button
               type="button"
               onClick={() => setSimMode('autoplay')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px',
-                padding: '4px 10px',
+                gap: '5px',
+                minHeight: '32px',
+                padding: '4px 12px',
                 borderRadius: '6px',
-                fontSize: '0.72rem',
+                fontSize: '0.78rem',
                 fontWeight: 700,
                 background: simMode === 'autoplay' ? '#0284c7' : 'transparent',
                 color: simMode === 'autoplay' ? '#ffffff' : '#94a3b8',
@@ -11445,7 +11455,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 cursor: 'pointer'
               }}
             >
-              <Eye size={13} />
+              <Eye size={14} />
               <span>Autoplay</span>
             </button>
             <button
@@ -11454,10 +11464,11 @@ export const NeuralSimulatorModule: React.FC = () => {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '4px',
-                padding: '4px 10px',
+                gap: '5px',
+                minHeight: '32px',
+                padding: '4px 12px',
                 borderRadius: '6px',
-                fontSize: '0.72rem',
+                fontSize: '0.78rem',
                 fontWeight: 700,
                 background: simMode === 'interactive' ? '#0284c7' : 'transparent',
                 color: simMode === 'interactive' ? '#ffffff' : '#94a3b8',
@@ -11465,24 +11476,24 @@ export const NeuralSimulatorModule: React.FC = () => {
                 cursor: 'pointer'
               }}
             >
-              <Sliders size={13} />
+              <Sliders size={14} />
               <span>Interactive</span>
             </button>
           </div>
 
           {/* Interactive Class Placement */}
           {simMode === 'interactive' && ['logistic_regression', 'svm_classifier', 'decision_tree_split', 'naive_bayes', 'random_forest', 'gradient_boosting', 'neural_mlp', 'knn_classifier'].includes(selectedModel) && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(30, 41, 59, 0.8)', padding: '2px 6px', borderRadius: '8px', border: '1px solid rgba(51, 65, 85, 0.8)', marginLeft: '4px' }}>
-              <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 600 }}>Click adds:</span>
-              <button type="button" onClick={() => setActivePlacementClass(0)} style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700, background: activePlacementClass === 0 ? 'rgba(56, 189, 248, 0.3)' : 'transparent', color: '#38bdf8', border: activePlacementClass === 0 ? '1px solid #38bdf8' : 'none', cursor: 'pointer' }}>Class 0</button>
-              <button type="button" onClick={() => setActivePlacementClass(1)} style={{ padding: '2px 6px', borderRadius: '4px', fontSize: '0.65rem', fontWeight: 700, background: activePlacementClass === 1 ? 'rgba(245, 158, 11, 0.3)' : 'transparent', color: '#fbbf24', border: activePlacementClass === 1 ? '1px solid #f59e0b' : 'none', cursor: 'pointer' }}>Class 1</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(30, 41, 59, 0.85)', padding: '3px 8px', borderRadius: '8px', border: '1px solid rgba(51, 65, 85, 0.8)', marginLeft: '4px' }}>
+              <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700 }}>Click adds:</span>
+              <button type="button" onClick={() => setActivePlacementClass(0)} style={{ minHeight: '28px', padding: '3px 8px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700, background: activePlacementClass === 0 ? 'rgba(56, 189, 248, 0.3)' : 'transparent', color: '#38bdf8', border: activePlacementClass === 0 ? '1px solid #38bdf8' : 'none', cursor: 'pointer' }}>Class 0</button>
+              <button type="button" onClick={() => setActivePlacementClass(1)} style={{ minHeight: '28px', padding: '3px 8px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700, background: activePlacementClass === 1 ? 'rgba(245, 158, 11, 0.3)' : 'transparent', color: '#fbbf24', border: activePlacementClass === 1 ? '1px solid #f59e0b' : 'none', cursor: 'pointer' }}>Class 1</button>
             </div>
           )}
 
           {/* Speed Controller */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(30, 41, 59, 0.8)', padding: '3px 8px', borderRadius: '8px', border: '1px solid rgba(51, 65, 85, 0.8)', marginLeft: '4px' }}>
-            <Gauge size={13} color="#fbbf24" />
-            <span style={{ fontSize: '0.68rem', color: '#fbbf24', fontWeight: 800 }}>{simSpeed.toFixed(2)}x</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(30, 41, 59, 0.85)', padding: '4px 10px', borderRadius: '8px', border: '1px solid rgba(51, 65, 85, 0.8)', marginLeft: '4px' }}>
+            <Gauge size={14} color="#fbbf24" />
+            <span style={{ fontSize: '0.74rem', color: '#fbbf24', fontWeight: 800 }}>{simSpeed.toFixed(2)}x</span>
             <input
               type="range"
               min="0.1"
@@ -11490,7 +11501,7 @@ export const NeuralSimulatorModule: React.FC = () => {
               step="0.05"
               value={simSpeed}
               onChange={(e) => setSimSpeed(parseFloat(e.target.value))}
-              style={{ width: '65px', accentColor: '#fbbf24', cursor: 'pointer' }}
+              style={{ width: '70px', accentColor: '#fbbf24', cursor: 'pointer' }}
             />
           </div>
         </div>
@@ -11501,9 +11512,9 @@ export const NeuralSimulatorModule: React.FC = () => {
             <button
               type="button"
               onClick={() => setPcaRotationAngle(prev => (prev + 15) % 360)}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
             >
-              <StepForward size={13} />
+              <StepForward size={14} />
               <span>Rotate PC1 Axis ⏭️</span>
             </button>
           )}
@@ -11512,9 +11523,9 @@ export const NeuralSimulatorModule: React.FC = () => {
             <button
               type="button"
               onClick={performKmeansStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
             >
-              <StepForward size={13} />
+              <StepForward size={14} />
               <span>Step K-Means ⏭️</span>
             </button>
           )}
@@ -11523,9 +11534,9 @@ export const NeuralSimulatorModule: React.FC = () => {
             <button
               type="button"
               onClick={performKnnQueryStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
             >
-              <StepForward size={13} />
+              <StepForward size={14} />
               <span>Sample Query Probe ⏭️</span>
             </button>
           )}
@@ -11534,9 +11545,9 @@ export const NeuralSimulatorModule: React.FC = () => {
             <button
               type="button"
               onClick={performLinearRegressionStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
             >
-              <StepForward size={13} />
+              <StepForward size={14} />
               <span>Fit Gradient Step ⏭️</span>
             </button>
           )}
@@ -11545,9 +11556,9 @@ export const NeuralSimulatorModule: React.FC = () => {
             <button
               type="button"
               onClick={performLogisticRegressionStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(52, 211, 153, 0.2)', border: '1px solid #34d399', color: '#34d399', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(52, 211, 153, 0.2)', border: '1px solid #34d399', color: '#34d399', cursor: 'pointer' }}
             >
-              <StepForward size={13} />
+              <StepForward size={14} />
               <span>Step Sigmoid Boundary ⏭️</span>
             </button>
           )}
@@ -11556,9 +11567,9 @@ export const NeuralSimulatorModule: React.FC = () => {
             <button
               type="button"
               onClick={performSvmStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(192, 132, 252, 0.2)', border: '1px solid #c084fc', color: '#c084fc', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(192, 132, 252, 0.2)', border: '1px solid #c084fc', color: '#c084fc', cursor: 'pointer' }}
             >
-              <StepForward size={13} />
+              <StepForward size={14} />
               <span>Solve Dual Step ⏭️</span>
             </button>
           )}
@@ -11567,9 +11578,9 @@ export const NeuralSimulatorModule: React.FC = () => {
             <button
               type="button"
               onClick={performDecisionTreeStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(52, 211, 153, 0.2)', border: '1px solid #34d399', color: '#34d399', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(52, 211, 153, 0.2)', border: '1px solid #34d399', color: '#34d399', cursor: 'pointer' }}
             >
-              <StepForward size={13} />
+              <StepForward size={14} />
               <span>Step Split Plane ⏭️</span>
             </button>
           )}
@@ -11578,9 +11589,9 @@ export const NeuralSimulatorModule: React.FC = () => {
             <button
               type="button"
               onClick={performNaiveBayesStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
             >
-              <StepForward size={13} />
+              <StepForward size={14} />
               <span>Fit Likelihoods ⏭️</span>
             </button>
           )}
@@ -11589,9 +11600,9 @@ export const NeuralSimulatorModule: React.FC = () => {
             <button
               type="button"
               onClick={performRandomForestStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
             >
-              <StepForward size={13} />
+              <StepForward size={14} />
               <span>Bootstrap & Grow Tree ⏭️</span>
             </button>
           )}
@@ -11600,9 +11611,9 @@ export const NeuralSimulatorModule: React.FC = () => {
             <button
               type="button"
               onClick={performGradientBoostingStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(245, 158, 11, 0.2)', border: '1px solid #f59e0b', color: '#fbbf24', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(245, 158, 11, 0.2)', border: '1px solid #f59e0b', color: '#fbbf24', cursor: 'pointer' }}
             >
-              <StepForward size={13} />
+              <StepForward size={14} />
               <span>Fit Next Residual ⏭️</span>
             </button>
           )}
@@ -11611,9 +11622,9 @@ export const NeuralSimulatorModule: React.FC = () => {
             <button
               type="button"
               onClick={performGanStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(236, 72, 153, 0.2)', border: '1px solid #ec4899', color: '#f472b6', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(236, 72, 153, 0.2)', border: '1px solid #ec4899', color: '#f472b6', cursor: 'pointer' }}
             >
-              <StepForward size={13} />
+              <StepForward size={14} />
               <span>Train 1 Epoch ⏭️</span>
             </button>
           )}
@@ -11622,9 +11633,9 @@ export const NeuralSimulatorModule: React.FC = () => {
             <button
               type="button"
               onClick={performDenoiseStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(52, 211, 153, 0.2)', border: '1px solid #34d399', color: '#34d399', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(52, 211, 153, 0.2)', border: '1px solid #34d399', color: '#34d399', cursor: 'pointer' }}
             >
-              <StepForward size={13} />
+              <StepForward size={14} />
               <span>{ddpmDirection === 'reverse' ? 'Reverse Denoise Step ⏭️' : 'Forward Noise Step ⏭️'}</span>
             </button>
           )}
@@ -11633,9 +11644,9 @@ export const NeuralSimulatorModule: React.FC = () => {
             <button
               type="button"
               onClick={performVaeSampleStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(192, 132, 252, 0.2)', border: '1px solid #c084fc', color: '#c084fc', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(192, 132, 252, 0.2)', border: '1px solid #c084fc', color: '#c084fc', cursor: 'pointer' }}
             >
-              <StepForward size={13} />
+              <StepForward size={14} />
               <span>Sample Latent (z~𝒩) ⏭️</span>
             </button>
           )}
@@ -11644,9 +11655,9 @@ export const NeuralSimulatorModule: React.FC = () => {
             <button
               type="button"
               onClick={performMlpPulseStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
             >
-              <StepForward size={13} />
+              <StepForward size={14} />
               <span>Trigger Pulse Wave ⏭️</span>
             </button>
           )}
@@ -11655,9 +11666,9 @@ export const NeuralSimulatorModule: React.FC = () => {
             <button
               type="button"
               onClick={performAutodiffStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(192, 132, 252, 0.2)', border: '1px solid #c084fc', color: '#c084fc', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(192, 132, 252, 0.2)', border: '1px solid #c084fc', color: '#c084fc', cursor: 'pointer' }}
             >
-              <StepForward size={13} />
+              <StepForward size={14} />
               <span>Step Backprop ⏭️</span>
             </button>
           )}
@@ -11666,9 +11677,9 @@ export const NeuralSimulatorModule: React.FC = () => {
             <button
               type="button"
               onClick={performConvScanStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(168, 85, 247, 0.2)', border: '1px solid #a855f7', color: '#c084fc', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(168, 85, 247, 0.2)', border: '1px solid #a855f7', color: '#c084fc', cursor: 'pointer' }}
             >
-              <StepForward size={13} />
+              <StepForward size={14} />
               <span>Slide Conv Window ⏭️</span>
             </button>
           )}
@@ -11677,9 +11688,9 @@ export const NeuralSimulatorModule: React.FC = () => {
             <button
               type="button"
               onClick={performRecurrentStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
             >
-              <StepForward size={13} />
+              <StepForward size={14} />
               <span>Next Timestep ⏭️</span>
             </button>
           )}
@@ -11688,9 +11699,9 @@ export const NeuralSimulatorModule: React.FC = () => {
             <button
               type="button"
               onClick={performTransformerStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
             >
-              <StepForward size={13} />
+              <StepForward size={14} />
               <span>Step Transformer ⏭️</span>
             </button>
           )}
@@ -11699,9 +11710,9 @@ export const NeuralSimulatorModule: React.FC = () => {
             <button
               type="button"
               onClick={performAttentionStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(168, 85, 247, 0.2)', border: '1px solid #a855f7', color: '#c084fc', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(168, 85, 247, 0.2)', border: '1px solid #a855f7', color: '#c084fc', cursor: 'pointer' }}
             >
-              <StepForward size={13} />
+              <StepForward size={14} />
               <span>Probe Attention ⏭️</span>
             </button>
           )}
@@ -11710,9 +11721,9 @@ export const NeuralSimulatorModule: React.FC = () => {
             <button
               type="button"
               onClick={performMoeStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(245, 158, 11, 0.2)', border: '1px solid #fbbf24', color: '#fbbf24', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(245, 158, 11, 0.2)', border: '1px solid #fbbf24', color: '#fbbf24', cursor: 'pointer' }}
             >
-              <StepForward size={13} />
+              <StepForward size={14} />
               <span>Route Next Token ⏭️</span>
             </button>
           )}
@@ -11721,9 +11732,9 @@ export const NeuralSimulatorModule: React.FC = () => {
             <button
               type="button"
               onClick={performOptimizerStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(234, 179, 8, 0.2)', border: '1px solid #eab308', color: '#facc15', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(234, 179, 8, 0.2)', border: '1px solid #eab308', color: '#facc15', cursor: 'pointer' }}
             >
-              <StepForward size={13} />
+              <StepForward size={14} />
               <span>Descent Step ⏭️</span>
             </button>
           )}
@@ -11732,9 +11743,9 @@ export const NeuralSimulatorModule: React.FC = () => {
             <button
               type="button"
               onClick={performRlStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '4px', padding: '6px 12px', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700, background: 'rgba(52, 211, 153, 0.2)', border: '1px solid #34d399', color: '#34d399', cursor: 'pointer' }}
+              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(52, 211, 153, 0.2)', border: '1px solid #34d399', color: '#34d399', cursor: 'pointer' }}
             >
-              <StepForward size={13} />
+              <StepForward size={14} />
               <span>Take RL Step ⏭️</span>
             </button>
           )}
@@ -11743,72 +11754,68 @@ export const NeuralSimulatorModule: React.FC = () => {
           <button
             type="button"
             onClick={() => setIsSimulating(prev => !prev)}
+            className="dsa-action-btn"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              padding: '6px 16px',
-              borderRadius: '10px',
-              fontSize: '0.78rem',
-              fontWeight: 800,
-              letterSpacing: '0.03em',
               background: isSimulating ? 'linear-gradient(135deg, #059669, #10b981)' : 'linear-gradient(135deg, #f59e0b, #ef4444)',
               border: isSimulating ? '1px solid #34d399' : '1px solid #f87171',
               color: '#ffffff',
-              cursor: 'pointer',
-              boxShadow: isSimulating ? '0 0 14px rgba(16, 185, 129, 0.45)' : '0 0 10px rgba(239, 68, 68, 0.35)'
+              boxShadow: isSimulating ? '0 0 16px rgba(16, 185, 129, 0.45)' : '0 0 12px rgba(239, 68, 68, 0.35)'
             }}
+            title={isSimulating ? 'Pause Simulation' : 'Start Simulation'}
           >
-            {isSimulating ? <Pause size={14} /> : <Play size={14} />}
-            <span>{isSimulating ? '⚡ SIMULATING' : '▶ SIMULATE'}</span>
+            {isSimulating ? <Pause size={15} /> : <Play size={15} />}
+            <span className="dsa-btn-label">{isSimulating ? 'Simulating' : 'Simulate'}</span>
           </button>
 
           <button
             type="button"
             onClick={handleResetModel}
+            className="dsa-action-btn"
             style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: '4px',
-              padding: '6px 10px',
-              borderRadius: '8px',
-              fontSize: '0.75rem',
-              fontWeight: 600,
-              background: 'rgba(30, 41, 59, 0.8)',
+              background: 'rgba(30, 41, 59, 0.85)',
               border: '1px solid rgba(51, 65, 85, 0.8)',
-              color: '#94a3b8',
-              cursor: 'pointer'
+              color: '#94a3b8'
             }}
+            title="Reset Model"
           >
-            <RotateCcw size={13} />
-            <span>Reset</span>
+            <RotateCcw size={15} />
+            <span className="dsa-btn-label">Reset</span>
           </button>
         </div>
       </div>
 
-      {/* ─── Main Content: Canvas Viewport + Control Deck ─── */}
-      <div
-        style={{
-          display: 'grid',
-          gridTemplateColumns: 'minmax(0, 1fr) 390px',
-          gap: '12px',
-          flex: 1,
-          minHeight: '680px',
-          height: 'calc(100vh - 210px)'
-        }}
-      >
-        {/* Left: 2D Interactive Canvas */}
-        <div
-          style={{
-            height: '100%',
-            borderRadius: '16px',
-            overflow: 'hidden',
-            border: '1px solid rgba(51, 65, 85, 0.8)',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
-            position: 'relative',
-            background: '#0a0f1d'
-          }}
+      {/* ─── Mobile Segmented 3-Pill Navigation Switcher ─── */}
+      <div className="neural-mobile-tab-nav">
+        <button
+          type="button"
+          onClick={() => setMobileActiveTab('canvas')}
+          className={`neural-mobile-tab-btn ${mobileActiveTab === 'canvas' ? 'active' : ''}`}
         >
+          <Activity size={14} />
+          <span>Simulation Canvas</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileActiveTab('controls')}
+          className={`neural-mobile-tab-btn ${mobileActiveTab === 'controls' ? 'active' : ''}`}
+        >
+          <Sliders size={14} />
+          <span>Control Deck</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileActiveTab('telemetry')}
+          className={`neural-mobile-tab-btn ${mobileActiveTab === 'telemetry' ? 'active' : ''}`}
+        >
+          <BarChart2 size={14} />
+          <span>Telemetry & Theory</span>
+        </button>
+      </div>
+
+      {/* ─── Main Content: Canvas Viewport + Control Deck ─── */}
+      <div className="neural-workbench-grid">
+        {/* Left: 2D Interactive Canvas */}
+        <div className={`neural-canvas-panel ${mobileActiveTab === 'canvas' ? 'mobile-active' : 'mobile-hidden'}`}>
           <canvas
             ref={canvasRef}
             width={720}
@@ -11821,17 +11828,10 @@ export const NeuralSimulatorModule: React.FC = () => {
         </div>
 
         {/* Right: Telemetry & Hyperparameter Deck */}
-        <div
-          style={{
-            display: 'flex',
-            flexDirection: 'column',
-            gap: '12px',
-            overflowY: 'auto',
-            paddingRight: '4px'
-          }}
-        >
+        <div className={`neural-controls-panel ${mobileActiveTab !== 'canvas' ? 'mobile-active' : 'mobile-hidden'}`}>
           {/* Telemetry Card */}
           <div
+            className={`neural-card-telemetry ${mobileActiveTab === 'telemetry' ? 'mobile-card-visible' : 'mobile-card-hidden'}`}
             style={{
               background: 'rgba(15, 23, 42, 0.95)',
               borderRadius: '16px',
@@ -12373,6 +12373,7 @@ export const NeuralSimulatorModule: React.FC = () => {
 
           {/* Contextual Hyperparameters & Controls Card */}
           <div
+            className={`neural-card-hyperparams ${mobileActiveTab === 'controls' ? 'mobile-card-visible' : 'mobile-card-hidden'}`}
             style={{
               background: 'rgba(15, 23, 42, 0.95)',
               borderRadius: '16px',
@@ -14648,6 +14649,7 @@ export const NeuralSimulatorModule: React.FC = () => {
 
           {/* Mathematical Card */}
           <div
+            className={`neural-card-theory ${mobileActiveTab === 'telemetry' ? 'mobile-card-visible' : 'mobile-card-hidden'}`}
             style={{
               background: 'rgba(15, 23, 42, 0.95)',
               borderRadius: '16px',

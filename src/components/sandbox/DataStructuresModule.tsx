@@ -244,6 +244,7 @@ export const DataStructuresModule: React.FC = () => {
   const [operationLog, setOperationLog] = useState<string>('Interactive Data Structures Laboratory initialized. Select an operation or insert keys.');
   const [highlightedIndices, setHighlightedIndices] = useState<number[]>([]);
   const [highlightedNodes, setHighlightedNodes] = useState<number[]>([]);
+  const [mobileActiveTab, setMobileActiveTab] = useState<'visualizer' | 'controls'>('visualizer');
 
   // 1. DYNAMIC ARRAY STATE
   const [arrayData, setArrayData] = useState<{ val: number; id: string }[]>([
@@ -808,22 +809,30 @@ export const DataStructuresModule: React.FC = () => {
         </div>
       </div>
 
-      {/* Main Interactive Workbench: Left Visualizer + Right Operations & Memory Deck */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 370px', gap: '16px', flex: 1, minHeight: '640px' }}>
-        {/* Left: Dynamic Visualizer Canvas Container */}
-        <div
-          style={{
-            background: '#0b1120',
-            borderRadius: '16px',
-            border: '1px solid rgba(51, 65, 85, 0.8)',
-            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
-            padding: '20px',
-            position: 'relative',
-            display: 'flex',
-            flexDirection: 'column',
-            overflow: 'hidden'
-          }}
+      {/* ─── Mobile Segmented Dual-View Switcher ─── */}
+      <div className="ds-mobile-tab-nav">
+        <button
+          type="button"
+          onClick={() => setMobileActiveTab('visualizer')}
+          className={`ds-mobile-tab-btn ${mobileActiveTab === 'visualizer' ? 'active' : ''}`}
         >
+          <Database size={14} />
+          <span>DS Visualizer Canvas</span>
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileActiveTab('controls')}
+          className={`ds-mobile-tab-btn ${mobileActiveTab === 'controls' ? 'active' : ''}`}
+        >
+          <Activity size={14} />
+          <span>Controls & Memory</span>
+        </button>
+      </div>
+
+      {/* Main Interactive Workbench: Left Visualizer + Right Operations & Memory Deck */}
+      <div className="ds-workbench-grid">
+        {/* Left: Dynamic Visualizer Canvas Container */}
+        <div className={`ds-canvas-panel ${mobileActiveTab === 'visualizer' ? 'mobile-active' : 'mobile-hidden'}`}>
           {/* Visual Header with Real-Time Mode Indicators */}
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -1103,7 +1112,7 @@ export const DataStructuresModule: React.FC = () => {
             {/* 6. DYNAMIC BST & AVL TREE VISUALIZER */}
             {(selectedDS === 'bst_tree' || selectedDS === 'avl_tree') && (
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px', width: '100%' }}>
-                <svg width="500" height="280" style={{ overflow: 'visible' }}>
+                <svg viewBox="0 0 500 280" style={{ width: '100%', maxWidth: '500px', height: 'auto', overflow: 'visible' }}>
                   {/* Render Lines first */}
                   {renderedTreeNodes.map((n, idx) => (
                     <React.Fragment key={`lines_${idx}`}>
@@ -1212,7 +1221,7 @@ export const DataStructuresModule: React.FC = () => {
                 </div>
 
                 {/* 2D Complete Binary Tree SVG Representation */}
-                <svg width="480" height="190" style={{ overflow: 'visible' }}>
+                <svg viewBox="0 0 480 190" style={{ width: '100%', maxWidth: '480px', height: 'auto', overflow: 'visible' }}>
                   {/* Branch Lines from Parent to Children */}
                   {heapData.map((_, idx) => {
                     if (idx === 0) return null;
@@ -1481,9 +1490,9 @@ export const DataStructuresModule: React.FC = () => {
                 <span style={{ fontSize: '0.85rem', color: '#38bdf8', fontWeight: 700 }}>
                   🧭 2D KD-Tree Orthogonal Spatial Partition (X-Splits vs Y-Splits)
                 </span>
-                <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '12px', alignItems: 'center', justifyContent: 'center', width: '100%' }}>
                   {/* 2D Partition Box */}
-                  <svg width="220" height="180" style={{ background: '#090d16', borderRadius: '8px', border: '1px solid #334155' }}>
+                  <svg viewBox="0 0 220 180" style={{ width: '100%', maxWidth: '220px', height: 'auto', background: '#090d16', borderRadius: '8px', border: '1px solid #334155' }}>
                     {/* Bounding box grid */}
                     <rect x="10" y="10" width="200" height="160" fill="none" stroke="#1e293b" strokeWidth="1" />
                     {/* X-split at X=50% -> x=110 */}
@@ -1508,7 +1517,7 @@ export const DataStructuresModule: React.FC = () => {
                   </svg>
 
                   {/* Tree Hierarchy SVG */}
-                  <svg width="220" height="180">
+                  <svg viewBox="0 0 220 180" style={{ width: '100%', maxWidth: '220px', height: 'auto' }}>
                     <line x1="110" y1="25" x2="60" y2="85" stroke="#38bdf8" strokeWidth="1.8" />
                     <line x1="110" y1="25" x2="160" y2="85" stroke="#38bdf8" strokeWidth="1.8" />
 
@@ -1554,7 +1563,7 @@ export const DataStructuresModule: React.FC = () => {
         </div>
 
         {/* Right Deck: Operations Panel, Real Memory Telemetry & Complexity Metrics */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+        <div className={`ds-controls-panel ${mobileActiveTab === 'controls' ? 'mobile-active' : 'mobile-hidden'}`}>
           {/* Action Deck Card */}
           <div
             style={{

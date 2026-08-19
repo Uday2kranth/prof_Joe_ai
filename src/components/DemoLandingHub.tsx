@@ -362,17 +362,17 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
                 <FlaskConical size={24} />
               </div>
               <span className="portal-tag" style={{ backgroundColor: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', borderColor: 'rgba(168, 85, 247, 0.3)' }}>
-                3-in-1 Lab
+                5-in-1 Lab
               </span>
             </div>
             <div className="portal-card-body">
               <h3>Interactive Sandbox & Whiteboard</h3>
-              <p>Visual Algorithmic Lab (AVL/BFS/DFS), 60 FPS Neural Boundary Simulator & Infinite Teaching Whiteboard.</p>
+              <p>Smart Teaching Board & 120+ Gizmos, Data Science & Neural AI Simulator, Statistical Lab, KaTeX Academic Board & Excalidraw.</p>
             </div>
             <div className="portal-card-footer">
               <div className="portal-meta-features">
-                <span>⚡ React Flow & tldraw</span>
-                <span>60 FPS SGD</span>
+                <span>🌟 120+ Gizmos & KaTeX</span>
+                <span>⚡ 60 FPS Neural Sim</span>
               </div>
               <button type="button" className="launch-portal-btn" style={{ background: 'linear-gradient(135deg, #a855f7, #6366f1)', color: '#ffffff' }}>
                 <span>Launch Sandbox</span>

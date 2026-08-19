@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Play, Pause, RotateCcw, Shuffle, Zap, HelpCircle } from 'lucide-react';
+import { Play, Pause, RotateCcw, Shuffle, Zap, HelpCircle, ChevronRight } from 'lucide-react';
 
 interface SearchingLabProps {
   activeAlgorithm?: string;
@@ -27,7 +27,7 @@ export const SearchingLab: React.FC<SearchingLabProps> = ({
   const generateSortedArray = useCallback(() => {
     const arr: number[] = [];
     let current = Math.floor(Math.random() * 5) + 3;
-    for (let i = 0; i < 16; i++) {
+    for (let i = 0; i < 8; i++) {
       current += Math.floor(Math.random() * 6) + 2;
       arr.push(current);
     }
@@ -193,55 +193,63 @@ export const SearchingLab: React.FC<SearchingLabProps> = ({
   const currentLog = stepsRef.current[currentStep]?.log || 'Search initialized.';
 
   return (
-    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
-      {/* Search Algorithm Tabs & Cheatsheet */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
-        <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap' }}>
-          {[
-            { id: 'linear_search', name: '🔍 Linear Search (Scan One by One)' },
-            { id: 'binary_search', name: '⚡ Binary Search (Halve Window [L, M, R])' },
-            { id: 'two_pointers', name: '👉👈 Two-Pointer Technique (2-Sum)' }
-          ].map(algo => (
-            <button
-              key={algo.id}
-              onClick={() => {
-                setActiveSearchAlgo(algo.id as any);
-                onSelectAlgorithm(algo.id);
-              }}
-              style={{
-                padding: '5px 12px',
-                borderRadius: '8px',
-                border: activeSearchAlgo === algo.id ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.1)',
-                background: activeSearchAlgo === algo.id ? 'rgba(56, 189, 248, 0.2)' : 'rgba(15, 23, 42, 0.6)',
-                color: activeSearchAlgo === algo.id ? '#38bdf8' : 'var(--text-secondary)',
-                fontSize: '0.78rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-            >
-              {algo.name}
-            </button>
-          ))}
+    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
+      {/* Search Algorithm Dropdown & Cheatsheet */}
+      <div className="dsa-header-card" style={{
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        flexWrap: 'wrap',
+        gap: '8px',
+        background: 'rgba(15, 23, 42, 0.75)',
+        padding: '8px 12px',
+        borderRadius: '12px',
+        border: '1px solid rgba(255,255,255,0.08)'
+      }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 200px', minWidth: 0, maxWidth: '100%', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
+            SEARCH:
+          </span>
+          <select
+            value={activeSearchAlgo}
+            onChange={(e) => {
+              const val = e.target.value as any;
+              setActiveSearchAlgo(val);
+              onSelectAlgorithm(val);
+            }}
+            className="dsa-select-control"
+            style={{
+              minHeight: '36px',
+              padding: '6px 10px',
+              borderRadius: '8px',
+              background: 'rgba(30, 41, 59, 0.95)',
+              border: '1.5px solid #38bdf8',
+              color: '#f8fafc',
+              fontSize: '0.82rem',
+              fontWeight: 800,
+              cursor: 'pointer',
+              outline: 'none',
+              boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)'
+            }}
+          >
+            <option value="linear_search">🔍 Linear Search (Sequential O(n))</option>
+            <option value="binary_search">⚡ Binary Search (Halve Window O(log n))</option>
+            <option value="two_pointers">👉👈 Two-Pointer Technique (2-Sum Target)</option>
+          </select>
         </div>
 
         <button
+          title="Searching Comparison Matrix"
           onClick={() => setShowCheatsheet(!showCheatsheet)}
+          className="dsa-action-btn"
           style={{
-            padding: '4px 10px',
-            borderRadius: '6px',
-            border: '1px solid rgba(255,255,255,0.1)',
-            background: 'rgba(255,255,255,0.05)',
-            color: '#38bdf8',
-            fontSize: '0.73rem',
-            fontWeight: 700,
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '4px'
+            border: '1px solid rgba(56, 189, 248, 0.4)',
+            background: showCheatsheet ? '#0284c7' : 'rgba(56, 189, 248, 0.12)',
+            color: showCheatsheet ? '#fff' : '#38bdf8'
           }}
         >
-          <HelpCircle size={12} /> Search Matrix
+          <HelpCircle size={13} />
+          <span className="dsa-btn-label">Matrix</span>
         </button>
       </div>
 
@@ -251,34 +259,29 @@ export const SearchingLab: React.FC<SearchingLabProps> = ({
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: '10px',
+        gap: '8px',
         background: 'rgba(15, 23, 42, 0.8)',
-        padding: '8px 14px',
-        borderRadius: '12px',
+        padding: '6px 12px',
+        borderRadius: '10px',
         border: '1px solid rgba(255,255,255,0.08)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <button
+            title={isPlaying ? 'Pause' : 'Auto Search'}
             onClick={() => setIsPlaying(!isPlaying)}
+            className="dsa-action-btn"
             style={{
-              padding: '6px 14px',
-              borderRadius: '8px',
               border: 'none',
               background: isPlaying ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #10b981, #059669)',
-              color: '#fff',
-              fontWeight: 800,
-              fontSize: '0.8rem',
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px'
+              color: '#fff'
             }}
           >
             {isPlaying ? <Pause size={13} /> : <Play size={13} />}
-            {isPlaying ? 'Pause' : 'Auto Search'}
+            <span className="dsa-btn-label">{isPlaying ? 'Pause' : 'Auto Search'}</span>
           </button>
 
           <button
+            title="Next Step"
             onClick={() => {
               if (currentStep < stepsRef.current.length - 1) {
                 const next = currentStep + 1;
@@ -288,12 +291,20 @@ export const SearchingLab: React.FC<SearchingLabProps> = ({
               }
             }}
             disabled={currentStep >= stepsRef.current.length - 1 || isPlaying}
-            style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#fff', fontSize: '0.75rem', cursor: 'pointer' }}
+            className="dsa-action-btn"
+            style={{
+              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(255,255,255,0.05)',
+              color: '#fff',
+              opacity: currentStep >= stepsRef.current.length - 1 ? 0.4 : 1
+            }}
           >
-            Next Step
+            <ChevronRight size={13} />
+            <span className="dsa-btn-label">Next</span>
           </button>
 
           <button
+            title="Reset Search"
             onClick={() => {
               setIsPlaying(false);
               setCurrentStep(0);
@@ -302,31 +313,46 @@ export const SearchingLab: React.FC<SearchingLabProps> = ({
                 setComparisons(stepsRef.current[0].comp);
               }
             }}
-            style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-muted)', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+            className="dsa-action-btn"
+            style={{
+              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(255,255,255,0.05)',
+              color: 'var(--text-muted)'
+            }}
           >
-            <RotateCcw size={12} /> Reset
+            <RotateCcw size={12} />
+            <span className="dsa-btn-label">Reset</span>
           </button>
 
           <button
+            title="Generate New Random Sorted Array"
             onClick={generateSortedArray}
-            style={{ padding: '6px 10px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.05)', color: '#38bdf8', fontSize: '0.75rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+            className="dsa-action-btn"
+            style={{
+              border: '1px solid rgba(255,255,255,0.1)',
+              background: 'rgba(255,255,255,0.05)',
+              color: '#38bdf8'
+            }}
           >
-            <Shuffle size={12} /> New Array
+            <Shuffle size={12} />
+            <span className="dsa-btn-label">New Array</span>
           </button>
         </div>
 
         {/* Target Input */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Target:</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+          <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>Target:</span>
           <input
             type="number"
             value={customTargetInput}
             onChange={(e) => setCustomTargetInput(e.target.value)}
-            style={{ width: '60px', padding: '4px 6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)', background: '#0f172a', color: '#fff', fontSize: '0.8rem' }}
+            style={{ width: '48px', padding: '3px 5px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)', background: '#0f172a', color: '#fff', fontSize: '0.78rem' }}
           />
           <button
+            title="Set Target"
             onClick={handleApplyCustomTarget}
-            style={{ padding: '4px 8px', borderRadius: '6px', background: '#0284c7', color: '#fff', border: 'none', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700 }}
+            className="dsa-action-btn"
+            style={{ background: '#0284c7', color: '#fff', border: 'none', padding: '3px 8px', minWidth: 'unset', minHeight: 'unset' }}
           >
             Set
           </button>
@@ -340,31 +366,34 @@ export const SearchingLab: React.FC<SearchingLabProps> = ({
         justifyContent: 'space-between',
         background: 'rgba(2, 132, 199, 0.1)',
         border: '1px solid rgba(56, 189, 248, 0.25)',
-        padding: '8px 14px',
-        borderRadius: '10px'
+        padding: '6px 12px',
+        borderRadius: '8px',
+        gap: '8px',
+        flexWrap: 'wrap'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Zap size={14} color="#38bdf8" />
-          <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#38bdf8' }}>
-            STEP {currentStep} / {Math.max(0, stepsRef.current.length - 1)}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
+          <Zap size={14} color="#38bdf8" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#38bdf8', flexShrink: 0 }}>
+            {currentStep}/{Math.max(0, stepsRef.current.length - 1)}
           </span>
-          <span style={{ fontSize: '0.8rem', color: '#f1f5f9', fontWeight: 600 }}>
+          <span style={{ fontSize: '0.76rem', color: '#f1f5f9', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {currentLog}
           </span>
         </div>
-        <span style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+
+        <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', flexShrink: 0 }}>
           Comparisons: <strong style={{ color: '#38bdf8' }}>{comparisons}</strong>
         </span>
       </div>
 
-      {/* Main Array Search Board */}
+      {/* Search Visualizer Canvas */}
       <div style={{
         flex: 1,
-        minHeight: '340px',
+        minHeight: '260px',
         background: 'radial-gradient(ellipse at center, #0f172a 0%, #030712 100%)',
-        borderRadius: '16px',
-        border: '1px solid rgba(255,255,255,0.1)',
-        padding: '24px 16px',
+        borderRadius: '14px',
+        border: '1px solid rgba(255,255,255,0.08)',
+        padding: '16px 12px',
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
@@ -387,35 +416,35 @@ export const SearchingLab: React.FC<SearchingLabProps> = ({
             if (isFound) {
               bg = 'linear-gradient(180deg, #10b981 0%, #047857 100%)';
               border = '2px solid #34d399';
-              shadow = '0 0 20px rgba(16, 185, 129, 0.8)';
+              shadow = '0 0 16px rgba(16, 185, 129, 0.8)';
             } else if (isMid || isCurrent) {
               bg = 'linear-gradient(180deg, #f59e0b 0%, #d97706 100%)';
               border = '2px solid #fbbf24';
-              shadow = '0 0 16px rgba(245, 158, 11, 0.7)';
+              shadow = '0 0 14px rgba(245, 158, 11, 0.7)';
             } else if (isLow || isHigh) {
               bg = 'linear-gradient(180deg, #a855f7 0%, #7e22ce 100%)';
               border = '2px solid #c084fc';
-              shadow = '0 0 12px rgba(168, 85, 247, 0.6)';
+              shadow = '0 0 10px rgba(168, 85, 247, 0.6)';
             } else if (isOutRange) {
               bg = '#050811';
               border = '1px dashed rgba(255,255,255,0.05)';
             }
 
             return (
-              <div key={`search-box-${idx}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+              <div key={`search-box-${idx}`} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}>
                 {/* Pointer Indicator */}
-                <div style={{ height: '16px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  {isMid && <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#fbbf24' }}>MID</span>}
-                  {isCurrent && <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#fbbf24' }}>SCAN</span>}
-                  {isLow && !isMid && <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#c084fc' }}>LOW</span>}
-                  {isHigh && !isMid && <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#c084fc' }}>HIGH</span>}
+                <div style={{ height: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  {isMid && <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#fbbf24' }}>MID</span>}
+                  {isCurrent && <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#fbbf24' }}>SCAN</span>}
+                  {isLow && !isMid && <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#c084fc' }}>LOW</span>}
+                  {isHigh && !isMid && <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#c084fc' }}>HIGH</span>}
                 </div>
 
                 {/* Number Box */}
                 <div
                   style={{
-                    width: '44px',
-                    height: '52px',
+                    width: '38px',
+                    height: '44px',
                     borderRadius: '8px',
                     background: bg,
                     border,
@@ -426,12 +455,12 @@ export const SearchingLab: React.FC<SearchingLabProps> = ({
                     alignItems: 'center',
                     color: isOutRange ? 'rgba(255,255,255,0.2)' : '#fff',
                     fontWeight: 800,
-                    fontSize: '1rem',
+                    fontSize: '0.9rem',
                     transition: 'all 0.2s ease'
                   }}
                 >
                   <span>{val}</span>
-                  <span style={{ fontSize: '0.55rem', color: isOutRange ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.5)' }}>
+                  <span style={{ fontSize: '0.52rem', color: isOutRange ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.5)' }}>
                     [{idx}]
                   </span>
                 </div>

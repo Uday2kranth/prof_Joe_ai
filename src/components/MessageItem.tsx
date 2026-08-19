@@ -16,6 +16,25 @@ marked.setOptions({
   breaks: true
 });
 
+/**
+ * Auto-sanitizes common LLM LaTeX imperfections before passing to KaTeX:
+ * 1. Wraps unbraced macro subscripts/superscripts (e.g. `\text{Cov}_\boldsymbol{\theta}` -> `\text{Cov}_{\boldsymbol{\theta}}`, `^\mathbf{T}` -> `^{\mathbf{T}}`)
+ * 2. Wraps unbraced standalone macro commands in subscript/superscript
+ */
+export function sanitizeLatexForKatex(latex: string): string {
+  if (!latex) return '';
+  let cleaned = latex.trim();
+  // 1. Fix unbraced macro with arguments: _\macro{arg} -> _{\macro{arg}}
+  cleaned = cleaned.replace(/_\\([a-zA-Z]+)\{([^{}]+)\}/g, '_{\\$1{$2}}');
+  // 2. Fix unbraced macro with arguments: ^\macro{arg} -> ^{\macro{arg}}
+  cleaned = cleaned.replace(/\^\\([a-zA-Z]+)\{([^{}]+)\}/g, '^{\\$1{$2}}');
+  // 3. Fix unbraced standalone macro: _\macro -> _{\macro}
+  cleaned = cleaned.replace(/_\\([a-zA-Z]+)(?![{a-zA-Z])/g, '_{\\$1}');
+  // 4. Fix unbraced standalone macro: ^\macro -> ^{\macro}
+  cleaned = cleaned.replace(/\^\\([a-zA-Z]+)(?![{a-zA-Z])/g, '^{\\$1}');
+  return cleaned;
+}
+
 export function renderMarkdownWithMathAndDiagrams(content: string, diagramMap: Map<string, string>): string {
   if (!content) return '';
   const mathMap = new Map<string, string>();
@@ -25,23 +44,101 @@ export function renderMarkdownWithMathAndDiagrams(content: string, diagramMap: M
   let prepped = content.replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
     const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
     try {
-      mathMap.set(token, `<div class="katex-block">${katex.renderToString(math.trim(), { displayMode: true, throwOnError: false })}</div>`);
+      const sanitized = sanitizeLatexForKatex(math);
+      mathMap.set(token, `<div class="katex-display katex-block">${katex.renderToString(sanitized, { displayMode: true, throwOnError: false })}</div>`);
     } catch {
       mathMap.set(token, `$$${math}$$`);
     }
     return token;
   });
 
-  // 2. Extract inline math $...$
+  // 1b. Extract block math \[...\]
+  prepped = prepped.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => {
+    const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
+    try {
+      const sanitized = sanitizeLatexForKatex(math);
+      mathMap.set(token, `<div class="katex-display katex-block">${katex.renderToString(sanitized, { displayMode: true, throwOnError: false })}</div>`);
+    } catch {
+      mathMap.set(token, `\\[${math}\\]`);
+    }
+    return token;
+  });
+
+  // 2. Extract inline math \(...\)
+  prepped = prepped.replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => {
+    const token = `KATEXINLINETOKEN${tokenIdx++}ENDTOKEN`;
+    try {
+      const sanitized = sanitizeLatexForKatex(math);
+      mathMap.set(token, `<span class="katex-inline">${katex.renderToString(sanitized, { displayMode: false, throwOnError: false })}</span>`);
+    } catch {
+      mathMap.set(token, `\\(${math}\\)`);
+    }
+    return token;
+  });
+
+  // 2b. Extract inline math $...$
   prepped = prepped.replace(/\$([^\$\n]+?)\$/g, (_, math) => {
     const token = `KATEXINLINETOKEN${tokenIdx++}ENDTOKEN`;
     try {
-      mathMap.set(token, katex.renderToString(math.trim(), { displayMode: false, throwOnError: false }));
+      const sanitized = sanitizeLatexForKatex(math);
+      mathMap.set(token, `<span class="katex-inline">${katex.renderToString(sanitized, { displayMode: false, throwOnError: false })}</span>`);
     } catch {
       mathMap.set(token, `$${math}$`);
     }
     return token;
   });
+
+  // 2c. Auto-detect standalone bare LaTeX environments & equations (e.g. \begin{bmatrix}...\end{bmatrix})
+  const lines = prepped.split('\n');
+  let inCodeBlock = false;
+  const processedLines = lines.map(line => {
+    const trimmed = line.trim();
+    if (trimmed.startsWith('```')) {
+      inCodeBlock = !inCodeBlock;
+      return line;
+    }
+    if (inCodeBlock) return line;
+
+    const hasMathKeywords =
+      trimmed.startsWith('\\') ||
+      (/^[a-zA-Z_]\s*(\([^\)]*\))?\s*=\s*/.test(trimmed) && (trimmed.includes('\\') || trimmed.includes('^') || trimmed.includes('_'))) ||
+      /\\(begin|bmatrix|pmatrix|vmatrix|matrix|align|equation|cases|frac|sum|prod|int|sqrt|mathbf|mathcal|mathbb|boldsymbol|nabla|partial|alpha|beta|gamma|delta|epsilon|theta|lambda|mu|sigma|omega|arg|min|max|vec|hat|tilde|in|subseteq|times|pm|le|ge|neq|approx|to|rightarrow|implies|mid|vert|parallel)/.test(trimmed);
+
+    const isStandaloneFormula =
+      !line.includes('KATEX') &&
+      hasMathKeywords &&
+      !trimmed.startsWith('#') &&
+      !trimmed.startsWith('- ') &&
+      !trimmed.startsWith('* ') &&
+      !trimmed.startsWith('>') &&
+      !trimmed.startsWith('|') &&
+      !trimmed.startsWith('1.') &&
+      !trimmed.startsWith('2.') &&
+      !trimmed.startsWith('3.') &&
+      !trimmed.startsWith('4.') &&
+      !trimmed.startsWith('5.');
+
+    if (isStandaloneFormula) {
+      const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
+      try {
+        const sanitized = sanitizeLatexForKatex(trimmed);
+        mathMap.set(
+          token,
+          `<div class="katex-display katex-block">${katex.renderToString(sanitized, {
+            displayMode: true,
+            throwOnError: false
+          })}</div>`
+        );
+        return token;
+      } catch {
+        return line;
+      }
+    }
+
+    return line;
+  });
+
+  prepped = processedLines.join('\n');
 
   // 3. Parse clean markdown tables and text
   let parsedHtml = marked.parse(prepped) as string;
