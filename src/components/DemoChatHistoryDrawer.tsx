@@ -30,6 +30,8 @@ interface DemoChatHistoryDrawerProps {
   onDeleteSession: (id: string) => void;
   isPersistentWebSearch?: boolean;
   onTogglePersistentWebSearch?: () => void;
+  isDiagramsEnabled?: boolean;
+  onToggleDiagrams?: () => void;
   isBeginnerFriendly?: boolean;
   onToggleBeginnerFriendly?: () => void;
   onOpenPdfPreview?: () => void;
@@ -51,6 +53,8 @@ export const DemoChatHistoryDrawer: React.FC<DemoChatHistoryDrawerProps> = ({
   onDeleteSession,
   isPersistentWebSearch = false,
   onTogglePersistentWebSearch,
+  isDiagramsEnabled = false,
+  onToggleDiagrams,
   isBeginnerFriendly = false,
   onToggleBeginnerFriendly,
   onOpenPdfPreview,
@@ -209,6 +213,23 @@ export const DemoChatHistoryDrawer: React.FC<DemoChatHistoryDrawerProps> = ({
               </div>
             </div>
 
+            {/* Tile: Dedicated Visual Diagrams Toggle */}
+            <div 
+              className={`bento-card-tile ${isDiagramsEnabled ? 'active-glow-purple' : ''}`}
+              onClick={onToggleDiagrams}
+              title="Toggle Multi-Engine Visual Diagrams (Mermaid, Kroki, Graphviz, PlantUML, FunctionPlot)"
+            >
+              <div className="bento-tile-icon purple">
+                <Layers size={16} />
+              </div>
+              <div className="bento-tile-content">
+                <span className="bento-tile-title">Visual Diagrams</span>
+                <span className="bento-tile-status">
+                  {isDiagramsEnabled ? '🟢 ON' : '⚪ OFF'}
+                </span>
+              </div>
+            </div>
+
             {/* Tile: Dedicated Beginner-Friendly Mode Toggle */}
             <div 
               className={`bento-card-tile ${isBeginnerFriendly ? 'active-glow-emerald' : ''}`}
@@ -263,7 +284,7 @@ export const DemoChatHistoryDrawer: React.FC<DemoChatHistoryDrawerProps> = ({
 
             {/* Tile: Clear Session Context */}
             <div 
-              className="bento-card-tile danger-tile"
+              className="bento-card-tile span-2-tile danger-tile"
               onClick={() => setShowClearConfirm(true)}
               title="Clear messages in active session"
             >

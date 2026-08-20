@@ -256,9 +256,17 @@ export const App: React.FC = () => {
     });
   };
 
-  const [isDiagramsEnabled] = useState<boolean>(() => {
+  const [isDiagramsEnabled, setIsDiagramsEnabled] = useState<boolean>(() => {
     return localStorage.getItem('chatterbot_diagrams_enabled') === 'true';
   });
+
+  const handleToggleDiagrams = () => {
+    setIsDiagramsEnabled(prev => {
+      const next = !prev;
+      localStorage.setItem('chatterbot_diagrams_enabled', String(next));
+      return next;
+    });
+  };
 
   const [isBeginnerFriendly, setIsBeginnerFriendly] = useState<boolean>(() => {
     return localStorage.getItem('chatterbot_beginner_friendly') === 'true';
@@ -1770,6 +1778,8 @@ export const App: React.FC = () => {
                   onDeleteSession={handleDeleteSession}
                   isPersistentWebSearch={isPersistentWebSearch}
                   onTogglePersistentWebSearch={handleTogglePersistentWebSearch}
+                  isDiagramsEnabled={isDiagramsEnabled}
+                  onToggleDiagrams={handleToggleDiagrams}
                   isBeginnerFriendly={isBeginnerFriendly}
                   onToggleBeginnerFriendly={handleToggleBeginnerFriendly}
                   onOpenPdfPreview={() => setIsDemoPdfPreviewOpen(true)}
