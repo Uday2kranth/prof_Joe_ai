@@ -394,6 +394,8 @@ export const App: React.FC = () => {
       provider: activeSession.provider || selectedProvider,
       model: activeSession.model || selectedModel,
       messages: slicedMessages,
+      systemPrompt: activeSession.systemPrompt || persistentMainSystemPrompt?.prompt,
+      systemPromptTitle: activeSession.systemPromptTitle || persistentMainSystemPrompt?.title,
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
@@ -509,6 +511,27 @@ export const App: React.FC = () => {
   const [authToken, setAuthToken] = useState<string>(() => localStorage.getItem('chatterbot_token') || '');
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(() => !localStorage.getItem('chatterbot_token'));
   const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+
+  // 📌 Main Chat Persistent System Prompt (Persists across New Chat and Branching until explicitly disabled)
+  const [persistentMainSystemPrompt, setPersistentMainSystemPrompt] = useState<{ title: string; prompt: string } | null>(() => {
+    try {
+      const activeUser = localStorage.getItem('chatterbot_username') || 'guest';
+      const saved = localStorage.getItem(`chatterbot_main_system_prompt_${activeUser}`);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      const activeUser = currentUser || 'guest';
+      const saved = localStorage.getItem(`chatterbot_main_system_prompt_${activeUser}`);
+      setPersistentMainSystemPrompt(saved ? JSON.parse(saved) : null);
+    } catch {
+      setPersistentMainSystemPrompt(null);
+    }
+  }, [currentUser]);
 
   const [selectedProvider, setSelectedProvider] = useState<string>(() => {
     const activeUser = localStorage.getItem('chatterbot_username') || 'guest';
@@ -1130,32 +1153,46 @@ export const App: React.FC = () => {
       provider: selectedProvider,
       model: selectedModel,
       messages: [],
+      systemPrompt: persistentMainSystemPrompt?.prompt,
+      systemPromptTitle: persistentMainSystemPrompt?.title,
       createdAt: Date.now(),
       updatedAt: Date.now()
     };
-    setSessions(prev => [newSess, ...prev]);
+    const updated = [newSess, ...sessions];
+    setSessions(updated);
     setActiveSessionIdState(newSess.id);
+    if (currentUser) {
+      localStorage.setItem(`chatterbot_sessions_${currentUser}`, JSON.stringify(updated));
+    }
     setActiveView('chat');
+    setActiveHubWorkspace('chat');
   };
 
   const handleDeleteSession = (id: string) => {
     if (sessions.length <= 1) {
-      setSessions([
-        {
-          id: `session-${Date.now()}`,
-          title: 'New Chat Session',
-          provider: selectedProvider,
-          model: selectedModel,
-          messages: [],
-          createdAt: Date.now(),
-          updatedAt: Date.now()
-        }
-      ]);
+      const fallbackSess: ChatSession = {
+        id: `session-${Date.now()}`,
+        title: 'New Chat Session',
+        provider: selectedProvider,
+        model: selectedModel,
+        messages: [],
+        systemPrompt: persistentMainSystemPrompt?.prompt,
+        systemPromptTitle: persistentMainSystemPrompt?.title,
+        createdAt: Date.now(),
+        updatedAt: Date.now()
+      };
+      setSessions([fallbackSess]);
+      if (currentUser) {
+        localStorage.setItem(`chatterbot_sessions_${currentUser}`, JSON.stringify([fallbackSess]));
+      }
       return;
     }
 
     const filtered = sessions.filter(s => s.id !== id);
     setSessions(filtered);
+    if (currentUser) {
+      localStorage.setItem(`chatterbot_sessions_${currentUser}`, JSON.stringify(filtered));
+    }
     if (activeSessionIdState === id) {
       setActiveSessionIdState(filtered[0].id);
     }
@@ -1268,7 +1305,9 @@ export const App: React.FC = () => {
     const activePresetObj = ACADEMIC_PRESETS.find(p => p.id === activeCodeLabPresetId);
     const effectiveSystemPrompt = isCodeLabWorkspace
       ? (personaArg || activePresetObj?.systemInstruction)
-      : sanitizeSystemPrompt(currentSess.systemPrompt);
+      : (isPersonaWorkspace
+          ? sanitizeSystemPrompt(currentSess.systemPrompt)
+          : sanitizeSystemPrompt(currentSess.systemPrompt || persistentMainSystemPrompt?.prompt));
 
     try {
       const response = await sendChatMessage(
@@ -1331,7 +1370,9 @@ export const App: React.FC = () => {
     const activePresetObj = ACADEMIC_PRESETS.find(p => p.id === activeCodeLabPresetId);
     const effectiveSystemPrompt = isCodeLabWorkspace
       ? activePresetObj?.systemInstruction
-      : sanitizeSystemPrompt(currentSess.systemPrompt);
+      : (isPersonaWorkspace
+          ? sanitizeSystemPrompt(currentSess.systemPrompt)
+          : sanitizeSystemPrompt(currentSess.systemPrompt || persistentMainSystemPrompt?.prompt));
 
     const updateSessState = (msgList: Message[]) => {
       if (isCodeLabWorkspace) {
@@ -1458,7 +1499,9 @@ export const App: React.FC = () => {
     const activePresetObj = ACADEMIC_PRESETS.find(p => p.id === activeCodeLabPresetId);
     const effectiveSystemPrompt = isCodeLabWorkspace
       ? activePresetObj?.systemInstruction
-      : sanitizeSystemPrompt(currentSess.systemPrompt);
+      : (isPersonaWorkspace
+          ? sanitizeSystemPrompt(currentSess.systemPrompt)
+          : sanitizeSystemPrompt(currentSess.systemPrompt || persistentMainSystemPrompt?.prompt));
 
     const updateSessState = (msgList: Message[]) => {
       if (isCodeLabWorkspace) {
@@ -1556,26 +1599,50 @@ export const App: React.FC = () => {
   };
 
   const handleApplySystemPrompt = (title: string, promptText: string) => {
+    const promptData = { title, prompt: promptText };
+    setPersistentMainSystemPrompt(promptData);
+    const user = currentUser || 'guest';
+    localStorage.setItem(`chatterbot_main_system_prompt_${user}`, JSON.stringify(promptData));
+
     const currentSess = activeSession || sessions[0];
-    if (!currentSess) return;
-    setSessions(prev => prev.map(s => {
-      if (s.id === currentSess.id) {
-        return { ...s, systemPrompt: promptText, systemPromptTitle: title, updatedAt: Date.now() };
-      }
-      return s;
-    }));
+    if (currentSess) {
+      setSessions(prev => {
+        const updated = prev.map(s => {
+          if (s.id === currentSess.id) {
+            return { ...s, systemPrompt: promptText, systemPromptTitle: title, updatedAt: Date.now() };
+          }
+          return s;
+        });
+        if (currentUser) {
+          localStorage.setItem(`chatterbot_sessions_${currentUser}`, JSON.stringify(updated));
+        }
+        return updated;
+      });
+    }
     setActiveView('chat');
+    setActiveHubWorkspace('chat');
   };
 
   const handleClearSystemPrompt = () => {
+    setPersistentMainSystemPrompt(null);
+    const user = currentUser || 'guest';
+    localStorage.removeItem(`chatterbot_main_system_prompt_${user}`);
+
     const currentSess = activeSession || sessions[0];
-    if (!currentSess) return;
-    setSessions(prev => prev.map(s => {
-      if (s.id === currentSess.id) {
-        return { ...s, systemPrompt: undefined, systemPromptTitle: undefined, updatedAt: Date.now() };
-      }
-      return s;
-    }));
+    if (currentSess) {
+      setSessions(prev => {
+        const updated = prev.map(s => {
+          if (s.id === currentSess.id) {
+            return { ...s, systemPrompt: undefined, systemPromptTitle: undefined, updatedAt: Date.now() };
+          }
+          return s;
+        });
+        if (currentUser) {
+          localStorage.setItem(`chatterbot_sessions_${currentUser}`, JSON.stringify(updated));
+        }
+        return updated;
+      });
+    }
   };
 
   if (!authToken || !currentUser) {
@@ -1803,7 +1870,7 @@ export const App: React.FC = () => {
                   onBranchMessage={handleBranchSession}
                   onPinMessage={handleTogglePin}
                   pinnedMessageIds={pinnedMessageIds}
-                  activeSystemPromptTitle={activeSession?.systemPromptTitle}
+                  activeSystemPromptTitle={activeSession?.systemPromptTitle || persistentMainSystemPrompt?.title}
                   onClearSystemPrompt={handleClearSystemPrompt}
                   customModels={customModels}
                   promptMode={promptMode}
@@ -2064,7 +2131,7 @@ export const App: React.FC = () => {
                 onBranchMessage={handleBranchSession}
                 onPinMessage={handleTogglePin}
                 pinnedMessageIds={pinnedMessageIds}
-                activeSystemPromptTitle={activeSession?.systemPromptTitle}
+                activeSystemPromptTitle={activeSession?.systemPromptTitle || persistentMainSystemPrompt?.title}
                 onClearSystemPrompt={handleClearSystemPrompt}
                 customModels={customModels}
                 promptMode={promptMode}
