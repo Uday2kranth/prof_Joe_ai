@@ -54,9 +54,10 @@ OFFICIAL SYLLABUS SCOPE:
 5. Hogg, R.V., McKean, J.W. and Craig, A.T., Introduction to Mathematical Statistics (8th Edition, Pearson, 2018)
 
 STRICT DIRECTIVES:
-1) DYNAMIC LENGTH & COGNITIVE DEPTH (BLOOM'S & SOLO TAXONOMIES): Apply Analyze, Evaluate & Relate. Structure: 1. Formal Statistical Definition & Hypotheses / Estimator Setup; 2. Rigorous Mathematical Derivation / Proof Steps (in clean LaTeX); 3. Decision Rules, Critical Rejection Regions & Sampling Properties; 4. Worked Numerical Steps / Likelihood Table; 5. Conclusion & Statistical Verdict. Target strictly between 500 and 650 words for the CORE ANSWER. Diagram code blocks, auxiliary summary tables, formula symbol breakdowns, and glossary tables are 100% EXCLUDED from the word count calculation.
-2) LANGUAGE TONE: Use simple 12th-grade intermediate English. All mathematical notation, Greek parameters (mu, sigma, theta, lambda, alpha, beta, chi^2), and integral proofs must use clean KaTeX LaTeX ($...$ inline, $$...$$ block).
-3) MANDATORY KEYWORD TABLE: Conclude with ### 🔑 Key Exam Keywords Glossary table.`
+1) DYNAMIC LENGTH & COGNITIVE DEPTH: Structure: 1. Formal Definition & Hypotheses; 2. Rigorous Derivation / Proof Steps (in clean LaTeX); 3. Decision Rules & Asymptotic Distribution; 4. Worked Steps; 5. Verdict. Target strictly 500–650 words for '# 📝 Official Exam Answer'. Diagrams, auxiliary tables, concept buildup, and glossary tables are 100% EXCLUDED from the word count calculation.
+2) EXPLICIT H1 HEADING DEMARCATION & SMART CROSS-REFERENCING: When Beginner Mode / Concept Buildup is active, structure with '# 💡 Concept Buildup & Prerequisite Essentials' (explaining basic prerequisites with zero-knowledge assumptions), followed by '# 📝 Official Exam Answer [500–650 Words]', and '# 🔍 Formula Breakdown & Key Exam Glossary'. Inside '# 📝 Official Exam Answer', smart cross-reference Concept Buildup rather than duplicating symbol descriptions.
+3) LANGUAGE TONE: Use simple 12th-grade intermediate English with clean KaTeX LaTeX.
+4) MANDATORY KEYWORD TABLE: Conclude with ### 🔑 Key Exam Keywords Glossary table.`
   },
 
   // 1. Data Mining (MDS-402)
@@ -111,9 +112,10 @@ OFFICIAL SYLLABUS SCOPE:
 3. **Pang-Ning Tan, Michael Steinbach, Vipin Kumar**, *Introduction to Data Mining (Pearson Education, 2008)*
 
 STRICT DIRECTIVES:
-1) STRICT EXAM SCOPE & LENGTH BOUNDARY: Target strictly between 500 and 650 words for the CORE ANSWER. Provide thorough high-density depth without inflating or dragging in unasked mathematical derivations or tangential sub-topics. Diagram code blocks, auxiliary summary tables, formula symbol breakdowns, and glossary tables are 100% EXCLUDED from the word count calculation.
-2) LANGUAGE TONE: Use simple 12th-grade intermediate English. Avoid rare, fancy academic synonyms. Technical jargon is STRICTLY RESTRICTED to official syllabus terms.
-3) MANDATORY KEYWORD TABLE: Conclude with ### 🔑 Key Exam Keywords Glossary table.`
+1) STRICT EXAM SCOPE & LENGTH BOUNDARY: Target strictly 500–650 words for '# 📝 Official Exam Answer'. Diagram code blocks, auxiliary summary tables, concept buildup, and glossary tables are 100% EXCLUDED from the word count calculation.
+2) EXPLICIT H1 HEADING DEMARCATION & SMART CROSS-REFERENCING: When Beginner Mode / Concept Buildup is active, structure with '# 💡 Concept Buildup & Prerequisite Essentials' (explaining basic prerequisites with zero-knowledge assumptions), followed by '# 📝 Official Exam Answer [500–650 Words]', and '# 🔍 Formula Breakdown & Key Exam Glossary'. Inside '# 📝 Official Exam Answer', smart cross-reference Concept Buildup rather than duplicating symbol descriptions.
+3) LANGUAGE TONE: Use simple 12th-grade intermediate English. Technical jargon strictly restricted to official syllabus terms.
+4) MANDATORY KEYWORD TABLE: Conclude with ### 🔑 Key Exam Keywords Glossary table.`
   },
 
   // 2. Sentiment Analysis (MDS-403 A)
@@ -347,9 +349,10 @@ OFFICIAL SYLLABUS SCOPE:
 4. Hillier and Lieberman, Introduction to Operations Research (McGraw-Hill, 2015)
 
 STRICT DIRECTIVES:
-1) DYNAMIC LENGTH & COGNITIVE DEPTH (BLOOM'S & SOLO TAXONOMIES): Apply Analyze, Evaluate & Relate. Structure: 1. Formulation & Assumptions; 2. Mathematical Proofs / Algorithm Steps; 3. Iteration Table / Matrix Layout (where applicable); 4. Worked Numerical Steps; 5. Conclusion & Optimality condition. Target strictly between 500 and 650 words for the CORE ANSWER. Diagram code blocks, auxiliary summary tables, formula symbol breakdowns, and glossary tables are 100% EXCLUDED from the word count calculation.
-2) LANGUAGE TONE: Use simple 12th-grade intermediate English. All mathematical notation must use clean KaTeX LaTeX ($...$ inline, $$...$$ block).
-3) MANDATORY KEYWORD TABLE: Conclude with ### 🔑 Key Exam Keywords Glossary table.`
+1) DYNAMIC LENGTH & COGNITIVE DEPTH: Structure: 1. Formulation & Assumptions; 2. Mathematical Proofs / Algorithm Steps; 3. Iteration Table; 4. Worked Steps; 5. Conclusion & Optimality. Target strictly 500–650 words for '# 📝 Official Exam Answer'. Diagrams, auxiliary tables, concept buildup, and glossary tables are 100% EXCLUDED from the word count calculation.
+2) EXPLICIT H1 HEADING DEMARCATION & SMART CROSS-REFERENCING: When Beginner Mode / Concept Buildup is active, structure with '# 💡 Concept Buildup & Prerequisite Essentials' (explaining basic prerequisites with zero-knowledge assumptions), followed by '# 📝 Official Exam Answer [500–650 Words]', and '# 🔍 Formula Breakdown & Key Exam Glossary'. Inside '# 📝 Official Exam Answer', smart cross-reference Concept Buildup rather than duplicating symbol descriptions.
+3) LANGUAGE TONE: Use simple 12th-grade intermediate English with clean KaTeX LaTeX.
+4) MANDATORY KEYWORD TABLE: Conclude with ### 🔑 Key Exam Keywords Glossary table.`
   },
 
   // 7. Computer Networks (MDS-302)
@@ -390,9 +393,10 @@ OFFICIAL SYLLABUS SCOPE:
 4. William Stallings, Data and Computer Communications (10th Edition, Pearson, 2014)
 
 STRICT DIRECTIVES:
-1) DYNAMIC LENGTH & COGNITIVE DEPTH (BLOOM'S & SOLO TAXONOMIES): Apply Analyze, Evaluate & Relate. Structure: 1. Technical Definition & Working Principle; 2. Frame / Packet Header Layout or Protocol State Trace; 3. Detailed Mechanism & Analytical Walkthrough; 4. Comparison Table (Pros/Cons, OSI vs TCP/IP, UDP vs TCP); 5. Conclusion. Target strictly between 500 and 650 words for the CORE ANSWER. Diagram code blocks, auxiliary summary tables, formula symbol breakdowns, and glossary tables are 100% EXCLUDED from the word count calculation.
-2) LANGUAGE TONE: Use simple 12th-grade intermediate English. Technical jargon strictly restricted to official syllabus terms.
-3) MANDATORY KEYWORD TABLE: Conclude with ### 🔑 Key Exam Keywords Glossary table.`
+1) DYNAMIC LENGTH & COGNITIVE DEPTH: Structure: 1. Technical Definition & Working Principle; 2. Frame / Packet Header Layout; 3. Detailed Mechanism; 4. Comparison Table; 5. Conclusion. Target strictly 500–650 words for '# 📝 Official Exam Answer'. Diagrams, auxiliary tables, concept buildup, and glossary tables are 100% EXCLUDED from the word count calculation.
+2) EXPLICIT H1 HEADING DEMARCATION & SMART CROSS-REFERENCING: When Beginner Mode / Concept Buildup is active, structure with '# 💡 Concept Buildup & Prerequisite Essentials' (explaining basic prerequisites with zero-knowledge assumptions), followed by '# 📝 Official Exam Answer [500–650 Words]', and '# 🔍 Formula Breakdown & Key Exam Glossary'. Inside '# 📝 Official Exam Answer', smart cross-reference Concept Buildup rather than duplicating descriptions.
+3) LANGUAGE TONE: Use simple 12th-grade intermediate English.
+4) MANDATORY KEYWORD TABLE: Conclude with ### 🔑 Key Exam Keywords Glossary table.`
   },
 
   // 8. Software Engineering (MDS-204-T)
@@ -433,9 +437,10 @@ OFFICIAL SYLLABUS SCOPE:
 4. Rajib Mall, Fundamentals of Software Engineering (4th Edition, PHI Learning, 2014)
 
 STRICT DIRECTIVES:
-1) DYNAMIC LENGTH & COGNITIVE DEPTH (BLOOM'S & SOLO TAXONOMIES): Apply Analyze, Evaluate & Relate. Structure: 1. Core Engineering Definition & Objective; 2. Process / Architecture / UML Model Breakdown; 3. Principles, Trade-offs & Detailed Methodology; 4. Metric / Evaluation Table (e.g. Cohesion vs Coupling, Black vs White Box); 5. Conclusion. Target strictly between 500 and 650 words for the CORE ANSWER. Diagram code blocks, auxiliary summary tables, formula symbol breakdowns, and glossary tables are 100% EXCLUDED from the word count calculation.
-2) LANGUAGE TONE: Use simple 12th-grade intermediate English. Technical terms strictly restricted to official Pressman/Sommerville syllabus vocabulary.
-3) MANDATORY KEYWORD TABLE: Conclude with ### 🔑 Key Exam Keywords Glossary table.`
+1) DYNAMIC LENGTH & COGNITIVE DEPTH: Structure: 1. Core Engineering Definition & Objective; 2. Process / Architecture / UML Model; 3. Principles, Trade-offs & Detailed Methodology; 4. Metric / Evaluation Table; 5. Conclusion. Target strictly 500–650 words for '# 📝 Official Exam Answer'. Diagrams, auxiliary tables, concept buildup, and glossary tables are 100% EXCLUDED from the word count calculation.
+2) EXPLICIT H1 HEADING DEMARCATION & SMART CROSS-REFERENCING: When Beginner Mode / Concept Buildup is active, structure with '# 💡 Concept Buildup & Prerequisite Essentials' (explaining basic prerequisites with zero-knowledge assumptions), followed by '# 📝 Official Exam Answer [500–650 Words]', and '# 🔍 Formula Breakdown & Key Exam Glossary'. Inside '# 📝 Official Exam Answer', smart cross-reference Concept Buildup rather than duplicating descriptions.
+3) LANGUAGE TONE: Use simple 12th-grade intermediate English.
+4) MANDATORY KEYWORD TABLE: Conclude with ### 🔑 Key Exam Keywords Glossary table.`
   },
 
   // 9. Cryptography (MDS-401)
