@@ -2,7 +2,8 @@ import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Pin, Search, Trash2, Printer, X, Sparkles, Copy, Check, ExternalLink, Layers, Terminal, MessageSquare } from 'lucide-react';
 import type { PinnedItem } from '../types';
-import { MathText, renderMathHtml } from './MathText';
+import { MathText } from './MathText';
+import { printSinglePinToPdf, printSessionPinsToPdf } from '../services/printPdfService';
 
 interface CheatSheetDrawerProps {
   isOpen: boolean;
@@ -32,10 +33,8 @@ export const CheatSheetDrawer: React.FC<CheatSheetDrawerProps> = ({
   onClearAllPins,
   onOpenArchive
 }) => {
+  const [scopeFilter, setScopeFilter] = useState<'session' | 'workspace' | 'all'>(currentSessionId ? 'session' : 'all');
   const [searchQuery, setSearchQuery] = useState('');
-  const [scopeFilter, setScopeFilter] = useState<'session' | 'workspace' | 'all'>(() => {
-    return currentSessionId ? 'session' : 'all';
-  });
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
   // Derive counts
@@ -48,18 +47,19 @@ export const CheatSheetDrawer: React.FC<CheatSheetDrawerProps> = ({
     return pinnedItems.filter(p => getPinWorkspace(p) === currentWorkspace).length;
   }, [pinnedItems, currentWorkspace]);
 
+  // Filter pins by scope and search
   const filteredPins = useMemo(() => {
-    let list = pinnedItems;
-
+    let list = [...pinnedItems];
+    
     if (scopeFilter === 'session' && currentSessionId) {
-      list = list.filter(p => p.sessionId === currentSessionId);
+      list = list.filter(p => (p.sessionId || 'general-notes') === currentSessionId);
     } else if (scopeFilter === 'workspace') {
       list = list.filter(p => getPinWorkspace(p) === currentWorkspace);
     }
 
     if (!searchQuery.trim()) return list;
     const q = searchQuery.toLowerCase();
-    return list.filter(p =>
+    return list.filter(p => 
       p.content.toLowerCase().includes(q) ||
       (p.sessionTitle && p.sessionTitle.toLowerCase().includes(q))
     );
@@ -71,145 +71,14 @@ export const CheatSheetDrawer: React.FC<CheatSheetDrawerProps> = ({
     setTimeout(() => setCopiedId(null), 1800);
   };
 
-  // 🖨️ LEVEL 1: Message-Wise Print (Single Pinned Note Revision Card)
+  // 🖨️ LEVEL 1: Message-Wise Print (Unified Academic Layout)
   const handlePrintSinglePin = (pin: PinnedItem) => {
-    const printWin = window.open('', '_blank');
-    if (!printWin) return;
-
-    const ws = getPinWorkspace(pin);
-    const wsLabel = ws === 'code_lab' ? 'Code Dungeon 🏰' : ws === 'persona' ? 'Fun Persona 🎭' : 'AI Chat 💬';
-
-    printWin.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Prof. Joe AI — Pinned Note (${pin.sessionTitle || 'Revision Card'})</title>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
-        <style>
-          body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            color: #0f172a;
-            background: #ffffff;
-            margin: 0;
-            padding: 32px 40px;
-            font-size: 11pt;
-            line-height: 1.65;
-          }
-          .single-pin-container {
-            max-width: 820px;
-            margin: 0 auto;
-            border: 2px solid #0284c7;
-            border-radius: 12px;
-            padding: 22px 26px;
-            background: #ffffff;
-            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.06);
-          }
-          .header-bar {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            border-bottom: 2px solid #e2e8f0;
-            padding-bottom: 12px;
-            margin-bottom: 16px;
-          }
-          .brand-title {
-            font-size: 14pt;
-            font-weight: 800;
-            color: #0369a1;
-            margin: 0 0 3px 0;
-          }
-          .session-subtitle {
-            font-size: 9.5pt;
-            font-weight: 600;
-            color: #64748b;
-            margin: 0;
-          }
-          .badge {
-            font-size: 8.5pt;
-            font-weight: 700;
-            padding: 4px 10px;
-            border-radius: 6px;
-            background: #e0f2fe;
-            color: #0369a1;
-          }
-          .note-body {
-            font-size: 10.2pt;
-            color: #1e293b;
-            line-height: 1.7;
-          }
-          .note-body p { margin: 6px 0; }
-          .note-body pre {
-            background: #f8fafc;
-            border: 1px solid #cbd5e1;
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-family: monospace;
-            font-size: 9.5pt;
-            overflow-x: auto;
-          }
-          .note-body code {
-            background: #f1f5f9;
-            padding: 2px 5px;
-            border-radius: 4px;
-            font-size: 9.2pt;
-            color: #0f172a;
-          }
-          .note-body strong { color: #0369a1; font-weight: 700; }
-          .katex-display { margin: 10px 0 !important; font-size: 1.1em; overflow-x: auto; }
-          .footer-bar {
-            margin-top: 20px;
-            padding-top: 10px;
-            border-top: 1px dashed #cbd5e1;
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-size: 8pt;
-            color: #94a3b8;
-          }
-          @media print {
-            body { padding: 12mm 15mm; }
-            .single-pin-container {
-              box-shadow: none;
-              border: 1.5px solid #0284c7;
-              page-break-inside: avoid !important;
-              break-inside: avoid !important;
-            }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="single-pin-container">
-          <div class="header-bar">
-            <div>
-              <h1 class="brand-title">🎓 Prof. Joe AI — Pinned Revision Note</h1>
-              <p class="session-subtitle">Topic: ${pin.sessionTitle || 'Academic Study Session'}</p>
-            </div>
-            <span class="badge">${wsLabel}</span>
-          </div>
-          <div class="note-body">
-            ${renderMathHtml(pin.content)}
-          </div>
-          <div class="footer-bar">
-            <span>Note ID: #${pin.id.slice(-8)}</span>
-            <span>Pinned on ${new Date(pin.createdAt).toLocaleDateString()}</span>
-          </div>
-        </div>
-        <script>
-          window.onload = function() {
-            setTimeout(function() { window.print(); }, 400);
-          };
-        </script>
-      </body>
-      </html>
-    `);
-    printWin.document.close();
+    printSinglePinToPdf(pin);
   };
 
+  // 🖨️ LEVEL 2: Scope-Wise Revision Sheet Print (Unified Academic Layout)
   const handlePrintCheatSheet = () => {
     if (filteredPins.length === 0) return;
-
-    const printWin = window.open('', '_blank');
-    if (!printWin) return;
 
     const scopeTitle = scopeFilter === 'session' 
       ? 'Active Session Revision Sheet' 
@@ -217,143 +86,7 @@ export const CheatSheetDrawer: React.FC<CheatSheetDrawerProps> = ({
         ? `${currentWorkspace === 'code_lab' ? 'Code Dungeon' : 'Academic Chat'} Revision Sheet`
         : 'Master Exam Cheat Sheet';
 
-    const cardsHtml = filteredPins.map((p, idx) => `
-      <div class="cheat-card">
-        <div class="card-header">
-          <span class="card-num">#${idx + 1}</span>
-          <span class="card-title">${p.sessionTitle || 'High-Yield Note'}</span>
-          <span class="card-ws">${getPinWorkspace(p) === 'code_lab' ? 'Code Lab 🏰' : getPinWorkspace(p) === 'persona' ? 'Persona 🎭' : 'Exam Theory 💬'}</span>
-        </div>
-        <div class="card-body">
-          ${renderMathHtml(p.content)}
-        </div>
-      </div>
-    `).join('');
-
-    printWin.document.write(`
-      <!DOCTYPE html>
-      <html>
-      <head>
-        <title>Prof. Joe AI — ${scopeTitle}</title>
-        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
-        <style>
-          body {
-            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
-            color: #0f172a;
-            background: #ffffff;
-            margin: 0;
-            padding: 24px 32px;
-            font-size: 10.5pt;
-            line-height: 1.6;
-          }
-          .header {
-            text-align: center;
-            border-bottom: 2.5px solid #0284c7;
-            padding-bottom: 12px;
-            margin-bottom: 20px;
-          }
-          .header h1 {
-            margin: 0 0 4px 0;
-            font-size: 18pt;
-            color: #0369a1;
-            font-weight: 800;
-          }
-          .header p {
-            margin: 0;
-            font-size: 9pt;
-            color: #64748b;
-            font-weight: 600;
-          }
-          .cheat-sheet-deck {
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
-            width: 100%;
-          }
-          .cheat-card {
-            border: 1.5px solid #cbd5e1;
-            border-radius: 10px;
-            padding: 14px 18px;
-            background: #ffffff;
-            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.03);
-            page-break-inside: avoid !important;
-            break-inside: avoid !important;
-            margin-bottom: 12px;
-            width: 100%;
-            box-sizing: border-box;
-          }
-          .card-header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            font-weight: 700;
-            font-size: 10.5pt;
-            color: #0369a1;
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 6px;
-            margin-bottom: 10px;
-          }
-          .card-num {
-            background: #0284c7;
-            color: #ffffff;
-            font-size: 8pt;
-            font-weight: 800;
-            padding: 2px 6px;
-            border-radius: 5px;
-            margin-right: 8px;
-          }
-          .card-title {
-            font-size: 10pt;
-            font-weight: 700;
-            color: #0f172a;
-            flex: 1;
-          }
-          .card-ws {
-            font-size: 8pt;
-            font-weight: 600;
-            color: #64748b;
-            background: #f1f5f9;
-            padding: 2px 8px;
-            border-radius: 6px;
-          }
-          .card-body {
-            font-size: 9.8pt;
-            color: #1e293b;
-            line-height: 1.6;
-          }
-          .card-body p { margin: 4px 0; }
-          .card-body pre { background: #f8fafc; border: 1px solid #e2e8f0; padding: 8px 12px; border-radius: 6px; font-family: monospace; font-size: 9pt; overflow-x: auto; }
-          .card-body code { background: #f1f5f9; padding: 2px 4px; border-radius: 4px; font-size: 9pt; }
-          .card-body strong { color: #0369a1; font-weight: 700; }
-          .katex-display { margin: 8px 0 !important; font-size: 1.05em; overflow-x: auto; }
-          @media print {
-            body { padding: 10mm 12mm; }
-            .cheat-card {
-              border: 1px solid #94a3b8;
-              box-shadow: none;
-              page-break-inside: avoid !important;
-              break-inside: avoid !important;
-            }
-          }
-        </style>
-      </head>
-      <body>
-        <div class="header">
-          <h1>🎓 Prof. Joe AI — ${scopeTitle}</h1>
-          <p>Academic Revision Deck • ${filteredPins.length} Key Formulas, Definitions & Code Snippets</p>
-        </div>
-        <div class="cheat-sheet-deck">
-          ${cardsHtml}
-        </div>
-        <script>
-          window.onload = function() {
-            setTimeout(function() { window.print(); }, 400);
-          };
-        </script>
-      </body>
-      </html>
-    `);
-    printWin.document.close();
+    printSessionPinsToPdf(filteredPins, scopeTitle);
   };
 
   if (!isOpen || typeof document === 'undefined') return null;

@@ -1,5 +1,6 @@
-import React from 'react';
-import { X, Key, Sun, Moon, Trash2, LogOut, Shield, User, ChevronRight } from 'lucide-react';
+import React, { useState } from 'react';
+import { X, Key, Sun, Moon, Trash2, LogOut, Shield, User, ChevronRight, Printer } from 'lucide-react';
+import { getPrintCustomConfig, savePrintCustomConfig, type PrintCustomConfig } from '../services/printPdfService';
 
 interface UserProfileModalProps {
   isOpen: boolean;
@@ -24,7 +25,28 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   onClearHistory,
   onLogout
 }) => {
+  const [printConfig, setPrintConfig] = useState<PrintCustomConfig>(getPrintCustomConfig());
+  const [isPrintCustomOpen, setIsPrintCustomOpen] = useState(false);
+
   if (!isOpen) return null;
+
+  const handlePresetChange = (preset: PrintCustomConfig['preset']) => {
+    let updated: Partial<PrintCustomConfig> = { preset };
+    if (preset === 'academic') {
+      updated = { preset: 'academic', showHeader: true, showModelTag: true, showDateTag: true, showFooter: true };
+    } else if (preset === 'clean') {
+      updated = { preset: 'clean', showHeader: false, showModelTag: false, showDateTag: false, showFooter: false };
+    } else if (preset === 'branded') {
+      updated = { preset: 'branded', showHeader: true, showModelTag: true, showDateTag: true, showFooter: true };
+    }
+    const nextConfig = savePrintCustomConfig(updated);
+    setPrintConfig(nextConfig);
+  };
+
+  const handleCustomFieldChange = <K extends keyof PrintCustomConfig>(key: K, value: PrintCustomConfig[K]) => {
+    const nextConfig = savePrintCustomConfig({ [key]: value, preset: 'custom' });
+    setPrintConfig(nextConfig);
+  };
 
   let displayUsername = 'Guest User';
   if (username && typeof username === 'string' && username.trim() !== '' && username !== 'undefined') {
@@ -113,6 +135,173 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                   </>
                 )}
               </button>
+            </div>
+
+            {/* 🖨️ PRINT & PDF CUSTOMIZER DECK */}
+            <div
+              style={{
+                borderRadius: '16px',
+                border: '1px solid var(--border-color)',
+                background: 'var(--bg-secondary)',
+                overflow: 'hidden'
+              }}
+            >
+              <div
+                onClick={() => setIsPrintCustomOpen(prev => !prev)}
+                className="profile-action-item"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  padding: '12px 14px',
+                  cursor: 'pointer',
+                  borderBottom: isPrintCustomOpen ? '1px solid var(--border-color)' : 'none'
+                }}
+                title="Click to customize Print & PDF Export options"
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div className="profile-icon-squircle cyan-squircle">
+                    <Printer size={18} />
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
+                    <span className="action-title" style={{ fontWeight: 600, fontSize: '0.88rem' }}>Print & PDF Customizer</span>
+                    <span className="text-muted-custom" style={{ fontSize: '0.72rem' }}>
+                      {printConfig.preset === 'academic' 
+                        ? 'Academic Preset (Title + Model + Date)' 
+                        : printConfig.preset === 'clean' 
+                          ? 'Raw / Unbranded (No AI Header)' 
+                          : printConfig.preset === 'branded'
+                            ? 'Official Brand Preset'
+                            : 'Custom Configuration ⚙️'}
+                    </span>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span
+                    className="action-pill-badge"
+                    style={{
+                      textTransform: 'capitalize',
+                      fontSize: '0.72rem',
+                      padding: '3px 8px',
+                      background: 'rgba(6, 182, 212, 0.15)',
+                      color: 'var(--accent-cyan)'
+                    }}
+                  >
+                    {printConfig.preset}
+                  </span>
+                  <ChevronRight
+                    size={16}
+                    className="text-slate-400"
+                    style={{
+                      transform: isPrintCustomOpen ? 'rotate(90deg)' : 'none',
+                      transition: 'transform 0.2s ease'
+                    }}
+                  />
+                </div>
+              </div>
+
+              {/* Collapsible Custom Settings Panel */}
+              {isPrintCustomOpen && (
+                <div style={{ padding: '14px 16px', display: 'flex', flexDirection: 'column', gap: '12px', background: 'var(--bg-tertiary)' }}>
+                  {/* Preset Pills Selector */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>PRESET TEMPLATE</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                      {(['academic', 'clean', 'custom'] as const).map(p => (
+                        <button
+                          key={p}
+                          type="button"
+                          onClick={() => handlePresetChange(p)}
+                          style={{
+                            padding: '6px 4px',
+                            borderRadius: '8px',
+                            fontSize: '0.72rem',
+                            fontWeight: printConfig.preset === p ? 700 : 500,
+                            border: printConfig.preset === p ? '1.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                            background: printConfig.preset === p ? 'rgba(6, 182, 212, 0.18)' : 'var(--bg-secondary)',
+                            color: printConfig.preset === p ? 'var(--accent-cyan)' : 'var(--text-primary)',
+                            cursor: 'pointer',
+                            textTransform: 'capitalize'
+                          }}
+                        >
+                          {p === 'academic' ? 'Academic' : p === 'clean' ? 'Unbranded' : 'Custom ⚙️'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Custom Title Input */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>
+                      CUSTOM SUBJECT / RECORD TITLE (OPTIONAL)
+                    </label>
+                    <input
+                      type="text"
+                      value={printConfig.customTitle}
+                      onChange={(e) => handleCustomFieldChange('customTitle', e.target.value)}
+                      placeholder="e.g. MDS-104-T Statistical Inference"
+                      style={{
+                        padding: '7px 10px',
+                        borderRadius: '8px',
+                        fontSize: '0.78rem',
+                        border: '1px solid var(--border-color)',
+                        background: 'var(--bg-primary)',
+                        color: 'var(--text-primary)',
+                        outline: 'none'
+                      }}
+                    />
+                  </div>
+
+                  {/* Granular Toggles */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '4px' }}>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>PRINTED DOCUMENT ELEMENTS</label>
+
+                    {/* Toggle: Top Header Bar */}
+                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.78rem', cursor: 'pointer' }}>
+                      <span>Include Top Header Bar</span>
+                      <input
+                        type="checkbox"
+                        checked={printConfig.showHeader}
+                        onChange={(e) => handleCustomFieldChange('showHeader', e.target.checked)}
+                        style={{ accentColor: 'var(--accent-cyan)', width: '15px', height: '15px', cursor: 'pointer' }}
+                      />
+                    </label>
+
+                    {/* Toggle: AI Model Tag */}
+                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.78rem', cursor: 'pointer' }}>
+                      <span>Show AI Model & Provider Tag</span>
+                      <input
+                        type="checkbox"
+                        checked={printConfig.showModelTag}
+                        onChange={(e) => handleCustomFieldChange('showModelTag', e.target.checked)}
+                        style={{ accentColor: 'var(--accent-cyan)', width: '15px', height: '15px', cursor: 'pointer' }}
+                      />
+                    </label>
+
+                    {/* Toggle: Date & Timestamp */}
+                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.78rem', cursor: 'pointer' }}>
+                      <span>Show Date & Timestamp</span>
+                      <input
+                        type="checkbox"
+                        checked={printConfig.showDateTag}
+                        onChange={(e) => handleCustomFieldChange('showDateTag', e.target.checked)}
+                        style={{ accentColor: 'var(--accent-cyan)', width: '15px', height: '15px', cursor: 'pointer' }}
+                      />
+                    </label>
+
+                    {/* Toggle: Footer Page Info */}
+                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.78rem', cursor: 'pointer' }}>
+                      <span>Include Page Footer</span>
+                      <input
+                        type="checkbox"
+                        checked={printConfig.showFooter}
+                        onChange={(e) => handleCustomFieldChange('showFooter', e.target.checked)}
+                        style={{ accentColor: 'var(--accent-cyan)', width: '15px', height: '15px', cursor: 'pointer' }}
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
             </div>
 
             <div
