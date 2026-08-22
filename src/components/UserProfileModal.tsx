@@ -10,6 +10,7 @@ interface UserProfileModalProps {
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
   onOpenSettings: () => void;
+  onOpenSettingsStudio?: () => void;
   onClearHistory: () => void;
   onLogout: () => void;
 }
@@ -22,6 +23,7 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
   theme,
   onToggleTheme,
   onOpenSettings,
+  onOpenSettingsStudio,
   onClearHistory,
   onLogout
 }) => {
@@ -327,16 +329,34 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                       />
                     </label>
 
-                    {/* Toggle: Footer Page Info */}
-                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.78rem', cursor: 'pointer' }}>
-                      <span>Include Page Footer</span>
-                      <input
-                        type="checkbox"
-                        checked={printConfig.showFooter}
-                        onChange={(e) => handleCustomFieldChange('showFooter', e.target.checked)}
-                        style={{ accentColor: 'var(--accent-cyan)', width: '15px', height: '15px', cursor: 'pointer' }}
-                      />
-                    </label>
+                    {/* Launch Full Studio Link */}
+                    {onOpenSettingsStudio && (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onClose();
+                          onOpenSettingsStudio();
+                        }}
+                        style={{
+                          marginTop: '6px',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px',
+                          padding: '8px',
+                          borderRadius: '8px',
+                          background: 'rgba(6, 182, 212, 0.15)',
+                          border: '1px solid rgba(6, 182, 212, 0.3)',
+                          color: 'var(--accent-cyan)',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <Printer size={14} />
+                        <span>Open Full Settings & Print Studio ⚙️</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               )}

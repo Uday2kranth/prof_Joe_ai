@@ -5,7 +5,7 @@ import { renderMathHtml } from '../components/MathText';
 import type { PinnedItem } from '../types';
 
 export interface PrintCustomConfig {
-  preset: 'academic' | 'clean' | 'branded' | 'custom';
+  preset: 'academic' | 'clean' | 'branded' | 'eco' | 'custom';
   showHeader: boolean;
   customTitle: string;
   showModelTag: boolean;
@@ -14,6 +14,16 @@ export interface PrintCustomConfig {
   showFooter: boolean;
   marginPreset: 'standard' | 'compact' | 'none';
   hideDividers: boolean;
+  paperSize: 'a4' | 'letter';
+  orientation: 'portrait' | 'landscape';
+  fontSize: 'compact' | 'standard' | 'large';
+  fontFamily: 'sans' | 'serif' | 'mono';
+  inkMode: 'rich' | 'eco' | 'mono';
+  dpiQuality: '1200' | '600' | '300';
+  watermarkText: string;
+  includeProofs: boolean;
+  includeCode: boolean;
+  includeDiagrams: boolean;
 }
 
 export const DEFAULT_PRINT_CONFIG: PrintCustomConfig = {
@@ -25,7 +35,17 @@ export const DEFAULT_PRINT_CONFIG: PrintCustomConfig = {
   showWorkspaceTag: true,
   showFooter: true,
   marginPreset: 'standard',
-  hideDividers: false
+  hideDividers: false,
+  paperSize: 'a4',
+  orientation: 'portrait',
+  fontSize: 'standard',
+  fontFamily: 'sans',
+  inkMode: 'rich',
+  dpiQuality: '1200',
+  watermarkText: '',
+  includeProofs: true,
+  includeCode: true,
+  includeDiagrams: true
 };
 
 export function getPrintCustomConfig(): PrintCustomConfig {
@@ -49,7 +69,7 @@ export function savePrintCustomConfig(cfg: Partial<PrintCustomConfig>): PrintCus
   return updated;
 }
 
-export type PrintHeaderMode = 'academic' | 'clean' | 'branded' | 'custom';
+export type PrintHeaderMode = 'academic' | 'clean' | 'branded' | 'eco' | 'custom';
 
 export function getPrintHeaderMode(): PrintHeaderMode {
   return getPrintCustomConfig().preset;
@@ -57,9 +77,11 @@ export function getPrintHeaderMode(): PrintHeaderMode {
 
 export function setPrintHeaderMode(mode: PrintHeaderMode): void {
   if (mode === 'academic') {
-    savePrintCustomConfig({ preset: 'academic', showHeader: true, showModelTag: true, showDateTag: true, showWorkspaceTag: true, showFooter: true });
+    savePrintCustomConfig({ preset: 'academic', showHeader: true, showModelTag: true, showDateTag: true, showWorkspaceTag: true, showFooter: true, inkMode: 'rich', marginPreset: 'standard', hideDividers: false });
   } else if (mode === 'clean') {
-    savePrintCustomConfig({ preset: 'clean', showHeader: false, showModelTag: false, showDateTag: false, showWorkspaceTag: false, showFooter: false });
+    savePrintCustomConfig({ preset: 'clean', showHeader: false, showModelTag: false, showDateTag: false, showWorkspaceTag: false, showFooter: false, inkMode: 'rich' });
+  } else if (mode === 'eco') {
+    savePrintCustomConfig({ preset: 'eco', showHeader: true, showModelTag: false, showDateTag: true, showWorkspaceTag: false, showFooter: true, inkMode: 'eco', hideDividers: true });
   } else if (mode === 'branded') {
     savePrintCustomConfig({ preset: 'branded', showHeader: true, showModelTag: true, showDateTag: true, showWorkspaceTag: true, showFooter: true });
   } else {
@@ -578,6 +600,23 @@ export function buildPrintHtmlDocument(
     </div>
   ` : '';
 
+  const paperSizeRule = `${config.paperSize === 'letter' ? 'letter' : 'A4'} ${config.orientation === 'landscape' ? 'landscape' : 'portrait'}`;
+  const fontFamilyCss = config.fontFamily === 'serif'
+    ? "'Computer Modern', 'Times New Roman', Times, serif"
+    : config.fontFamily === 'mono'
+    ? "'JetBrains Mono', 'Consolas', monospace"
+    : "'Inter', system-ui, -apple-system, sans-serif";
+
+  const fontSizeCss = config.fontSize === 'compact'
+    ? 'font-size: 9pt; line-height: 1.5;'
+    : config.fontSize === 'large'
+    ? 'font-size: 12.5pt; line-height: 1.75;'
+    : 'font-size: 10.5pt; line-height: 1.65;';
+
+  const watermarkHtml = config.watermarkText?.trim() ? `
+    <div class="print-watermark">${config.watermarkText.trim()}</div>
+  ` : '';
+
   return `
     <!DOCTYPE html>
     <html>
@@ -586,10 +625,10 @@ export function buildPrintHtmlDocument(
         <title>${effectiveTitle}</title>
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.8/dist/katex.min.css">
         <style>
-          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+          @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
           
           @page {
-            size: A4 portrait;
+            size: ${paperSizeRule};
             ${config.marginPreset === 'none' ? 'margin: 0;' : config.marginPreset === 'compact' ? 'margin: 4mm 6mm 6mm 6mm;' : 'margin: 12mm 14mm 14mm 14mm;'}
           }
 
@@ -597,18 +636,59 @@ export function buildPrintHtmlDocument(
             box-sizing: border-box;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
+            image-rendering: -webkit-optimize-contrast;
+            text-rendering: optimizeLegibility;
+            -webkit-font-smoothing: antialiased;
           }
 
           body {
-            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+            font-family: ${fontFamilyCss};
             background-color: ${bgColor};
             color: ${textColor};
+            ${fontSizeCss}
             ${config.marginPreset === 'none' ? 'padding: 8px 12px;' : config.marginPreset === 'compact' ? 'padding: 12px 16px;' : 'padding: 24px 32px;'}
             margin: 0;
-            line-height: 1.65;
           }
 
+          ${config.watermarkText?.trim() ? `
+          .print-watermark {
+            position: fixed;
+            top: 45%;
+            left: 50%;
+            transform: translate(-50%, -50%) rotate(-40deg);
+            font-size: 3.5rem;
+            font-weight: 800;
+            color: rgba(148, 163, 184, 0.14);
+            text-transform: uppercase;
+            letter-spacing: 0.18em;
+            pointer-events: none;
+            z-index: 9999;
+            white-space: nowrap;
+            font-family: sans-serif;
+          }` : ''}
+
           ${config.hideDividers ? `.markdown-content hr, hr { display: none !important; margin: 0 !important; padding: 0 !important; height: 0 !important; border: none !important; }` : `.markdown-content hr, hr { border: 0; height: 1px; background: #e2e8f0; margin: 20px 0; }`}
+
+          ${!config.includeCode ? '.markdown-content pre, .markdown-content code { display: none !important; }' : ''}
+          ${!config.includeDiagrams ? '.kroki-diagram-container, .diagram-container, svg { display: none !important; }' : ''}
+
+          ${config.inkMode === 'eco' ? `
+            .markdown-content pre { background: #ffffff !important; border: 1px solid #cbd5e1 !important; }
+            .markdown-content code { background: #ffffff !important; border: 1px solid #e2e8f0 !important; }
+            .markdown-content th { background: #ffffff !important; color: #0f172a !important; border-bottom: 2px solid #0f172a !important; }
+            .print-header { border-bottom: 2px solid #0f172a !important; }
+            .print-header h1 { color: #0f172a !important; }
+          ` : config.inkMode === 'mono' ? `
+            * { color: #000000 !important; }
+            .markdown-content pre { background: #ffffff !important; border: 1px solid #000000 !important; }
+            .markdown-content code { background: #ffffff !important; border: 1px solid #000000 !important; }
+            .markdown-content th { background: #ffffff !important; border: 1px solid #000000 !important; }
+            .print-header { border-bottom: 2px solid #000000 !important; }
+          ` : `
+            .markdown-content pre { background: #f8fafc; border: 1px solid #cbd5e1; }
+            .markdown-content code { background: #f1f5f9; }
+            .markdown-content th { background: rgba(2, 132, 199, 0.1); color: #0369a1; }
+          `}
 
           .print-header {
             border-bottom: 2px solid rgba(2, 132, 199, 0.4);
@@ -841,6 +921,7 @@ export function buildPrintHtmlDocument(
         </style>
       </head>
       <body>
+        ${watermarkHtml}
         ${headerHtml}
         <div class="markdown-content">
           ${parsedHtml}

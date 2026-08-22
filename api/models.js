@@ -88,7 +88,7 @@ export default async function handler(req, res) {
         }
 
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 8000);
+        const timeout = setTimeout(() => controller.abort(), 15000);
 
         const response = await fetch(fetchUrl, {
             method: 'GET',
@@ -445,6 +445,84 @@ export default async function handler(req, res) {
                     { id: 'nemotron-3-super', name: 'Nemotron 3 Super 120B [Free]', isFree: true },
                     { id: 'nemotron-3-ultra', name: 'Nemotron 3 Ultra 550B [Free]', isFree: true },
                     { id: 'minimax-m3', name: 'MiniMax M3 [Free]', isFree: true }
+                ]
+            });
+        }
+
+        if (reqProvider === 'openrouter') {
+            return res.status(200).json({
+                success: true,
+                provider: 'openrouter',
+                count: 6,
+                models: [
+                    { id: 'openrouter/free', name: 'Free Automated Router [Free]', isFree: true },
+                    { id: 'nvidia/nemotron-3-super-120b-a12b:free', name: 'Nemotron 3 Super 120B [Free]', isFree: true },
+                    { id: 'nvidia/nemotron-3-nano-30b-a3b:free', name: 'Nemotron 3 Nano 30B [Free]', isFree: true },
+                    { id: 'google/gemma-4-26b-a4b-it:free', name: 'Gemma 4 26B [Free]', isFree: true },
+                    { id: 'poolside/laguna-xs-2.1:free', name: 'Laguna XS 2.1 Code Engine [Free]', isFree: true },
+                    { id: 'poolside/laguna-m.1:free', name: 'Laguna M 2.1 Specialist [Free]', isFree: true }
+                ]
+            });
+        }
+
+        if (reqProvider === 'gemini') {
+            return res.status(200).json({
+                success: true,
+                provider: 'gemini',
+                count: 7,
+                models: [
+                    { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash [Free]', isFree: true },
+                    { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash [Free]', isFree: true },
+                    { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash [Free]', isFree: true },
+                    { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite [Free]', isFree: true },
+                    { id: 'gemma-4-31b-it', name: 'Gemma 4 31B [Free]', isFree: true },
+                    { id: 'gemma-4-26b-a4b-it', name: 'Gemma 4 26B [Free]', isFree: true },
+                    { id: 'gemini-flash-latest', name: 'Gemini Flash Latest [Free]', isFree: true }
+                ]
+            });
+        }
+
+        if (reqProvider === 'groq') {
+            return res.status(200).json({
+                success: true,
+                provider: 'groq',
+                count: 6,
+                models: [
+                    { id: 'openai/gpt-oss-120b', name: 'GPT-OSS 120B [Free]', isFree: true },
+                    { id: 'qwen/qwen3.6-27b', name: 'Qwen 3.6 27B Reasoning [Free]', isFree: true },
+                    { id: 'groq/compound', name: 'Groq Compound Agent [Free]', isFree: true },
+                    { id: 'groq/compound-mini', name: 'Groq Compound Mini [Free]', isFree: true },
+                    { id: 'openai/gpt-oss-20b', name: 'GPT-OSS 20B [Free]', isFree: true },
+                    { id: 'allam-2-7b', name: 'Allam 2 7B [Free]', isFree: true }
+                ]
+            });
+        }
+
+        if (reqProvider === 'mistral') {
+            return res.status(200).json({
+                success: true,
+                provider: 'mistral',
+                count: 7,
+                models: [
+                    { id: 'mistral-large-latest', name: 'Mistral Large [Free]', isFree: true },
+                    { id: 'mistral-medium-latest', name: 'Mistral Medium 3.5 [Free]', isFree: true },
+                    { id: 'mistral-small-latest', name: 'Mistral Small [Free]', isFree: true },
+                    { id: 'codestral-latest', name: 'Codestral Coding Specialist [Free]', isFree: true },
+                    { id: 'ministral-8b-latest', name: 'Ministral 8B [Free]', isFree: true },
+                    { id: 'ministral-3b-latest', name: 'Ministral 3B [Free]', isFree: true },
+                    { id: 'devstral-medium-latest', name: 'Devstral Medium Agent [Free]', isFree: true }
+                ]
+            });
+        }
+
+        if (reqProvider === 'sambanova') {
+            return res.status(200).json({
+                success: true,
+                provider: 'sambanova',
+                count: 2,
+                models: [
+                    { id: 'MiniMax-M2.7', name: 'MiniMax M2.7 [Free Quota]', isFree: true },
+                    { id: 'gemma-4-31B-it', name: 'Gemma 4 31B [Free Quota]', isFree: true }
                 ]
             });
         }

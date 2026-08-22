@@ -41,7 +41,8 @@ export const Header: React.FC<HeaderProps> = ({
     sandbox: 'Interactive Sandbox & Whiteboard Lab',
     dsa_lab: 'Data Structures & Algorithms Laboratory (DSA Lab)',
     flashcards_studio: 'Flashcards Studio & Deck Hub',
-    quiz_arena: 'Exam Practice Quiz Arena'
+    quiz_arena: 'Exam Practice Quiz Arena',
+    settings: 'System Preferences & Print Studio'
   };
 
   const toggleSpin = () => {

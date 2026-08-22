@@ -10,6 +10,7 @@ import {
   Box,
   FlaskConical,
   Binary,
+  Settings,
   type LucideIcon
 } from "lucide-react";
 
@@ -36,7 +37,8 @@ export const DEFAULT_NAV_TOOLBAR_ITEMS: ToolbarItem[] = [
   { id: "system_prompts", title: "System Prompts", icon: BookOpen },
   { id: "prompts", title: "Prompts", icon: Sparkles },
   { id: "fun_personas", title: "Fun Personas", icon: Theater },
-  { id: "cubes", title: "3D Cubes", icon: Box }
+  { id: "cubes", title: "3D Cubes", icon: Box },
+  { id: "settings", title: "Settings", icon: Settings }
 ];
 
 export function getNavItemsForRole(role?: string): ToolbarItem[] {
@@ -49,7 +51,8 @@ export function getNavItemsForRole(role?: string): ToolbarItem[] {
       { id: "lecture_notes", title: "Lecture Notes", icon: BookOpen },
       { id: "examprep", title: "Exam Prep", icon: GraduationCap },
       { id: "system_prompts", title: "System Prompts", icon: BookOpen },
-      { id: "prompts", title: "Prompts", icon: Sparkles }
+      { id: "prompts", title: "Prompts", icon: Sparkles },
+      { id: "settings", title: "Settings", icon: Settings }
     ];
   }
   if (role === 'admin') {
@@ -63,7 +66,8 @@ export function getNavItemsForRole(role?: string): ToolbarItem[] {
       { id: "system_prompts", title: "System Prompts", icon: BookOpen },
       { id: "prompts", title: "Prompts", icon: Sparkles },
       { id: "fun_personas", title: "Fun Personas", icon: Theater },
-      { id: "cubes", title: "3D Cubes", icon: Box }
+      { id: "cubes", title: "3D Cubes", icon: Box },
+      { id: "settings", title: "Settings", icon: Settings }
     ];
   }
   return DEFAULT_NAV_TOOLBAR_ITEMS;

@@ -36,6 +36,7 @@ const DsaLabView = React.lazy(() => import('./components/dsa/DsaLabView').then(m
 const FlashcardsStudioView = React.lazy(() => import('./components/FlashcardsStudioView').then(m => ({ default: m.FlashcardsStudioView })));
 const QuizArenaView = React.lazy(() => import('./components/QuizArenaView').then(m => ({ default: m.QuizArenaView })));
 const PinnedNotesArchiveView = React.lazy(() => import('./components/PinnedNotesArchiveView').then(m => ({ default: m.PinnedNotesArchiveView })));
+const SettingsStudioView = React.lazy(() => import('./components/SettingsStudioView').then(m => ({ default: m.SettingsStudioView })));
 import { ACADEMIC_PRESETS } from './components/CodeLabPresetDrawer';
 import { SettingsModal } from './components/SettingsModal';
 import { LoginModal } from './components/LoginModal';
@@ -45,7 +46,7 @@ import { DemoChatHistoryDrawer } from './components/DemoChatHistoryDrawer';
 import { PdfPreviewModal } from './components/PdfPreviewModal';
 import { printSessionToPdf } from './services/printPdfService';
 import { pruneOldRenderCache } from './services/renderCacheService';
-import { Home, Layout, Key, Moon, Sun, User, Menu, RotateCw } from 'lucide-react';
+import { Home, Layout, Key, Moon, Sun, User, Menu, RotateCw, Settings } from 'lucide-react';
 import { sendChatMessage, getApiUrl } from './services/apiService';
 import { fetchCloudCodeLabPresetSessions, syncCodeLabPresetSessions } from './services/codelabSyncService';
 
@@ -1985,6 +1986,7 @@ export const App: React.FC = () => {
             theme={theme}
             onToggleTheme={handleToggleTheme}
             onOpenSettings={() => setIsSettingsOpen(true)}
+            onOpenSettingsStudio={() => setActiveHubWorkspace('settings')}
             onClearHistory={() => setSessions([])}
             onLogout={handleLogout}
           />
@@ -2075,14 +2077,25 @@ export const App: React.FC = () => {
                 <RotateCw size={16} />
               </button>
 
-              {/* 4. Settings & API Keys */}
+              {/* 4. Quick API Keys Popup */}
               <button 
                 type="button" 
                 onClick={() => setIsSettingsOpen(true)} 
                 className="demo-status-pill cyan-pill"
-                title="API Settings & Keys"
+                title="Quick API Credentials & Models"
               >
                 <Key size={14} />
+                <span>API Keys</span>
+              </button>
+
+              {/* 4b. Full Settings Workspace */}
+              <button 
+                type="button" 
+                onClick={() => setActiveHubWorkspace('settings')} 
+                className="demo-status-pill purple-pill"
+                title="Open Settings & Print Studio"
+              >
+                <Settings size={14} />
                 <span>Settings</span>
               </button>
 
@@ -2353,6 +2366,25 @@ export const App: React.FC = () => {
                 onNavigateToChat={() => setActiveHubWorkspace('chat')}
               />
             )}
+
+            {activeHubWorkspace === 'settings' && (
+              <SettingsStudioView
+                onBack={() => setActiveHubWorkspace('chat')}
+                currentUser={currentUser}
+                userRole={userRole}
+                theme={theme}
+                onToggleTheme={handleToggleTheme}
+                userKeys={userKeys}
+                onSaveKeys={handleSaveUserKeys}
+                customModels={customModels}
+                onSaveCustomModels={handleSaveCustomModels}
+                activeProvider={selectedProvider}
+                activeModel={selectedModel}
+                onSelectActiveModel={handleSelectActiveModel}
+                onClearHistory={handleClearChat}
+                onLogout={handleLogout}
+              />
+            )}
             </React.Suspense>
           </main>
         </div>
@@ -2375,6 +2407,7 @@ export const App: React.FC = () => {
           theme={theme}
           onToggleTheme={handleToggleTheme}
           onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenSettingsStudio={() => setActiveHubWorkspace('settings')}
           onClearHistory={() => setSessions([])}
           onLogout={handleLogout}
         />
@@ -2559,6 +2592,25 @@ export const App: React.FC = () => {
                 isDemoView={false}
               />
             )}
+
+            {activeView === 'settings' && (
+              <SettingsStudioView
+                onBack={() => setActiveView('chat')}
+                currentUser={currentUser}
+                userRole={userRole}
+                theme={theme}
+                onToggleTheme={handleToggleTheme}
+                userKeys={userKeys}
+                onSaveKeys={handleSaveUserKeys}
+                customModels={customModels}
+                onSaveCustomModels={handleSaveCustomModels}
+                activeProvider={selectedProvider}
+                activeModel={selectedModel}
+                onSelectActiveModel={handleSelectActiveModel}
+                onClearHistory={handleClearChat}
+                onLogout={handleLogout}
+              />
+            )}
           </React.Suspense>
         </main>
       </div>
@@ -2582,6 +2634,7 @@ export const App: React.FC = () => {
         theme={theme}
         onToggleTheme={handleToggleTheme}
         onOpenSettings={() => setIsSettingsOpen(true)}
+        onOpenSettingsStudio={() => setActiveView('settings')}
         onClearHistory={() => setSessions([])}
         onLogout={handleLogout}
       />
