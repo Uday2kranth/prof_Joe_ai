@@ -258,6 +258,7 @@ EXAM ANSWER LENGTH & SCOPE BOUNDARY DIRECTIVES:
 2. MATHEMATICAL & CODE EXCLUSIONS (100% EXCLUDED FROM WORD COUNT):
    - All LaTeX math code blocks ($$...$$) and inline math ($...$), formula derivations, Greek parameters, summation/integral symbols, matrices, and markdown syntax are 100% EXCLUDED from the word count.
    - Formulas do NOT count towards satisfying the word budget. Write rich, detailed, comprehensive English prose around every mathematical derivation without cutting explanations short.
+   - CRITICAL MATH & CURRENCY DELIMITER RULE: Always format math using standard $...$ for inline math and $$...$$ for block display math. NEVER use a dollar sign '$' for currency or prices (e.g. NEVER write '$50' or '$\$ \alpha$'); always write prices in words ('50 USD', '50 dollars', 'a budget of α units') so it never collides with LaTeX delimiters.
 3. ANTI-PADDING & NATURAL TOPIC BOUNDARY:
    - If a question by its standard syllabus definition is inherently self-contained, simple, or compact (e.g. a specific short theorem or property), provide complete technical rigor and STOP naturally. Never inject artificial fluff, conversational filler, or unasked tangential derivations just to inflate word count.
 4. SHORT (3-4 MARKS) & MICRO (1-2 MARKS) BOUNDARIES:

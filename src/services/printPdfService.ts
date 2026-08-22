@@ -1,8 +1,7 @@
-import { marked } from 'marked';
-import katex from 'katex';
 import html2canvas from 'html2canvas';
 import { jsPDF } from 'jspdf';
 import { extractDiagrams, fetchKrokiSvg } from './krokiService';
+import { renderMathHtml } from '../components/MathText';
 import type { PinnedItem } from '../types';
 
 export interface PrintCustomConfig {
@@ -248,126 +247,7 @@ export async function exportBubbleDirectPdf(
 }
 
 function parseMarkdownWithMathAndDiagrams(content: string, diagramMap: Map<string, string>): string {
-  if (!content) return '';
-  const mathMap = new Map<string, string>();
-  let tokenIdx = 0;
-
-  let text = content;
-
-  // Step 1: Extract already-delimited display math ($$...$$ and \[...\])
-  text = text.replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
-    const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
-    try {
-      mathMap.set(token, `<div class="katex-display katex-block">${katex.renderToString(math.trim(), { displayMode: true, throwOnError: false })}</div>`);
-    } catch {
-      mathMap.set(token, `$$${math}$$`);
-    }
-    return token;
-  });
-
-  text = text.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => {
-    const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
-    try {
-      mathMap.set(token, `<div class="katex-display katex-block">${katex.renderToString(math.trim(), { displayMode: true, throwOnError: false })}</div>`);
-    } catch {
-      mathMap.set(token, `\\[${math}\\]`);
-    }
-    return token;
-  });
-
-  // Step 2: Extract already-delimited inline math (\(...\) and $...$)
-  text = text.replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => {
-    const token = `KATEXINLINETOKEN${tokenIdx++}ENDTOKEN`;
-    try {
-      mathMap.set(token, `<span class="katex-inline">${katex.renderToString(math.trim(), { displayMode: false, throwOnError: false })}</span>`);
-    } catch {
-      mathMap.set(token, `\\(${math}\\)`);
-    }
-    return token;
-  });
-
-  text = text.replace(/\$([^\$\n]+?)\$/g, (_, math) => {
-    const token = `KATEXINLINETOKEN${tokenIdx++}ENDTOKEN`;
-    try {
-      mathMap.set(token, `<span class="katex-inline">${katex.renderToString(math.trim(), { displayMode: false, throwOnError: false })}</span>`);
-    } catch {
-      mathMap.set(token, `$${math}$`);
-    }
-    return token;
-  });
-
-  // Step 3: Auto-detect bare LaTeX formulas & equations that the AI wrote without $$ delimiters
-  const lines = text.split('\n');
-  let inCodeBlock = false;
-
-  const processedLines = lines.map(line => {
-    const trimmed = line.trim();
-    if (trimmed.startsWith('```')) {
-      inCodeBlock = !inCodeBlock;
-      return line;
-    }
-    if (inCodeBlock) return line;
-
-    // Check if line contains bare LaTeX math without existing KATEX token
-    const hasMathKeywords =
-      trimmed.startsWith('\\') ||
-      /^[a-zA-Z_]\s*(\([^\)]*\))?\s*=\s*/.test(trimmed) && (trimmed.includes('\\') || trimmed.includes('^') || trimmed.includes('_')) ||
-      /\\(frac|sum|prod|int|sqrt|mathbf|mathcal|mathbb|boldsymbol|nabla|partial|alpha|beta|gamma|delta|epsilon|theta|lambda|mu|sigma|omega|arg|min|max|vec|hat|tilde|in|subseteq|times|pm|le|ge|neq|approx|to|rightarrow|implies|mid|vert|parallel|mathbb)/.test(trimmed);
-
-    const isStandaloneFormula =
-      !line.includes('KATEX') &&
-      hasMathKeywords &&
-      !trimmed.startsWith('#') &&
-      !trimmed.startsWith('- ') &&
-      !trimmed.startsWith('* ') &&
-      !trimmed.startsWith('>') &&
-      !trimmed.startsWith('|') &&
-      !trimmed.startsWith('1.') &&
-      !trimmed.startsWith('2.') &&
-      !trimmed.startsWith('3.') &&
-      !trimmed.startsWith('4.') &&
-      !trimmed.startsWith('5.');
-
-    if (isStandaloneFormula) {
-      const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
-      try {
-        mathMap.set(
-          token,
-          `<div class="katex-display katex-block">${katex.renderToString(trimmed, {
-            displayMode: true,
-            throwOnError: false
-          })}</div>`
-        );
-      } catch {
-        mathMap.set(token, trimmed);
-      }
-      return token;
-    }
-
-    return line;
-  });
-
-  const prepped = processedLines.join('\n');
-
-  // 4. Parse clean markdown tables and text
-  let parsedHtml = marked.parse(prepped) as string;
-
-  // 5. Restore math HTML
-  mathMap.forEach((html, token) => {
-    parsedHtml = parsedHtml.replaceAll(token, html);
-  });
-
-  // 6. Restore Kroki diagram containers
-  diagramMap.forEach((svgContainerHtml, token) => {
-    const paragraphWrapped = `<p>${token}</p>`;
-    if (parsedHtml.includes(paragraphWrapped)) {
-      parsedHtml = parsedHtml.replace(paragraphWrapped, svgContainerHtml);
-    } else {
-      parsedHtml = parsedHtml.replaceAll(token, svgContainerHtml);
-    }
-  });
-
-  return parsedHtml;
+  return renderMathHtml(content, { diagramMap });
 }
 
 /**
@@ -704,15 +584,24 @@ export function buildPrintHtmlDocument(
         <style>
           @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
           
+          @page {
+            size: A4 portrait;
+            margin: 12mm 14mm 14mm 14mm;
+          }
+
+          * {
+            box-sizing: border-box;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+
           body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background-color: ${bgColor};
             color: ${textColor};
             padding: 24px 32px;
             margin: 0;
             line-height: 1.65;
-            -webkit-print-color-adjust: exact;
-            print-color-adjust: exact;
           }
 
           .print-header {
@@ -722,6 +611,8 @@ export function buildPrintHtmlDocument(
             display: flex;
             justify-content: space-between;
             align-items: center;
+            page-break-after: avoid;
+            break-after: avoid;
           }
 
           .print-header h1 {
@@ -737,10 +628,17 @@ export function buildPrintHtmlDocument(
             font-weight: 500;
           }
 
-          .markdown-content h1, .markdown-content h2, .markdown-content h3, .markdown-content h4, .markdown-content h5, .markdown-content h6 {
+          .markdown-content h1, 
+          .markdown-content h2, 
+          .markdown-content h3, 
+          .markdown-content h4, 
+          .markdown-content h5, 
+          .markdown-content h6 {
             color: #0f172a;
             margin-top: 18px;
             margin-bottom: 8px;
+            page-break-after: avoid !important;
+            break-after: avoid !important;
           }
 
           .markdown-content p {
@@ -755,9 +653,21 @@ export function buildPrintHtmlDocument(
             width: 100%;
             border-collapse: collapse;
             margin: 16px 0;
+            page-break-inside: auto;
+            break-inside: auto;
           }
 
-          .markdown-content th, .markdown-content td {
+          .markdown-content thead {
+            display: table-header-group;
+          }
+
+          .markdown-content tr {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+
+          .markdown-content th, 
+          .markdown-content td {
             border: 1px solid rgba(148, 163, 184, 0.3);
             padding: 8px 12px;
             text-align: left;
@@ -770,14 +680,21 @@ export function buildPrintHtmlDocument(
             font-weight: 700;
           }
 
+          /* 💻 Code Block Wrap & Pagination Security */
           .markdown-content pre {
             background: #f8fafc;
             border: 1px solid #cbd5e1;
             padding: 10px 14px;
             border-radius: 8px;
-            font-family: monospace;
-            font-size: 9.5pt;
-            overflow-x: auto;
+            font-family: 'Consolas', 'Courier New', monospace;
+            font-size: 8.8pt;
+            line-height: 1.5;
+            white-space: pre-wrap !important;
+            word-break: break-word !important;
+            overflow-wrap: break-word !important;
+            overflow: visible !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
             margin: 12px 0;
           }
 
@@ -785,14 +702,39 @@ export function buildPrintHtmlDocument(
             background: #f1f5f9;
             padding: 2px 5px;
             border-radius: 4px;
-            font-size: 9.2pt;
+            font-size: 8.8pt;
+            font-family: 'Consolas', 'Courier New', monospace;
             color: #0f172a;
+            white-space: pre-wrap !important;
+            word-break: break-word !important;
+            overflow-wrap: break-word !important;
           }
 
+          /* 📐 KaTeX Formula Scaling & Scrollbar Elimination */
           .katex-display {
-            margin: 14px 0 !important;
-            font-size: 1.1em;
-            overflow-x: auto;
+            margin: 12px 0 !important;
+            padding: 4px 0 !important;
+            font-size: 0.95em !important;
+            max-width: 100% !important;
+            overflow: visible !important;
+            overflow-x: visible !important;
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
+          }
+
+          .katex {
+            font-size: 0.95em !important;
+            white-space: normal !important;
+          }
+
+          .katex-html {
+            overflow: visible !important;
+          }
+
+          .session-message-flow, 
+          .pin-card-section {
+            page-break-inside: avoid !important;
+            break-inside: avoid !important;
           }
 
           .pdf-diagram-page {
@@ -825,14 +767,59 @@ export function buildPrintHtmlDocument(
           }
 
           @media print {
-            body {
-              padding: 0;
+            html, body {
+              width: 100% !important;
+              padding: 0 !important;
+              margin: 0 !important;
               background: #ffffff !important;
               color: #0f172a !important;
             }
-            .markdown-content h1, .markdown-content h2, .markdown-content h3, .markdown-content h4, .markdown-content h5, .markdown-content h6 {
+
+            .markdown-content h1, 
+            .markdown-content h2, 
+            .markdown-content h3, 
+            .markdown-content h4, 
+            .markdown-content h5, 
+            .markdown-content h6 {
               color: #0f172a !important;
+              page-break-after: avoid !important;
+              break-after: avoid !important;
             }
+
+            .markdown-content pre {
+              background: #f8fafc !important;
+              border: 1px solid #cbd5e1 !important;
+              white-space: pre-wrap !important;
+              word-break: break-word !important;
+              overflow-wrap: break-word !important;
+              overflow: visible !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+
+            .markdown-content code {
+              white-space: pre-wrap !important;
+              word-break: break-word !important;
+              overflow-wrap: break-word !important;
+            }
+
+            .katex-display {
+              overflow: visible !important;
+              overflow-x: visible !important;
+              page-break-inside: avoid !important;
+              break-inside: avoid !important;
+            }
+
+            .katex {
+              white-space: normal !important;
+            }
+
+            ::-webkit-scrollbar {
+              display: none !important;
+              width: 0 !important;
+              height: 0 !important;
+            }
+
             .pdf-diagram-page {
               page-break-before: always !important;
               break-before: page !important;

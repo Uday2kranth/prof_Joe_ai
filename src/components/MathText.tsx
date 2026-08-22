@@ -56,7 +56,7 @@ export interface RenderMathOptions {
 
 /**
  * Universal markdown + math rendering engine:
- * Supports $$...$$, \[...\], \(...\), $...$, bare LaTeX commands, and markdown formatting.
+ * Clean, stable parsing for $$...$$, \[...\], \(...\), $...$, bare LaTeX commands, and Kroki diagrams.
  */
 export function renderMathHtml(content: string, options: RenderMathOptions = {}): string {
   if (!content) return '';
