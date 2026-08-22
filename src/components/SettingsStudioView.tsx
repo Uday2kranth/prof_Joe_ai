@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { 
   Printer, 
   User, 
@@ -208,6 +208,65 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
     { id: 'opencode', label: 'OpenCode AI API Key (50 req/day, 20 req/hr free tier)', placeholder: 'oc_...' },
     { id: 'poolside', label: 'Poolside AI API Key (Code Engine)', placeholder: 'sky_...' },
     { id: 'pollinations', label: 'Pollinations Priority Key (Optional)', placeholder: 'sk_...' }
+  ] as const;
+
+  const configuredKeysCount = useMemo(() => {
+    let count = 0;
+    if (savedKeysState) {
+      providerFields.forEach(f => {
+        const val = (savedKeysState as any)[f.id];
+        if (val && String(val).trim().length > 0) count++;
+      });
+    }
+    return count;
+  }, [savedKeysState, providerFields]);
+
+  const providerCategories = [
+    {
+      category: 'Primary Cloud LLMs',
+      desc: 'Top-tier multimodal intelligence with vision, code & reasoning capabilities',
+      icon: Sparkles,
+      color: 'var(--accent-cyan)',
+      fields: [
+        { id: 'gemini', label: 'Google Gemini API Key(s)', placeholder: 'AQ.Ab8RN6...', desc: 'Gemini 3.7 Flash, Gemma 4 31B' },
+        { id: 'openrouter', label: 'OpenRouter API Key', placeholder: 'sk-or-v1-...', desc: '420+ Multi-vendor models & free routers' },
+        { id: 'groq', label: 'Groq Cloud API Key', placeholder: 'gsk_...', desc: 'Ultra-low latency LPU inference' },
+        { id: 'mistral', label: 'Mistral AI API Key', placeholder: '8W6aSCXb...', desc: 'Mistral Large, Codestral coding models' }
+      ]
+    },
+    {
+      category: 'Local & Private Endpoints',
+      desc: 'Self-hosted inference running on your local machine or private network',
+      icon: Sliders,
+      color: '#a855f7',
+      fields: [
+        { id: 'ollama', label: 'Ollama Cloud API Key (Slot 1)', placeholder: 'ol_...', desc: 'Online Ollama Cloud remote cluster' },
+        { id: 'local_endpoint', label: 'Local Device / Custom Tunnel URL (Slot 2)', placeholder: 'http://localhost:11434 or https://xxxx.ngrok.io', desc: 'Local Ollama, vLLM, or LM Studio endpoint' }
+      ]
+    },
+    {
+      category: 'Accelerated Cloud Routers',
+      desc: 'Specialized high-throughput chips and open-weight model gateways',
+      icon: Layers,
+      color: '#3b82f6',
+      fields: [
+        { id: 'nvidia', label: 'NVIDIA NIM Gateway API Key', placeholder: 'nvapi-...', desc: 'Nemotron & optimized NVIDIA models' },
+        { id: 'sambanova', label: 'SambaNova Cloud API Key', placeholder: 'c72d24de-...', desc: 'Reconfigurable Dataflow Unit (RDU) models' },
+        { id: 'nararouter', label: 'NaraRouter API Key', placeholder: 'sk-nry-...', desc: 'Free router for Agnes & Laguna engines' },
+        { id: 'huggingface', label: 'Hugging Face Access Token', placeholder: 'hf_...', desc: 'Inference router for open weights' }
+      ]
+    },
+    {
+      category: 'Code & Experimental Engines',
+      desc: 'Next-generation agentic code generation and free priority relays',
+      icon: Bot,
+      color: '#10b981',
+      fields: [
+        { id: 'opencode', label: 'OpenCode AI API Key', placeholder: 'oc_...', desc: '50 req/day, 20 req/hr free coding tier' },
+        { id: 'poolside', label: 'Poolside AI API Key', placeholder: 'sky_...', desc: 'Laguna software engineering specialist' },
+        { id: 'pollinations', label: 'Pollinations Priority Key (Optional)', placeholder: 'sk_...', desc: 'Keyless free or fast priority queue' }
+      ]
+    }
   ] as const;
 
   return (
@@ -880,155 +939,207 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
             </div>
           )}
 
-          {/* TAB 2: 🔑 API CREDENTIALS */}
+          {/* TAB 2: 🔑 API CREDENTIALS (EXPANSIVE 2-COLUMN BENTO GRID) */}
           {activeTab === 'keys' && (
-            <div style={{ maxWidth: '820px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-              <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color)', paddingBottom: '14px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <div style={{ padding: '8px', borderRadius: '10px', background: 'rgba(6, 182, 212, 0.15)', color: 'var(--accent-cyan)' }}>
-                      <Key size={20} />
-                    </div>
-                    <div>
-                      <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>API Key Credentials</h3>
-                      <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                        Configure API keys for 14 cloud providers and local inference endpoints
-                      </p>
-                    </div>
+            <div style={{ maxWidth: '1600px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              {/* Top Banner & Control Deck */}
+              <div style={{
+                padding: '20px 24px',
+                borderRadius: '16px',
+                background: 'var(--bg-secondary)',
+                border: '1px solid var(--border-color)',
+                display: 'flex',
+                flexWrap: 'wrap',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '16px'
+              }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: 'rgba(6, 182, 212, 0.15)', border: '1px solid rgba(6, 182, 212, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-cyan)' }}>
+                    <Key size={22} />
                   </div>
-
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <button
-                      type="button"
-                      onClick={handleExportJson}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '6px 12px',
-                        borderRadius: '8px',
-                        background: 'var(--bg-tertiary)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-primary)',
-                        fontSize: '0.78rem',
-                        fontWeight: 600,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <Download size={14} />
-                      <span>Export JSON</span>
-                    </button>
-
-                    <input
-                      ref={fileInputRef}
-                      type="file"
-                      accept=".json"
-                      onChange={handleImportJson}
-                      style={{ display: 'none' }}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => fileInputRef.current?.click()}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        padding: '6px 12px',
-                        borderRadius: '8px',
-                        background: 'var(--bg-tertiary)',
-                        border: '1px solid var(--border-color)',
-                        color: 'var(--text-primary)',
-                        fontSize: '0.78rem',
-                        fontWeight: 600,
-                        cursor: 'pointer'
-                      }}
-                    >
-                      <Upload size={14} />
-                      <span>Import JSON</span>
-                    </button>
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>API Key Credentials Hub</h3>
+                      <span style={{ fontSize: '0.75rem', padding: '2px 10px', borderRadius: '20px', background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', fontWeight: 700, border: '1px solid rgba(16, 185, 129, 0.4)' }}>
+                        🟢 {configuredKeysCount} of {providerFields.length} Providers Ready
+                      </span>
+                    </div>
+                    <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                      Configure API keys for cloud providers, accelerated routers, and self-hosted inference endpoints
+                    </p>
                   </div>
                 </div>
 
-                {saveFeedback && (
-                  <div style={{ padding: '10px 14px', borderRadius: '8px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#10b981', fontSize: '0.85rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Check size={16} />
-                    <span>{saveFeedback}</span>
-                  </div>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <button
+                    type="button"
+                    onClick={handleExportJson}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 14px',
+                      borderRadius: '8px',
+                      background: 'var(--bg-tertiary)',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Download size={14} />
+                    <span>Export JSON</span>
+                  </button>
 
-                <form onSubmit={handleSaveApiKeys} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
-                  {providerFields.map(item => {
-                    const isVisible = visibleFields[item.id];
-                    return (
-                      <div key={item.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                        <label style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--text-muted)' }}>{item.label}</label>
-                        <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                          <input
-                            type={isVisible ? 'text' : 'password'}
-                            value={(savedKeysState as any)[item.id] || ''}
-                            onChange={(e) => setSavedKeysState({ ...savedKeysState, [item.id]: e.target.value })}
-                            placeholder={item.placeholder}
-                            style={{
-                              width: '100%',
-                              padding: '10px 42px 10px 14px',
-                              borderRadius: '8px',
-                              border: '1px solid var(--border-color)',
-                              background: 'var(--bg-primary)',
-                              color: 'var(--text-primary)',
-                              fontSize: '0.85rem',
-                              outline: 'none'
-                            }}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => toggleVisibility(item.id)}
-                            style={{
-                              position: 'absolute',
-                              right: '10px',
-                              background: 'none',
-                              border: 'none',
-                              color: 'var(--text-muted)',
-                              cursor: 'pointer',
-                              padding: '4px'
-                            }}
-                            title={isVisible ? 'Hide value' : 'Show value'}
-                          >
-                            {isVisible ? <EyeOff size={16} /> : <Eye size={16} />}
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept=".json"
+                    onChange={handleImportJson}
+                    style={{ display: 'none' }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 14px',
+                      borderRadius: '8px',
+                      background: 'var(--bg-tertiary)',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--text-primary)',
+                      fontSize: '0.82rem',
+                      fontWeight: 600,
+                      cursor: 'pointer'
+                    }}
+                  >
+                    <Upload size={14} />
+                    <span>Import JSON</span>
+                  </button>
 
                   <button
-                    type="submit"
+                    type="button"
+                    onClick={handleSaveApiKeys}
                     style={{
-                      marginTop: '10px',
-                      padding: '12px',
-                      borderRadius: '10px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '6px',
+                      padding: '8px 18px',
+                      borderRadius: '8px',
                       background: 'var(--accent-cyan)',
                       color: '#000',
                       border: 'none',
+                      fontSize: '0.84rem',
                       fontWeight: 700,
-                      cursor: 'pointer',
-                      fontSize: '0.9rem',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: '8px'
+                      cursor: 'pointer'
                     }}
                   >
-                    <Check size={18} />
-                    <span>Save API Key Credentials</span>
+                    <Check size={16} />
+                    <span>Save All Keys</span>
                   </button>
-                </form>
+                </div>
               </div>
+
+              {saveFeedback && (
+                <div style={{ padding: '12px 18px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#10b981', fontSize: '0.9rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Check size={18} />
+                  <span>{saveFeedback}</span>
+                </div>
+              )}
+
+              {/* 2-Column Bento Deck for 4 Categories */}
+              <form onSubmit={handleSaveApiKeys} style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(480px, 1fr))', gap: '20px' }}>
+                {providerCategories.map(cat => {
+                  const Icon = cat.icon;
+                  return (
+                    <div
+                      key={cat.category}
+                      style={{
+                        padding: '20px 22px',
+                        borderRadius: '16px',
+                        background: 'var(--bg-secondary)',
+                        border: '1px solid var(--border-color)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '16px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid var(--border-color)', paddingBottom: '12px' }}>
+                        <Icon size={20} style={{ color: cat.color }} />
+                        <div>
+                          <h4 style={{ margin: 0, fontSize: '0.96rem', fontWeight: 700 }}>{cat.category}</h4>
+                          <p style={{ margin: '2px 0 0 0', fontSize: '0.75rem', color: 'var(--text-muted)' }}>{cat.desc}</p>
+                        </div>
+                      </div>
+
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        {cat.fields.map(field => {
+                          const isVisible = visibleFields[field.id];
+                          const hasValue = Boolean((savedKeysState as any)[field.id]);
+
+                          return (
+                            <div key={field.id} style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                                <label style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                  <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: hasValue ? '#10b981' : '#64748b' }} />
+                                  <span>{field.label}</span>
+                                </label>
+                                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{field.desc}</span>
+                              </div>
+
+                              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                                <input
+                                  type={isVisible ? 'text' : 'password'}
+                                  value={(savedKeysState as any)[field.id] || ''}
+                                  onChange={(e) => setSavedKeysState({ ...savedKeysState, [field.id]: e.target.value })}
+                                  placeholder={field.placeholder}
+                                  style={{
+                                    width: '100%',
+                                    padding: '10px 42px 10px 14px',
+                                    borderRadius: '8px',
+                                    border: hasValue ? '1px solid rgba(6, 182, 212, 0.4)' : '1px solid var(--border-color)',
+                                    background: 'var(--bg-primary)',
+                                    color: 'var(--text-primary)',
+                                    fontSize: '0.85rem',
+                                    outline: 'none',
+                                    fontFamily: isVisible ? 'inherit' : 'monospace'
+                                  }}
+                                />
+                                <button
+                                  type="button"
+                                  onClick={() => toggleVisibility(field.id)}
+                                  style={{
+                                    position: 'absolute',
+                                    right: '10px',
+                                    background: 'none',
+                                    border: 'none',
+                                    color: 'var(--text-muted)',
+                                    cursor: 'pointer',
+                                    padding: '4px'
+                                  }}
+                                  title={isVisible ? 'Hide value' : 'Show value'}
+                                >
+                                  {isVisible ? <EyeOff size={16} /> : <Eye size={16} />}
+                                </button>
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </form>
             </div>
           )}
 
-          {/* TAB 3: 🤖 MODEL MANAGER */}
+          {/* TAB 3: 🤖 MODEL MANAGER (EXPANSIVE WIDE BENTO GRID) */}
           {activeTab === 'models' && (
-            <div style={{ maxWidth: '960px', margin: '0 auto' }}>
+            <div style={{ maxWidth: '1600px', margin: '0 auto' }}>
               <ModelManagerTab
                 userKeys={userKeys}
                 customModels={customModels}
@@ -1036,120 +1147,192 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                 activeProvider={activeProvider}
                 activeModel={activeModel}
                 onSelectActiveModel={onSelectActiveModel}
+                isWideMode={true}
               />
             </div>
           )}
 
-          {/* TAB 4: 👤 USER PROFILE */}
+          {/* TAB 4: 👤 USER PROFILE (2-COLUMN BENTO DASHBOARD) */}
           {activeTab === 'account' && (
-            <div style={{ maxWidth: '640px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
-              <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <div style={{ width: '56px', height: '56px', borderRadius: '50%', overflow: 'hidden', border: '2px solid var(--accent-cyan)' }}>
+            <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1.2fr)', gap: '24px' }}>
+              {/* Left Column: Student Identity Card */}
+              <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+                  <div style={{ width: '64px', height: '64px', borderRadius: '50%', overflow: 'hidden', border: '2.5px solid var(--accent-cyan)', boxShadow: '0 0 16px rgba(6, 182, 212, 0.3)' }}>
                     <img src="/joe-avatar.png" alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                   </div>
                   <div>
-                    <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>{currentUser}</h3>
-                    <span style={{ fontSize: '0.75rem', padding: '2px 8px', borderRadius: '6px', background: 'rgba(6, 182, 212, 0.2)', color: 'var(--accent-cyan)', fontWeight: 700 }}>
-                      {userRole?.toUpperCase() || 'OU STUDENT'}
-                    </span>
+                    <h3 style={{ margin: 0, fontSize: '1.25rem', fontWeight: 700 }}>{currentUser}</h3>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
+                      <span style={{ fontSize: '0.75rem', padding: '2px 10px', borderRadius: '6px', background: 'rgba(6, 182, 212, 0.2)', color: 'var(--accent-cyan)', fontWeight: 700 }}>
+                        {userRole?.toUpperCase() || 'OU STUDENT'}
+                      </span>
+                      <span style={{ fontSize: '0.78rem', color: '#10b981', fontWeight: 600 }}>
+                        ● Active Session
+                      </span>
+                    </div>
                   </div>
                 </div>
 
-                <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Status</span>
-                    <span style={{ color: '#10b981', fontWeight: 600 }}>● Active & Connected</span>
+                <div style={{ borderTop: '1px solid var(--border-color)', paddingTop: '16px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Institution</span>
+                    <span style={{ fontWeight: 600 }}>Osmania University (OU)</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.85rem' }}>
-                    <span style={{ color: 'var(--text-muted)' }}>Exam Curriculum</span>
-                    <span>Osmania University MSc Data Science</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Degree / Program</span>
+                    <span style={{ fontWeight: 600 }}>M.Sc. Data Science</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Academic Semester</span>
+                    <span style={{ fontWeight: 600 }}>Semester IV (Final Year)</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.88rem' }}>
+                    <span style={{ color: 'var(--text-muted)' }}>Core Syllabus Track</span>
+                    <span style={{ color: 'var(--accent-cyan)', fontWeight: 600 }}>Statistical Inference & ML</span>
+                  </div>
+                </div>
+
+                <button
+                  onClick={onLogout}
+                  style={{
+                    marginTop: 'auto',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    padding: '12px',
+                    borderRadius: '10px',
+                    background: 'rgba(239, 68, 68, 0.12)',
+                    border: '1px solid rgba(239, 68, 68, 0.3)',
+                    color: '#ef4444',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                    fontSize: '0.88rem'
+                  }}
+                >
+                  <span>Log Out of Session</span>
+                </button>
+              </div>
+
+              {/* Right Column: Workspace Intelligence & Activity */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <h4 style={{ margin: 0, fontSize: '0.98rem', fontWeight: 700 }}>Workspace Activity & Intelligence</h4>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                    <div style={{ padding: '14px', borderRadius: '10px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)' }}>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>ACTIVE PROVIDER</div>
+                      <div style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--accent-cyan)', marginTop: '4px' }}>{activeProvider || 'OpenRouter'}</div>
+                    </div>
+                    <div style={{ padding: '14px', borderRadius: '10px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)' }}>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>ACTIVE MODEL</div>
+                      <div style={{ fontSize: '0.92rem', fontWeight: 700, marginTop: '4px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{activeModel || 'Auto-Free'}</div>
+                    </div>
+                    <div style={{ padding: '14px', borderRadius: '10px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)' }}>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>CONFIGURED API KEYS</div>
+                      <div style={{ fontSize: '1.05rem', fontWeight: 700, color: '#10b981', marginTop: '4px' }}>{configuredKeysCount} / {providerFields.length} Ready</div>
+                    </div>
+                    <div style={{ padding: '14px', borderRadius: '10px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)' }}>
+                      <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', fontWeight: 700 }}>DOCUMENT EXPORT ENGINE</div>
+                      <div style={{ fontSize: '0.92rem', fontWeight: 700, marginTop: '4px' }}>A4 Print Studio 🌿</div>
+                    </div>
                   </div>
                 </div>
               </div>
-
-              <button
-                onClick={onLogout}
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: '8px',
-                  padding: '12px',
-                  borderRadius: '12px',
-                  background: 'rgba(239, 68, 68, 0.12)',
-                  border: '1px solid rgba(239, 68, 68, 0.3)',
-                  color: '#ef4444',
-                  fontWeight: 700,
-                  cursor: 'pointer'
-                }}
-              >
-                <span>Log Out of Session</span>
-              </button>
             </div>
           )}
 
-          {/* TAB 5: 🎨 APPEARANCE & THEME */}
+          {/* TAB 5: 🎨 APPEARANCE & THEME (3-COLUMN VISUAL SELECTOR) */}
           {activeTab === 'theme' && (
-            <div style={{ maxWidth: '640px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Appearance & Theme Preferences</h3>
-                <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  Customize the interface theme, color schemes, and visual contrast.
-                </p>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Appearance & Theme Preferences</h3>
+                  <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                    Choose your visual theme, contrast level, and reading typography
+                  </p>
+                </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '8px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginTop: '8px' }}>
                   <button
                     type="button"
                     onClick={() => theme !== 'dark' && onToggleTheme()}
                     style={{
-                      padding: '16px',
-                      borderRadius: '12px',
-                      border: theme === 'dark' ? '2px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                      padding: '20px',
+                      borderRadius: '14px',
+                      border: theme === 'dark' ? '2.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
                       background: '#090d16',
                       color: '#ffffff',
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
-                      gap: '8px',
-                      cursor: 'pointer'
+                      gap: '12px',
+                      cursor: 'pointer',
+                      boxShadow: theme === 'dark' ? '0 0 20px rgba(6, 182, 212, 0.25)' : 'none',
+                      transition: 'all 0.15s ease'
                     }}
                   >
-                    <Moon size={24} className="text-indigo-400" />
-                    <span style={{ fontWeight: 700, fontSize: '0.88rem' }}>Dark Theme (Default)</span>
+                    <Moon size={32} className="text-indigo-400" />
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>Dark Theme (Default)</div>
+                      <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '2px' }}>Deep navy slate with cyan accents</div>
+                    </div>
                   </button>
 
                   <button
                     type="button"
                     onClick={() => theme !== 'light' && onToggleTheme()}
                     style={{
-                      padding: '16px',
-                      borderRadius: '12px',
-                      border: theme === 'light' ? '2px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                      padding: '20px',
+                      borderRadius: '14px',
+                      border: theme === 'light' ? '2.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
                       background: '#f8fafc',
                       color: '#0f172a',
                       display: 'flex',
                       flexDirection: 'column',
                       alignItems: 'center',
-                      gap: '8px',
-                      cursor: 'pointer'
+                      gap: '12px',
+                      cursor: 'pointer',
+                      boxShadow: theme === 'light' ? '0 0 20px rgba(6, 182, 212, 0.25)' : 'none',
+                      transition: 'all 0.15s ease'
                     }}
                   >
-                    <Sun size={24} className="text-amber-500" />
-                    <span style={{ fontWeight: 700, fontSize: '0.88rem' }}>Light Theme</span>
+                    <Sun size={32} className="text-amber-500" />
+                    <div style={{ textAlign: 'center' }}>
+                      <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>Light Theme</div>
+                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>Crisp paper white with dark slate text</div>
+                    </div>
                   </button>
                 </div>
               </div>
             </div>
           )}
 
-          {/* TAB 6: 💾 DATA & STORAGE */}
+          {/* TAB 6: 💾 DATA & STORAGE (2-COLUMN STORAGE COMMAND DECK) */}
           {activeTab === 'data' && (
-            <div style={{ maxWidth: '640px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+            <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)', gap: '24px' }}>
               <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Data & Local Storage</h3>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Data & Local Storage</h3>
                 <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  Manage chat sessions, cached offline data, and local storage limits.
+                  All chat logs, model preferences, and custom credentials are encrypted and stored locally on your device.
+                </p>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginTop: '8px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 14px', borderRadius: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)' }}>
+                    <span style={{ fontSize: '0.85rem' }}>Offline Storage Location</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--accent-cyan)' }}>Browser LocalStorage</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '12px 14px', borderRadius: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)' }}>
+                    <span style={{ fontSize: '0.85rem' }}>Telemetry & Tracking</span>
+                    <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#10b981' }}>Disabled (100% Private)</span>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700, color: '#ef4444' }}>Danger Zone</h3>
+                <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                  Purge active chat sessions or reset all model configurations to factory defaults.
                 </p>
 
                 <button

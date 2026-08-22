@@ -12,6 +12,7 @@ interface ModelManagerTabProps {
   activeProvider?: string;
   activeModel?: string;
   onSelectActiveModel?: (providerId: string, modelId: string) => void;
+  isWideMode?: boolean;
 }
 
 export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
@@ -20,7 +21,8 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
   onSaveCustomModels,
   activeProvider,
   activeModel,
-  onSelectActiveModel
+  onSelectActiveModel,
+  isWideMode = false
 }) => {
   const [selectedProviderId, setSelectedProviderId] = useState<string>(activeProvider || PROVIDERS[0].id);
   const [isProviderDropdownOpen, setIsProviderDropdownOpen] = useState<boolean>(false);
@@ -154,19 +156,83 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
     }
   };
 
+  const freeModelsCount = currentModelList.filter(m => m.isFree).length;
   const enabledCount = currentModelList.filter(m => m.enabled).length;
 
   return (
-    <div className="model-manager-container" style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-      {/* Top Provider Selection Bar */}
+    <div className="model-manager-container" style={{ display: 'flex', flexDirection: 'column', gap: isWideMode ? '16px' : '12px' }}>
+      {/* WIDE MODE: Quick Horizontal Provider Switcher Carousel */}
+      {isWideMode && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: '8px',
+          overflowX: 'auto',
+          paddingBottom: '4px',
+          scrollbarWidth: 'thin'
+        }}>
+          {PROVIDERS.map(p => {
+            const isSelected = p.id === selectedProviderId;
+            const provModels = customModels[p.id] || p.models;
+            const provKey = userKeys ? (userKeys as any)[p.id.replace('-keyed', '')] : '';
+            const isConfigured = p.id === 'pollinations-keyless' || Boolean(provKey);
+
+            return (
+              <button
+                key={p.id}
+                type="button"
+                onClick={() => {
+                  setSelectedProviderId(p.id);
+                  setSearchQuery('');
+                  setFetchError(null);
+                }}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '8px 14px',
+                  borderRadius: '10px',
+                  background: isSelected 
+                    ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(59, 130, 246, 0.25))' 
+                    : 'var(--bg-secondary)',
+                  border: isSelected ? '1px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                  color: isSelected ? 'var(--accent-cyan)' : 'var(--text-primary)',
+                  fontWeight: isSelected ? 700 : 500,
+                  fontSize: '0.82rem',
+                  cursor: 'pointer',
+                  whiteSpace: 'nowrap',
+                  transition: 'all 0.15s ease',
+                  flexShrink: 0
+                }}
+              >
+                <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: isConfigured ? '#10b981' : '#94a3b8' }} />
+                <span>{p.name}</span>
+                <span style={{
+                  fontSize: '0.7rem',
+                  padding: '1px 6px',
+                  borderRadius: '10px',
+                  background: isSelected ? 'rgba(6, 182, 212, 0.3)' : 'rgba(255, 255, 255, 0.08)',
+                  color: isSelected ? '#38bdf8' : 'var(--text-muted)'
+                }}>
+                  {provModels.length}
+                </span>
+              </button>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Top Provider Selection & Control Bar */}
       <div className="model-manager-header-bar" style={{
         display: 'flex',
         flexWrap: 'wrap',
         alignItems: 'center',
         justifyContent: 'space-between',
         gap: '12px',
-        padding: '12px 16px',
-        borderRadius: '12px'
+        padding: isWideMode ? '14px 18px' : '12px 16px',
+        borderRadius: '12px',
+        background: 'var(--bg-secondary)',
+        border: '1px solid var(--border-color)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: 1, minWidth: '220px', position: 'relative' }}>
           <Cpu className="text-cyan-400" size={18} />
@@ -256,7 +322,7 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
         </div>
 
         {/* Status Badge & Fetch Button */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
           <span style={{
             fontSize: '11px',
             padding: '4px 10px',
@@ -359,7 +425,7 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
       {/* Controls & Search Bar */}
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', alignItems: 'center', justifyContent: 'space-between' }}>
         {/* Search */}
-        <div style={{ position: 'relative', flex: 1, minWidth: '200px' }}>
+        <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
           <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
           <input
             type="text"
@@ -367,7 +433,7 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="key-input"
-            style={{ paddingLeft: '32px', paddingRight: '12px', height: '34px', fontSize: '12px' }}
+            style={{ paddingLeft: '32px', paddingRight: '12px', height: '36px', fontSize: '12px' }}
           />
         </div>
 
@@ -377,9 +443,10 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
             type="button"
             onClick={() => setFilterMode('all')}
             style={{
-              padding: '4px 10px',
+              padding: '6px 12px',
               fontSize: '11px',
-              borderRadius: '6px',
+              fontWeight: 600,
+              borderRadius: '8px',
               border: filterMode === 'all' ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.1)',
               background: filterMode === 'all' ? 'rgba(56, 189, 248, 0.2)' : 'transparent',
               color: filterMode === 'all' ? '#38bdf8' : 'var(--text-muted)',
@@ -390,14 +457,31 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
           </button>
           <button
             type="button"
+            onClick={() => setFilterMode('free')}
+            style={{
+              padding: '6px 12px',
+              fontSize: '11px',
+              fontWeight: 600,
+              borderRadius: '8px',
+              border: filterMode === 'free' ? '1px solid #4ade80' : '1px solid rgba(255,255,255,0.1)',
+              background: filterMode === 'free' ? 'rgba(34, 197, 94, 0.2)' : 'transparent',
+              color: filterMode === 'free' ? '#4ade80' : 'var(--text-muted)',
+              cursor: 'pointer'
+            }}
+          >
+            Free Tier ({freeModelsCount})
+          </button>
+          <button
+            type="button"
             onClick={() => setFilterMode('enabled')}
             style={{
-              padding: '4px 10px',
+              padding: '6px 12px',
               fontSize: '11px',
-              borderRadius: '6px',
-              border: filterMode === 'enabled' ? '1px solid #4ade80' : '1px solid rgba(255,255,255,0.1)',
-              background: filterMode === 'enabled' ? 'rgba(34, 197, 94, 0.2)' : 'transparent',
-              color: filterMode === 'enabled' ? '#4ade80' : 'var(--text-muted)',
+              fontWeight: 600,
+              borderRadius: '8px',
+              border: filterMode === 'enabled' ? '1px solid #c084fc' : '1px solid rgba(255,255,255,0.1)',
+              background: filterMode === 'enabled' ? 'rgba(192, 132, 252, 0.2)' : 'transparent',
+              color: filterMode === 'enabled' ? '#c084fc' : 'var(--text-muted)',
               cursor: 'pointer'
             }}
           >
@@ -411,34 +495,42 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
             type="button"
             onClick={() => handleSelectAll(true)}
             className="btn btn-secondary"
-            style={{ padding: '4px 8px', fontSize: '11px', height: '30px' }}
+            style={{ padding: '6px 10px', fontSize: '11px', height: '34px' }}
             title="Enable all listed models"
           >
-            <CheckSquare size={12} /> Enable All
+            <CheckSquare size={13} /> Enable All
           </button>
           <button
             type="button"
             onClick={() => handleSelectAll(false)}
             className="btn btn-secondary"
-            style={{ padding: '4px 8px', fontSize: '11px', height: '30px' }}
+            style={{ padding: '6px 10px', fontSize: '11px', height: '34px' }}
             title="Disable all listed models"
           >
-            <Square size={12} /> Disable All
+            <Square size={13} /> Disable All
           </button>
           <button
             type="button"
             onClick={handleResetDefaults}
             className="btn btn-secondary"
-            style={{ padding: '4px 8px', fontSize: '11px', height: '30px' }}
+            style={{ padding: '6px 10px', fontSize: '11px', height: '34px' }}
             title="Reset to provider recommended defaults"
           >
-            <RotateCcw size={12} /> Reset
+            <RotateCcw size={13} /> Reset
           </button>
         </div>
       </div>
 
       {/* Model Catalog Grid / List */}
-      <div style={{
+      <div style={isWideMode ? {
+        maxHeight: 'calc(100vh - 290px)',
+        minHeight: '450px',
+        overflowY: 'auto',
+        display: 'grid',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+        gap: '12px',
+        paddingRight: '6px'
+      } : {
         maxHeight: '320px',
         overflowY: 'auto',
         display: 'flex',
@@ -448,14 +540,16 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
       }}>
         {filteredModels.length === 0 ? (
           <div style={{
-            padding: '24px',
+            gridColumn: '1 / -1',
+            padding: '32px',
             textAlign: 'center',
             color: 'var(--text-muted)',
             fontSize: '13px',
-            background: 'rgba(15, 23, 42, 0.4)',
-            borderRadius: '8px'
+            background: 'var(--bg-secondary)',
+            borderRadius: '12px',
+            border: '1px dashed var(--border-color)'
           }}>
-            No models matching search or filter.
+            No models matching search or filter criteria.
           </div>
         ) : (
           filteredModels.map(model => {
@@ -468,80 +562,92 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
                 className={`model-catalog-item ${model.enabled ? 'enabled' : ''} ${isCurrentlyActive ? 'active-model-item' : ''}`}
                 style={{
                   display: 'flex',
-                  alignItems: 'center',
+                  flexDirection: isWideMode ? 'column' : 'row',
                   justifyContent: 'space-between',
-                  padding: '10px 14px',
-                  borderRadius: '8px',
+                  gap: '8px',
+                  padding: isWideMode ? '12px 14px' : '10px 14px',
+                  borderRadius: '10px',
                   cursor: 'pointer',
                   transition: 'all 0.15s ease',
-                  border: isCurrentlyActive ? '1px solid #34d399' : '1px solid rgba(51, 65, 85, 0.4)',
-                  background: isCurrentlyActive ? 'rgba(16, 185, 129, 0.12)' : 'rgba(15, 23, 42, 0.6)'
+                  border: isCurrentlyActive ? '1.5px solid #10b981' : model.enabled ? '1px solid rgba(6, 182, 212, 0.35)' : '1px solid var(--border-color)',
+                  background: isCurrentlyActive ? 'rgba(16, 185, 129, 0.14)' : model.enabled ? 'var(--bg-secondary)' : 'rgba(15, 23, 42, 0.4)',
+                  boxShadow: isCurrentlyActive ? '0 0 14px rgba(16, 185, 129, 0.2)' : 'none'
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flex: 1, minWidth: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '10px', flex: 1, minWidth: 0 }}>
                   <input
                     type="checkbox"
                     checked={model.enabled}
                     onChange={() => {}} // handled by parent div onClick
-                    style={{ width: '16px', height: '16px', accentColor: '#38bdf8', cursor: 'pointer' }}
+                    style={{ width: '16px', height: '16px', accentColor: '#38bdf8', cursor: 'pointer', marginTop: '2px' }}
                   />
-                  <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, flex: 1 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                       <span style={{
                         fontSize: '13px',
-                        fontWeight: 600,
+                        fontWeight: 700,
                         color: model.enabled ? 'var(--text-main)' : 'var(--text-muted)',
-                        whiteSpace: 'nowrap',
-                        overflow: 'hidden',
-                        textOverflow: 'ellipsis'
+                        wordBreak: 'break-word'
                       }}>
                         {model.name}
                       </span>
                       {isCurrentlyActive && (
                         <span style={{
                           fontSize: '10px',
-                          padding: '1px 6px',
-                          borderRadius: '4px',
+                          padding: '2px 7px',
+                          borderRadius: '6px',
                           background: '#059669',
                           color: '#ffffff',
-                          fontWeight: 700
+                          fontWeight: 700,
+                          letterSpacing: '0.04em'
                         }}>
-                          ACTIVE
+                          ACTIVE IN CHAT
                         </span>
                       )}
                     </div>
-                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                    <span style={{ fontSize: '11px', color: 'var(--text-muted)', fontFamily: 'monospace', marginTop: '2px', wordBreak: 'break-all' }}>
                       {model.id}
                     </span>
                   </div>
                 </div>
 
                 {/* Badges & 1-Click Activate Button */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  {model.isFree && (
-                    <span style={{
-                      fontSize: '10px',
-                      padding: '2px 6px',
-                      borderRadius: '4px',
-                      background: 'rgba(34, 197, 94, 0.2)',
-                      color: '#4ade80',
-                      fontWeight: 700
-                    }}>
-                      FREE
-                    </span>
-                  )}
-                  {model.contextLength && (
-                    <span style={{
-                      fontSize: '10px',
-                      padding: '2px 6px',
-                      borderRadius: '4px',
-                      background: 'rgba(147, 51, 234, 0.2)',
-                      color: '#c084fc',
-                      fontWeight: 600
-                    }}>
-                      {Math.round(model.contextLength / 1024)}k ctx
-                    </span>
-                  )}
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '6px',
+                  marginTop: isWideMode ? '6px' : '0',
+                  borderTop: isWideMode ? '1px solid rgba(255, 255, 255, 0.06)' : 'none',
+                  paddingTop: isWideMode ? '6px' : '0'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    {model.isFree && (
+                      <span style={{
+                        fontSize: '10px',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        background: 'rgba(34, 197, 94, 0.2)',
+                        color: '#4ade80',
+                        fontWeight: 700
+                      }}>
+                        FREE
+                      </span>
+                    )}
+                    {model.contextLength && (
+                      <span style={{
+                        fontSize: '10px',
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        background: 'rgba(147, 51, 234, 0.2)',
+                        color: '#c084fc',
+                        fontWeight: 600
+                      }}>
+                        {Math.round(model.contextLength / 1024)}k ctx
+                      </span>
+                    )}
+                  </div>
+
                   {onSelectActiveModel && !isCurrentlyActive && (
                     <button
                       type="button"
@@ -562,14 +668,14 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
                       }}
                       className="btn"
                       style={{
-                        padding: '2px 8px',
-                        fontSize: '10px',
-                        borderRadius: '4px',
-                        background: 'rgba(56, 189, 248, 0.15)',
-                        color: '#38bdf8',
-                        border: '1px solid rgba(56, 189, 248, 0.3)',
+                        padding: '4px 10px',
+                        fontSize: '11px',
+                        borderRadius: '6px',
+                        background: 'rgba(6, 182, 212, 0.15)',
+                        color: 'var(--accent-cyan)',
+                        border: '1px solid rgba(6, 182, 212, 0.4)',
                         cursor: 'pointer',
-                        fontWeight: 600
+                        fontWeight: 700
                       }}
                       title="Select this model for chat"
                     >
