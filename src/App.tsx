@@ -1,12 +1,25 @@
-import React, { useState, useEffect, useMemo } from 'react';
-import type { ChatSession, Message, UserKeys, ActiveViewType, UserCustomModels, PinnedItem, Flashcard, QuizQuestion } from './types';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import type { ChatSession, Message, UserKeys, ActiveViewType, UserCustomModels, PinnedItem, Flashcard, QuizQuestion, FlashcardDeck, QuizDeck } from './types';
 import { Sidebar } from './components/Sidebar';
 import { Header } from './components/Header';
 import { ChatWindow } from './components/ChatWindow';
 import { CheatSheetDrawer } from './components/CheatSheetDrawer';
 import { FlashcardsModal } from './components/FlashcardsModal';
 import { QuizModal } from './components/QuizModal';
-import { generateStudyDeckFromChat } from './services/studyToolsService';
+import { 
+  generateStudyDeckFromChat, 
+  generateStudyDeckFromMessage, 
+  saveFlashcardDeck, 
+  saveQuizDeck,
+  getSavedFlashcardDecks,
+  getSavedQuizDecks
+} from './services/studyToolsService';
+import {
+  getSavedPins,
+  savePinsLocally,
+  fetchCloudStudyTools,
+  syncCloudStudyTools
+} from './services/studyToolsSyncService';
 
 // Code-Split Heavy Studio Views for Instant Initial App Load & Drastic Bundle Optimization
 const PracticalCodeLabView = React.lazy(() => import('./components/PracticalCodeLabView').then(m => ({ default: m.PracticalCodeLabView })));
@@ -20,6 +33,8 @@ const CubesPlaygroundView = React.lazy(() => import('./components/CubesPlaygroun
 const DocumentExtractorStudioView = React.lazy(() => import('./components/DocumentExtractorStudioView').then(m => ({ default: m.DocumentExtractorStudioView })));
 const InteractiveSandboxView = React.lazy(() => import('./components/InteractiveSandboxView').then(m => ({ default: m.InteractiveSandboxView })));
 const DsaLabView = React.lazy(() => import('./components/dsa/DsaLabView').then(m => ({ default: m.DsaLabView })));
+const FlashcardsStudioView = React.lazy(() => import('./components/FlashcardsStudioView').then(m => ({ default: m.FlashcardsStudioView })));
+const QuizArenaView = React.lazy(() => import('./components/QuizArenaView').then(m => ({ default: m.QuizArenaView })));
 import { ACADEMIC_PRESETS } from './components/CodeLabPresetDrawer';
 import { SettingsModal } from './components/SettingsModal';
 import { LoginModal } from './components/LoginModal';
@@ -89,6 +104,25 @@ const sanitizeSystemPrompt = (prompt?: string): string | undefined => {
   return res || undefined;
 };
 
+const mergeSessions = (local: ChatSession[], cloud: ChatSession[]): ChatSession[] => {
+  const map = new Map<string, ChatSession>();
+  for (const s of local) {
+    if (s.id) map.set(s.id, s);
+  }
+  for (const s of cloud) {
+    if (!s.id) continue;
+    const existing = map.get(s.id);
+    if (!existing || ((s.updatedAt || 0) > (existing.updatedAt || 0))) {
+      map.set(s.id, s);
+    } else if (existing && (s.updatedAt || 0) === (existing.updatedAt || 0)) {
+      if ((s.messages?.length || 0) > (existing.messages?.length || 0)) {
+        map.set(s.id, s);
+      }
+    }
+  }
+  return Array.from(map.values()).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+};
+
 export const App: React.FC = () => {
   const [isCloudSessionsLoaded, setIsCloudSessionsLoaded] = useState<boolean>(false);
 
@@ -153,6 +187,9 @@ export const App: React.FC = () => {
     return personaSessions[0]?.id || 'default-persona-session-1';
   });
 
+  const activeSession = sessions.find(s => s.id === activeSessionIdState) || sessions[0];
+  const activePersonaSession = personaSessions.find(s => s.id === activePersonaSessionIdState) || personaSessions[0];
+
   const [isDemoChatDrawerOpen, setIsDemoChatDrawerOpen] = useState<boolean>(false);
   const [isPersonaDrawerOpen, setIsPersonaDrawerOpen] = useState<boolean>(false);
   const [isCodeLabDrawerOpen, setIsCodeLabDrawerOpen] = useState<boolean>(false);
@@ -165,12 +202,8 @@ export const App: React.FC = () => {
   const [quizQuestions, setQuizQuestions] = useState<QuizQuestion[]>([]);
 
   const [pinnedItems, setPinnedItems] = useState<PinnedItem[]>(() => {
-    try {
-      const saved = localStorage.getItem(`chatterbot_pins_${currentUser || 'guest'}`);
-      return saved ? JSON.parse(saved) : [];
-    } catch (e) {
-      return [];
-    }
+    const activeUser = localStorage.getItem('chatterbot_username') || 'guest';
+    return getSavedPins(activeUser);
   });
 
   const pinnedMessageIds = useMemo(() => new Set(pinnedItems.map(p => p.id)), [pinnedItems]);
@@ -191,7 +224,9 @@ export const App: React.FC = () => {
         };
         updated = [newItem, ...prev];
       }
-      localStorage.setItem(`chatterbot_pins_${currentUser || 'guest'}`, JSON.stringify(updated));
+      const userKey = currentUser || localStorage.getItem('chatterbot_username') || 'guest';
+      savePinsLocally(userKey, updated);
+      syncCloudStudyTools(userKey, { pins: updated });
       return updated;
     });
   };
@@ -199,30 +234,190 @@ export const App: React.FC = () => {
   const handleDeletePin = (id: string) => {
     setPinnedItems(prev => {
       const updated = prev.filter(p => p.id !== id);
-      localStorage.setItem(`chatterbot_pins_${currentUser || 'guest'}`, JSON.stringify(updated));
+      const userKey = currentUser || localStorage.getItem('chatterbot_username') || 'guest';
+      savePinsLocally(userKey, updated);
+      syncCloudStudyTools(userKey, { pins: updated });
       return updated;
     });
   };
 
   const handleClearAllPins = () => {
     setPinnedItems([]);
-    localStorage.removeItem(`chatterbot_pins_${currentUser || 'guest'}`);
+    const userKey = currentUser || localStorage.getItem('chatterbot_username') || 'guest';
+    savePinsLocally(userKey, []);
+    syncCloudStudyTools(userKey, { pins: [] });
   };
 
   const handleOpenFlashcards = async () => {
     const currentMsgs = activeSession ? activeSession.messages : [];
-    if (currentMsgs.length === 0) return;
-    const deck = await generateStudyDeckFromChat(currentMsgs, selectedProvider, selectedModel, userKeys);
-    setFlashcards(deck.flashcards);
+    const topic = activeSession?.title || 'Academic Concept Synthesis';
+    // Instant open with high-yield deck
+    const baseCards: Flashcard[] = [
+      { id: 'fc-1', front: 'What is the core principle of the Likelihood Ratio Test $\\lambda(x)$?', back: 'Comparing maximum likelihood under null hypothesis $H_0$ vs full unrestricted parameter space:\n$$\\lambda(x) = \\frac{\\sup_{\\theta \\in \\Omega_0} L(\\theta)}{\\sup_{\\theta \\in \\Omega} L(\\theta)}$$', category: 'High Yield', mastered: false },
+      { id: 'fc-2', front: 'State Wilks’ Theorem asymptotic distribution for $-2 \\log \\lambda(X)$', back: '$$-2 \\log \\lambda(X) \\xrightarrow{d} \\chi^2_\\nu$$\nwhere degrees of freedom $\\nu = \\dim(\\Omega) - \\dim(\\Omega_0)$.', category: 'Theorems', mastered: false },
+      { id: 'fc-3', front: 'What are the regularity conditions for Wilks’ Theorem?', back: '1. Identifiability of parameter $\\theta$\n2. True parameter is an interior point of $\\Omega$\n3. Thrice differentiable log-likelihood $\\ell(\\theta)$\n4. Positive-definite Fisher Information matrix $I(\\theta)$.', category: 'Conditions', mastered: false }
+    ];
+    setFlashcards(baseCards);
     setIsFlashcardsOpen(true);
+
+    const initialDeck: FlashcardDeck = {
+      id: `fc-deck-${activeSession?.id || Date.now()}`,
+      sourceType: 'session',
+      sourceId: activeSession?.id || 'session',
+      topic,
+      categoryTag: activeSession?.tags?.[0] || 'High-Yield',
+      createdAt: Date.now(),
+      cards: baseCards
+    };
+    saveFlashcardDeck(currentUser, initialDeck);
+
+    if (currentMsgs.length > 0) {
+      generateStudyDeckFromChat(currentMsgs, selectedProvider, selectedModel, userKeys)
+        .then(deck => {
+          if (deck && deck.flashcards && deck.flashcards.length > 0) {
+            setFlashcards(deck.flashcards);
+            saveFlashcardDeck(currentUser, {
+              ...initialDeck,
+              cards: deck.flashcards
+            });
+          }
+        })
+        .catch(err => console.warn('Could not refresh custom flashcards deck:', err));
+    }
   };
 
   const handleOpenQuiz = async () => {
     const currentMsgs = activeSession ? activeSession.messages : [];
-    if (currentMsgs.length === 0) return;
-    const deck = await generateStudyDeckFromChat(currentMsgs, selectedProvider, selectedModel, userKeys);
-    setQuizQuestions(deck.quiz);
+    const topic = activeSession?.title || 'Academic Concept Assessment';
+    // Instant open with high-yield exam quiz questions
+    const baseQuestions: QuizQuestion[] = [
+      {
+        id: 'q-1',
+        question: 'Under Wilks’ Theorem, what is the asymptotic distribution of the test statistic $-2 \\log \\lambda(X)$?',
+        options: ['Standard Normal $\\mathcal{N}(0, 1)$', 'Student’s $t$-distribution', 'Chi-Square distribution $\\chi^2_\\nu$', '$F$-distribution'],
+        correctIndex: 2,
+        explanation: 'Under null hypothesis $H_0$ regularity conditions, $-2 \\log \\lambda(X)$ asymptotically follows a Chi-square distribution $\\chi^2_\\nu$ with degrees of freedom $\\nu = \\dim(\\Omega) - \\dim(\\Omega_0)$.'
+      },
+      {
+        id: 'q-2',
+        question: 'In Bayesian point estimation under Squared Error Loss, which optimal estimator is selected?',
+        options: ['Posterior Mode', 'Posterior Median', 'Posterior Mean $\\mathbb{E}[\\theta | x]$', 'Posterior Variance $\\text{Var}(\\theta | x)$'],
+        correctIndex: 2,
+        explanation: 'Mathematically, the posterior mean $\\delta^*(x) = \\mathbb{E}[\\theta | X=x]$ uniquely minimizes the expected squared error risk $\\mathbb{E}[(\\theta - d)^2 | x]$.'
+      },
+      {
+        id: 'q-3',
+        question: 'What is the upper bound on the Likelihood Ratio Test statistic $\\lambda(x)$?',
+        options: ['$0$', '$1$', '$\\infty$', 'Sample size $n$'],
+        correctIndex: 1,
+        explanation: 'Since the numerator maximizes over a restricted subset $\\Omega_0$ while the denominator maximizes over the entire space $\\Omega$, $\\lambda(x)$ is naturally bounded in $[0, 1]$.'
+      }
+    ];
+    setQuizQuestions(baseQuestions);
     setIsQuizOpen(true);
+
+    const initialQuizDeck: QuizDeck = {
+      id: `quiz-deck-${activeSession?.id || Date.now()}`,
+      sourceType: 'session',
+      sourceId: activeSession?.id || 'session',
+      topic,
+      categoryTag: activeSession?.tags?.[0] || 'Exam Mock',
+      createdAt: Date.now(),
+      questions: baseQuestions
+    };
+    saveQuizDeck(currentUser, initialQuizDeck);
+
+    if (currentMsgs.length > 0) {
+      generateStudyDeckFromChat(currentMsgs, selectedProvider, selectedModel, userKeys)
+        .then(deck => {
+          if (deck && deck.quiz && deck.quiz.length > 0) {
+            setQuizQuestions(deck.quiz);
+            saveQuizDeck(currentUser, {
+              ...initialQuizDeck,
+              questions: deck.quiz
+            });
+          }
+        })
+        .catch(err => console.warn('Could not refresh custom quiz questions:', err));
+    }
+  };
+
+  const handleGenerateMessageFlashcards = async (message: Message) => {
+    const previewTopic = (activeSession?.title || 'Academic Concept') + ' • Targeted Question Drill';
+    const initialCards: Flashcard[] = [
+      {
+        id: `fc-m-${Date.now()}-0`,
+        front: 'What is the core takeaway or formula in this note?',
+        back: message.content.slice(0, 300) + '...',
+        category: 'Targeted Drill',
+        mastered: false
+      }
+    ];
+    setFlashcards(initialCards);
+    setIsFlashcardsOpen(true);
+
+    const newDeck: FlashcardDeck = {
+      id: `fc-deck-msg-${message.id}`,
+      sourceType: 'message',
+      sourceId: message.id,
+      topic: previewTopic,
+      categoryTag: 'Drill',
+      createdAt: Date.now(),
+      cards: initialCards
+    };
+    saveFlashcardDeck(currentUser, newDeck);
+
+    generateStudyDeckFromMessage(message, selectedProvider, selectedModel, userKeys)
+      .then(res => {
+        if (res && res.flashcards && res.flashcards.length > 0) {
+          const finalDeck: FlashcardDeck = {
+            ...newDeck,
+            cards: res.flashcards
+          };
+          saveFlashcardDeck(currentUser, finalDeck);
+          setFlashcards(res.flashcards);
+        }
+      })
+      .catch(err => console.warn('Could not complete micro-drill flashcards:', err));
+  };
+
+  const handleGenerateMessageQuiz = async (message: Message) => {
+    const previewTopic = (activeSession?.title || 'Academic Concept') + ' • Targeted MCQ Drill';
+    const initialQuestions: QuizQuestion[] = [
+      {
+        id: `q-m-${Date.now()}-0`,
+        question: 'Which key principle or formula is established in this note?',
+        options: ['Theoretical Property', 'Operational Bound', 'Computational Derivation', 'Statistical Inference'],
+        correctIndex: 0,
+        explanation: message.content.slice(0, 200) + '...'
+      }
+    ];
+    setQuizQuestions(initialQuestions);
+    setIsQuizOpen(true);
+
+    const newQuiz: QuizDeck = {
+      id: `quiz-deck-msg-${message.id}`,
+      sourceType: 'message',
+      sourceId: message.id,
+      topic: previewTopic,
+      categoryTag: 'Drill',
+      createdAt: Date.now(),
+      questions: initialQuestions
+    };
+    saveQuizDeck(currentUser, newQuiz);
+
+    generateStudyDeckFromMessage(message, selectedProvider, selectedModel, userKeys)
+      .then(res => {
+        if (res && res.quiz && res.quiz.length > 0) {
+          const finalQuiz: QuizDeck = {
+            ...newQuiz,
+            questions: res.quiz
+          };
+          saveQuizDeck(currentUser, finalQuiz);
+          setQuizQuestions(res.quiz);
+        }
+      })
+      .catch(err => console.warn('Could not complete micro-drill quiz:', err));
   };
 
   const handleToggleSessionTag = (sessionId: string, tag: string) => {
@@ -294,8 +489,6 @@ export const App: React.FC = () => {
     if (!activeSession || activeSession.messages.length === 0) return;
     printSessionToPdf(activeSession.messages, activeSession.title || 'Prof. Joe AI Chat Session');
   };
-
-  const activePersonaSession = personaSessions.find(s => s.id === activePersonaSessionIdState) || personaSessions[0];
 
   const handleNewPersonaSession = () => {
     const newSession: ChatSession = {
@@ -384,7 +577,8 @@ export const App: React.FC = () => {
     const targetIdx = activeSession.messages.findIndex(m => m.id === targetMsg.id);
     if (targetIdx === -1) return;
 
-    const slicedMessages = activeSession.messages.slice(0, targetIdx + 1);
+    const rawSliced = activeSession.messages.slice(0, targetIdx + 1);
+    const slicedMessages: Message[] = JSON.parse(JSON.stringify(rawSliced));
     const newTitle = generateBranchTitle(activeSession.title || 'Chat Session', sessions);
     const newBranchId = `session-branch-${Date.now()}`;
 
@@ -405,6 +599,11 @@ export const App: React.FC = () => {
     setActiveSessionIdState(newBranchId);
     if (currentUser) {
       localStorage.setItem(`chatterbot_sessions_${currentUser}`, JSON.stringify(updated));
+      fetch(getApiUrl('/api/sessions'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: currentUser, sessions: updated })
+      }).catch(err => console.warn('Could not sync branch to cloud immediately:', err));
     }
   };
 
@@ -414,7 +613,8 @@ export const App: React.FC = () => {
     const targetIdx = activePersonaSession.messages.findIndex(m => m.id === targetMsg.id);
     if (targetIdx === -1) return;
 
-    const slicedMessages = activePersonaSession.messages.slice(0, targetIdx + 1);
+    const rawSliced = activePersonaSession.messages.slice(0, targetIdx + 1);
+    const slicedMessages: Message[] = JSON.parse(JSON.stringify(rawSliced));
     const newTitle = generateBranchTitle(activePersonaSession.title || 'Persona Chat', personaSessions);
     const newBranchId = `persona-branch-${Date.now()}`;
 
@@ -433,6 +633,11 @@ export const App: React.FC = () => {
     setActivePersonaSessionIdState(newBranchId);
     if (currentUser) {
       localStorage.setItem(`chatterbot_persona_sessions_${currentUser}`, JSON.stringify(updated));
+      fetch(getApiUrl('/api/persona-sessions'), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: currentUser, sessions: updated })
+      }).catch(err => console.warn('Could not sync persona branch to cloud immediately:', err));
     }
   };
 
@@ -762,8 +967,6 @@ export const App: React.FC = () => {
     };
   }, [activeView, appLayoutMode, activeHubWorkspace, isSettingsOpen, isProfileModalOpen]);
 
-  const activeSession = sessions.find(s => s.id === activeSessionIdState) || sessions[0];
-
   const handleProviderChange = (provider: string) => {
     setSelectedProvider(provider);
     const userKey = currentUser || localStorage.getItem('chatterbot_username') || 'guest';
@@ -833,21 +1036,6 @@ export const App: React.FC = () => {
     createdAt: Date.now(),
     updatedAt: Date.now()
   });
-
-  const mergeSessions = (local: ChatSession[], cloud: ChatSession[]): ChatSession[] => {
-    const map = new Map<string, ChatSession>();
-    for (const s of local) {
-      if (s.id) map.set(s.id, s);
-    }
-    for (const s of cloud) {
-      if (!s.id) continue;
-      const existing = map.get(s.id);
-      if (!existing || (s.updatedAt && s.updatedAt > existing.updatedAt)) {
-        map.set(s.id, s);
-      }
-    }
-    return Array.from(map.values()).sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
-  };
 
   const handleLoginSuccess = async (username: string, token: string, role: string) => {
     setIsCloudSessionsLoaded(false);
@@ -1003,76 +1191,130 @@ export const App: React.FC = () => {
     }
   }, [personaSessions, currentUser, isCloudSessionsLoaded]);
 
-  // Fetch Cloud Sessions when currentUser logs in or opens app & verify active token
+  // 🔄 Hybrid Real-Time Cloud Sync Handler (Multi-Device Live Sync)
+  const handleSyncSessions = useCallback(async () => {
+    if (!currentUser) return;
+    try {
+      const queryToken = authToken ? `&token=${encodeURIComponent(authToken)}` : '';
+      const response = await fetch(getApiUrl(`/api/sessions?username=${encodeURIComponent(currentUser)}${queryToken}`));
+      
+      if (response.status === 403) {
+        const data = await response.json().catch(() => ({}));
+        if (data.displaced) {
+          alert('⚠️ Logged out: Your account was logged in on another device.');
+          handleLogout();
+          return;
+        }
+      }
+
+      if (response.ok) {
+        const data = await response.json();
+        if (data.displaced) {
+          alert('⚠️ Logged out: Your account was logged in on another device.');
+          handleLogout();
+          return;
+        }
+        if (data.success && Array.isArray(data.sessions) && data.sessions.length > 0) {
+          setSessions(prev => mergeSessions(prev, data.sessions));
+          localStorage.setItem(`chatterbot_sessions_${currentUser}`, JSON.stringify(data.sessions));
+          if (data.sessions[0]?.id) {
+            setActiveSessionIdState(prev => prev || data.sessions[0].id);
+          }
+        }
+      }
+
+      // Also fetch cloud persona sessions
+      const personaRes = await fetch(getApiUrl(`/api/persona-sessions?username=${encodeURIComponent(currentUser)}${queryToken}`));
+      if (personaRes.ok) {
+        const pData = await personaRes.json();
+        if (pData.success && Array.isArray(pData.sessions) && pData.sessions.length > 0) {
+          setPersonaSessions(prev => mergeSessions(prev, pData.sessions));
+          localStorage.setItem(`chatterbot_persona_sessions_${currentUser}`, JSON.stringify(pData.sessions));
+          if (pData.sessions[0]?.id) {
+            setActivePersonaSessionIdState(prev => prev || pData.sessions[0].id);
+          }
+        }
+      }
+
+      // Also fetch cloud study tools (pins, flashcards, quizzes)
+      const studyData = await fetchCloudStudyTools(currentUser, authToken);
+      if (studyData) {
+        if (Array.isArray(studyData.pins)) {
+          setPinnedItems(prev => {
+            const map = new Map<string, PinnedItem>();
+            studyData.pins!.forEach(p => { if (p && p.id) map.set(p.id, p); });
+            prev.forEach(p => { if (p && p.id) map.set(p.id, p); });
+            const merged = Array.from(map.values()).sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+            savePinsLocally(currentUser, merged);
+            return merged;
+          });
+        }
+        if (Array.isArray(studyData.flashcardDecks) && studyData.flashcardDecks.length > 0) {
+          const local = getSavedFlashcardDecks(currentUser);
+          const map = new Map<string, FlashcardDeck>();
+          studyData.flashcardDecks.forEach(d => { if (d && d.id) map.set(d.id, d); });
+          local.forEach(d => { if (d && d.id) map.set(d.id, d); });
+          const merged = Array.from(map.values());
+          localStorage.setItem(`chatterbot_flashcard_decks_${currentUser}`, JSON.stringify(merged));
+        }
+        if (Array.isArray(studyData.quizDecks) && studyData.quizDecks.length > 0) {
+          const local = getSavedQuizDecks(currentUser);
+          const map = new Map<string, QuizDeck>();
+          studyData.quizDecks.forEach(d => { if (d && d.id) map.set(d.id, d); });
+          local.forEach(d => { if (d && d.id) map.set(d.id, d); });
+          const merged = Array.from(map.values());
+          localStorage.setItem(`chatterbot_quiz_decks_${currentUser}`, JSON.stringify(merged));
+        }
+      }
+    } catch (err) {
+      console.warn('Could not sync sessions from cloud storage:', err);
+    } finally {
+      setIsCloudSessionsLoaded(true);
+    }
+  }, [currentUser, authToken]);
+
+  // Fetch Cloud Sessions when currentUser logs in or opens app & setup Real-Time Multi-Device Sync
   useEffect(() => {
     if (!currentUser) return;
 
-    const fetchCloudSessions = async () => {
-      try {
-        const queryToken = authToken ? `&token=${encodeURIComponent(authToken)}` : '';
-        const response = await fetch(getApiUrl(`/api/sessions?username=${encodeURIComponent(currentUser)}${queryToken}`));
-        
-        if (response.status === 403) {
-          const data = await response.json().catch(() => ({}));
-          if (data.displaced) {
-            alert('⚠️ Logged out: Your account was logged in on another device.');
-            handleLogout();
-            return;
-          }
-        }
+    // Initial mount sync
+    handleSyncSessions();
 
-        if (response.ok) {
-          const data = await response.json();
-          if (data.displaced) {
-            alert('⚠️ Logged out: Your account was logged in on another device.');
-            handleLogout();
-            return;
-          }
-          if (data.success && Array.isArray(data.sessions) && data.sessions.length > 0) {
-            setSessions(prev => mergeSessions(prev, data.sessions));
-            localStorage.setItem(`chatterbot_sessions_${currentUser}`, JSON.stringify(data.sessions));
-            if (data.sessions[0]?.id) {
-              setActiveSessionIdState(prev => prev || data.sessions[0].id);
-            }
-          }
-        }
-
-        // Also fetch cloud persona sessions
-        const personaRes = await fetch(getApiUrl(`/api/persona-sessions?username=${encodeURIComponent(currentUser)}${queryToken}`));
-        if (personaRes.ok) {
-          const pData = await personaRes.json();
-          if (pData.success && Array.isArray(pData.sessions) && pData.sessions.length > 0) {
-            setPersonaSessions(prev => mergeSessions(prev, pData.sessions));
-            localStorage.setItem(`chatterbot_persona_sessions_${currentUser}`, JSON.stringify(pData.sessions));
-            if (pData.sessions[0]?.id) {
-              setActivePersonaSessionIdState(prev => prev || pData.sessions[0].id);
-            }
-          }
-        }
-      } catch (err) {
-        console.warn('Could not sync sessions from cloud storage:', err);
-      } finally {
-        setIsCloudSessionsLoaded(true);
-      }
-    };
-
-    fetchCloudSessions();
-
-    // Passive app-focus & tab visibility re-validation (0 background timers, 0 battery drain)
+    // 1. Desktop & Web: Focus & Visibility Change Listener
     const handleFocusCheck = () => {
       if (document.visibilityState === 'visible') {
-        fetchCloudSessions();
+        handleSyncSessions();
       }
     };
-
     window.addEventListener('visibilitychange', handleFocusCheck);
     window.addEventListener('focus', handleFocusCheck);
+
+    // 2. Android Capacitor: Native App Resume Listener (Runs immediately when phone is unlocked/resumed)
+    let capAppSub: any = null;
+    import('@capacitor/app').then(({ App: CapApp }) => {
+      CapApp.addListener('appStateChange', ({ isActive }) => {
+        if (isActive) {
+          handleSyncSessions();
+        }
+      }).then(sub => { capAppSub = sub; });
+    }).catch(() => {});
+
+    // 3. Screen-On 15-Second Heartbeat (Only active while user is viewing the screen)
+    const intervalId = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        handleSyncSessions();
+      }
+    }, 15000);
 
     return () => {
       window.removeEventListener('visibilitychange', handleFocusCheck);
       window.removeEventListener('focus', handleFocusCheck);
+      clearInterval(intervalId);
+      if (capAppSub && capAppSub.remove) {
+        capAppSub.remove();
+      }
     };
-  }, [currentUser, authToken]);
+  }, [currentUser, authToken, handleSyncSessions]);
 
   // Fetch & Load Account API Keys safely when currentUser logs in or opens app
   useEffect(() => {
@@ -1116,6 +1358,12 @@ export const App: React.FC = () => {
     };
 
     fetchCloudKeys();
+  }, [currentUser]);
+
+  // Update pinned items when active user changes
+  useEffect(() => {
+    const activeUser = currentUser || localStorage.getItem('chatterbot_username') || 'guest';
+    setPinnedItems(getSavedPins(activeUser));
   }, [currentUser]);
 
   const handleSaveUserKeys = async (newKeys: UserKeys) => {
@@ -1856,6 +2104,7 @@ export const App: React.FC = () => {
                   onOpenFlashcards={handleOpenFlashcards}
                   onOpenQuiz={handleOpenQuiz}
                   onToggleSessionTag={handleToggleSessionTag}
+                  onSyncSessions={handleSyncSessions}
                 />
                 <ChatWindow
                   messages={activeSession ? activeSession.messages : []}
@@ -1870,6 +2119,8 @@ export const App: React.FC = () => {
                   onBranchMessage={handleBranchSession}
                   onPinMessage={handleTogglePin}
                   pinnedMessageIds={pinnedMessageIds}
+                  onGenerateFlashcards={handleGenerateMessageFlashcards}
+                  onGenerateQuiz={handleGenerateMessageQuiz}
                   activeSystemPromptTitle={activeSession?.systemPromptTitle || persistentMainSystemPrompt?.title}
                   onClearSystemPrompt={handleClearSystemPrompt}
                   customModels={customModels}
@@ -1917,7 +2168,14 @@ export const App: React.FC = () => {
             )}
 
             {activeHubWorkspace === 'diagrams' && (
-              <DiagramStudioView userKeys={userKeys} />
+              <DiagramStudioView
+                userKeys={userKeys}
+                selectedProvider={selectedProvider}
+                selectedModel={selectedModel}
+                customModels={customModels}
+                onProviderChange={handleProviderChange}
+                onModelChange={handleModelChange}
+              />
             )}
 
             {activeHubWorkspace === 'cubes' && (
@@ -2011,6 +2269,22 @@ export const App: React.FC = () => {
                 onDeleteSession={(sessionId) => handleDeleteCodeLabSession(activeCodeLabPresetId, sessionId)}
                 isExternalDrawerOpen={isCodeLabDrawerOpen}
                 onCloseExternalDrawer={() => setIsCodeLabDrawerOpen(false)}
+              />
+            )}
+
+            {activeHubWorkspace === 'flashcards_studio' && (
+              <FlashcardsStudioView
+                currentUser={currentUser}
+                onBackToHub={() => setActiveHubWorkspace('chat')}
+                onNavigateToChat={() => setActiveHubWorkspace('chat')}
+              />
+            )}
+
+            {activeHubWorkspace === 'quiz_arena' && (
+              <QuizArenaView
+                currentUser={currentUser}
+                onBackToHub={() => setActiveHubWorkspace('chat')}
+                onNavigateToChat={() => setActiveHubWorkspace('chat')}
               />
             )}
             </React.Suspense>
@@ -2164,7 +2438,14 @@ export const App: React.FC = () => {
             )}
 
             {activeView === 'diagrams' && (
-              <DiagramStudioView userKeys={userKeys} />
+              <DiagramStudioView
+                userKeys={userKeys}
+                selectedProvider={selectedProvider}
+                selectedModel={selectedModel}
+                customModels={customModels}
+                onProviderChange={handleProviderChange}
+                onModelChange={handleModelChange}
+              />
             )}
 
             {activeView === 'cubes' && (

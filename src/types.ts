@@ -65,7 +65,7 @@ export interface UserKeys {
   local_endpoint: string;
 }
 
-export type ActiveViewType = 'chat' | 'prompts' | 'examprep' | 'system_prompts' | 'diagrams' | 'cubes' | 'fun_personas' | 'extractor_studio' | 'code_lab' | 'lecture_notes' | 'sandbox' | 'dsa_lab';
+export type ActiveViewType = 'chat' | 'prompts' | 'examprep' | 'system_prompts' | 'diagrams' | 'cubes' | 'fun_personas' | 'extractor_studio' | 'code_lab' | 'lecture_notes' | 'sandbox' | 'dsa_lab' | 'flashcards_studio' | 'quiz_arena';
 
 export interface CustomModel {
   id: string;
@@ -100,12 +100,38 @@ export interface Flashcard {
   mastered?: boolean;
 }
 
+export interface FlashcardDeck {
+  id: string;
+  sourceType: 'message' | 'session' | 'manual';
+  sourceId: string;
+  topic: string;
+  categoryTag?: string;
+  createdAt: number;
+  lastStudiedAt?: number;
+  cards: Flashcard[];
+}
+
 export interface QuizQuestion {
   id: string;
   question: string;
   options: string[];
   correctIndex: number;
   explanation: string;
+}
+
+export interface QuizDeck {
+  id: string;
+  sourceType: 'message' | 'session' | 'manual';
+  sourceId: string;
+  topic: string;
+  categoryTag?: string;
+  createdAt: number;
+  lastAttemptScore?: {
+    score: number;
+    total: number;
+    timestamp: number;
+  };
+  questions: QuizQuestion[];
 }
 
 

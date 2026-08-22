@@ -1,78 +1,16 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { BookOpen, FileText, Send, Award, Check, Sparkles } from 'lucide-react';
-import { marked } from 'marked';
-import katex from 'katex';
-import 'katex/dist/katex.min.css';
 import examData from '../data/examPrepData.json';
 // @ts-ignore
 import MagicBento from './MagicBento';
-import { sanitizeLatexForKatex } from './MessageItem';
+import { renderMathHtml } from './MathText';
 
 interface ExamPrepViewProps {
   onLoadQuestionToChat: (questionText: string) => void;
 }
 
 const renderFormattedContent = (content: string) => {
-  if (!content) return '';
-  const mathMap = new Map<string, string>();
-  let tokenIdx = 0;
-
-  // 1. Extract block math $$...$$ and \[...\]
-  let prepped = content.replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
-    const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
-    try {
-      const sanitized = sanitizeLatexForKatex(math);
-      mathMap.set(token, `<div class="katex-display katex-block">${katex.renderToString(sanitized, { displayMode: true, throwOnError: false })}</div>`);
-    } catch {
-      mathMap.set(token, `$$${math}$$`);
-    }
-    return token;
-  });
-
-  prepped = prepped.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => {
-    const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
-    try {
-      const sanitized = sanitizeLatexForKatex(math);
-      mathMap.set(token, `<div class="katex-display katex-block">${katex.renderToString(sanitized, { displayMode: true, throwOnError: false })}</div>`);
-    } catch {
-      mathMap.set(token, `\\[${math}\\]`);
-    }
-    return token;
-  });
-
-  // 2. Extract inline math \(...\) and $...$
-  prepped = prepped.replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => {
-    const token = `KATEXINLINETOKEN${tokenIdx++}ENDTOKEN`;
-    try {
-      const sanitized = sanitizeLatexForKatex(math);
-      mathMap.set(token, `<span class="katex-inline">${katex.renderToString(sanitized, { displayMode: false, throwOnError: false })}</span>`);
-    } catch {
-      mathMap.set(token, `\\(${math}\\)`);
-    }
-    return token;
-  });
-
-  prepped = prepped.replace(/\$([^\$\n]+?)\$/g, (_, math) => {
-    const token = `KATEXINLINETOKEN${tokenIdx++}ENDTOKEN`;
-    try {
-      const sanitized = sanitizeLatexForKatex(math);
-      mathMap.set(token, `<span class="katex-inline">${katex.renderToString(sanitized, { displayMode: false, throwOnError: false })}</span>`);
-    } catch {
-      mathMap.set(token, `$${math}$`);
-    }
-    return token;
-  });
-
-  let parsedHtml = prepped;
-  if (!content.trim().startsWith('<')) {
-    parsedHtml = marked.parse(prepped) as string;
-  }
-
-  mathMap.forEach((html, token) => {
-    parsedHtml = parsedHtml.replaceAll(token, html);
-  });
-
-  return parsedHtml;
+  return renderMathHtml(content);
 };
 
 const SEMESTERS = [

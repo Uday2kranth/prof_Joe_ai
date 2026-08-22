@@ -39,7 +39,9 @@ export const Header: React.FC<HeaderProps> = ({
     fun_personas: 'Fun AI Personas Lounge',
     cubes: 'Interactive 3D Cubes Playground',
     sandbox: 'Interactive Sandbox & Whiteboard Lab',
-    dsa_lab: 'Data Structures & Algorithms Laboratory (DSA Lab)'
+    dsa_lab: 'Data Structures & Algorithms Laboratory (DSA Lab)',
+    flashcards_studio: 'Flashcards Studio & Deck Hub',
+    quiz_arena: 'Exam Practice Quiz Arena'
   };
 
   const toggleSpin = () => {

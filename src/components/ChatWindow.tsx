@@ -25,6 +25,8 @@ interface ChatWindowProps {
   onBranchMessage?: (message: Message) => void;
   onPinMessage?: (message: Message) => void;
   pinnedMessageIds?: Set<string>;
+  onGenerateFlashcards?: (message: Message) => void;
+  onGenerateQuiz?: (message: Message) => void;
   activeSystemPromptTitle?: string;
   onClearSystemPrompt?: () => void;
   customModels?: UserCustomModels;
@@ -48,6 +50,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   onBranchMessage,
   onPinMessage,
   pinnedMessageIds = new Set(),
+  onGenerateFlashcards,
+  onGenerateQuiz,
   activeSystemPromptTitle,
   onClearSystemPrompt,
   customModels,
@@ -171,24 +175,18 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   };
 
   const handleScrollToTop = () => {
-    const scrollContainer = document.querySelector('.chat-messages-container, .messages-scroll-area, .main-chat-container');
-    if (scrollContainer) {
-      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    const firstMsg = document.querySelector('.message-row, .user-bubble, .welcome-hero-card');
-    if (firstMsg) {
-      firstMsg.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleScrollToBottom = () => {
-    const scrollContainer = document.querySelector('.chat-messages-container, .messages-scroll-area, .main-chat-container');
-    if (scrollContainer) {
-      scrollContainer.scrollTo({ top: scrollContainer.scrollHeight + 10000, behavior: 'smooth' });
+    if (chatContainerRef.current) {
+      chatContainerRef.current.scrollTo({
+        top: chatContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
     }
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     textareaRef.current?.focus();
   };
 
@@ -353,6 +351,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
               onBranch={onBranchMessage}
               onPin={onPinMessage}
               isPinned={pinnedMessageIds.has(m.id)}
+              onGenerateFlashcards={onGenerateFlashcards}
+              onGenerateQuiz={onGenerateQuiz}
             />
           ))
         )}

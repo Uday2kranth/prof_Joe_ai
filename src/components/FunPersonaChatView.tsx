@@ -207,24 +207,18 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
   };
 
   const handleScrollToTop = () => {
-    const scrollContainer = document.querySelector('.persona-messages-container, .messages-scroll-area, .chat-messages-container');
-    if (scrollContainer) {
-      scrollContainer.scrollTo({ top: 0, behavior: 'smooth' });
+    if (personaContainerRef.current) {
+      personaContainerRef.current.scrollTo({ top: 0, behavior: 'smooth' });
     }
-    const firstMsg = document.querySelector('.message-row, .user-bubble');
-    if (firstMsg) {
-      firstMsg.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
-    window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
   const handleScrollToBottom = () => {
-    const scrollContainer = document.querySelector('.persona-messages-container, .messages-scroll-area, .chat-messages-container');
-    if (scrollContainer) {
-      scrollContainer.scrollTo({ top: scrollContainer.scrollHeight + 10000, behavior: 'smooth' });
+    if (personaContainerRef.current) {
+      personaContainerRef.current.scrollTo({
+        top: personaContainerRef.current.scrollHeight,
+        behavior: 'smooth'
+      });
     }
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-    window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
     textareaRef.current?.focus();
   };
 

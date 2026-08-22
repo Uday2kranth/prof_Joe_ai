@@ -16,12 +16,13 @@ import {
   Layers,
   Zap,
   FlaskConical,
-  Binary
+  Binary,
+  Award
 } from 'lucide-react';
 import { MorphingText } from './MorphingText';
 
 interface DemoLandingHubProps {
-  onSelectWorkspace: (workspaceId: 'chat' | 'personas' | 'fun_personas' | 'examprep' | 'diagrams' | 'system_prompts' | 'prompts' | 'cubes' | 'extractor_studio' | 'code_lab' | 'lecture_notes' | 'sandbox' | 'dsa_lab') => void;
+  onSelectWorkspace: (workspaceId: 'chat' | 'personas' | 'fun_personas' | 'examprep' | 'diagrams' | 'system_prompts' | 'prompts' | 'cubes' | 'extractor_studio' | 'code_lab' | 'lecture_notes' | 'sandbox' | 'dsa_lab' | 'flashcards_studio' | 'quiz_arena') => void;
   onOpenSettings: () => void;
   onOpenProfile: () => void;
   theme: 'dark' | 'light';
@@ -283,6 +284,68 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
               </div>
               <button type="button" className="launch-portal-btn emerald-btn">
                 <span>Open Exam Hub</span>
+                <ArrowRight size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* Card: Flashcard Study Studio */}
+          <div 
+            className="hub-portal-card flashcards-portal"
+            onClick={() => onSelectWorkspace('flashcards_studio')}
+            style={{
+              borderColor: 'rgba(6, 182, 212, 0.4)',
+              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(8, 145, 178, 0.35))'
+            }}
+          >
+            <div className="portal-card-header">
+              <div className="portal-icon-badge cyan-bg" style={{ color: '#06b6d4' }}>
+                <Layers size={24} />
+              </div>
+              <span className="portal-tag cyan-tag">Persistent Decks</span>
+            </div>
+            <div className="portal-card-body">
+              <h3>Flashcards Studio & Deck Hub 📇</h3>
+              <p>3D interactive flip revision decks, spaced repetition cram mode, formula recall, and mastery tracking with 0 tokens.</p>
+            </div>
+            <div className="portal-card-footer">
+              <div className="portal-meta-features">
+                <span>🗂️ Saved Decks</span>
+                <span>✨ 3D Flip Mastery</span>
+              </div>
+              <button type="button" className="launch-portal-btn cyan-btn">
+                <span>Open Studio</span>
+                <ArrowRight size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* Card: Practice Quiz Arena */}
+          <div 
+            className="hub-portal-card quiz-portal"
+            onClick={() => onSelectWorkspace('quiz_arena')}
+            style={{
+              borderColor: 'rgba(16, 185, 129, 0.4)',
+              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(5, 150, 105, 0.35))'
+            }}
+          >
+            <div className="portal-card-header">
+              <div className="portal-icon-badge emerald-bg" style={{ color: '#10b981' }}>
+                <Award size={24} />
+              </div>
+              <span className="portal-tag emerald-tag">Exam Arena</span>
+            </div>
+            <div className="portal-card-body">
+              <h3>Exam Practice Quiz Arena 🏆</h3>
+              <p>Multiple-choice exam simulations, instant solution derivations, mistake drill replay, and readiness ratings.</p>
+            </div>
+            <div className="portal-card-footer">
+              <div className="portal-meta-features">
+                <span>📝 Instant MCQs</span>
+                <span>🎯 Solution Derivations</span>
+              </div>
+              <button type="button" className="launch-portal-btn emerald-btn">
+                <span>Launch Arena</span>
                 <ArrowRight size={14} />
               </button>
             </div>

@@ -1060,7 +1060,7 @@ export const SystemPromptLibraryView: React.FC<SystemPromptLibraryViewProps> = (
 
       <div className="prompts-grid">
         {filteredPrompts.map((item) => {
-          const IconComp = item.icon || Sparkles;
+          const IconComp = (typeof item.icon === 'function' || (item.icon && typeof item.icon === 'object' && (item.icon as any).$$typeof)) ? item.icon : Sparkles;
           const isExpanded = expandedCardId === item.id;
           const isCopied = copiedId === item.id;
           const wordCount = item.promptText.trim().split(/\s+/).length;

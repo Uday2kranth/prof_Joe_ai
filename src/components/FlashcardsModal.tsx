@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 import { X, ChevronLeft, ChevronRight, RotateCcw, CheckCircle2, Sparkles, Layers } from 'lucide-react';
 import type { Flashcard } from '../types';
-import { renderMarkdownWithMathAndDiagrams } from './MessageItem';
+import { MathText } from './MathText';
 
 interface FlashcardsModalProps {
   isOpen: boolean;
@@ -84,14 +84,14 @@ export const FlashcardsModal: React.FC<FlashcardsModalProps> = ({
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#f8fafc', margin: 0 }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
                   Interactive Exam Flashcards
                 </h3>
                 <span className="flashcard-pill-tag">
                   {currentIndex + 1} / {cards.length}
                 </span>
               </div>
-              <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '2px 0 0 0' }}>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
                 {sessionTitle || 'Active Discussion Deck'} • {masteredCount} Mastered ({progressPercent}%)
               </p>
             </div>
@@ -137,7 +137,7 @@ export const FlashcardsModal: React.FC<FlashcardsModalProps> = ({
               </div>
 
               <div className="flashcard-question-text">
-                {currentCard.front}
+                <MathText content={currentCard.front} />
               </div>
 
               <div style={{ textAlign: 'center', fontSize: '0.75rem', color: '#64748b', fontWeight: 600 }}>
@@ -157,12 +157,9 @@ export const FlashcardsModal: React.FC<FlashcardsModalProps> = ({
                 </span>
               </div>
 
-              <div
-                className="flashcard-answer-scroll formatted-content markdown-body text-center"
-                dangerouslySetInnerHTML={{
-                  __html: renderMarkdownWithMathAndDiagrams(currentCard.back, new Map())
-                }}
-              />
+              <div className="flashcard-answer-scroll text-center" style={{ overflowY: 'auto', maxHeight: '180px' }}>
+                <MathText content={currentCard.back} />
+              </div>
 
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
                 <button

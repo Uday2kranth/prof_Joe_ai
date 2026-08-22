@@ -16,7 +16,8 @@ import {
   Pin,
   Award,
   Tag,
-  Check
+  Check,
+  RefreshCw
 } from 'lucide-react';
 import type { ChatSession } from '../types';
 
@@ -41,6 +42,7 @@ interface DemoChatHistoryDrawerProps {
   onOpenFlashcards?: () => void;
   onOpenQuiz?: () => void;
   onToggleSessionTag?: (sessionId: string, tag: string) => void;
+  onSyncSessions?: () => void;
 }
 
 export const DemoChatHistoryDrawer: React.FC<DemoChatHistoryDrawerProps> = ({
@@ -63,16 +65,79 @@ export const DemoChatHistoryDrawer: React.FC<DemoChatHistoryDrawerProps> = ({
   onOpenCheatSheet,
   onOpenFlashcards,
   onOpenQuiz,
-  onToggleSessionTag
+  onToggleSessionTag,
+  onSyncSessions
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTagFilter, setSelectedTagFilter] = useState<string>('ALL');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [taggingSessionId, setTaggingSessionId] = useState<string | null>(null);
+  const [isSyncing, setIsSyncing] = useState(false);
 
-  const availableTags = useMemo(() => [
+  const defaultTags = useMemo(() => [
     'Unit-1', 'Unit-2', '12-Marks', 'MIGFHT', 'Networks', 'Stats', 'Exam-Day', 'Viva'
   ], []);
+
+  const [customTags, setCustomTags] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('chatterbot_custom_tags');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const [isAddingCustomTag, setIsAddingCustomTag] = useState(false);
+  const [newTagInput, setNewTagInput] = useState('');
+
+  const allAvailableTags = useMemo(() => {
+    return Array.from(new Set([...defaultTags, ...customTags]));
+  }, [defaultTags, customTags]);
+
+  const handleCreateCustomTag = (tagStr?: string) => {
+    const raw = (tagStr !== undefined ? tagStr : newTagInput).trim().replace(/^#+/, '').trim();
+    if (!raw) {
+      setIsAddingCustomTag(false);
+      return;
+    }
+    const cleanTag = raw.replace(/\s+/g, '-');
+    if (!allAvailableTags.includes(cleanTag)) {
+      const updated = [...customTags, cleanTag];
+      setCustomTags(updated);
+      try {
+        localStorage.setItem('chatterbot_custom_tags', JSON.stringify(updated));
+      } catch (e) {
+        console.warn('Could not save custom tags:', e);
+      }
+    }
+    setSelectedTagFilter(cleanTag);
+    setNewTagInput('');
+    setIsAddingCustomTag(false);
+  };
+
+  const handleDeleteCustomTag = (tagToDelete: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    const updated = customTags.filter(t => t !== tagToDelete);
+    setCustomTags(updated);
+    try {
+      localStorage.setItem('chatterbot_custom_tags', JSON.stringify(updated));
+    } catch (e) {
+      console.warn('Could not update custom tags:', e);
+    }
+    if (selectedTagFilter === tagToDelete) {
+      setSelectedTagFilter('ALL');
+    }
+  };
+
+  const handleManualSync = async () => {
+    if (!onSyncSessions || isSyncing) return;
+    setIsSyncing(true);
+    try {
+      await onSyncSessions();
+    } finally {
+      setTimeout(() => setIsSyncing(false), 800);
+    }
+  };
 
   if (!isOpen) return null;
 
@@ -103,14 +168,28 @@ export const DemoChatHistoryDrawer: React.FC<DemoChatHistoryDrawerProps> = ({
             <Clock size={18} className="text-cyan-400" />
             <h3>Chat Control Deck</h3>
           </div>
-          <button 
-            type="button" 
-            onClick={onClose} 
-            className="demo-icon-btn"
-            aria-label="Close Chat History Drawer"
-          >
-            <X size={18} />
-          </button>
+          <div className="flex items-center gap-2">
+            {onSyncSessions && (
+              <button
+                type="button"
+                onClick={handleManualSync}
+                className="demo-sync-btn"
+                title="Live Cloud Sync with Mobile & Other Devices"
+                disabled={isSyncing}
+              >
+                <RefreshCw size={13} className={isSyncing ? 'animate-spin' : ''} />
+                <span>{isSyncing ? 'Syncing...' : 'Sync'}</span>
+              </button>
+            )}
+            <button 
+              type="button" 
+              onClick={onClose} 
+              className="demo-icon-btn"
+              aria-label="Close Chat History Drawer"
+            >
+              <X size={18} />
+            </button>
+          </div>
         </div>
 
         {/* Primary Action Button */}
@@ -325,7 +404,7 @@ export const DemoChatHistoryDrawer: React.FC<DemoChatHistoryDrawerProps> = ({
           </div>
         )}
 
-        {/* 🏷️ SUBJECT / UNIT TAG FILTER BAR */}
+        {/* 🏷️ SUBJECT / UNIT TAG FILTER BAR (MULTI-ROW WRAPPING WITH CUSTOM TAGS) */}
         <div className="demo-drawer-tags-bar">
           <button
             type="button"
@@ -335,16 +414,75 @@ export const DemoChatHistoryDrawer: React.FC<DemoChatHistoryDrawerProps> = ({
             <Tag size={10} />
             <span>All</span>
           </button>
-          {availableTags.map(tag => (
+
+          {allAvailableTags.map(tag => {
+            const isCustom = customTags.includes(tag);
+            const isSelected = selectedTagFilter === tag;
+
+            return (
+              <button
+                key={tag}
+                type="button"
+                onClick={() => setSelectedTagFilter(isSelected ? 'ALL' : tag)}
+                className={`drawer-tag-filter-pill ${isSelected ? 'active' : ''} ${isCustom ? 'custom-tag' : ''}`}
+              >
+                <span>#{tag}</span>
+                {isCustom && (
+                  <span
+                    onClick={(e) => handleDeleteCustomTag(tag, e)}
+                    className="delete-custom-tag-btn"
+                    title={`Delete custom tag #${tag}`}
+                  >
+                    ×
+                  </span>
+                )}
+              </button>
+            );
+          })}
+
+          {/* Inline Custom Tag Creator */}
+          {isAddingCustomTag ? (
+            <div className="inline-tag-creator">
+              <input
+                type="text"
+                autoFocus
+                placeholder="tag name..."
+                value={newTagInput}
+                onChange={(e) => setNewTagInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter') handleCreateCustomTag();
+                  if (e.key === 'Escape') setIsAddingCustomTag(false);
+                }}
+                className="inline-tag-input"
+              />
+              <button
+                type="button"
+                onClick={() => handleCreateCustomTag()}
+                className="inline-tag-confirm-btn"
+                title="Add Tag"
+              >
+                ✓
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsAddingCustomTag(false)}
+                className="inline-tag-cancel-btn"
+                title="Cancel"
+              >
+                ✕
+              </button>
+            </div>
+          ) : (
             <button
-              key={tag}
               type="button"
-              onClick={() => setSelectedTagFilter(selectedTagFilter === tag ? 'ALL' : tag)}
-              className={`drawer-tag-filter-pill ${selectedTagFilter === tag ? 'active' : ''}`}
+              onClick={() => setIsAddingCustomTag(true)}
+              className="drawer-tag-filter-pill add-custom-tag-pill"
+              title="Add Custom Tag"
             >
-              #{tag}
+              <Plus size={11} />
+              <span>Custom Tag</span>
             </button>
-          ))}
+          )}
         </div>
 
         {/* 🔍 LIVE SEARCH INPUT */}
@@ -443,10 +581,10 @@ export const DemoChatHistoryDrawer: React.FC<DemoChatHistoryDrawerProps> = ({
                       <div className="session-tag-selector-popover" onClick={(e) => e.stopPropagation()}>
                         <div className="tag-selector-header">
                           <Tag size={10} className="text-cyan-400" />
-                          <span>Select Subject / Unit Tag:</span>
+                          <span>Select / Add Tag:</span>
                         </div>
                         <div className="tag-selector-grid">
-                          {availableTags.map(t => {
+                          {allAvailableTags.map(t => {
                             const isTagged = sessionTags.includes(t);
                             return (
                               <button

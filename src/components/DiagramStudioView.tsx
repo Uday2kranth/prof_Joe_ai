@@ -1,11 +1,12 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Layers, Download, RefreshCw, Code2, Sparkles, Image as ImageIcon,
-  FileImage, ChevronDown, Bot, Send, Copy, Check, ChevronUp
+  FileImage, ChevronDown, Bot, Send, Copy, Check, ChevronUp, Search
 } from 'lucide-react';
 import { fetchKrokiSvg } from '../services/krokiService';
-import { generateDiagramWithAi, DIAGRAM_AI_PROVIDERS } from '../services/diagramAiService';
-import type { UserKeys } from '../types';
+import { generateDiagramWithAi } from '../services/diagramAiService';
+import { PROVIDERS } from '../constants';
+import type { UserKeys, UserCustomModels } from '../types';
 
 export type DiagramCategory =
   | 'all'
@@ -1069,6 +1070,11 @@ Users 1--* Sessions`
 
 export interface DiagramStudioViewProps {
   userKeys?: UserKeys;
+  selectedProvider?: string;
+  selectedModel?: string;
+  customModels?: UserCustomModels;
+  onProviderChange?: (provider: string) => void;
+  onModelChange?: (model: string) => void;
 }
 
 export interface CopilotMessageItem {
@@ -1096,7 +1102,14 @@ const DEFAULT_QUICK_CHIPS = [
   '📸 2D Convolution 3x3 Kernel on 5x5 Feature Map'
 ];
 
-export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({ userKeys = {} as UserKeys }) => {
+export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({
+  userKeys = {} as UserKeys,
+  selectedProvider,
+  selectedModel,
+  customModels = {},
+  onProviderChange,
+  onModelChange
+}) => {
   // Studio & Display Modes
   const [studioMode, setStudioMode] = useState<'quick_deck' | 'copilot' | 'standard'>('quick_deck');
   const [isDeckCollapsed, setIsDeckCollapsed] = useState<boolean>(false);
@@ -1116,10 +1129,100 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({ userKeys =
   const [isProviderMenuOpen, setIsProviderMenuOpen] = useState<boolean>(false);
   const [isModelMenuOpen, setIsModelMenuOpen] = useState<boolean>(false);
 
-  // AI Prompt Studio State
-  const [selectedProviderId, setSelectedProviderId] = useState<string>('groq');
-  const activeProvider = DIAGRAM_AI_PROVIDERS.find(p => p.id === selectedProviderId) || DIAGRAM_AI_PROVIDERS[0];
-  const [selectedModelId, setSelectedModelId] = useState<string>(activeProvider.defaultModel);
+  // Search Filter State for Provider and Model Menus
+  const [providerSearchQuery, setProviderSearchQuery] = useState<string>('');
+  const [modelSearchQuery, setModelSearchQuery] = useState<string>('');
+
+  // AI Prompt Studio State - Synchronized with global PROVIDERS & Model Manager
+  const [selectedProviderId, setSelectedProviderId] = useState<string>(() => {
+    return selectedProvider || localStorage.getItem('chatterbot_diagram_provider') || 'openrouter';
+  });
+
+  const activeProvider = useMemo(() => {
+    return PROVIDERS.find(p => p.id === selectedProviderId || p.name === selectedProviderId) || PROVIDERS[0];
+  }, [selectedProviderId]);
+
+  // Derived available models including user custom models from Model Manager
+  const availableModels = useMemo(() => {
+    const defaultModels = activeProvider.models;
+    const providerCustomModels = customModels ? (customModels[activeProvider.id] || customModels[activeProvider.name]) : undefined;
+    if (Array.isArray(providerCustomModels) && providerCustomModels.length > 0) {
+      const enabledCustom = providerCustomModels
+        .filter(m => m.enabled)
+        .map(m => ({ value: m.id, name: `${m.name || m.id} [Custom]` }));
+      const customIds = new Set(enabledCustom.map(m => m.value));
+      return [...enabledCustom, ...defaultModels.filter(m => !customIds.has(m.value))];
+    }
+    return defaultModels;
+  }, [activeProvider, customModels]);
+
+  const [selectedModelId, setSelectedModelId] = useState<string>(() => {
+    if (selectedModel) return selectedModel;
+    const saved = localStorage.getItem('chatterbot_diagram_model');
+    if (saved) return saved;
+    return activeProvider.models[0]?.value || 'openrouter/free';
+  });
+
+  // Sync with prop changes if passed from App
+  useEffect(() => {
+    if (selectedProvider && selectedProvider !== selectedProviderId) {
+      setSelectedProviderId(selectedProvider);
+    }
+  }, [selectedProvider]);
+
+  useEffect(() => {
+    if (selectedModel && selectedModel !== selectedModelId) {
+      setSelectedModelId(selectedModel);
+    }
+  }, [selectedModel]);
+
+  const filteredProviders = useMemo(() => {
+    if (!providerSearchQuery.trim()) return PROVIDERS;
+    return PROVIDERS.filter(p => p.name.toLowerCase().includes(providerSearchQuery.toLowerCase()));
+  }, [providerSearchQuery]);
+
+  const filteredModels = useMemo(() => {
+    if (!modelSearchQuery.trim()) return availableModels;
+    return availableModels.filter(m =>
+      m.name.toLowerCase().includes(modelSearchQuery.toLowerCase()) ||
+      m.value.toLowerCase().includes(modelSearchQuery.toLowerCase())
+    );
+  }, [availableModels, modelSearchQuery]);
+
+  const currentModelName = useMemo(() => {
+    const found = availableModels.find(m => m.value === selectedModelId);
+    return found?.name || selectedModelId;
+  }, [availableModels, selectedModelId]);
+
+  const handleSelectProvider = (provId: string) => {
+    setSelectedProviderId(provId);
+    localStorage.setItem('chatterbot_diagram_provider', provId);
+    if (onProviderChange) onProviderChange(provId);
+
+    const targetGroup = PROVIDERS.find(p => p.id === provId || p.name === provId) || PROVIDERS[0];
+    const pCustom = customModels ? (customModels[targetGroup.id] || customModels[targetGroup.name]) : undefined;
+    const enabledCustom = Array.isArray(pCustom) ? pCustom.filter(m => m.enabled) : [];
+    
+    let newModelId = targetGroup.models[0]?.value || '';
+    if (enabledCustom.length > 0) {
+      newModelId = enabledCustom[0].id;
+    }
+    setSelectedModelId(newModelId);
+    localStorage.setItem('chatterbot_diagram_model', newModelId);
+    if (onModelChange) onModelChange(newModelId);
+
+    setIsProviderMenuOpen(false);
+    setProviderSearchQuery('');
+  };
+
+  const handleSelectModel = (modelValue: string) => {
+    setSelectedModelId(modelValue);
+    localStorage.setItem('chatterbot_diagram_model', modelValue);
+    if (onModelChange) onModelChange(modelValue);
+    setIsModelMenuOpen(false);
+    setModelSearchQuery('');
+  };
+
   const [aiPromptInput, setAiPromptInput] = useState<string>('');
   const [isAiGenerating, setIsAiGenerating] = useState<boolean>(false);
   const [aiError, setAiError] = useState<string | null>(null);
@@ -1173,11 +1276,6 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({ userKeys =
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
-  // Update selected model when provider changes
-  useEffect(() => {
-    setSelectedModelId(activeProvider.defaultModel);
-  }, [selectedProviderId]);
 
   // Auto-scroll copilot messages
   useEffect(() => {
@@ -1562,16 +1660,26 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({ userKeys =
               <ChevronDown size={14} className="text-slate-400" style={{ flexShrink: 0 }} />
             </button>
             {isProviderMenuOpen && (
-              <div className="custom-dropdown-menu diagram-menu top-downward-menu dropdown-align-left" style={{ minWidth: '220px', width: '220px', maxHeight: '380px', overflowY: 'auto' }}>
-                <div className="dropdown-header">SELECT AI PROVIDER</div>
-                {DIAGRAM_AI_PROVIDERS.map(p => (
+              <div className="custom-dropdown-menu diagram-menu top-downward-menu dropdown-align-left" style={{ minWidth: '240px', width: '240px', maxHeight: '420px', overflowY: 'auto' }}>
+                <div className="dropdown-header">SELECT AI PROVIDER ({PROVIDERS.length})</div>
+                <div style={{ padding: '6px 8px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '6px', padding: '4px 8px' }}>
+                    <Search size={12} className="text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Filter providers..."
+                      value={providerSearchQuery}
+                      onChange={e => setProviderSearchQuery(e.target.value)}
+                      onClick={e => e.stopPropagation()}
+                      style={{ background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: '0.78rem', width: '100%' }}
+                    />
+                  </div>
+                </div>
+                {filteredProviders.map(p => (
                   <button
                     key={p.id}
                     type="button"
-                    onClick={() => {
-                      setSelectedProviderId(p.id);
-                      setIsProviderMenuOpen(false);
-                    }}
+                    onClick={() => handleSelectProvider(p.id)}
                     className={`dropdown-item flex items-center justify-between gap-2 w-full ${p.id === selectedProviderId ? 'selected' : ''}`}
                   >
                     <span style={{ fontSize: '0.82rem' }}>{p.name}</span>
@@ -1598,25 +1706,37 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({ userKeys =
             >
               <span style={{ color: '#c084fc', fontSize: '12px' }}>🤖</span>
               <span style={{ fontWeight: 600, maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {activeProvider.models.find(m => m.id === selectedModelId)?.name || selectedModelId}
+                {currentModelName}
               </span>
               <ChevronDown size={14} className="text-slate-400" style={{ flexShrink: 0 }} />
             </button>
             {isModelMenuOpen && (
-              <div className="custom-dropdown-menu diagram-menu top-downward-menu dropdown-align-left" style={{ minWidth: '270px', width: '270px', maxHeight: '380px', overflowY: 'auto' }}>
+              <div className="custom-dropdown-menu diagram-menu top-downward-menu dropdown-align-left" style={{ minWidth: '310px', width: '310px', maxHeight: '420px', overflowY: 'auto' }}>
                 <div className="dropdown-header">AVAILABLE MODELS ({activeProvider.name})</div>
-                {activeProvider.models.map(m => (
+                <div style={{ padding: '6px 8px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '6px', padding: '4px 8px' }}>
+                    <Search size={12} className="text-slate-400" />
+                    <input
+                      type="text"
+                      placeholder="Search models..."
+                      value={modelSearchQuery}
+                      onChange={e => setModelSearchQuery(e.target.value)}
+                      onClick={e => e.stopPropagation()}
+                      style={{ background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: '0.78rem', width: '100%' }}
+                    />
+                  </div>
+                </div>
+                {filteredModels.map(m => (
                   <button
-                    key={m.id}
+                    key={m.value}
                     type="button"
-                    onClick={() => {
-                      setSelectedModelId(m.id);
-                      setIsModelMenuOpen(false);
-                    }}
-                    className={`dropdown-item flex items-center justify-between gap-2 w-full ${m.id === selectedModelId ? 'selected' : ''}`}
+                    onClick={() => handleSelectModel(m.value)}
+                    className={`dropdown-item flex items-center justify-between gap-2 w-full ${m.value === selectedModelId ? 'selected' : ''}`}
                   >
-                    <span className="truncate" style={{ fontSize: '0.82rem' }}>{m.name}</span>
-                    {m.id === selectedModelId && <span style={{ color: '#38bdf8', fontSize: '0.8rem' }}>✓</span>}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
+                      <span className="truncate" style={{ fontSize: '0.82rem' }}>{m.name}</span>
+                    </div>
+                    {m.value === selectedModelId && <span style={{ color: '#38bdf8', fontSize: '0.8rem', flexShrink: 0 }}>✓</span>}
                   </button>
                 ))}
               </div>
@@ -1680,7 +1800,7 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({ userKeys =
                 <span style={{ color: '#e2e8f0' }}>{activeProvider.name}</span>
                 <span style={{ color: '#64748b' }}>•</span>
                 <span style={{ color: '#c084fc', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                  {activeProvider.models.find(m => m.id === selectedModelId)?.name || selectedModelId}
+                  {currentModelName}
                 </span>
               </div>
 
@@ -1813,7 +1933,7 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({ userKeys =
                 <span style={{ fontSize: '0.8rem', fontWeight: 700, color: '#e9d5ff' }}>AI Copilot Thread</span>
               </div>
               <span style={{ fontSize: '0.68rem', fontFamily: 'monospace', color: '#94a3b8' }}>
-                {activeProvider.models.find(m => m.id === selectedModelId)?.name || selectedModelId}
+                {currentModelName}
               </span>
             </div>
 

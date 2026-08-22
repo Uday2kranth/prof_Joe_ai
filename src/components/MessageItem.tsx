@@ -1,7 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { User, Copy, Download, Eye, Printer, Volume2, Check, RotateCcw, Edit3, Send, X, GitBranch, Pin } from 'lucide-react';
-import { marked } from 'marked';
-import katex from 'katex';
+import { User, Copy, Download, Eye, Printer, Volume2, Check, RotateCcw, Edit3, Send, X, GitBranch, Pin, Layers, Award } from 'lucide-react';
 import 'katex/dist/katex.min.css';
 
 import type { Message } from '../types';
@@ -11,154 +9,11 @@ import { exportBubbleToImage } from '../services/exportService';
 import { printBubbleToPdf } from '../services/printPdfService';
 import { PdfPreviewModal } from './PdfPreviewModal';
 
-marked.setOptions({
-  gfm: true,
-  breaks: true
-});
-
-/**
- * Auto-sanitizes common LLM LaTeX imperfections before passing to KaTeX:
- * 1. Wraps unbraced macro subscripts/superscripts (e.g. `\text{Cov}_\boldsymbol{\theta}` -> `\text{Cov}_{\boldsymbol{\theta}}`, `^\mathbf{T}` -> `^{\mathbf{T}}`)
- * 2. Wraps unbraced standalone macro commands in subscript/superscript
- */
-export function sanitizeLatexForKatex(latex: string): string {
-  if (!latex) return '';
-  let cleaned = latex.trim();
-  // 1. Fix unbraced macro with arguments: _\macro{arg} -> _{\macro{arg}}
-  cleaned = cleaned.replace(/_\\([a-zA-Z]+)\{([^{}]+)\}/g, '_{\\$1{$2}}');
-  // 2. Fix unbraced macro with arguments: ^\macro{arg} -> ^{\macro{arg}}
-  cleaned = cleaned.replace(/\^\\([a-zA-Z]+)\{([^{}]+)\}/g, '^{\\$1{$2}}');
-  // 3. Fix unbraced standalone macro: _\macro -> _{\macro}
-  cleaned = cleaned.replace(/_\\([a-zA-Z]+)(?![{a-zA-Z])/g, '_{\\$1}');
-  // 4. Fix unbraced standalone macro: ^\macro -> ^{\macro}
-  cleaned = cleaned.replace(/\^\\([a-zA-Z]+)(?![{a-zA-Z])/g, '^{\\$1}');
-  return cleaned;
-}
+import { renderMathHtml, sanitizeLatexForKatex } from './MathText';
+export { sanitizeLatexForKatex };
 
 export function renderMarkdownWithMathAndDiagrams(content: string, diagramMap: Map<string, string>): string {
-  if (!content) return '';
-  const mathMap = new Map<string, string>();
-  let tokenIdx = 0;
-
-  // 1. Extract block math $$...$$
-  let prepped = content.replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
-    const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
-    try {
-      const sanitized = sanitizeLatexForKatex(math);
-      mathMap.set(token, `<div class="katex-display katex-block">${katex.renderToString(sanitized, { displayMode: true, throwOnError: false })}</div>`);
-    } catch {
-      mathMap.set(token, `$$${math}$$`);
-    }
-    return token;
-  });
-
-  // 1b. Extract block math \[...\]
-  prepped = prepped.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => {
-    const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
-    try {
-      const sanitized = sanitizeLatexForKatex(math);
-      mathMap.set(token, `<div class="katex-display katex-block">${katex.renderToString(sanitized, { displayMode: true, throwOnError: false })}</div>`);
-    } catch {
-      mathMap.set(token, `\\[${math}\\]`);
-    }
-    return token;
-  });
-
-  // 2. Extract inline math \(...\)
-  prepped = prepped.replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => {
-    const token = `KATEXINLINETOKEN${tokenIdx++}ENDTOKEN`;
-    try {
-      const sanitized = sanitizeLatexForKatex(math);
-      mathMap.set(token, `<span class="katex-inline">${katex.renderToString(sanitized, { displayMode: false, throwOnError: false })}</span>`);
-    } catch {
-      mathMap.set(token, `\\(${math}\\)`);
-    }
-    return token;
-  });
-
-  // 2b. Extract inline math $...$
-  prepped = prepped.replace(/\$([^\$\n]+?)\$/g, (_, math) => {
-    const token = `KATEXINLINETOKEN${tokenIdx++}ENDTOKEN`;
-    try {
-      const sanitized = sanitizeLatexForKatex(math);
-      mathMap.set(token, `<span class="katex-inline">${katex.renderToString(sanitized, { displayMode: false, throwOnError: false })}</span>`);
-    } catch {
-      mathMap.set(token, `$${math}$`);
-    }
-    return token;
-  });
-
-  // 2c. Auto-detect standalone bare LaTeX environments & equations (e.g. \begin{bmatrix}...\end{bmatrix})
-  const lines = prepped.split('\n');
-  let inCodeBlock = false;
-  const processedLines = lines.map(line => {
-    const trimmed = line.trim();
-    if (trimmed.startsWith('```')) {
-      inCodeBlock = !inCodeBlock;
-      return line;
-    }
-    if (inCodeBlock) return line;
-
-    const hasMathKeywords =
-      trimmed.startsWith('\\') ||
-      (/^[a-zA-Z_]\s*(\([^\)]*\))?\s*=\s*/.test(trimmed) && (trimmed.includes('\\') || trimmed.includes('^') || trimmed.includes('_'))) ||
-      /\\(begin|bmatrix|pmatrix|vmatrix|matrix|align|equation|cases|frac|sum|prod|int|sqrt|mathbf|mathcal|mathbb|boldsymbol|nabla|partial|alpha|beta|gamma|delta|epsilon|theta|lambda|mu|sigma|omega|arg|min|max|vec|hat|tilde|in|subseteq|times|pm|le|ge|neq|approx|to|rightarrow|implies|mid|vert|parallel)/.test(trimmed);
-
-    const isStandaloneFormula =
-      !line.includes('KATEX') &&
-      hasMathKeywords &&
-      !trimmed.startsWith('#') &&
-      !trimmed.startsWith('- ') &&
-      !trimmed.startsWith('* ') &&
-      !trimmed.startsWith('>') &&
-      !trimmed.startsWith('|') &&
-      !trimmed.startsWith('1.') &&
-      !trimmed.startsWith('2.') &&
-      !trimmed.startsWith('3.') &&
-      !trimmed.startsWith('4.') &&
-      !trimmed.startsWith('5.');
-
-    if (isStandaloneFormula) {
-      const token = `KATEXBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
-      try {
-        const sanitized = sanitizeLatexForKatex(trimmed);
-        mathMap.set(
-          token,
-          `<div class="katex-display katex-block">${katex.renderToString(sanitized, {
-            displayMode: true,
-            throwOnError: false
-          })}</div>`
-        );
-        return token;
-      } catch {
-        return line;
-      }
-    }
-
-    return line;
-  });
-
-  prepped = processedLines.join('\n');
-
-  // 3. Parse clean markdown tables and text
-  let parsedHtml = marked.parse(prepped) as string;
-
-  // 4. Restore math HTML
-  mathMap.forEach((html, token) => {
-    parsedHtml = parsedHtml.replaceAll(token, html);
-  });
-
-  // 5. Restore Kroki diagram containers
-  diagramMap.forEach((svgContainerHtml, token) => {
-    const paragraphWrapped = `<p>${token}</p>`;
-    if (parsedHtml.includes(paragraphWrapped)) {
-      parsedHtml = parsedHtml.replace(paragraphWrapped, svgContainerHtml);
-    } else {
-      parsedHtml = parsedHtml.replaceAll(token, svgContainerHtml);
-    }
-  });
-
-  return parsedHtml;
+  return renderMathHtml(content, { diagramMap });
 }
 
 interface MessageItemProps {
@@ -171,6 +26,8 @@ interface MessageItemProps {
   onBranch?: (msg: Message) => void;
   onPin?: (msg: Message) => void;
   isPinned?: boolean;
+  onGenerateFlashcards?: (msg: Message) => void;
+  onGenerateQuiz?: (msg: Message) => void;
 }
 
 const MessageItemComponent: React.FC<MessageItemProps> = ({
@@ -182,7 +39,9 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
   onEditUserMessage,
   onBranch,
   onPin,
-  isPinned
+  isPinned,
+  onGenerateFlashcards,
+  onGenerateQuiz
 }) => {
   const isUser = message.role === 'user';
   const [copied, setCopied] = useState(false);
@@ -509,6 +368,30 @@ const MessageItemComponent: React.FC<MessageItemProps> = ({
               >
                 <Pin size={13} style={{ color: isPinned ? '#fbbf24' : '#94a3b8' }} className={isPinned ? 'fill-amber-400 text-amber-400' : ''} />
                 <span>{isPinned ? 'Pinned ⭐' : 'Pin'}</span>
+              </button>
+            )}
+
+            {/* Targeted Micro-Drill Flashcards */}
+            {!isUser && onGenerateFlashcards && (
+              <button
+                onClick={() => onGenerateFlashcards(message)}
+                className="kokonut-msg-btn"
+                title="Generate Flashcard Deck from this specific answer"
+              >
+                <Layers size={13} style={{ color: '#38bdf8' }} />
+                <span>Cards</span>
+              </button>
+            )}
+
+            {/* Targeted Micro-Drill Quiz */}
+            {!isUser && onGenerateQuiz && (
+              <button
+                onClick={() => onGenerateQuiz(message)}
+                className="kokonut-msg-btn"
+                title="Generate Practice Quiz from this specific answer"
+              >
+                <Award size={13} style={{ color: '#34d399' }} />
+                <span>Quiz</span>
               </button>
             )}
 

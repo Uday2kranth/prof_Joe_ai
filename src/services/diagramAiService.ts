@@ -1,5 +1,6 @@
 import { sendChatMessage } from './apiService';
 import type { UserKeys } from '../types';
+import { PROVIDERS } from '../constants';
 
 export interface DiagramAiProvider {
   id: string;
@@ -8,47 +9,12 @@ export interface DiagramAiProvider {
   models: { id: string; name: string }[];
 }
 
-export const DIAGRAM_AI_PROVIDERS: DiagramAiProvider[] = [
-  {
-    id: 'groq',
-    name: 'Groq (Ultra-Fast)',
-    defaultModel: 'llama-3.3-70b-versatile',
-    models: [
-      { id: 'llama-3.3-70b-versatile', name: 'Llama 3.3 70B (Versatile & Fast)' },
-      { id: 'llama-3.1-8b-instant', name: 'Llama 3.1 8B Instant' },
-      { id: 'mixtral-8x7b-32768', name: 'Mixtral 8x7B' }
-    ]
-  },
-  {
-    id: 'gemini',
-    name: 'Google Gemini',
-    defaultModel: 'gemini-2.5-flash',
-    models: [
-      { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
-      { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash' },
-      { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro' }
-    ]
-  },
-  {
-    id: 'cerebras',
-    name: 'Cerebras (Fast Inference)',
-    defaultModel: 'llama3.1-70b',
-    models: [
-      { id: 'llama3.1-70b', name: 'Llama 3.1 70B' },
-      { id: 'llama3.1-8b', name: 'Llama 3.1 8B' }
-    ]
-  },
-  {
-    id: 'ollama',
-    name: 'Local Ollama',
-    defaultModel: 'llama3.2',
-    models: [
-      { id: 'llama3.2', name: 'Llama 3.2' },
-      { id: 'deepseek-r1:8b', name: 'DeepSeek R1 8B' },
-      { id: 'qwen2.5-coder:7b', name: 'Qwen 2.5 Coder 7B' }
-    ]
-  }
-];
+export const DIAGRAM_AI_PROVIDERS: DiagramAiProvider[] = PROVIDERS.map(p => ({
+  id: p.id,
+  name: p.name,
+  defaultModel: p.models[0]?.value || '',
+  models: p.models.map(m => ({ id: m.value, name: m.name }))
+}));
 
 export const DIAGRAM_SYSTEM_PROMPT = `You are the Expert Diagram Engine & Visual Code Architect for Prof. Joe AI.
 Your purpose is to generate 100% syntactically valid, high-contrast, visually stunning diagram code or JSON for our 9 supported diagramming engines:

@@ -2,7 +2,7 @@ import React, { useState, useMemo } from 'react';
 import { createPortal } from 'react-dom';
 import { Pin, Search, Trash2, Printer, X, Sparkles, Copy, Check } from 'lucide-react';
 import type { PinnedItem } from '../types';
-import { renderMarkdownWithMathAndDiagrams } from './MessageItem';
+import { MathText, renderMathHtml } from './MathText';
 
 interface CheatSheetDrawerProps {
   isOpen: boolean;
@@ -50,7 +50,7 @@ export const CheatSheetDrawer: React.FC<CheatSheetDrawerProps> = ({
           <span class="card-title">${p.sessionTitle || 'High-Yield Note'}</span>
         </div>
         <div class="card-body">
-          ${renderMarkdownWithMathAndDiagrams(p.content, new Map())}
+          ${renderMathHtml(p.content)}
         </div>
       </div>
     `).join('');
@@ -67,65 +67,89 @@ export const CheatSheetDrawer: React.FC<CheatSheetDrawerProps> = ({
             color: #0f172a;
             background: #ffffff;
             margin: 0;
-            padding: 24px;
+            padding: 28px 36px;
             font-size: 11pt;
-            line-height: 1.45;
+            line-height: 1.6;
           }
           .header {
             text-align: center;
-            border-bottom: 2px solid #0284c7;
-            padding-bottom: 12px;
-            margin-bottom: 20px;
+            border-bottom: 2.5px solid #0284c7;
+            padding-bottom: 14px;
+            margin-bottom: 24px;
           }
           .header h1 {
-            margin: 0 0 4px 0;
-            font-size: 18pt;
+            margin: 0 0 6px 0;
+            font-size: 19pt;
             color: #0369a1;
+            font-weight: 800;
           }
           .header p {
             margin: 0;
-            font-size: 9pt;
+            font-size: 9.5pt;
             color: #64748b;
+            font-weight: 600;
           }
-          .grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 16px;
+          .cheat-sheet-deck {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            width: 100%;
           }
           .cheat-card {
-            border: 1px solid #cbd5e1;
-            border-radius: 8px;
-            padding: 12px 14px;
-            background: #f8fafc;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 12px;
+            padding: 18px 22px;
+            background: #ffffff;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
             page-break-inside: avoid;
+            break-inside: avoid;
+            margin-bottom: 12px;
+            width: 100%;
+            box-sizing: border-box;
           }
           .card-header {
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: 10px;
             font-weight: 700;
-            font-size: 10pt;
+            font-size: 11pt;
             color: #0369a1;
-            border-bottom: 1px solid #e2e8f0;
-            padding-bottom: 6px;
-            margin-bottom: 8px;
+            border-bottom: 1.5px solid #e2e8f0;
+            padding-bottom: 8px;
+            margin-bottom: 14px;
           }
           .card-num {
             background: #0284c7;
             color: #ffffff;
-            font-size: 8pt;
-            padding: 2px 6px;
-            border-radius: 4px;
+            font-size: 8.5pt;
+            font-weight: 800;
+            padding: 3px 8px;
+            border-radius: 6px;
+          }
+          .card-title {
+            font-size: 11pt;
+            font-weight: 700;
+            color: #0f172a;
           }
           .card-body {
-            font-size: 9.5pt;
+            font-size: 10pt;
             color: #1e293b;
+            line-height: 1.65;
           }
-          .card-body p { margin: 4px 0; }
-          .katex-display { margin: 6px 0 !important; font-size: 1.05em; }
+          .card-body p { margin: 6px 0; }
+          .card-body ul, .card-body ol { margin: 8px 0 8px 24px; }
+          .card-body li { margin-bottom: 4px; }
+          .card-body strong { color: #0369a1; font-weight: 700; }
+          .katex-display { margin: 10px 0 !important; font-size: 1.08em; overflow-x: auto; }
           @media print {
-            body { padding: 0; }
-            .grid { grid-template-columns: 1fr 1fr; }
+            body { padding: 12mm 15mm; }
+            .cheat-sheet-deck { gap: 18px; }
+            .cheat-card {
+              border: 1.5px solid #94a3b8;
+              box-shadow: none;
+              page-break-inside: avoid;
+              break-inside: avoid;
+            }
           }
         </style>
       </head>
@@ -134,7 +158,7 @@ export const CheatSheetDrawer: React.FC<CheatSheetDrawerProps> = ({
           <h1>🎓 Prof. Joe AI — High-Yield Exam Cheat Sheet</h1>
           <p>Osmania University Academic Revision Deck • ${pinnedItems.length} Key Formulas & Definitions</p>
         </div>
-        <div class="grid">
+        <div class="cheat-sheet-deck">
           ${cardsHtml}
         </div>
         <script>
@@ -157,16 +181,16 @@ export const CheatSheetDrawer: React.FC<CheatSheetDrawerProps> = ({
         onClick={(e) => e.stopPropagation()}
       >
         {/* Drawer Header */}
-        <div className="demo-drawer-header" style={{ padding: '16px 20px', marginBottom: 0 }}>
+        <div className="demo-drawer-header" style={{ padding: '16px 20px', marginBottom: 0, borderBottom: '1px solid var(--border-color)' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div className="drawer-icon-box" style={{ background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(249, 115, 22, 0.25))', border: '1px solid rgba(245, 158, 11, 0.4)' }}>
               <Pin size={17} style={{ color: '#fbbf24' }} />
             </div>
             <div>
-              <h3 className="drawer-title" style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: '#f8fafc' }}>
+              <h3 className="drawer-title" style={{ margin: 0, fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)' }}>
                 Exam Cheat Sheet
               </h3>
-              <p className="drawer-subtitle" style={{ margin: 0, fontSize: '0.78rem', color: '#94a3b8' }}>
+              <p className="drawer-subtitle" style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted)' }}>
                 {pinnedItems.length} Pinned Formulas & High-Yield Points
               </p>
             </div>
@@ -177,7 +201,7 @@ export const CheatSheetDrawer: React.FC<CheatSheetDrawerProps> = ({
         </div>
 
         {/* Primary Action Buttons */}
-        <div style={{ padding: '12px 16px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+        <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button
             type="button"
             onClick={handlePrintCheatSheet}
@@ -204,7 +228,7 @@ export const CheatSheetDrawer: React.FC<CheatSheetDrawerProps> = ({
         </div>
 
         {/* Search Bar */}
-        <div style={{ padding: '10px 16px', borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
+        <div style={{ padding: '10px 16px', borderBottom: '1px solid var(--border-color)' }}>
           <div className="demo-drawer-search-bar" style={{ padding: '6px 12px' }}>
             <Search size={13} className="text-slate-400" />
             <input
@@ -225,10 +249,10 @@ export const CheatSheetDrawer: React.FC<CheatSheetDrawerProps> = ({
         {/* Pinned Cards List */}
         <div className="cheat-sheet-list" style={{ flex: 1, overflowY: 'auto', padding: '14px', display: 'flex', flexDirection: 'column', gap: '12px' }}>
           {filteredPins.length === 0 ? (
-            <div className="text-center py-12 px-4 text-slate-400" style={{ margin: 'auto 0' }}>
+            <div className="text-center py-12 px-4" style={{ margin: 'auto 0' }}>
               <Sparkles size={32} className="mx-auto mb-2 text-amber-400" style={{ opacity: 0.8 }} />
-              <p style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f8fafc', margin: '0 0 4px 0' }}>No Pinned Key Points Yet</p>
-              <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0, maxWidth: '280px', marginInline: 'auto' }}>
+              <p style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary)', margin: '0 0 4px 0' }}>No Pinned Key Points Yet</p>
+              <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)', margin: 0, maxWidth: '280px', marginInline: 'auto' }}>
                 Click the 📌 Pin button on any AI response in chat to bookmark key formulas, theorems, and definitions here!
               </p>
             </div>
@@ -238,10 +262,10 @@ export const CheatSheetDrawer: React.FC<CheatSheetDrawerProps> = ({
                 key={item.id}
                 className="pinned-cheat-card"
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid rgba(255, 255, 255, 0.08)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', marginBottom: '8px', paddingBottom: '6px', borderBottom: '1px solid var(--border-color)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0 }}>
                     <Pin size={12} className="text-amber-400" style={{ flexShrink: 0 }} />
-                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {item.sessionTitle || 'Key Concept'}
                     </span>
                   </div>
@@ -266,12 +290,11 @@ export const CheatSheetDrawer: React.FC<CheatSheetDrawerProps> = ({
                 </div>
 
                 <div
-                  className="pinned-content formatted-content markdown-body"
-                  style={{ fontSize: '0.86rem', lineHeight: '1.5', color: '#cbd5e1', maxHeight: '240px', overflowY: 'auto' }}
-                  dangerouslySetInnerHTML={{
-                    __html: renderMarkdownWithMathAndDiagrams(item.content, new Map())
-                  }}
-                />
+                  className="pinned-content"
+                  style={{ fontSize: '0.86rem', lineHeight: '1.5', maxHeight: '240px', overflowY: 'auto' }}
+                >
+                  <MathText content={item.content} />
+                </div>
               </div>
             ))
           )}

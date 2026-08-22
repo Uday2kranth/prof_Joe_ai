@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { X, CheckCircle2, XCircle, RotateCcw, Award, ArrowRight, ArrowLeft, Sparkles } from 'lucide-react';
 import type { QuizQuestion } from '../types';
+import { MathText } from './MathText';
 
 interface QuizModalProps {
   isOpen: boolean;
@@ -69,14 +70,14 @@ export const QuizModal: React.FC<QuizModalProps> = ({
             </div>
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <h3 style={{ fontSize: '1rem', fontWeight: 800, color: '#f8fafc', margin: 0 }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
                   Osmania Exam Practice Quiz
                 </h3>
-                <span className="quiz-q-counter-pill" style={{ color: '#34d399', borderColor: 'rgba(16, 185, 129, 0.4)' }}>
+                <span className="quiz-q-counter-pill" style={{ color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.4)' }}>
                   {Object.keys(selectedAnswers).length} / {questions.length} Answered
                 </span>
               </div>
-              <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: '2px 0 0 0' }}>
+              <p style={{ fontSize: '0.78rem', color: 'var(--text-muted)', margin: '2px 0 0 0' }}>
                 {sessionTitle || 'Active Discussion'} • Live Knowledge Assessment
               </p>
             </div>
@@ -108,7 +109,7 @@ export const QuizModal: React.FC<QuizModalProps> = ({
                 Question {currentIndex + 1} of {questions.length}
               </span>
               <h4 className="quiz-question-title">
-                {currentQ.question}
+                <MathText content={currentQ.question} />
               </h4>
             </div>
 
@@ -142,7 +143,9 @@ export const QuizModal: React.FC<QuizModalProps> = ({
                     <span className="quiz-option-letter">
                       {indicator}
                     </span>
-                    <span style={{ flex: 1 }}>{opt}</span>
+                    <span style={{ flex: 1 }}>
+                      <MathText content={opt} inline />
+                    </span>
                     {hasAnsweredCurrent && isCorrect && <CheckCircle2 size={18} style={{ color: '#34d399', flexShrink: 0 }} />}
                     {hasAnsweredCurrent && isSelected && !isCorrect && <XCircle size={18} style={{ color: '#fb7185', flexShrink: 0 }} />}
                   </button>
@@ -157,7 +160,9 @@ export const QuizModal: React.FC<QuizModalProps> = ({
                   <Sparkles size={14} className="text-amber-400" />
                   <span>Prof. Joe's Solution Derivation:</span>
                 </div>
-                <p style={{ margin: 0, color: '#fef3c7' }}>{currentQ.explanation}</p>
+                <div style={{ margin: 0, color: '#fef3c7' }}>
+                  <MathText content={currentQ.explanation} />
+                </div>
               </div>
             )}
           </div>
