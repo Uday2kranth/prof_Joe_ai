@@ -12,6 +12,8 @@ export interface PrintCustomConfig {
   showDateTag: boolean;
   showWorkspaceTag: boolean;
   showFooter: boolean;
+  marginPreset: 'standard' | 'compact' | 'none';
+  hideDividers: boolean;
 }
 
 export const DEFAULT_PRINT_CONFIG: PrintCustomConfig = {
@@ -21,7 +23,9 @@ export const DEFAULT_PRINT_CONFIG: PrintCustomConfig = {
   showModelTag: true,
   showDateTag: true,
   showWorkspaceTag: true,
-  showFooter: true
+  showFooter: true,
+  marginPreset: 'standard',
+  hideDividers: false
 };
 
 export function getPrintCustomConfig(): PrintCustomConfig {
@@ -586,7 +590,7 @@ export function buildPrintHtmlDocument(
           
           @page {
             size: A4 portrait;
-            margin: 12mm 14mm 14mm 14mm;
+            ${config.marginPreset === 'none' ? 'margin: 0;' : config.marginPreset === 'compact' ? 'margin: 4mm 6mm 6mm 6mm;' : 'margin: 12mm 14mm 14mm 14mm;'}
           }
 
           * {
@@ -599,10 +603,12 @@ export function buildPrintHtmlDocument(
             font-family: 'Inter', system-ui, -apple-system, sans-serif;
             background-color: ${bgColor};
             color: ${textColor};
-            padding: 24px 32px;
+            ${config.marginPreset === 'none' ? 'padding: 8px 12px;' : config.marginPreset === 'compact' ? 'padding: 12px 16px;' : 'padding: 24px 32px;'}
             margin: 0;
             line-height: 1.65;
           }
+
+          ${config.hideDividers ? `.markdown-content hr, hr { display: none !important; margin: 0 !important; padding: 0 !important; height: 0 !important; border: none !important; }` : `.markdown-content hr, hr { border: 0; height: 1px; background: #e2e8f0; margin: 20px 0; }`}
 
           .print-header {
             border-bottom: 2px solid rgba(2, 132, 199, 0.4);

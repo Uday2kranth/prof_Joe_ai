@@ -252,9 +252,47 @@ export const UserProfileModal: React.FC<UserProfileModalProps> = ({
                     />
                   </div>
 
+                  {/* Page Margins Selector */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', paddingTop: '4px' }}>
+                    <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>PAGE MARGINS</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                      {(['standard', 'compact', 'none'] as const).map(m => (
+                        <button
+                          key={m}
+                          type="button"
+                          onClick={() => handleCustomFieldChange('marginPreset', m)}
+                          style={{
+                            padding: '6px 4px',
+                            borderRadius: '8px',
+                            fontSize: '0.72rem',
+                            fontWeight: (printConfig.marginPreset || 'standard') === m ? 700 : 500,
+                            border: (printConfig.marginPreset || 'standard') === m ? '1.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                            background: (printConfig.marginPreset || 'standard') === m ? 'rgba(6, 182, 212, 0.18)' : 'var(--bg-secondary)',
+                            color: (printConfig.marginPreset || 'standard') === m ? 'var(--accent-cyan)' : 'var(--text-primary)',
+                            cursor: 'pointer',
+                            textTransform: 'capitalize'
+                          }}
+                        >
+                          {m === 'standard' ? 'Standard (14mm)' : m === 'compact' ? 'Compact (6mm)' : 'None (Edge)'}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   {/* Granular Toggles */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', paddingTop: '4px' }}>
                     <label style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--text-muted)' }}>PRINTED DOCUMENT ELEMENTS</label>
+
+                    {/* Toggle: Hide Markdown Divider Lines */}
+                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.78rem', cursor: 'pointer' }}>
+                      <span>Hide Section Divider Lines (---)</span>
+                      <input
+                        type="checkbox"
+                        checked={printConfig.hideDividers || false}
+                        onChange={(e) => handleCustomFieldChange('hideDividers', e.target.checked)}
+                        style={{ accentColor: 'var(--accent-cyan)', width: '15px', height: '15px', cursor: 'pointer' }}
+                      />
+                    </label>
 
                     {/* Toggle: Top Header Bar */}
                     <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.78rem', cursor: 'pointer' }}>
