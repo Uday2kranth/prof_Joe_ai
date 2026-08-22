@@ -18,11 +18,17 @@ import {
   Package,
   MessageSquare,
   Edit3,
-  RotateCcw
+  RotateCcw,
+  Printer,
+  Pin,
+  GitBranch
 } from 'lucide-react';
 import 'katex/dist/katex.min.css';
 import { extractDiagrams, fetchKrokiSvg } from '../services/krokiService';
 import { renderMarkdownWithMathAndDiagrams } from './MessageItem';
+import { exportBubbleToImage } from '../services/exportService';
+import { printBubbleToPdf } from '../services/printPdfService';
+import { PdfPreviewModal } from './PdfPreviewModal';
 import { QuickExtractionModal } from './QuickExtractionModal';
 import { CodeLabPresetDrawer, ACADEMIC_PRESETS } from './CodeLabPresetDrawer';
 import { MonacoEditorWrapper } from './MonacoEditorWrapper';
@@ -30,7 +36,7 @@ import { CodeLabControlDeck } from './CodeLabControlDeck';
 import { ResetSessionModal } from './ResetSessionModal';
 import { saveCodeLabSession } from '../services/indexedDbService';
 import { PROVIDERS } from '../constants';
-import type { UserCustomModels, ChatSession } from '../types';
+import type { UserCustomModels, ChatSession, Message } from '../types';
 
 interface GeneratedFile {
   fileName: string;
@@ -39,11 +45,15 @@ interface GeneratedFile {
 }
 
 interface CodeDungeonMessageBubbleProps {
-  msg: { role: 'user' | 'assistant'; content: string };
+  msg: any;
   isLastUserMessage?: boolean;
   isLastAssistantMessage?: boolean;
   onRetry?: () => void;
   onEditUserMessage?: (oldText: string) => void;
+  onBranch?: (msg: Message) => void;
+  onPin?: (msg: Message) => void;
+  isPinned?: boolean;
+  selectedModel?: string;
   extractCodeBlocksFromMessage: (content: string) => GeneratedFile[];
   handleOpenInIde: (file: GeneratedFile) => void;
 }
@@ -54,19 +64,59 @@ const CodeDungeonMessageBubble: React.FC<CodeDungeonMessageBubbleProps> = ({
   isLastAssistantMessage,
   onRetry,
   onEditUserMessage,
+  onBranch,
+  onPin,
+  isPinned,
+  selectedModel,
   extractCodeBlocksFromMessage,
   handleOpenInIde
 }) => {
   const isUser = msg.role === 'user';
   const [renderedHtml, setRenderedHtml] = useState<string>('');
   const [isCopied, setIsCopied] = useState(false);
+  const [exportingImage, setExportingImage] = useState(false);
+  const [isPdfModalOpen, setIsPdfModalOpen] = useState(false);
   const [isInlineEditing, setIsInlineEditing] = useState(false);
   const [draftContent, setDraftContent] = useState(msg.content || '');
   const editTextareaRef = useRef<HTMLTextAreaElement>(null);
+  const bubbleRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     setDraftContent(msg.content || '');
   }, [msg.content]);
+
+  const generateExportFilename = (extension: 'png' | 'pdf') => {
+    const textOnly = (msg.content || '')
+      .replace(/```[\s\S]*?```/g, ' ')
+      .replace(/[#*`$\-\\_]/g, ' ')
+      .replace(/\s+/g, ' ')
+      .trim();
+    const rawTopic = textOnly.slice(0, 25).trim();
+    const cleanTopic = rawTopic.replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_') || 'CodeLab';
+    const rawModel = msg.modelUsed || selectedModel || 'AI';
+    const modelSlug = (rawModel.includes('/') ? rawModel.split('/')[1] : rawModel).replace(/[^a-zA-Z0-9.-]/g, '');
+    const dateStr = new Date().toISOString().split('T')[0];
+    return `ProfJoe_Lab_${cleanTopic}_${modelSlug}_${dateStr}.${extension}`;
+  };
+
+  const handleExportImage = async () => {
+    if (!bubbleRef.current) return;
+    setExportingImage(true);
+    try {
+      const filename = generateExportFilename('png');
+      await exportBubbleToImage(bubbleRef.current, filename.replace(/\.png$/, ''));
+    } finally {
+      setExportingImage(false);
+    }
+  };
+
+  const handleExportPdf = () => {
+    setIsPdfModalOpen(true);
+  };
+
+  const handleDirectPrint = async () => {
+    await printBubbleToPdf(msg.content, msg.modelUsed || selectedModel, generateExportFilename('pdf').replace(/\.pdf$/, ''));
+  };
 
   const handleStartEdit = () => {
     setIsInlineEditing(true);
@@ -143,10 +193,11 @@ const CodeDungeonMessageBubble: React.FC<CodeDungeonMessageBubbleProps> = ({
 
   return (
     <div
+      ref={bubbleRef}
       className={isUser ? 'user-bubble' : 'assistant-bubble'}
       style={{
         alignSelf: isUser ? 'flex-end' : 'flex-start',
-        maxWidth: '90%',
+        maxWidth: '92%',
         padding: '12px 16px',
         borderRadius: '16px',
         fontSize: '0.84rem',
@@ -154,86 +205,28 @@ const CodeDungeonMessageBubble: React.FC<CodeDungeonMessageBubbleProps> = ({
         position: 'relative'
       }}
     >
-      {/* Header bar with role label and Action buttons */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px', gap: '8px' }}>
-        <div style={{ fontSize: '0.7rem', fontWeight: 700, opacity: 0.7 }}>
-          {isUser ? 'Student Prompt' : 'Prof. Joe AI'}
+      {/* Clean Header Bar: Role, Model Badge & Timestamp */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', gap: '8px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', fontWeight: 700, opacity: 0.85 }}>
+          <span>{isUser ? '👤 Student Prompt' : '🎓 Prof. Joe AI'}</span>
+          {!isUser && msg.modelUsed && (
+            <span style={{
+              background: 'rgba(6, 182, 212, 0.15)',
+              border: '1px solid rgba(6, 182, 212, 0.35)',
+              color: '#38bdf8',
+              fontSize: '0.65rem',
+              padding: '1px 6px',
+              borderRadius: '4px',
+              fontFamily: 'var(--font-mono)'
+            }}>
+              {msg.modelUsed.includes('/') ? msg.modelUsed.split('/')[1] : msg.modelUsed}
+            </span>
+          )}
         </div>
-        {!isInlineEditing && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <button
-              type="button"
-              onClick={handleCopyMessage}
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '4px',
-                background: isCopied ? 'rgba(6, 182, 212, 0.25)' : 'rgba(255, 255, 255, 0.08)',
-                border: isCopied ? '1px solid rgba(6, 182, 212, 0.5)' : '1px solid rgba(255, 255, 255, 0.15)',
-                borderRadius: '6px',
-                padding: '2px 7px',
-                fontSize: '0.68rem',
-                fontWeight: 600,
-                color: isCopied ? '#38bdf8' : '#cbd5e1',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease'
-              }}
-              title={isCopied ? 'Copied to clipboard!' : 'Copy message text'}
-            >
-              {isCopied ? <Check size={12} className="text-cyan-400" /> : <Copy size={12} />}
-              <span>{isCopied ? 'Copied' : 'Copy'}</span>
-            </button>
-
-            {isUser && isLastUserMessage && onEditUserMessage && (
-              <button
-                type="button"
-                onClick={handleStartEdit}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  background: 'rgba(255, 255, 255, 0.08)',
-                  border: '1px solid rgba(255, 255, 255, 0.15)',
-                  borderRadius: '6px',
-                  padding: '2px 7px',
-                  fontSize: '0.68rem',
-                  fontWeight: 600,
-                  color: '#cbd5e1',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-                title="Edit Prompt in Bubble"
-              >
-                <Edit3 size={12} />
-                <span>Edit</span>
-              </button>
-            )}
-
-            {!isUser && isLastAssistantMessage && onRetry && (
-              <button
-                type="button"
-                onClick={onRetry}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '4px',
-                  background: 'rgba(6, 182, 212, 0.15)',
-                  border: '1px solid rgba(6, 182, 212, 0.3)',
-                  borderRadius: '6px',
-                  padding: '2px 7px',
-                  fontSize: '0.68rem',
-                  fontWeight: 600,
-                  color: '#38bdf8',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s ease'
-                }}
-                title="Regenerate / Retry Answer"
-              >
-                <RotateCcw size={12} />
-                <span>Retry</span>
-              </button>
-            )}
-          </div>
+        {msg.timestamp && (
+          <span style={{ fontSize: '0.65rem', color: '#64748b', fontFamily: 'var(--font-mono)' }}>
+            {new Date(msg.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+          </span>
         )}
       </div>
 
@@ -335,6 +328,228 @@ const CodeDungeonMessageBubble: React.FC<CodeDungeonMessageBubbleProps> = ({
           </div>
         );
       })()}
+
+      {/* Dedicated Bottom Action Dock */}
+      {!isInlineEditing && (
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: isUser ? 'flex-end' : 'flex-start',
+          gap: '5px',
+          flexWrap: 'wrap',
+          marginTop: '10px',
+          paddingTop: '8px',
+          borderTop: '1px solid rgba(255, 255, 255, 0.08)'
+        }}>
+          <button
+            type="button"
+            onClick={handleCopyMessage}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              background: isCopied ? 'rgba(6, 182, 212, 0.25)' : 'rgba(255, 255, 255, 0.08)',
+              border: isCopied ? '1px solid rgba(6, 182, 212, 0.5)' : '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '6px',
+              padding: '3px 8px',
+              fontSize: '0.7rem',
+              fontWeight: 600,
+              color: isCopied ? '#38bdf8' : '#cbd5e1',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            title={isCopied ? 'Copied to clipboard!' : 'Copy message text'}
+          >
+            {isCopied ? <Check size={12} className="text-cyan-400" /> : <Copy size={12} />}
+            <span>{isCopied ? 'Copied' : 'Copy'}</span>
+          </button>
+
+          {/* PNG Image Export */}
+          <button
+            type="button"
+            onClick={handleExportImage}
+            disabled={exportingImage}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '6px',
+              padding: '3px 8px',
+              fontSize: '0.7rem',
+              fontWeight: 600,
+              color: '#cbd5e1',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            title="Export Bubble to PNG Image"
+          >
+            <Download size={12} />
+            <span>{exportingImage ? '...' : 'PNG'}</span>
+          </button>
+
+          {/* PDF Preview Modal */}
+          <button
+            type="button"
+            onClick={handleExportPdf}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '6px',
+              padding: '3px 8px',
+              fontSize: '0.7rem',
+              fontWeight: 600,
+              color: '#cbd5e1',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            title="Preview Styled PDF Document"
+          >
+            <Eye size={12} />
+            <span>PDF</span>
+          </button>
+
+          {/* Direct System Print */}
+          <button
+            type="button"
+            onClick={handleDirectPrint}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '4px',
+              background: 'rgba(255, 255, 255, 0.08)',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '6px',
+              padding: '3px 8px',
+              fontSize: '0.7rem',
+              fontWeight: 600,
+              color: '#cbd5e1',
+              cursor: 'pointer',
+              transition: 'all 0.2s ease'
+            }}
+            title="Direct System Print Preview"
+          >
+            <Printer size={12} />
+            <span>Print</span>
+          </button>
+
+          {/* Pin to Exam Cheat Sheet & Lab Notebook */}
+          {!isUser && onPin && (
+            <button
+              type="button"
+              onClick={() => onPin(msg)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                background: isPinned ? 'rgba(245, 158, 11, 0.25)' : 'rgba(255, 255, 255, 0.08)',
+                border: isPinned ? '1px solid rgba(245, 158, 11, 0.6)' : '1px solid rgba(255, 255, 255, 0.15)',
+                borderRadius: '6px',
+                padding: '3px 8px',
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                color: isPinned ? '#fbbf24' : '#cbd5e1',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              title={isPinned ? "Pinned in Exam Cheat Sheet & Lab Notebook" : "Pin to Exam Cheat Sheet & Lab Notebook"}
+            >
+              <Pin size={12} style={{ color: isPinned ? '#fbbf24' : '#94a3b8' }} className={isPinned ? 'fill-amber-400 text-amber-400' : ''} />
+              <span>{isPinned ? 'Pinned ⭐' : 'Pin'}</span>
+            </button>
+          )}
+
+          {/* Branch Conversation */}
+          {!isUser && onBranch && (
+            <button
+              type="button"
+              onClick={() => onBranch(msg)}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                background: 'rgba(52, 211, 153, 0.15)',
+                border: '1px solid rgba(52, 211, 153, 0.35)',
+                borderRadius: '6px',
+                padding: '3px 8px',
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                color: '#34d399',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              title="Branch / Fork Code Lab session from this turn"
+            >
+              <GitBranch size={12} />
+              <span>Branch</span>
+            </button>
+          )}
+
+          {isUser && isLastUserMessage && onEditUserMessage && (
+            <button
+              type="button"
+              onClick={handleStartEdit}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                background: 'rgba(255, 255, 255, 0.08)',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                borderRadius: '6px',
+                padding: '3px 8px',
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                color: '#cbd5e1',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              title="Edit Prompt in Bubble"
+            >
+              <Edit3 size={12} />
+              <span>Edit</span>
+            </button>
+          )}
+
+          {!isUser && isLastAssistantMessage && onRetry && (
+            <button
+              type="button"
+              onClick={onRetry}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '4px',
+                background: 'rgba(6, 182, 212, 0.15)',
+                border: '1px solid rgba(6, 182, 212, 0.3)',
+                borderRadius: '6px',
+                padding: '3px 8px',
+                fontSize: '0.7rem',
+                fontWeight: 600,
+                color: '#38bdf8',
+                cursor: 'pointer',
+                transition: 'all 0.2s ease'
+              }}
+              title="Regenerate / Retry Answer"
+            >
+              <RotateCcw size={12} />
+              <span>Retry</span>
+            </button>
+          )}
+        </div>
+      )}
+
+      {/* Custom Animated PDF Preview Modal */}
+      <PdfPreviewModal
+        isOpen={isPdfModalOpen}
+        onClose={() => setIsPdfModalOpen(false)}
+        content={msg.content}
+        modelUsed={msg.modelUsed || selectedModel}
+        docTitle={generateExportFilename('pdf').replace(/\.pdf$/, '')}
+        renderedHtml={renderedHtml}
+      />
     </div>
   );
 };
@@ -344,6 +559,11 @@ interface PracticalCodeLabViewProps {
   onSendMessage: (prompt: string, webSearch: boolean, mode: string, systemPrompt?: string) => void;
   onRetry?: () => void;
   onEditUserMessage?: (oldText: string) => void;
+  onBranchMessage?: (msg: Message) => void;
+  onPinMessage?: (msg: Message) => void;
+  pinnedMessageIds?: Set<string>;
+  onOpenCheatSheet?: () => void;
+  pinnedCount?: number;
   isLoading: boolean;
   messages: any[];
   selectedProvider?: string;
@@ -374,6 +594,11 @@ export function PracticalCodeLabView({
   onSendMessage,
   onRetry,
   onEditUserMessage,
+  onBranchMessage,
+  onPinMessage,
+  pinnedMessageIds,
+  onOpenCheatSheet,
+  pinnedCount = 0,
   isLoading,
   messages,
   selectedProvider = 'Ollama Cloud',
@@ -957,6 +1182,10 @@ Follow these mandatory formatting rules for all responses:
                       isLastAssistantMessage={idx === lastAssistantMsgIndex}
                       onRetry={onRetry}
                       onEditUserMessage={onEditUserMessage}
+                      onBranch={onBranchMessage}
+                      onPin={onPinMessage}
+                      isPinned={pinnedMessageIds?.has(msg.id)}
+                      selectedModel={selectedModel}
                       extractCodeBlocksFromMessage={extractCodeBlocksFromMessage}
                       handleOpenInIde={handleOpenInIde}
                     />
@@ -1167,6 +1396,8 @@ Follow these mandatory formatting rules for all responses:
         }}
         webSearch={isWebSearch}
         onToggleWebSearch={() => setIsWebSearch(prev => !prev)}
+        onOpenCheatSheet={onOpenCheatSheet}
+        pinnedCount={pinnedCount}
       />
 
       {/* Reset Session Warning Confirmation Modal */}

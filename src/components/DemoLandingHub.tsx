@@ -17,12 +17,13 @@ import {
   Zap,
   FlaskConical,
   Binary,
-  Award
+  Award,
+  Pin
 } from 'lucide-react';
 import { MorphingText } from './MorphingText';
 
 interface DemoLandingHubProps {
-  onSelectWorkspace: (workspaceId: 'chat' | 'personas' | 'fun_personas' | 'examprep' | 'diagrams' | 'system_prompts' | 'prompts' | 'cubes' | 'extractor_studio' | 'code_lab' | 'lecture_notes' | 'sandbox' | 'dsa_lab' | 'flashcards_studio' | 'quiz_arena') => void;
+  onSelectWorkspace: (workspaceId: 'chat' | 'personas' | 'fun_personas' | 'examprep' | 'diagrams' | 'system_prompts' | 'prompts' | 'cubes' | 'extractor_studio' | 'code_lab' | 'lecture_notes' | 'sandbox' | 'dsa_lab' | 'flashcards_studio' | 'quiz_arena' | 'pinned_archive') => void;
   onOpenSettings: () => void;
   onOpenProfile: () => void;
   theme: 'dark' | 'light';
@@ -578,6 +579,34 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
               </div>
               <button type="button" className="launch-portal-btn purple-btn">
                 <span>Open Code Dungeon</span>
+                <ArrowRight size={14} />
+              </button>
+            </div>
+          </div>
+
+          {/* Card 9: Pinned Notes & Exam Archive */}
+          <div 
+            className="hub-portal-card pinned-archive-portal"
+            onClick={() => onSelectWorkspace('pinned_archive')}
+            style={{ borderColor: 'rgba(245, 158, 11, 0.4)', background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(180, 83, 9, 0.35))' }}
+          >
+            <div className="portal-card-header">
+              <div className="portal-icon-badge amber-bg" style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24' }}>
+                <Pin size={24} className="fill-amber-400" />
+              </div>
+              <span className="portal-tag amber-tag" style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', borderColor: 'rgba(245, 158, 11, 0.3)' }}>Exam Cheat Sheet</span>
+            </div>
+            <div className="portal-card-body">
+              <h3>Pinned Notes & Exam Archive 🏛️</h3>
+              <p>Centralized revision hub for all bookmarked formulas, definitions, algorithms, and 1-page print cheat sheets.</p>
+            </div>
+            <div className="portal-card-footer">
+              <div className="portal-meta-features">
+                <span>⭐ Cross-Workspace</span>
+                <span>🖨️ Master PDF Print</span>
+              </div>
+              <button type="button" className="launch-portal-btn amber-btn">
+                <span>Open Archive</span>
                 <ArrowRight size={14} />
               </button>
             </div>

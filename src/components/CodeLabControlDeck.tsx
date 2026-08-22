@@ -9,7 +9,10 @@ import {
   Search, 
   MessageSquare, 
   Trash2, 
-  Cloud 
+  Cloud,
+  Pin,
+  Printer,
+  Sparkles
 } from 'lucide-react';
 import type { ChatSession } from '../types';
 
@@ -27,6 +30,9 @@ interface CodeLabControlDeckProps {
   onResetSession: () => void;
   webSearch: boolean;
   onToggleWebSearch: () => void;
+  onOpenCheatSheet?: () => void;
+  pinnedCount?: number;
+  onPrintSession?: () => void;
 }
 
 export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
@@ -41,7 +47,10 @@ export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
   onDeleteSession,
   onResetSession,
   webSearch,
-  onToggleWebSearch
+  onToggleWebSearch,
+  onOpenCheatSheet,
+  pinnedCount = 0,
+  onPrintSession
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -77,8 +86,8 @@ export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
           top: 0,
           left: 0,
           bottom: 0,
-          width: '330px',
-          maxWidth: '85vw',
+          width: '350px',
+          maxWidth: '88vw',
           borderRight: '1px solid var(--border-color)',
           backdropFilter: 'blur(16px)',
           boxShadow: '0 0 35px rgba(6, 182, 212, 0.25)',
@@ -132,60 +141,151 @@ export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
           <span>New {presetName} Session</span>
         </button>
 
-        {/* Command Controls Card */}
-        <div className="codelab-command-controls-card" style={{ borderRadius: '14px', padding: '12px', marginBottom: '14px' }}>
-          <div style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.05em', marginBottom: '10px', textTransform: 'uppercase' }}>
-            ⚡ Command Controls
+        {/* 🍱 COMMAND CONTROLS CARD */}
+        <div className="codelab-command-controls-card" style={{ borderRadius: '14px', padding: '12px', marginBottom: '14px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.05em', marginBottom: '10px', textTransform: 'uppercase' }}>
+            <Sparkles size={12} style={{ color: 'var(--accent-cyan)' }} />
+            <span>⚡ Command Controls</span>
           </div>
 
+          {/* 2x2 Bento Grid */}
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
-            {/* Web Search Toggle Pill */}
+            {/* Tile 1: Exam Cheat Sheet & Lab Notebook */}
+            {onOpenCheatSheet && (
+              <button
+                type="button"
+                onClick={() => {
+                  onOpenCheatSheet();
+                  onClose();
+                }}
+                className="codelab-control-pill"
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-start',
+                  justifyContent: 'center',
+                  gap: '4px',
+                  padding: '8px 10px',
+                  borderRadius: '10px',
+                  border: '1px solid rgba(245, 158, 11, 0.4)',
+                  background: 'rgba(245, 158, 11, 0.12)',
+                  color: '#fbbf24',
+                  cursor: 'pointer',
+                  textAlign: 'left'
+                }}
+                title="View Pinned Formulas, Snippets & Print 1-Page Cheat Sheet"
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.74rem', fontWeight: 700 }}>
+                    <Pin size={13} className="fill-amber-400 text-amber-400" />
+                    <span>Cheat Sheet</span>
+                  </div>
+                  {pinnedCount > 0 && (
+                    <span style={{
+                      background: 'rgba(245, 158, 11, 0.3)',
+                      color: '#fbbf24',
+                      fontSize: '0.62rem',
+                      fontWeight: 800,
+                      padding: '1px 5px',
+                      borderRadius: '10px'
+                    }}>
+                      {pinnedCount}
+                    </span>
+                  )}
+                </div>
+                <span style={{ fontSize: '0.64rem', color: 'var(--text-muted)' }}>Pinned Notes ⭐</span>
+              </button>
+            )}
+
+            {/* Tile 2: Web Search Toggle */}
             <button
               type="button"
               onClick={onToggleWebSearch}
               className="codelab-control-pill"
               style={{
                 display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                justifyContent: 'center',
+                gap: '4px',
                 padding: '8px 10px',
                 borderRadius: '10px',
                 border: '1px solid',
                 borderColor: webSearch ? 'rgba(52, 211, 153, 0.5)' : 'var(--border-color)',
                 background: webSearch ? 'rgba(52, 211, 153, 0.15)' : 'var(--bg-tertiary)',
                 color: webSearch ? '#34d399' : 'var(--text-secondary)',
-                fontSize: '0.74rem',
-                fontWeight: 700,
-                cursor: 'pointer'
+                cursor: 'pointer',
+                textAlign: 'left'
               }}
+              title="Toggle Live Web Search for Dataset documentation and papers"
             >
-              <Globe size={14} />
-              <span>Search: {webSearch ? 'ON' : 'OFF'}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.74rem', fontWeight: 700 }}>
+                <Globe size={13} />
+                <span>Web Search</span>
+              </div>
+              <span style={{ fontSize: '0.64rem', color: webSearch ? '#34d399' : 'var(--text-muted)' }}>
+                {webSearch ? '🟢 Enabled' : '⚪ Disabled'}
+              </span>
             </button>
 
-            {/* Selected Model Pill */}
+            {/* Tile 3: Selected Model Monitor */}
             <div
               className="codelab-control-pill"
               style={{
                 display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                justifyContent: 'center',
+                gap: '4px',
                 padding: '8px 10px',
                 borderRadius: '10px',
                 border: '1px solid var(--border-color)',
                 background: 'var(--bg-tertiary)',
                 color: 'var(--text-primary)',
-                fontSize: '0.74rem',
-                fontWeight: 700,
-                overflow: 'hidden',
-                textOverflow: 'ellipsis',
-                whiteSpace: 'nowrap'
+                overflow: 'hidden'
               }}
-              title={`Active Model: ${selectedModel}`}
+              title={`Active Code Model: ${selectedModel}`}
             >
-              <Cpu size={14} style={{ flexShrink: 0 }} />
-              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{selectedModel}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.74rem', fontWeight: 700 }}>
+                <Cpu size={13} style={{ color: 'var(--accent-cyan)' }} />
+                <span>AI Model</span>
+              </div>
+              <span style={{ fontSize: '0.64rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>
+                {selectedModel}
+              </span>
             </div>
+
+            {/* Tile 4: Native Print / PDF Lab Session */}
+            <button
+              type="button"
+              onClick={() => {
+                if (onPrintSession) onPrintSession();
+                else window.print();
+                onClose();
+              }}
+              className="codelab-control-pill"
+              style={{
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'flex-start',
+                justifyContent: 'center',
+                gap: '4px',
+                padding: '8px 10px',
+                borderRadius: '10px',
+                border: '1px solid var(--border-color)',
+                background: 'var(--bg-tertiary)',
+                color: 'var(--text-primary)',
+                cursor: 'pointer',
+                textAlign: 'left'
+              }}
+              title="Print or Export Full Code Lab Session to PDF"
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.74rem', fontWeight: 700 }}>
+                <Printer size={13} style={{ color: '#38bdf8' }} />
+                <span>Print Lab</span>
+              </div>
+              <span style={{ fontSize: '0.64rem', color: 'var(--text-muted)' }}>PDF / Paper 🖨️</span>
+            </button>
           </div>
 
           {/* Reset Context Button */}
@@ -204,8 +304,10 @@ export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
               color: '#f87171',
               fontSize: '0.74rem',
               fontWeight: 700,
-              cursor: 'pointer'
+              cursor: 'pointer',
+              marginTop: '4px'
             }}
+            title="Clear context for this lab session"
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <RefreshCw size={13} />

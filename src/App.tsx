@@ -35,6 +35,7 @@ const InteractiveSandboxView = React.lazy(() => import('./components/Interactive
 const DsaLabView = React.lazy(() => import('./components/dsa/DsaLabView').then(m => ({ default: m.DsaLabView })));
 const FlashcardsStudioView = React.lazy(() => import('./components/FlashcardsStudioView').then(m => ({ default: m.FlashcardsStudioView })));
 const QuizArenaView = React.lazy(() => import('./components/QuizArenaView').then(m => ({ default: m.QuizArenaView })));
+const PinnedNotesArchiveView = React.lazy(() => import('./components/PinnedNotesArchiveView').then(m => ({ default: m.PinnedNotesArchiveView })));
 import { ACADEMIC_PRESETS } from './components/CodeLabPresetDrawer';
 import { SettingsModal } from './components/SettingsModal';
 import { LoginModal } from './components/LoginModal';
@@ -214,10 +215,25 @@ export const App: React.FC = () => {
       if (prev.some(p => p.id === msg.id)) {
         updated = prev.filter(p => p.id !== msg.id);
       } else {
+        let currentWorkspace: 'chat' | 'code_lab' | 'persona' = 'chat';
+        let currentSessionId = activeSession?.id || 'chat-session';
+        let currentSessionTitle = activeSession?.title || 'Academic Discussion';
+
+        if (activeHubWorkspace === 'code_lab' || activeView === 'code_lab') {
+          currentWorkspace = 'code_lab';
+          currentSessionId = activeCodeLabSession?.id || `codelab-${activeCodeLabPresetId}`;
+          currentSessionTitle = activeCodeLabSession?.title || 'Code Lab Session';
+        } else if (activeHubWorkspace === 'fun_personas' || activeView === 'fun_personas') {
+          currentWorkspace = 'persona';
+          currentSessionId = activePersonaSessionIdState || 'persona-session';
+          currentSessionTitle = activePersonaSession?.title || `${selectedPersona || 'Character'} Chat`;
+        }
+
         const newItem: PinnedItem = {
           id: msg.id,
-          sessionId: activeSession?.id || '',
-          sessionTitle: activeSession?.title || 'High-Yield Note',
+          sessionId: currentSessionId,
+          sessionTitle: currentSessionTitle,
+          workspace: currentWorkspace,
           content: msg.content,
           modelUsed: msg.modelUsed || selectedModel,
           createdAt: Date.now()
@@ -639,6 +655,40 @@ export const App: React.FC = () => {
         body: JSON.stringify({ username: currentUser, sessions: updated })
       }).catch(err => console.warn('Could not sync persona branch to cloud immediately:', err));
     }
+  };
+
+  // 🌿 Code Lab Branching: Fork exact code lab preset conversation history up to selected turn
+  const handleBranchCodeLabSession = (targetMsg: Message) => {
+    if (!activeCodeLabSession || !activeCodeLabSession.messages.length) return;
+    const targetIdx = activeCodeLabSession.messages.findIndex(m => m.id === targetMsg.id);
+    if (targetIdx === -1) return;
+
+    const rawSliced = activeCodeLabSession.messages.slice(0, targetIdx + 1);
+    const slicedMessages: Message[] = JSON.parse(JSON.stringify(rawSliced));
+    const currentList = codeLabPresetSessions[activeCodeLabPresetId] || [];
+    const newTitle = generateBranchTitle(activeCodeLabSession.title || 'Code Lab Session', currentList);
+    const newBranchId = `codelab-branch-${activeCodeLabPresetId}-${Date.now()}`;
+
+    const newBranchSession: ChatSession = {
+      id: newBranchId,
+      title: newTitle,
+      provider: activeCodeLabSession.provider || selectedProvider,
+      model: activeCodeLabSession.model || selectedModel,
+      messages: slicedMessages,
+      createdAt: Date.now(),
+      updatedAt: Date.now(),
+      presetId: activeCodeLabPresetId
+    };
+
+    setCodeLabPresetSessions(prev => {
+      const list = prev[activeCodeLabPresetId] || [];
+      const updatedList = [newBranchSession, ...list];
+      const next = { ...prev, [activeCodeLabPresetId]: updatedList };
+      syncCodeLabPresetSessions(currentUser || 'guest', activeCodeLabPresetId, newBranchSession, next);
+      return next;
+    });
+
+    setActiveCodeLabSessionIds(prev => ({ ...prev, [activeCodeLabPresetId]: newBranchId }));
   };
 
   // Perform hard legacy key cache wipe on app startup
@@ -2247,6 +2297,11 @@ export const App: React.FC = () => {
                 }}
                 onRetry={handleRetryLastAssistantMessage}
                 onEditUserMessage={handleEditLastUserMessage}
+                onBranchMessage={handleBranchCodeLabSession}
+                onPinMessage={handleTogglePin}
+                pinnedMessageIds={pinnedMessageIds}
+                onOpenCheatSheet={() => setIsCheatSheetOpen(true)}
+                pinnedCount={pinnedItems.length}
                 isLoading={isLoading}
                 messages={activeCodeLabSession ? activeCodeLabSession.messages : []}
                 selectedProvider={selectedProvider}
@@ -2287,6 +2342,17 @@ export const App: React.FC = () => {
                 onNavigateToChat={() => setActiveHubWorkspace('chat')}
               />
             )}
+
+            {activeHubWorkspace === 'pinned_archive' && (
+              <PinnedNotesArchiveView
+                currentUser={currentUser}
+                pinnedItems={pinnedItems}
+                onDeletePin={handleDeletePin}
+                onClearAllPins={handleClearAllPins}
+                onBackToHub={() => setActiveHubWorkspace('chat')}
+                onNavigateToChat={() => setActiveHubWorkspace('chat')}
+              />
+            )}
             </React.Suspense>
           </main>
         </div>
@@ -2323,8 +2389,14 @@ export const App: React.FC = () => {
           isOpen={isCheatSheetOpen}
           onClose={() => setIsCheatSheetOpen(false)}
           pinnedItems={pinnedItems}
+          currentSessionId={activeHubWorkspace === 'code_lab' ? activeCodeLabSession?.id : activeHubWorkspace === 'fun_personas' ? activePersonaSession?.id : activeSession?.id}
+          currentWorkspace={activeHubWorkspace === 'code_lab' ? 'code_lab' : activeHubWorkspace === 'fun_personas' ? 'persona' : 'chat'}
           onDeletePin={handleDeletePin}
           onClearAllPins={handleClearAllPins}
+          onOpenArchive={() => {
+            setIsCheatSheetOpen(false);
+            setActiveHubWorkspace('pinned_archive');
+          }}
         />
 
         <FlashcardsModal
@@ -2525,8 +2597,14 @@ export const App: React.FC = () => {
         isOpen={isCheatSheetOpen}
         onClose={() => setIsCheatSheetOpen(false)}
         pinnedItems={pinnedItems}
+        currentSessionId={activeSession?.id}
+        currentWorkspace="chat"
         onDeletePin={handleDeletePin}
         onClearAllPins={handleClearAllPins}
+        onOpenArchive={() => {
+          setIsCheatSheetOpen(false);
+          setActiveHubWorkspace('pinned_archive');
+        }}
       />
 
       <FlashcardsModal

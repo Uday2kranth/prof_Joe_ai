@@ -2080,7 +2080,7 @@ body {
 
 .messages-scroll-area {
   width: 100%;
-  max-width: 1200px;
+  max-width: min(1280px, 94vw);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -2091,7 +2091,7 @@ body {
   display: flex;
   gap: 12px;
   width: 100%;
-  max-width: 1200px;
+  max-width: min(1280px, 94vw);
   margin: 0 auto;
   align-items: flex-start;
 }
@@ -2673,7 +2673,7 @@ body {
 }
 
 .input-form {
-  max-width: 880px;
+  max-width: min(1280px, 94vw);
   margin: 0 auto;
   display: flex;
   flex-direction: column;
@@ -5432,6 +5432,10 @@ body {
   position: sticky !important;
   bottom: 0 !important;
   z-index: 50 !important;
+  max-width: min(1280px, 94vw) !important;
+  width: 100% !important;
+  margin-left: auto !important;
+  margin-right: auto !important;
 }
 
 /* 🌟 INTERACTIVE HERO WELCOME CARD WITH MOUSE CURSOR GLOW AURA */
@@ -11295,12 +11299,12 @@ body {
 }
 
 .messages-inner {
-  max-width: 900px;
+  max-width: min(1280px, 94vw);
   margin: 0 auto;
   width: 100%;
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 18px;
 }
 
 @media (max-width: 768px) {
@@ -11323,6 +11327,28 @@ body {
   .demo-workspace-card {
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+  }
+}
+
+@media (max-width: 640px) {
+  .chat-messages-container {
+    padding: 12px 8px !important;
+  }
+
+  .message-row {
+    gap: 8px !important;
+  }
+
+  .message-row .avatar {
+    width: 28px !important;
+    height: 28px !important;
+    min-width: 28px !important;
+  }
+
+  .message-bubble {
+    padding: 12px 14px !important;
+    font-size: 0.88rem !important;
+    border-radius: 14px !important;
   }
 }
 
