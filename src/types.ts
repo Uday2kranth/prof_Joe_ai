@@ -151,8 +151,10 @@ export const DEFAULT_AI_TUNING: AiTuningConfig = {
   graderMode: 'rigorous_12mark'
 };
 
+export type SupportedCodeTheme = 'onedark' | 'vscode_dark' | 'monokai' | 'tokyo_night' | 'github_light' | 'neon' | 'hc_black';
+
 export interface CodeStyleConfig {
-  codeTheme: 'onedark' | 'vscode_dark' | 'monokai' | 'tokyo_night' | 'github_light' | 'neon';
+  codeTheme: SupportedCodeTheme;
   katexScale: 'compact' | 'standard' | 'large';
   equationCopyMode: 'latex' | 'unicode';
 }
@@ -164,21 +166,23 @@ export const DEFAULT_CODE_STYLE: CodeStyleConfig = {
 };
 
 export interface IdeConfig {
-  theme: 'vs-dark' | 'vs-light' | 'hc-black';
+  theme: SupportedCodeTheme | 'vs-dark' | 'vs-light' | 'hc-black';
   fontSize: number;
   minimap: boolean;
   tabSize: 2 | 4;
   wordWrap: 'on' | 'off';
   lineNumbers: 'on' | 'off';
+  editorEngine?: 'monaco' | 'fast';
 }
 
 export const DEFAULT_IDE_CONFIG: IdeConfig = {
-  theme: 'vs-dark',
+  theme: 'onedark',
   fontSize: 13,
   minimap: false,
   tabSize: 2,
   wordWrap: 'on',
-  lineNumbers: 'on'
+  lineNumbers: 'on',
+  editorEngine: 'monaco'
 };
 
 

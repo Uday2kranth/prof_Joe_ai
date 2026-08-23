@@ -2500,80 +2500,107 @@ body {
 
 /* 💻 Dynamic Code Syntax Theme Overrides */
 [data-code-theme="onedark"] .markdown-body pre,
-[data-code-theme="onedark"] pre {
+[data-code-theme="onedark"] pre,
+[data-code-theme="onedark"] .code-lab-editor-area {
   background: #282c34 !important;
   color: #abb2bf !important;
   border: 1px solid rgba(97, 175, 239, 0.3) !important;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 [data-code-theme="onedark"] .markdown-body pre code,
-[data-code-theme="onedark"] pre code {
+[data-code-theme="onedark"] pre code,
+[data-code-theme="onedark"] .code-lab-editor-area code {
   color: #61afef !important;
   background: transparent !important;
 }
 
 [data-code-theme="vscode_dark"] .markdown-body pre,
-[data-code-theme="vscode_dark"] pre {
+[data-code-theme="vscode_dark"] pre,
+[data-code-theme="vscode_dark"] .code-lab-editor-area {
   background: #1e1e1e !important;
   color: #d4d4d4 !important;
   border: 1px solid rgba(78, 201, 176, 0.3) !important;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 [data-code-theme="vscode_dark"] .markdown-body pre code,
-[data-code-theme="vscode_dark"] pre code {
+[data-code-theme="vscode_dark"] pre code,
+[data-code-theme="vscode_dark"] .code-lab-editor-area code {
   color: #4ec9b0 !important;
   background: transparent !important;
 }
 
 [data-code-theme="monokai"] .markdown-body pre,
-[data-code-theme="monokai"] pre {
+[data-code-theme="monokai"] pre,
+[data-code-theme="monokai"] .code-lab-editor-area {
   background: #272822 !important;
   color: #f8f8f2 !important;
   border: 1px solid rgba(255, 216, 102, 0.3) !important;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 [data-code-theme="monokai"] .markdown-body pre code,
-[data-code-theme="monokai"] pre code {
+[data-code-theme="monokai"] pre code,
+[data-code-theme="monokai"] .code-lab-editor-area code {
   color: #ffd866 !important;
   background: transparent !important;
 }
 
 [data-code-theme="tokyo_night"] .markdown-body pre,
-[data-code-theme="tokyo_night"] pre {
+[data-code-theme="tokyo_night"] pre,
+[data-code-theme="tokyo_night"] .code-lab-editor-area {
   background: #1a1b26 !important;
   color: #a9b1d6 !important;
   border: 1px solid rgba(122, 162, 247, 0.3) !important;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
 [data-code-theme="tokyo_night"] .markdown-body pre code,
-[data-code-theme="tokyo_night"] pre code {
+[data-code-theme="tokyo_night"] pre code,
+[data-code-theme="tokyo_night"] .code-lab-editor-area code {
   color: #7aa2f7 !important;
   background: transparent !important;
 }
 
 [data-code-theme="github_light"] .markdown-body pre,
-[data-code-theme="github_light"] pre {
+[data-code-theme="github_light"] pre,
+[data-code-theme="github_light"] .code-lab-editor-area {
   background: #f6f8fa !important;
   color: #24292f !important;
   border: 1px solid rgba(9, 105, 218, 0.3) !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
 }
 [data-code-theme="github_light"] .markdown-body pre code,
-[data-code-theme="github_light"] pre code {
+[data-code-theme="github_light"] pre code,
+[data-code-theme="github_light"] .code-lab-editor-area code {
   color: #0969da !important;
   background: transparent !important;
 }
 
 [data-code-theme="neon"] .markdown-body pre,
-[data-code-theme="neon"] pre {
+[data-code-theme="neon"] pre,
+[data-code-theme="neon"] .code-lab-editor-area {
   background: #0b0f19 !important;
   color: #38bdf8 !important;
   border: 1px solid rgba(6, 182, 212, 0.55) !important;
   box-shadow: 0 0 16px rgba(6, 182, 212, 0.22);
 }
 [data-code-theme="neon"] .markdown-body pre code,
-[data-code-theme="neon"] pre code {
+[data-code-theme="neon"] pre code,
+[data-code-theme="neon"] .code-lab-editor-area code {
   color: #06b6d4 !important;
+  background: transparent !important;
+}
+
+[data-code-theme="hc_black"] .markdown-body pre,
+[data-code-theme="hc_black"] pre,
+[data-code-theme="hc_black"] .code-lab-editor-area {
+  background: #000000 !important;
+  color: #06b6d4 !important;
+  border: 2px solid #06b6d4 !important;
+  box-shadow: 0 0 14px rgba(6, 182, 212, 0.3);
+}
+[data-code-theme="hc_black"] .markdown-body pre code,
+[data-code-theme="hc_black"] pre code,
+[data-code-theme="hc_black"] .code-lab-editor-area code {
+  color: #ffffff !important;
   background: transparent !important;
 }
 

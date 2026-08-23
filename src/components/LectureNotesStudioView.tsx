@@ -29,7 +29,8 @@ import {
   AlertTriangle,
   List
 } from 'lucide-react';
-import type { UserKeys, UserCustomModels } from '../types';
+import type { UserKeys, UserCustomModels, CodeStyleConfig } from '../types';
+import { DEFAULT_CODE_STYLE } from '../types';
 import { sendChatMessage } from '../services/apiService';
 import { PROVIDERS } from '../constants';
 import { extractDiagrams, fetchKrokiSvg } from '../services/krokiService';
@@ -274,6 +275,29 @@ export const LectureNotesStudioView: React.FC<LectureNotesStudioViewProps> = ({
   const [lastGeneratedTopic, setLastGeneratedTopic] = useState<string>(activeSession?.topic || '');
   const [isOutlineOpen, setIsOutlineOpen] = useState<boolean>(false);
   const [outlineSearchQuery, setOutlineSearchQuery] = useState<string>('');
+
+  const [codeStyle, setCodeStyle] = useState<CodeStyleConfig>(() => {
+    try {
+      const saved = localStorage.getItem('chatterbot_code_style');
+      if (saved) return { ...DEFAULT_CODE_STYLE, ...JSON.parse(saved) };
+    } catch {}
+    return DEFAULT_CODE_STYLE;
+  });
+
+  useEffect(() => {
+    const handleCodeStyleUpdate = () => {
+      try {
+        const saved = localStorage.getItem('chatterbot_code_style');
+        if (saved) setCodeStyle({ ...DEFAULT_CODE_STYLE, ...JSON.parse(saved) });
+      } catch {}
+    };
+    window.addEventListener('chatterbot_code_style_updated', handleCodeStyleUpdate);
+    window.addEventListener('storage', handleCodeStyleUpdate);
+    return () => {
+      window.removeEventListener('chatterbot_code_style_updated', handleCodeStyleUpdate);
+      window.removeEventListener('storage', handleCodeStyleUpdate);
+    };
+  }, []);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const providerRef = useRef<HTMLDivElement>(null);
@@ -1047,7 +1071,7 @@ Begin IMMEDIATELY on Line 1 with the next chapter, delivering full theoretical r
 
   return (
     <>
-      <div className="studio-unified-wrapper">
+      <div className="studio-unified-wrapper" data-code-theme={codeStyle.codeTheme}>
         {/* 📄 Dedicated Academic Parchment Stage (Natural Top Reading Stage) */}
         <main className="studio-parchment-stage">
           <div className="academic-parchment-sheet">

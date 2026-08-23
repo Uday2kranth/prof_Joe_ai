@@ -499,29 +499,6 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
             </p>
           </div>
         </div>
-
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
-          <button
-            onClick={onToggleTheme}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              width: '36px',
-              height: '36px',
-              padding: '0',
-              borderRadius: '8px',
-              background: 'var(--bg-tertiary)',
-              border: '1px solid var(--border-color)',
-              color: 'var(--text-primary)',
-              cursor: 'pointer',
-              flexShrink: 0
-            }}
-            title={theme === 'dark' ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-          >
-            {theme === 'dark' ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} className="text-indigo-400" />}
-          </button>
-        </div>
       </header>
 
       {/* Main Studio Body: Sidebar Navigation + Content Area */}
@@ -1947,75 +1924,344 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
             </div>
           )}
 
-          {/* TAB 3c: 💻 CODE & MATH SYNTAX STYLING (2-COLUMN BENTO DECK) */}
-          {activeTab === 'code_style' && (
-            <div className="settings-bento-2col">
-              {/* Left Column: Code Syntax Themes */}
-              <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                  <Code size={20} className="text-cyan-400" />
-                  <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Code Block Syntax Theme</h3>
-                </div>
+          {/* TAB 3c: 💻 CODE & MATH SYNTAX STYLING (VERTICAL BENTO DECK) */}
+          {activeTab === 'code_style' && (() => {
+            const UNIFIED_CODE_THEMES = [
+              { id: 'onedark', label: 'OneDark Pro', desc: 'Atom / VS Code dark charcoal', bg: '#282c34', color: '#abb2bf', keywordColor: '#c678dd', funcColor: '#61afef', stringColor: '#98c379', numberColor: '#d19a66', commentColor: '#5c6370', borderColor: 'rgba(97, 175, 239, 0.4)' },
+              { id: 'vscode_dark', label: 'VS Code Dark+', desc: 'Classic Microsoft dark engine', bg: '#1e1e1e', color: '#d4d4d4', keywordColor: '#569cd6', funcColor: '#dcdcaa', stringColor: '#ce9178', numberColor: '#b5cea8', commentColor: '#6a9955', borderColor: 'rgba(78, 201, 176, 0.4)' },
+              { id: 'monokai', label: 'Monokai Pro', desc: 'Iconic dark gold & hot pink', bg: '#272822', color: '#f8f8f2', keywordColor: '#f92672', funcColor: '#a6e22e', stringColor: '#e6db74', numberColor: '#ae81ff', commentColor: '#75715e', borderColor: 'rgba(255, 216, 102, 0.4)' },
+              { id: 'tokyo_night', label: 'Tokyo Night', desc: 'Midnight neon purple & cyan', bg: '#1a1b26', color: '#c0caf5', keywordColor: '#bb9af7', funcColor: '#7aa2f7', stringColor: '#9ece6a', numberColor: '#ff9e64', commentColor: '#565f89', borderColor: 'rgba(122, 162, 247, 0.4)' },
+              { id: 'github_light', label: 'GitHub Light', desc: 'High-contrast academic white', bg: '#ffffff', color: '#24292f', keywordColor: '#cf222e', funcColor: '#8250df', stringColor: '#0a3069', numberColor: '#0550ae', commentColor: '#6e7781', borderColor: 'rgba(9, 105, 218, 0.4)' },
+              { id: 'neon', label: 'Cyberpunk Neon', desc: 'Deep jet black with electric cyan', bg: '#0b0f19', color: '#e2e8f0', keywordColor: '#06b6d4', funcColor: '#38bdf8', stringColor: '#10b981', numberColor: '#f59e0b', commentColor: '#059669', borderColor: 'rgba(6, 182, 212, 0.6)' },
+              { id: 'hc_black', label: 'High Contrast', desc: 'Pure OLED black accessibility', bg: '#000000', color: '#ffffff', keywordColor: '#06b6d4', funcColor: '#38bdf8', stringColor: '#10b981', numberColor: '#facc15', commentColor: '#94a3b8', borderColor: '#06b6d4' }
+            ];
 
-                <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  Choose your preferred code editor syntax palette for inline and printed code blocks.
-                </p>
+            const activeThemeId = (codeStyle.codeTheme || ideConfig.theme || 'onedark') as string;
+            const currentThemeMeta = UNIFIED_CODE_THEMES.find(t => 
+              t.id === activeThemeId || 
+              (activeThemeId === 'vs-dark' && t.id === 'vscode_dark') || 
+              (activeThemeId === 'vs-light' && t.id === 'github_light') || 
+              (activeThemeId === 'hc-black' && t.id === 'hc_black')
+            ) || UNIFIED_CODE_THEMES[0];
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '10px' }}>
-                  {[
-                    { id: 'onedark', label: 'One Dark Pro', bg: '#282c34', color: '#61afef' },
-                    { id: 'vscode_dark', label: 'VS Code Dark+', bg: '#1e1e1e', color: '#4ec9b0' },
-                    { id: 'monokai', label: 'Monokai Pro', bg: '#2d2a2e', color: '#ffd866' },
-                    { id: 'tokyo_night', label: 'Tokyo Night', bg: '#1a1b26', color: '#7aa2f7' },
-                    { id: 'github_light', label: 'GitHub Light', bg: '#f6f8fa', color: '#0969da' },
-                    { id: 'neon', label: 'Cyberpunk Neon', bg: '#0b0f19', color: '#06b6d4' }
-                  ].map(th => (
-                    <button
-                      key={th.id}
-                      type="button"
-                      onClick={() => updateCodeStyle({ codeTheme: th.id as any })}
-                      style={{
-                        padding: '12px',
-                        borderRadius: '10px',
-                        border: codeStyle.codeTheme === th.id ? '2px solid var(--accent-cyan)' : '1px solid var(--border-color)',
-                        background: th.bg,
-                        color: th.color,
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '6px',
-                        boxShadow: codeStyle.codeTheme === th.id ? '0 0 14px rgba(6, 182, 212, 0.3)' : 'none'
-                      }}
-                    >
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                        <span style={{ fontWeight: 800, fontSize: '0.85rem' }}>{th.label}</span>
-                        {codeStyle.codeTheme === th.id && <Check size={14} className="text-cyan-400" />}
+            return (
+              <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px', width: '100%', boxSizing: 'border-box' }}>
+                
+                {/* 1. Unified Syntax Theme Hub */}
+                <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px', boxSizing: 'border-box' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <Code size={22} className="text-cyan-400" />
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Unified Code & Syntax Theme Engine</h3>
+                        <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          Choose your global syntax theme. Synchronizes across Chat, Code Dungeon, Lecture Notes, and Sandboxes.
+                        </p>
                       </div>
-                      <code style={{ fontSize: '0.65rem', opacity: 0.85, fontFamily: 'monospace' }}>
-                        def np_lemma(L1, L0): return L1 / L0
-                      </code>
-                    </button>
-                  ))}
-                </div>
-              </div>
+                    </div>
+                    <span style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)', background: 'rgba(6, 182, 212, 0.12)', border: '1px solid rgba(6, 182, 212, 0.3)', padding: '4px 12px', borderRadius: '12px', fontWeight: 700 }}>
+                      Universal Theme Sync Active
+                    </span>
+                  </div>
 
-              {/* Right Column: KaTeX Math Preferences */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '12px', width: '100%', boxSizing: 'border-box' }}>
+                    {UNIFIED_CODE_THEMES.map(th => {
+                      const isSelected = currentThemeMeta.id === th.id;
+                      return (
+                        <button
+                          key={th.id}
+                          type="button"
+                          onClick={() => {
+                            updateCodeStyle({ codeTheme: th.id as any });
+                            updateIdeConfig({ theme: th.id as any });
+                          }}
+                          style={{
+                            padding: '14px 16px',
+                            borderRadius: '12px',
+                            border: isSelected ? '2px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                            background: th.bg,
+                            color: th.color,
+                            cursor: 'pointer',
+                            textAlign: 'left',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '8px',
+                            boxShadow: isSelected ? '0 0 16px rgba(6, 182, 212, 0.35)' : '0 2px 8px rgba(0,0,0,0.15)',
+                            boxSizing: 'border-box',
+                            transition: 'all 0.15s ease'
+                          }}
+                        >
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <div>
+                              <span style={{ fontWeight: 800, fontSize: '0.88rem' }}>{th.label}</span>
+                              <div style={{ fontSize: '0.68rem', opacity: 0.75, marginTop: '2px' }}>{th.desc}</div>
+                            </div>
+                            {isSelected && (
+                              <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'var(--accent-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <Check size={14} style={{ color: '#000000', strokeWidth: 3 }} />
+                              </div>
+                            )}
+                          </div>
+                          <code style={{ fontSize: '0.72rem', padding: '6px 8px', borderRadius: '6px', background: 'rgba(0,0,0,0.25)', fontFamily: 'monospace', display: 'flex', gap: '6px' }}>
+                            <span style={{ color: th.keywordColor }}>def</span>
+                            <span style={{ color: th.funcColor }}>solve</span>():
+                            <span style={{ color: th.stringColor }}>'OU Exam'</span>
+                          </code>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* 2. Code Dungeon & IDE Engine Controls */}
+                <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '18px', boxSizing: 'border-box' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <Terminal size={22} className="text-cyan-400" />
+                      <div>
+                        <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Code Dungeon & Practical Lab Configuration</h3>
+                        <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                          Configure typography, indentation, line numbers, and default rendering engine for the Practical Code Lab.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Engine Mode Toggle: Monaco vs Fast */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px', borderRadius: '12px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', boxSizing: 'border-box' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>DEFAULT CODE ENGINE MODE</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
+                      <button
+                        type="button"
+                        onClick={() => updateIdeConfig({ editorEngine: 'monaco' })}
+                        style={{
+                          padding: '12px 14px',
+                          borderRadius: '8px',
+                          border: (ideConfig.editorEngine || 'monaco') === 'monaco' ? '2px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                          background: (ideConfig.editorEngine || 'monaco') === 'monaco' ? 'rgba(6, 182, 212, 0.18)' : 'var(--bg-primary)',
+                          color: (ideConfig.editorEngine || 'monaco') === 'monaco' ? 'var(--accent-cyan)' : 'var(--text-primary)',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '2px',
+                          boxSizing: 'border-box'
+                        }}
+                      >
+                        <span style={{ fontWeight: 700, fontSize: '0.84rem' }}>💻 Monaco Engine (Full VS Code)</span>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Advanced IDE with multi-cursor, intellisense, & minimap</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateIdeConfig({ editorEngine: 'fast' })}
+                        style={{
+                          padding: '12px 14px',
+                          borderRadius: '8px',
+                          border: ideConfig.editorEngine === 'fast' ? '2px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                          background: ideConfig.editorEngine === 'fast' ? 'rgba(6, 182, 212, 0.18)' : 'var(--bg-primary)',
+                          color: ideConfig.editorEngine === 'fast' ? 'var(--accent-cyan)' : 'var(--text-primary)',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '2px',
+                          boxSizing: 'border-box'
+                        }}
+                      >
+                        <span style={{ fontWeight: 700, fontSize: '0.84rem' }}>⚡ Fast & Lightweight Editor</span>
+                        <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Zero-latency instant streaming viewer (low memory)</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Grid of IDE Properties */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '14px', width: '100%', boxSizing: 'border-box' }}>
+                    {/* Font Size */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px', borderRadius: '12px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', boxSizing: 'border-box' }}>
+                      <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>IDE CODE FONT SIZE</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, minmax(0, 1fr))', gap: '6px' }}>
+                        {[12, 13, 14, 16].map(sz => (
+                          <button
+                            key={sz}
+                            type="button"
+                            onClick={() => updateIdeConfig({ fontSize: sz })}
+                            style={{
+                              padding: '10px 4px',
+                              borderRadius: '8px',
+                              border: ideConfig.fontSize === sz ? '1.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                              background: ideConfig.fontSize === sz ? 'rgba(6, 182, 212, 0.18)' : 'var(--bg-primary)',
+                              color: ideConfig.fontSize === sz ? 'var(--accent-cyan)' : 'var(--text-primary)',
+                              fontSize: '0.78rem',
+                              fontWeight: 700,
+                              cursor: 'pointer',
+                              textAlign: 'center',
+                              boxSizing: 'border-box'
+                            }}
+                          >
+                            {sz}px
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Minimap & Tab Size */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px', borderRadius: '12px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', boxSizing: 'border-box' }}>
+                      <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>MINIMAP & INDENTATION</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                        <button
+                          type="button"
+                          onClick={() => updateIdeConfig({ minimap: !ideConfig.minimap })}
+                          style={{
+                            padding: '10px 8px',
+                            borderRadius: '8px',
+                            border: ideConfig.minimap ? '1.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                            background: ideConfig.minimap ? 'rgba(6, 182, 212, 0.18)' : 'var(--bg-primary)',
+                            color: ideConfig.minimap ? 'var(--accent-cyan)' : 'var(--text-primary)',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            boxSizing: 'border-box'
+                          }}
+                        >
+                          Minimap: {ideConfig.minimap ? 'Enabled' : 'Disabled'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateIdeConfig({ tabSize: ideConfig.tabSize === 2 ? 4 : 2 })}
+                          style={{
+                            padding: '10px 8px',
+                            borderRadius: '8px',
+                            border: '1px solid var(--border-color)',
+                            background: 'var(--bg-primary)',
+                            color: 'var(--text-primary)',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            boxSizing: 'border-box'
+                          }}
+                        >
+                          Tab: {ideConfig.tabSize} Spaces
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Word Wrap & Line Numbers */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px', borderRadius: '12px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', boxSizing: 'border-box' }}>
+                      <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>LINE DISPLAY & WRAPPING</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                        <button
+                          type="button"
+                          onClick={() => updateIdeConfig({ wordWrap: ideConfig.wordWrap === 'on' ? 'off' : 'on' })}
+                          style={{
+                            padding: '10px 8px',
+                            borderRadius: '8px',
+                            border: ideConfig.wordWrap === 'on' ? '1.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                            background: ideConfig.wordWrap === 'on' ? 'rgba(6, 182, 212, 0.18)' : 'var(--bg-primary)',
+                            color: ideConfig.wordWrap === 'on' ? 'var(--accent-cyan)' : 'var(--text-primary)',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            boxSizing: 'border-box'
+                          }}
+                        >
+                          Wrap: {ideConfig.wordWrap === 'on' ? 'On' : 'Scroll'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => updateIdeConfig({ lineNumbers: ideConfig.lineNumbers === 'on' ? 'off' : 'on' })}
+                          style={{
+                            padding: '10px 8px',
+                            borderRadius: '8px',
+                            border: ideConfig.lineNumbers === 'on' ? '1.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                            background: ideConfig.lineNumbers === 'on' ? 'rgba(6, 182, 212, 0.18)' : 'var(--bg-primary)',
+                            color: ideConfig.lineNumbers === 'on' ? 'var(--accent-cyan)' : 'var(--text-primary)',
+                            fontSize: '0.75rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            boxSizing: 'border-box'
+                          }}
+                        >
+                          Lines: {ideConfig.lineNumbers === 'on' ? 'Shown' : 'Hidden'}
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* 👁️ Live Interactive Code Editor Preview Window */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
+                      👁️ LIVE CODE EDITOR PREVIEW ({currentThemeMeta.label})
+                    </label>
+                    <div style={{
+                      padding: '16px 20px',
+                      borderRadius: '12px',
+                      background: currentThemeMeta.bg,
+                      border: `1.5px solid ${currentThemeMeta.borderColor || 'rgba(6, 182, 212, 0.3)'}`,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '12px',
+                      boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                      overflow: 'hidden',
+                      boxSizing: 'border-box'
+                    }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ef4444', opacity: 0.8 }} />
+                          <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#f59e0b', opacity: 0.8 }} />
+                          <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#10b981', opacity: 0.8 }} />
+                          <span style={{ marginLeft: '8px', fontSize: '0.74rem', color: currentThemeMeta.color, fontFamily: 'monospace', fontWeight: 700 }}>
+                            dijkstra_shortest_path.py — {(ideConfig.editorEngine || 'monaco') === 'fast' ? 'Fast Lightweight Engine' : 'Monaco VS Code Engine'}
+                          </span>
+                        </div>
+                        <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                          {ideConfig.fontSize}px • {ideConfig.tabSize}sp • {ideConfig.wordWrap === 'on' ? 'Wrap' : 'Scroll'}
+                        </span>
+                      </div>
+                      <div style={{
+                        fontFamily: 'monospace',
+                        fontSize: `${ideConfig.fontSize}px`,
+                        lineHeight: 1.6,
+                        display: 'flex',
+                        gap: '14px',
+                        overflowX: 'auto',
+                        whiteSpace: ideConfig.wordWrap === 'on' ? 'pre-wrap' : 'pre'
+                      }}>
+                        {ideConfig.lineNumbers === 'on' && (
+                          <div style={{ display: 'flex', flexDirection: 'column', userSelect: 'none', opacity: 0.4, textAlign: 'right', color: currentThemeMeta.color, minWidth: '16px' }}>
+                            <span>1</span>
+                            <span>2</span>
+                            <span>3</span>
+                            <span>4</span>
+                            <span>5</span>
+                          </div>
+                        )}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div><span style={{ color: currentThemeMeta.keywordColor }}>def</span> <span style={{ color: currentThemeMeta.funcColor }}>dijkstra</span>(graph, start):</div>
+                          <div style={{ paddingLeft: `${ideConfig.tabSize * 8}px` }}>distances = &#123;node: <span style={{ color: currentThemeMeta.numberColor }}>float</span>(<span style={{ color: currentThemeMeta.stringColor }}>'inf'</span>) <span style={{ color: currentThemeMeta.keywordColor }}>for</span> node <span style={{ color: currentThemeMeta.keywordColor }}>in</span> graph&#125;</div>
+                          <div style={{ paddingLeft: `${ideConfig.tabSize * 8}px` }}>distances[start] = <span style={{ color: currentThemeMeta.numberColor }}>0</span></div>
+                          <div style={{ paddingLeft: `${ideConfig.tabSize * 8}px` }}><span style={{ color: currentThemeMeta.commentColor }}># Dijkstra priority heap traversal</span></div>
+                          <div style={{ paddingLeft: `${ideConfig.tabSize * 8}px` }}><span style={{ color: currentThemeMeta.keywordColor }}>return</span> distances</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* 3. KaTeX Math Preferences */}
+                <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px', boxSizing: 'border-box' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Terminal size={20} className="text-cyan-400" />
-                    <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>KaTeX Mathematical Formula Scaling</h3>
+                    <Layers size={20} className="text-cyan-400" />
+                    <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>KaTeX Mathematical Formula Scaling & Copy Behavior</h3>
                   </div>
 
                   <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                    Adjust rendering dimensions and copy behavior for LaTeX mathematical proofs and integral derivations.
+                    Adjust rendering dimensions and copy behavior for LaTeX mathematical proofs, matrix formulations, and integral derivations.
                   </p>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '10px' }}>
                     {[
                       { id: 'compact', label: 'Compact 90%', desc: 'Dense math' },
-                      { id: 'standard', label: 'Standard 100%', desc: 'Default TeX' },
+                      { id: 'standard', label: 'Standard 100%', desc: 'Default TeX scale' },
                       { id: 'large', label: 'Large 115%', desc: 'Classroom size' }
                     ].map(sc => (
                       <button
@@ -2023,7 +2269,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                         type="button"
                         onClick={() => updateCodeStyle({ katexScale: sc.id as any })}
                         style={{
-                          padding: '10px 8px',
+                          padding: '10px 12px',
                           borderRadius: '8px',
                           border: codeStyle.katexScale === sc.id ? '1.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
                           background: codeStyle.katexScale === sc.id ? 'rgba(6, 182, 212, 0.15)' : 'var(--bg-tertiary)',
@@ -2033,7 +2279,9 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                           cursor: 'pointer',
                           display: 'flex',
                           flexDirection: 'column',
-                          gap: '2px'
+                          gap: '2px',
+                          textAlign: 'left',
+                          boxSizing: 'border-box'
                         }}
                       >
                         <span>{sc.label}</span>
@@ -2045,10 +2293,10 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                   {/* Formula Copy Mode */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
                     <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>1-CLICK FORMULA COPY ACTION</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '8px' }}>
                       {[
-                        { id: 'latex', label: 'LaTeX Code ($$ ... $$)', desc: 'For Overleaf & Papers' },
-                        { id: 'unicode', label: 'Unicode Text (∫ e^-x² dx)', desc: 'For Plain Text & Notes' }
+                        { id: 'latex', label: 'LaTeX Code ($$ ... $$)', desc: 'For Overleaf, LaTeX documents, & research papers' },
+                        { id: 'unicode', label: 'Unicode Text (∫ e^-x² dx)', desc: 'For Plain Text notes & quick messaging' }
                       ].map(m => (
                         <button
                           key={m.id}
@@ -2066,7 +2314,8 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                             textAlign: 'left',
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: '2px'
+                            gap: '2px',
+                            boxSizing: 'border-box'
                           }}
                         >
                           <span>{m.label}</span>
@@ -2076,166 +2325,10 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                     </div>
                   </div>
                 </div>
+
               </div>
-
-              {/* Full Width Bento Section: 🏰 Code Dungeon & Interactive Monaco IDE Settings */}
-              <div style={{ gridColumn: '1 / -1', padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '18px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <Code size={22} className="text-cyan-400" />
-                    <div>
-                      <h3 style={{ margin: 0, fontSize: '1.08rem', fontWeight: 700 }}>Code Dungeon & Monaco Editor Configuration</h3>
-                      <p style={{ margin: 0, fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                        Configure the high-performance VS Code / Monaco engine used in the Code Dungeon and sandbox playgrounds.
-                      </p>
-                    </div>
-                  </div>
-                  <span style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)', background: 'rgba(6, 182, 212, 0.12)', padding: '4px 10px', borderRadius: '12px', fontWeight: 700 }}>
-                    Live Monaco Bridge Active
-                  </span>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px' }}>
-                  {/* 1. IDE Theme */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px', borderRadius: '12px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)' }}>
-                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>MONACO EDITOR THEME</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
-                      {[
-                        { id: 'vs-dark', label: 'Dark+ (VS Code)', bg: '#1e1e1e', color: '#d4d4d4' },
-                        { id: 'vs-light', label: 'Light Clean', bg: '#ffffff', color: '#1e293b' },
-                        { id: 'hc-black', label: 'High Contrast', bg: '#000000', color: '#06b6d4' }
-                      ].map(th => (
-                        <button
-                          key={th.id}
-                          type="button"
-                          onClick={() => updateIdeConfig({ theme: th.id as any })}
-                          style={{
-                            padding: '10px 8px',
-                            borderRadius: '8px',
-                            border: ideConfig.theme === th.id ? '2px solid var(--accent-cyan)' : '1px solid var(--border-color)',
-                            background: th.bg,
-                            color: th.color,
-                            fontSize: '0.75rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            textAlign: 'center',
-                            transition: 'all 0.15s ease'
-                          }}
-                        >
-                          {th.label}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 2. Font Size */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px', borderRadius: '12px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)' }}>
-                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>IDE CODE FONT SIZE</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
-                      {[12, 13, 14, 16].map(sz => (
-                        <button
-                          key={sz}
-                          type="button"
-                          onClick={() => updateIdeConfig({ fontSize: sz })}
-                          style={{
-                            padding: '10px 6px',
-                            borderRadius: '8px',
-                            border: ideConfig.fontSize === sz ? '1.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
-                            background: ideConfig.fontSize === sz ? 'rgba(6, 182, 212, 0.18)' : 'var(--bg-primary)',
-                            color: ideConfig.fontSize === sz ? 'var(--accent-cyan)' : 'var(--text-primary)',
-                            fontSize: '0.78rem',
-                            fontWeight: 700,
-                            cursor: 'pointer',
-                            textAlign: 'center'
-                          }}
-                        >
-                          {sz}px
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-
-                  {/* 3. Minimap & Tab Size */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px', borderRadius: '12px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)' }}>
-                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>MINIMAP & INDENTATION</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                      <button
-                        type="button"
-                        onClick={() => updateIdeConfig({ minimap: !ideConfig.minimap })}
-                        style={{
-                          padding: '10px 8px',
-                          borderRadius: '8px',
-                          border: ideConfig.minimap ? '1.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
-                          background: ideConfig.minimap ? 'rgba(6, 182, 212, 0.18)' : 'var(--bg-primary)',
-                          color: ideConfig.minimap ? 'var(--accent-cyan)' : 'var(--text-primary)',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Minimap: {ideConfig.minimap ? 'Enabled' : 'Disabled'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => updateIdeConfig({ tabSize: ideConfig.tabSize === 2 ? 4 : 2 })}
-                        style={{
-                          padding: '10px 8px',
-                          borderRadius: '8px',
-                          border: '1px solid var(--border-color)',
-                          background: 'var(--bg-primary)',
-                          color: 'var(--text-primary)',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Tab Size: {ideConfig.tabSize} Spaces
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* 4. Word Wrap & Line Numbers */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px', borderRadius: '12px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)' }}>
-                    <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>LINE DISPLAY & WRAPPING</label>
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
-                      <button
-                        type="button"
-                        onClick={() => updateIdeConfig({ wordWrap: ideConfig.wordWrap === 'on' ? 'off' : 'on' })}
-                        style={{
-                          padding: '10px 8px',
-                          borderRadius: '8px',
-                          border: ideConfig.wordWrap === 'on' ? '1.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
-                          background: ideConfig.wordWrap === 'on' ? 'rgba(6, 182, 212, 0.18)' : 'var(--bg-primary)',
-                          color: ideConfig.wordWrap === 'on' ? 'var(--accent-cyan)' : 'var(--text-primary)',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Word Wrap: {ideConfig.wordWrap === 'on' ? 'Wrap' : 'Scroll'}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => updateIdeConfig({ lineNumbers: ideConfig.lineNumbers === 'on' ? 'off' : 'on' })}
-                        style={{
-                          padding: '10px 8px',
-                          borderRadius: '8px',
-                          border: ideConfig.lineNumbers === 'on' ? '1.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
-                          background: ideConfig.lineNumbers === 'on' ? 'rgba(6, 182, 212, 0.18)' : 'var(--bg-primary)',
-                          color: ideConfig.lineNumbers === 'on' ? 'var(--accent-cyan)' : 'var(--text-primary)',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        Line Numbers: {ideConfig.lineNumbers === 'on' ? 'Shown' : 'Hidden'}
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* TAB 3d: ⌨️ KEYBOARD SHORTCUTS STUDIO (FULL-WIDTH BENTO DECK) */}
           {activeTab === 'shortcuts' && (

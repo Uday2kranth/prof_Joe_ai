@@ -36,7 +36,8 @@ import { CodeLabControlDeck } from './CodeLabControlDeck';
 import { ResetSessionModal } from './ResetSessionModal';
 import { saveCodeLabSession } from '../services/indexedDbService';
 import { PROVIDERS } from '../constants';
-import type { UserCustomModels, ChatSession, Message } from '../types';
+import type { UserCustomModels, ChatSession, Message, IdeConfig, CodeStyleConfig } from '../types';
+import { DEFAULT_IDE_CONFIG, DEFAULT_CODE_STYLE } from '../types';
 
 interface GeneratedFile {
   fileName: string;
@@ -630,7 +631,62 @@ export function PracticalCodeLabView({
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [isQuickExtractionOpen, setIsQuickExtractionOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
-  const [editorMode, setEditorMode] = useState<'fast' | 'monaco'>('fast');
+  const [ideConfig, setIdeConfig] = useState<IdeConfig>(() => {
+    try {
+      const saved = localStorage.getItem('chatterbot_ide_settings');
+      if (saved) return { ...DEFAULT_IDE_CONFIG, ...JSON.parse(saved) };
+    } catch {}
+    return DEFAULT_IDE_CONFIG;
+  });
+
+  const [codeStyle, setCodeStyle] = useState<CodeStyleConfig>(() => {
+    try {
+      const saved = localStorage.getItem('chatterbot_code_style');
+      if (saved) return { ...DEFAULT_CODE_STYLE, ...JSON.parse(saved) };
+    } catch {}
+    return DEFAULT_CODE_STYLE;
+  });
+
+  const [editorMode, setEditorMode] = useState<'fast' | 'monaco'>(() => {
+    try {
+      const saved = localStorage.getItem('chatterbot_ide_settings');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.editorEngine) return parsed.editorEngine;
+      }
+    } catch {}
+    return 'fast';
+  });
+
+  useEffect(() => {
+    const handleIdeSettingsUpdate = () => {
+      try {
+        const saved = localStorage.getItem('chatterbot_ide_settings');
+        if (saved) {
+          const parsed = { ...DEFAULT_IDE_CONFIG, ...JSON.parse(saved) };
+          setIdeConfig(parsed);
+          if (parsed.editorEngine) setEditorMode(parsed.editorEngine);
+        }
+      } catch {}
+    };
+
+    const handleCodeStyleUpdate = () => {
+      try {
+        const saved = localStorage.getItem('chatterbot_code_style');
+        if (saved) setCodeStyle({ ...DEFAULT_CODE_STYLE, ...JSON.parse(saved) });
+      } catch {}
+    };
+
+    window.addEventListener('chatterbot_ide_settings_updated', handleIdeSettingsUpdate);
+    window.addEventListener('chatterbot_code_style_updated', handleCodeStyleUpdate);
+    window.addEventListener('storage', handleIdeSettingsUpdate);
+    return () => {
+      window.removeEventListener('chatterbot_ide_settings_updated', handleIdeSettingsUpdate);
+      window.removeEventListener('chatterbot_code_style_updated', handleCodeStyleUpdate);
+      window.removeEventListener('storage', handleIdeSettingsUpdate);
+    };
+  }, []);
+
   const [isWebSearch, setIsWebSearch] = useState(false);
   const activeUser = localStorage.getItem('chatterbot_username') || 'guest';
 
@@ -968,7 +1024,7 @@ Follow these mandatory formatting rules for all responses:
   const lastAssistantMsgIndex = messages.map(m => m.role).lastIndexOf('assistant');
 
   return (
-    <div className="code-lab-view-container">
+    <div className="code-lab-view-container" data-code-theme={codeStyle.codeTheme}>
       {/* Header Bar */}
       <div className="code-lab-header">
         <div className="code-lab-header-left" style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
@@ -1338,9 +1394,20 @@ Follow these mandatory formatting rules for all responses:
                 code={activeFile.codeContent}
                 language={activeFile.language}
                 onChange={handleCodeContentChange}
+                ideConfig={ideConfig}
               />
             ) : (
-              <pre className="code-lab-editor-area" style={{ height: '100%', margin: 0 }}>
+              <pre
+                className="code-lab-editor-area"
+                data-code-theme={codeStyle.codeTheme}
+                style={{
+                  height: '100%',
+                  margin: 0,
+                  fontSize: `${ideConfig.fontSize}px`,
+                  tabSize: ideConfig.tabSize,
+                  whiteSpace: ideConfig.wordWrap === 'on' ? 'pre-wrap' : 'pre'
+                }}
+              >
                 {activeFile ? activeFile.codeContent : '// Generated lab code will stream live into this IDE viewer...'}
               </pre>
             )}
