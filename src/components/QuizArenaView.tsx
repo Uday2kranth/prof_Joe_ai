@@ -251,8 +251,8 @@ export const QuizArenaView: React.FC<QuizArenaViewProps> = ({
                     }}
                   >
                     <div className="deck-card-top">
-                      <div className="deck-type-badge" style={{ color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.3)', background: 'rgba(16, 185, 129, 0.08)' }}>
-                        <Target size={12} className="text-emerald-400" />
+                      <div className="deck-type-badge" style={{ color: 'var(--accent-cyan)', borderColor: 'var(--border-color)', background: 'var(--pill-bg)' }}>
+                        <Target size={12} style={{ color: 'var(--accent-cyan)' }} />
                         <span>{quiz.sourceType === 'message' ? 'Question Assessment' : 'Full Exam Mock'}</span>
                       </div>
                       <button
@@ -281,11 +281,15 @@ export const QuizArenaView: React.FC<QuizArenaViewProps> = ({
                           className="deck-progress-fill" 
                           style={{ 
                             width: lastScore ? `${Math.round((lastScore.score / lastScore.total) * 100)}%` : '0%',
-                            background: 'linear-gradient(90deg, #10b981, #34d399)'
+                            background: 'var(--btn-primary-bg)'
                           }} 
                         />
                       </div>
                     </div>
+
+                    <p className="deck-card-desc">
+                      {quiz.questions[0]?.question ? `${quiz.questions[0].question.slice(0, 100)}...` : 'Comprehensive Exam Practice'}
+                    </p>
 
                     <div className="deck-card-footer">
                       <div className="deck-date-meta">
@@ -295,7 +299,7 @@ export const QuizArenaView: React.FC<QuizArenaViewProps> = ({
                       <button 
                         type="button" 
                         className="deck-study-btn"
-                        style={{ color: '#10b981' }}
+                        style={{ color: 'var(--accent-cyan)' }}
                       >
                         <span>Take Quiz</span>
                         <ChevronRight size={14} />
@@ -307,7 +311,7 @@ export const QuizArenaView: React.FC<QuizArenaViewProps> = ({
             </div>
           ) : (
             <div className="studio-empty-state">
-              <div className="studio-empty-icon emerald">
+              <div className="studio-empty-icon" style={{ background: 'var(--pill-bg)', color: 'var(--accent-cyan)' }}>
                 <Award size={36} />
               </div>
               <h3>No Practice Quizzes Yet</h3>
@@ -318,8 +322,7 @@ export const QuizArenaView: React.FC<QuizArenaViewProps> = ({
                 <button 
                   type="button" 
                   onClick={onNavigateToChat}
-                  className="studio-primary-action-btn"
-                  style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+                  className="btn-theme-primary flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold"
                 >
                   <BookOpen size={16} />
                   <span>Go to Chat & Generate Quiz</span>
@@ -469,8 +472,8 @@ export const QuizArenaView: React.FC<QuizArenaViewProps> = ({
                 <button
                   type="button"
                   onClick={handleResetQuiz}
-                  className="studio-primary-action-btn"
-                  style={{ background: 'linear-gradient(135deg, #10b981, #059669)' }}
+                  className="btn-theme-primary"
+                  style={{ padding: '10px 20px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                 >
                   <RotateCcw size={15} />
                   <span>Retake Entire Quiz</span>
@@ -480,8 +483,8 @@ export const QuizArenaView: React.FC<QuizArenaViewProps> = ({
                   <button
                     type="button"
                     onClick={handleRetakeMistakes}
-                    className="studio-action-pill"
-                    style={{ padding: '10px 18px', borderRadius: '12px' }}
+                    className="btn-theme-secondary"
+                    style={{ padding: '10px 18px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                   >
                     <span>Practice {activeQuestions.length - finalScore} Missed Only</span>
                   </button>
@@ -490,8 +493,8 @@ export const QuizArenaView: React.FC<QuizArenaViewProps> = ({
                 <button
                   type="button"
                   onClick={() => setActiveQuiz(null)}
-                  className="studio-action-pill"
-                  style={{ padding: '10px 18px', borderRadius: '12px' }}
+                  className="btn-theme-secondary"
+                  style={{ padding: '10px 18px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                 >
                   <span>Back to Arena</span>
                 </button>

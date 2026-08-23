@@ -3,14 +3,14 @@ import { BookOpen, FileText, Send, Award, Check, Sparkles } from 'lucide-react';
 import examData from '../data/examPrepData.json';
 // @ts-ignore
 import MagicBento from './MagicBento';
-import { renderMathHtml } from './MathText';
+import { renderExamHtml } from './MathText';
 
 interface ExamPrepViewProps {
   onLoadQuestionToChat: (questionText: string) => void;
 }
 
 const renderFormattedContent = (content: string) => {
-  return renderMathHtml(content);
+  return renderExamHtml(content);
 };
 
 const SEMESTERS = [
@@ -21,12 +21,20 @@ const SEMESTERS = [
   { id: 'sem-4', label: 'Semester IV (2nd Year)', badge: 'SEM IV' }
 ];
 
+const ALL_PAPER_SETS = [
+  { id: 'set-a', label: '📄 Set A (Baseline)' },
+  { id: 'set-b', label: '📄 Set B (Alternative)' },
+  { id: 'set-c', label: '📄 Set C (Wildcard)' },
+  { id: 'set-d', label: '📄 Set D (Final Review)' },
+  { id: 'set-e', label: '📄 Set E (Bonus / Model)' }
+] as const;
+
 export const ExamPrepView: React.FC<ExamPrepViewProps> = ({ onLoadQuestionToChat }) => {
   const subjectKeys = Object.keys(examData);
   const [selectedSemester, setSelectedSemester] = useState<string>('all');
   const [selectedSubject, setSelectedSubject] = useState<string>(subjectKeys[0] || 'crypto');
   const [activeTab, setActiveTab] = useState<'syllabus' | 'bank' | 'sets'>('syllabus');
-  const [selectedPaperSet, setSelectedPaperSet] = useState<'all' | 'set-a' | 'set-b' | 'set-c' | 'set-d'>('all');
+  const [selectedPaperSet, setSelectedPaperSet] = useState<'all' | 'set-a' | 'set-b' | 'set-c' | 'set-d' | 'set-e'>('all');
   const [bankSubTab, setBankSubTab] = useState<'standard' | 'streamlined' | 'gagan'>('standard');
 
   const [isSemesterMenuOpen, setIsSemesterMenuOpen] = useState<boolean>(false);
@@ -53,6 +61,21 @@ export const ExamPrepView: React.FC<ExamPrepViewProps> = ({ onLoadQuestionToChat
     return subjectKeys.filter(k => (examData as any)[k]?.semester === selectedSemester);
   }, [selectedSemester, subjectKeys]);
 
+  const currentSubjectData = (examData as any)[selectedSubject] || {};
+
+  const availablePaperSets = useMemo(() => {
+    return ALL_PAPER_SETS.filter(setItem => !!currentSubjectData[setItem.id]);
+  }, [currentSubjectData]);
+
+  const hasSets = availablePaperSets.length > 0;
+
+  // Auto-reset paper set filter when switching subjects if the current filter is not present
+  useEffect(() => {
+    if (selectedPaperSet !== 'all' && !currentSubjectData[selectedPaperSet]) {
+      setSelectedPaperSet('all');
+    }
+  }, [selectedSubject, currentSubjectData, selectedPaperSet]);
+
   const handleSelectSemester = (sem: string) => {
     setSelectedSemester(sem);
     setIsSemesterMenuOpen(false);
@@ -62,22 +85,69 @@ export const ExamPrepView: React.FC<ExamPrepViewProps> = ({ onLoadQuestionToChat
     }
   };
 
-  const currentSubjectData = (examData as any)[selectedSubject] || {};
+  const dynamicBentoCards = useMemo(() => {
+    const keys = filteredSubjectKeys;
+    const cards: any[] = [];
+
+    keys.slice(0, 4).forEach((k) => {
+      const sub = (examData as any)[k];
+      if (!sub) return;
+      const isLab = sub.type === 'practical';
+      const cleanDesc = sub.syllabus ? sub.syllabus.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').slice(0, 85).trim() + '...' : `Syllabus and questions for ${sub.code || k}`;
+      cards.push({
+        id: k,
+        color: '#0f172a',
+        title: sub.title || k.toUpperCase(),
+        description: cleanDesc,
+        label: isLab ? '🧪 Lab' : (sub.code || 'Paper')
+      });
+    });
+
+    const hasGaganInSem = keys.some(k => !!((examData as any)[k]?.['gagan-important-topics'] || (examData as any)[k]?.['star-ranked-hit-list']));
+    if (hasGaganInSem) {
+      cards.push({
+        id: 'gagan',
+        color: '#0f172a',
+        title: '⭐ Star-Ranked Priority Hit List',
+        description: '1–2 hour high-yield revision list rated with ⭐ priority stars for OU exams',
+        label: '⭐ Star-Rated'
+      });
+    } else {
+      cards.push({
+        id: 'sets',
+        color: '#0f172a',
+        title: '🎯 Predicted Model Paper Sets',
+        description: 'Predicted 70-mark Osmania University semester examination model papers',
+        label: '🎯 Model Sets'
+      });
+    }
+
+    return cards;
+  }, [filteredSubjectKeys]);
 
   const handleBentoCardClick = (card: any) => {
     if (card.id === 'gagan') {
+      const hasCurrentGagan = !!(currentSubjectData['gagan-important-topics'] || currentSubjectData['star-ranked-hit-list']);
+      if (!hasCurrentGagan) {
+        const matching = filteredSubjectKeys.find(k => !!((examData as any)[k]?.['gagan-important-topics'] || (examData as any)[k]?.['star-ranked-hit-list']));
+        if (matching) {
+          setSelectedSubject(matching);
+        }
+      }
       setActiveTab('bank');
       setBankSubTab('gagan');
     } else if (card.id === 'sets') {
       setActiveTab('sets');
     } else if (examData[card.id as keyof typeof examData]) {
+      const targetSem = (examData as any)[card.id]?.semester;
+      if (targetSem && targetSem !== selectedSemester && selectedSemester !== 'all') {
+        setSelectedSemester(targetSem);
+      }
       setSelectedSubject(card.id);
       setActiveTab('bank');
       setBankSubTab('standard');
     }
   };
-
-  const hasSets = ['set-a', 'set-b', 'set-c', 'set-d'].some(k => !!currentSubjectData[k]);
 
   return (
     <div className="exam-prep-container p-4">
@@ -199,6 +269,7 @@ export const ExamPrepView: React.FC<ExamPrepViewProps> = ({ onLoadQuestionToChat
       {/* React Bits MagicBento Interactive Grid */}
       <div className="bento-wrapper-container" style={{ marginBottom: '16px', width: '100%', maxWidth: '100%', overflow: 'hidden', boxSizing: 'border-box' }}>
         <MagicBento
+          cards={dynamicBentoCards}
           enableStars={true}
           enableSpotlight={true}
           enableBorderGlow={true}
@@ -233,7 +304,7 @@ export const ExamPrepView: React.FC<ExamPrepViewProps> = ({ onLoadQuestionToChat
             className={`tab-btn ${activeTab === 'sets' ? 'active' : ''}`}
           >
             <FileText size={16} />
-            <span>Predicted Paper Sets (A–D)</span>
+            <span>Predicted Paper Sets (A–E)</span>
           </button>
         </div>
       </div>
@@ -399,16 +470,27 @@ export const ExamPrepView: React.FC<ExamPrepViewProps> = ({ onLoadQuestionToChat
           <div className="paper-sets-content">
             {hasSets ? (
               <>
-                {/* Paper Set Filter Pills */}
+                {/* Dynamic Paper Set Filter Pills */}
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', marginBottom: '16px', background: 'var(--bg-tertiary)', padding: '10px 14px', borderRadius: '12px', border: '1px solid var(--border-color)', alignItems: 'center' }}>
                   <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-secondary)', display: 'flex', alignItems: 'center', marginRight: '4px' }}>Filter Paper:</span>
-                  {[
-                    { id: 'all', label: '🎯 All Sets' },
-                    { id: 'set-a', label: '📄 Set A (Baseline)' },
-                    { id: 'set-b', label: '📄 Set B (Alternative)' },
-                    { id: 'set-c', label: '📄 Set C (Wildcard)' },
-                    { id: 'set-d', label: '📄 Set D (Final Review)' }
-                  ].map(setItem => (
+                  <button
+                    type="button"
+                    onClick={() => setSelectedPaperSet('all')}
+                    style={{
+                      background: selectedPaperSet === 'all' ? 'var(--accent-cyan)' : 'var(--bg-secondary)',
+                      color: selectedPaperSet === 'all' ? '#ffffff' : 'var(--text-primary)',
+                      border: '1px solid var(--border-color)',
+                      borderRadius: '16px',
+                      padding: '4px 12px',
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }}
+                  >
+                    🎯 All Sets ({availablePaperSets.length})
+                  </button>
+                  {availablePaperSets.map(setItem => (
                     <button
                       key={setItem.id}
                       type="button"
@@ -430,9 +512,10 @@ export const ExamPrepView: React.FC<ExamPrepViewProps> = ({ onLoadQuestionToChat
                   ))}
                 </div>
 
-                {['set-a', 'set-b', 'set-c', 'set-d']
-                  .filter(setKey => selectedPaperSet === 'all' || selectedPaperSet === setKey)
-                  .map((setKey) => {
+                {availablePaperSets
+                  .filter(item => selectedPaperSet === 'all' || selectedPaperSet === item.id)
+                  .map((item) => {
+                    const setKey = item.id;
                     const htmlContent = currentSubjectData[setKey];
                     if (!htmlContent) return null;
 
@@ -460,7 +543,7 @@ export const ExamPrepView: React.FC<ExamPrepViewProps> = ({ onLoadQuestionToChat
                 <FileText size={32} className="text-cyan-400 mx-auto mb-3" />
                 <h3 className="text-base font-bold text-slate-100 mb-2">Predicted Examination Sets Pending</h3>
                 <p className="text-xs text-slate-400 max-w-md mx-auto mb-4">
-                  Predicted sets A–D for {currentSubjectData.title} are being generated. In the meantime, you can explore the syllabus outline or ask Prof. Joe AI to formulate practice papers.
+                  Predicted sets A–E for {currentSubjectData.title} are being generated. In the meantime, you can explore the syllabus outline or ask Prof. Joe AI to formulate practice papers.
                 </p>
                 <button
                   type="button"

@@ -1098,8 +1098,8 @@ export const SystemPromptLibraryView: React.FC<SystemPromptLibraryViewProps> = (
                   </button>
                   <button
                     onClick={() => setEditingPrompt(item)}
-                    className="btn btn-secondary"
-                    style={{ padding: '4px 8px', fontSize: '0.75rem' }}
+                    className="btn-theme-secondary"
+                    style={{ padding: '4px 8px', fontSize: '0.75rem', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                     title="Edit Prompt"
                   >
                     <Edit2 size={14} />
@@ -1138,7 +1138,8 @@ export const SystemPromptLibraryView: React.FC<SystemPromptLibraryViewProps> = (
                       onUsePrompt(item.promptText);
                     }
                   }}
-                  className="btn btn-primary btn-full"
+                  className="btn-theme-primary btn-full"
+                  style={{ padding: '8px 14px', borderRadius: '10px', width: '100%', display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}
                 >
                   <Check size={14} />
                   <span>Apply System Prompt</span>
@@ -1155,7 +1156,7 @@ export const SystemPromptLibraryView: React.FC<SystemPromptLibraryViewProps> = (
           <div className="modal-content card-box" style={{ width: '90%', maxWidth: '600px' }}>
             <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <h3>Edit System Prompt</h3>
-              <button onClick={() => setEditingPrompt(null)} className="btn btn-secondary" style={{ padding: '4px' }}>
+              <button onClick={() => setEditingPrompt(null)} className="btn-theme-secondary" style={{ padding: '4px 8px' }}>
                 <X size={16} />
               </button>
             </div>
@@ -1179,8 +1180,8 @@ export const SystemPromptLibraryView: React.FC<SystemPromptLibraryViewProps> = (
               />
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '14px' }}>
-              <button onClick={() => setEditingPrompt(null)} className="btn btn-secondary">Cancel</button>
-              <button onClick={handleSaveEdit} className="btn btn-primary">Save Changes</button>
+              <button onClick={() => setEditingPrompt(null)} className="btn-theme-secondary" style={{ padding: '8px 16px' }}>Cancel</button>
+              <button onClick={handleSaveEdit} className="btn-theme-primary" style={{ padding: '8px 16px' }}>Save Changes</button>
             </div>
           </div>
         </div>
@@ -1192,7 +1193,7 @@ export const SystemPromptLibraryView: React.FC<SystemPromptLibraryViewProps> = (
           <div className="modal-content card-box" style={{ width: '90%', maxWidth: '600px' }}>
             <div className="modal-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
               <h3>Add Custom System Prompt</h3>
-              <button onClick={() => setIsAddModalOpen(false)} className="btn btn-secondary" style={{ padding: '4px' }}>
+              <button onClick={() => setIsAddModalOpen(false)} className="btn-theme-secondary" style={{ padding: '4px 8px' }}>
                 <X size={16} />
               </button>
             </div>
@@ -1238,8 +1239,8 @@ export const SystemPromptLibraryView: React.FC<SystemPromptLibraryViewProps> = (
               />
             </div>
             <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '14px' }}>
-              <button onClick={() => setIsAddModalOpen(false)} className="btn btn-secondary">Cancel</button>
-              <button onClick={handleAddPrompt} className="btn btn-primary">Save & Add Prompt</button>
+              <button onClick={() => setIsAddModalOpen(false)} className="btn-theme-secondary" style={{ padding: '8px 16px' }}>Cancel</button>
+              <button onClick={handleAddPrompt} className="btn-theme-primary" style={{ padding: '8px 16px' }}>Save & Add Prompt</button>
             </div>
           </div>
         </div>

@@ -36,6 +36,8 @@ interface ChatWindowProps {
   isPersonaView?: boolean;
   isDemoView?: boolean;
   onOpenCommandDeck?: () => void;
+  prefilledPrompt?: string;
+  onClearPrefilledPrompt?: () => void;
 }
 
 export const ChatWindow: React.FC<ChatWindowProps> = ({
@@ -60,7 +62,9 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   onPromptModeChange,
   isPersonaView = false,
   isDemoView = false,
-  onOpenCommandDeck
+  onOpenCommandDeck,
+  prefilledPrompt,
+  onClearPrefilledPrompt
 }) => {
   const [inputPrompt, setInputPrompt] = useState('');
   const [webSearch, setWebSearch] = useState(false);
@@ -129,6 +133,23 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   ], [selectedModel]);
 
   const animatedPlaceholder = useTypewriterPlaceholder(dynamicPlaceholderPrompts, 50, 25, 2000, inputPrompt.length === 0);
+
+  // Auto-populate chat input and focus dock when prefilledPrompt is dispatched from Exam Prep or Prompt Library
+  useEffect(() => {
+    if (prefilledPrompt && prefilledPrompt.trim()) {
+      setInputPrompt(prefilledPrompt);
+      if (onClearPrefilledPrompt) {
+        onClearPrefilledPrompt();
+      }
+      setTimeout(() => {
+        if (textareaRef.current) {
+          textareaRef.current.focus();
+          textareaRef.current.style.height = 'auto';
+          textareaRef.current.style.height = `${Math.min(textareaRef.current.scrollHeight, 180)}px`;
+        }
+      }, 60);
+    }
+  }, [prefilledPrompt, onClearPrefilledPrompt]);
 
   // Instant scroll to latest message on session load / new messages
   useEffect(() => {
@@ -341,6 +362,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         className="chat-messages-container" 
         ref={chatContainerRef}
         data-code-theme={codeStyle.codeTheme}
+        data-bubble-style={codeStyle.bubbleStyle || 'cyan_glass'}
         data-katex-scale={codeStyle.katexScale}
       >
         <TextSelectionToolbar containerRef={chatContainerRef} onQuickAction={handleQuickAction} />
@@ -513,7 +535,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                 minHeight: '72px', 
                 fontSize: '0.92rem', 
                 padding: isDemoView ? '12px 56px 12px 16px' : '12px 16px',
-                caretColor: '#06b6d4',
+                caretColor: 'var(--accent-cyan)',
                 lineHeight: 1.5
               }}
               className="chat-textarea kokonut-textarea"
@@ -699,7 +721,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                       style={{ height: '32px', padding: '0 12px', fontSize: '11px', borderRadius: '16px' }}
                       title="Open Side Drawer Command Deck & History"
                     >
-                      <Zap size={13} className="text-cyan-400" />
+                      <Zap size={13} style={{ color: 'var(--accent-cyan)' }} />
                       <span>📜 Command Deck</span>
                     </button>
                   )}
@@ -710,7 +732,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                       <button
                         type="button"
                         onClick={handleExportFullChatPdf}
-                        className="kokonut-action-btn export-pdf-action text-cyan-400"
+                        className="kokonut-action-btn export-pdf-action"
+                        style={{ color: 'var(--accent-cyan)' }}
                         title="Interactive Full Session Document Preview Modal"
                       >
                         <Eye size={14} />
@@ -720,7 +743,8 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                       <button
                         type="button"
                         onClick={handleDirectSessionPrint}
-                        className="kokonut-action-btn export-pdf-action text-blue-400"
+                        className="kokonut-action-btn export-pdf-action"
+                        style={{ color: 'var(--accent-cyan)' }}
                         title="Direct Full Session System Print Preview"
                       >
                         <Printer size={14} />

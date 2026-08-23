@@ -196,7 +196,7 @@ export const TextSelectionToolbar: React.FC<TextSelectionToolbarProps> = ({
           className="selection-tool-btn"
           title="Explain this specific sentence in simple words"
         >
-          <Sparkles size={12} className="text-cyan-400" />
+          <Sparkles size={12} style={{ color: 'var(--accent-cyan)' }} />
           <span>Explain Simply</span>
         </button>
 
@@ -210,7 +210,7 @@ export const TextSelectionToolbar: React.FC<TextSelectionToolbarProps> = ({
           className="selection-tool-btn"
           title="Derive or breakdown the mathematical formulas"
         >
-          <Calculator size={12} className="text-amber-400" />
+          <Calculator size={12} style={{ color: 'var(--accent-cyan)' }} />
           <span>Show Math</span>
         </button>
 
@@ -224,7 +224,7 @@ export const TextSelectionToolbar: React.FC<TextSelectionToolbarProps> = ({
           className="selection-tool-btn"
           title="Turn this excerpt into a 2-mark Osmania exam Q&A"
         >
-          <FileText size={12} className="text-emerald-400" />
+          <FileText size={12} style={{ color: 'var(--accent-cyan)' }} />
           <span>2-Mark Q&A</span>
         </button>
 
@@ -238,7 +238,7 @@ export const TextSelectionToolbar: React.FC<TextSelectionToolbarProps> = ({
           className="selection-tool-btn"
           title="Explain in colloquial bilingual Hinglish"
         >
-          <Globe size={12} className="text-rose-400" />
+          <Globe size={12} style={{ color: 'var(--accent-cyan)' }} />
           <span>Hinglish</span>
         </button>
 

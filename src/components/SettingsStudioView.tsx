@@ -13,8 +13,6 @@ import {
   EyeOff,
   Layers, 
   Trash2, 
-  Sun, 
-  Moon,
   Download,
   Upload,
   Check,
@@ -28,7 +26,15 @@ import {
   Menu,
   X,
   Smartphone,
-  Tablet
+  Tablet,
+  Copy,
+  Play,
+  Globe,
+  FileText,
+  Volume2,
+  Award,
+  CheckCircle2,
+  Flame
 } from 'lucide-react';
 import { 
   getPrintCustomConfig, 
@@ -84,8 +90,6 @@ export const SettingsStudioView: React.FC<SettingsStudioViewProps> = ({
   onBack,
   currentUser,
   userRole = 'student',
-  theme,
-  onToggleTheme,
   userKeys,
   onSaveKeys,
   customModels,
@@ -129,6 +133,8 @@ export const SettingsStudioView: React.FC<SettingsStudioViewProps> = ({
     return DEFAULT_IDE_CONFIG;
   });
 
+  const [activePreviewTab, setActivePreviewTab] = useState<'chat' | 'code' | 'deck' | 'exam'>('chat');
+
   const activeNavLabel = useMemo(() => {
     return NAV_ITEMS.find(item => item.id === activeTab)?.label || 'Settings';
   }, [activeTab]);
@@ -169,7 +175,22 @@ export const SettingsStudioView: React.FC<SettingsStudioViewProps> = ({
     setCodeStyle(next);
     localStorage.setItem('chatterbot_code_style', JSON.stringify(next));
     window.dispatchEvent(new Event('chatterbot_code_style_updated'));
-    setSaveFeedback('Code & Math Syntax preferences applied!');
+    if (patch.atmosphere) {
+      document.documentElement.setAttribute('data-atmosphere', patch.atmosphere);
+      localStorage.setItem('chatterbot_atmosphere', patch.atmosphere);
+      const isLightAtmo = patch.atmosphere === 'oxford_daylight' || patch.atmosphere === 'amber_parchment';
+      const targetTheme = isLightAtmo ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', targetTheme);
+      localStorage.setItem('chatterbot_theme', targetTheme);
+      localStorage.setItem('theme', targetTheme);
+      window.dispatchEvent(new Event('chatterbot_atmosphere_updated'));
+      window.dispatchEvent(new Event('storage'));
+    }
+    if (patch.bubbleStyle) {
+      document.documentElement.setAttribute('data-bubble-style', patch.bubbleStyle);
+      localStorage.setItem('chatterbot_bubble_style', patch.bubbleStyle);
+    }
+    setSaveFeedback('Atmosphere & Styling preferences applied!');
     setTimeout(() => setSaveFeedback(null), 2500);
   };
 
@@ -382,7 +403,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
           <div className="settings-mobile-drawer" onClick={(e) => e.stopPropagation()}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid var(--border-color)' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <SlidersHorizontal size={18} className="text-cyan-400" />
+                <SlidersHorizontal size={18} style={{ color: 'var(--accent-cyan)' }} />
                 <span style={{ fontWeight: 800, fontSize: '0.95rem' }}>Settings Sections</span>
               </div>
               <button
@@ -552,7 +573,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                 {/* 1. Presets */}
                 <div style={{ padding: '18px 20px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <Sparkles size={18} className="text-cyan-400" />
+                    <Sparkles size={18} style={{ color: 'var(--accent-cyan)' }} />
                     <h3 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, letterSpacing: '0.04em' }}>PRESET TEMPLATES</h3>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
@@ -590,7 +611,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                 <div style={{ padding: '18px 20px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Palette size={18} className="text-cyan-400" />
+                      <Palette size={18} style={{ color: 'var(--accent-cyan)' }} />
                       <h3 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, letterSpacing: '0.04em' }}>PAPER BACKGROUND TINT & INK COLOR</h3>
                     </div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)', fontWeight: 600 }}>Visual Palette & Custom Ink Wheel</span>
@@ -637,7 +658,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                             }}
                             title={swatch.name}
                           >
-                            {isSelected && <Check size={16} className="text-cyan-600" />}
+                            {isSelected && <Check size={16} style={{ color: 'var(--accent-cyan)' }} />}
                           </button>
                         );
                       })}
@@ -742,7 +763,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                 {/* 3. Header Banner & Accent Styling */}
                 <div style={{ padding: '18px 20px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '14px', boxSizing: 'border-box' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <SlidersHorizontal size={18} className="text-cyan-400" />
+                    <SlidersHorizontal size={18} style={{ color: 'var(--accent-cyan)' }} />
                     <h3 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, letterSpacing: '0.04em' }}>HEADER BANNER & ACCENT STYLING</h3>
                   </div>
 
@@ -874,7 +895,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                 {/* 4. Page Geometry & Layout */}
                 <div style={{ padding: '18px 20px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <Layers size={18} className="text-cyan-400" />
+                    <Layers size={18} style={{ color: 'var(--accent-cyan)' }} />
                     <h3 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, letterSpacing: '0.04em' }}>PAGE GEOMETRY & COLUMN LAYOUT</h3>
                   </div>
                   
@@ -1001,7 +1022,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                 {/* 5. Typography, DPI & Ink Saver */}
                 <div style={{ padding: '18px 20px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '12px' }}>
-                    <Sliders size={18} className="text-cyan-400" />
+                    <Sliders size={18} style={{ color: 'var(--accent-cyan)' }} />
                     <h3 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, letterSpacing: '0.04em' }}>TYPOGRAPHY, DPI & INK SAVER</h3>
                   </div>
 
@@ -1107,7 +1128,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                 {/* 6. Document Headers & Content Filters */}
                 <div style={{ padding: '18px 20px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Sliders size={18} className="text-cyan-400" />
+                    <Sliders size={18} style={{ color: 'var(--accent-cyan)' }} />
                     <h3 style={{ margin: 0, fontSize: '0.92rem', fontWeight: 700, letterSpacing: '0.04em' }}>DOCUMENT HEADERS & CONTENT FILTERING</h3>
                   </div>
 
@@ -1291,7 +1312,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                 }}>
                   <div style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <Eye size={16} className="text-cyan-400" />
+                      <Eye size={16} style={{ color: 'var(--accent-cyan)' }} />
                       <h4 style={{ margin: 0, fontSize: '0.82rem', fontWeight: 700 }}>LIVE A4 PAPER PREVIEW</h4>
                     </div>
                     <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', textTransform: 'uppercase' }}>
@@ -1711,7 +1732,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                 <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Cpu size={20} className="text-cyan-400" />
+                      <Cpu size={20} style={{ color: 'var(--accent-cyan)' }} />
                       <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Temperature & Creativity Control</h3>
                     </div>
                     <span style={{
@@ -1780,7 +1801,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                 {/* Max Tokens Generation */}
                 <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <SlidersHorizontal size={20} className="text-cyan-400" />
+                    <SlidersHorizontal size={20} style={{ color: 'var(--accent-cyan)' }} />
                     <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Maximum Output Tokens</h3>
                   </div>
 
@@ -1826,7 +1847,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                 {/* Streaming & Real-time Synthesis */}
                 <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Zap size={20} className="text-cyan-400" />
+                    <Zap size={20} style={{ color: 'var(--accent-cyan)' }} />
                     <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Streaming & Delivery</h3>
                   </div>
 
@@ -1883,7 +1904,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                 {/* Exam Evaluation Mode */}
                 <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <BookOpen size={20} className="text-cyan-400" />
+                    <BookOpen size={20} style={{ color: 'var(--accent-cyan)' }} />
                     <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>OU Exam Answer Schema</h3>
                   </div>
 
@@ -1951,7 +1972,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                 <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px', boxSizing: 'border-box' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <Code size={22} className="text-cyan-400" />
+                      <Code size={22} style={{ color: 'var(--accent-cyan)' }} />
                       <div>
                         <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Unified Code & Syntax Theme Engine</h3>
                         <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
@@ -2017,7 +2038,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                 <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '18px', boxSizing: 'border-box' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <Terminal size={22} className="text-cyan-400" />
+                      <Terminal size={22} style={{ color: 'var(--accent-cyan)' }} />
                       <div>
                         <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Code Dungeon & Practical Lab Configuration</h3>
                         <p style={{ margin: '2px 0 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
@@ -2250,7 +2271,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                 {/* 3. KaTeX Math Preferences */}
                 <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px', boxSizing: 'border-box' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Layers size={20} className="text-cyan-400" />
+                    <Layers size={20} style={{ color: 'var(--accent-cyan)' }} />
                     <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>KaTeX Mathematical Formula Scaling & Copy Behavior</h3>
                   </div>
 
@@ -2336,7 +2357,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
               <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Command size={22} className="text-cyan-400" />
+                    <Command size={22} style={{ color: 'var(--accent-cyan)' }} />
                     <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700 }}>Keyboard Shortcuts & Hotkeys</h3>
                   </div>
                   <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
@@ -2491,69 +2512,418 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
             </div>
           )}
 
-          {/* TAB 5: 🎨 APPEARANCE & THEME (3-COLUMN VISUAL SELECTOR) */}
+          {/* TAB 5: 🎨 APPEARANCE & ATMOSPHERE STUDIO (FULL BENTO DECK + LIVE PREVIEW) */}
           {activeTab === 'theme' && (
             <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+              
+              {/* Card 1: 🌌 Global Workspace Atmosphere (1-Click Color Suite) */}
               <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '1.1rem', fontWeight: 700 }}>Appearance & Theme Preferences</h3>
-                  <p style={{ margin: '4px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                    Choose your visual theme, contrast level, and reading typography
-                  </p>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(6, 182, 212, 0.15)', border: '1px solid rgba(6, 182, 212, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-cyan)' }}>
+                      <Palette size={20} />
+                    </div>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700 }}>Global Workspace Multi-Color Atmosphere</h3>
+                      <p style={{ margin: '2px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                        Transform application backgrounds, sidebars, header navigation, and accent glow with 1 click.
+                      </p>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.72rem', padding: '4px 10px', borderRadius: '20px', background: 'rgba(6, 182, 212, 0.15)', color: 'var(--accent-cyan)', fontWeight: 700, border: '1px solid rgba(6, 182, 212, 0.3)' }}>
+                    Active: {(codeStyle.atmosphere || 'cyber_osmania').replace('_', ' ').toUpperCase()}
+                  </span>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '16px', marginTop: '8px' }}>
-                  <button
-                    type="button"
-                    onClick={() => theme !== 'dark' && onToggleTheme()}
-                    style={{
-                      padding: '20px',
-                      borderRadius: '14px',
-                      border: theme === 'dark' ? '2.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
-                      background: '#090d16',
-                      color: '#ffffff',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '12px',
-                      cursor: 'pointer',
-                      boxShadow: theme === 'dark' ? '0 0 20px rgba(6, 182, 212, 0.25)' : 'none',
-                      transition: 'all 0.15s ease'
-                    }}
-                  >
-                    <Moon size={32} className="text-indigo-400" />
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>Dark Theme (Default)</div>
-                      <div style={{ fontSize: '0.75rem', color: '#94a3b8', marginTop: '2px' }}>Deep navy slate with cyan accents</div>
-                    </div>
-                  </button>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '14px', marginTop: '6px' }}>
+                  {[
+                    {
+                      id: 'cyber_osmania',
+                      name: 'Cyber Osmania (Default)',
+                      desc: 'Deep slate navy with electric cyan glow',
+                      baseColor: '#020617',
+                      accentColor: '#06b6d4',
+                      isLight: false
+                    },
+                    {
+                      id: 'midnight_academy',
+                      name: 'Midnight Academy',
+                      desc: 'Royal indigo with nocturnal lavender glow',
+                      baseColor: '#0a081e',
+                      accentColor: '#a855f7',
+                      isLight: false
+                    },
+                    {
+                      id: 'emerald_scholar',
+                      name: 'Emerald Scholar',
+                      desc: 'Deep forest dark with academic mint glow',
+                      baseColor: '#021a12',
+                      accentColor: '#10b981',
+                      isLight: false
+                    },
+                    {
+                      id: 'obsidian_oled',
+                      name: 'Obsidian OLED',
+                      desc: 'Pure OLED black with high-contrast razor cyan',
+                      baseColor: '#000000',
+                      accentColor: '#38bdf8',
+                      isLight: false
+                    },
+                    {
+                      id: 'oxford_daylight',
+                      name: 'Oxford Daylight (Light)',
+                      desc: 'Warm ivory paper with Oxford navy typography',
+                      baseColor: '#f8fafc',
+                      accentColor: '#1e3a8a',
+                      isLight: true
+                    },
+                    {
+                      id: 'amber_parchment',
+                      name: 'Amber Parchment (Warm)',
+                      desc: 'Vintage cream paper with warm amber gold',
+                      baseColor: '#fbf7ee',
+                      accentColor: '#d97706',
+                      isLight: true
+                    }
+                  ].map(atmo => {
+                    const isSelected = (codeStyle.atmosphere || 'cyber_osmania') === atmo.id;
+                    return (
+                      <button
+                        key={atmo.id}
+                        type="button"
+                        onClick={() => updateCodeStyle({ atmosphere: atmo.id as any })}
+                        style={{
+                          padding: '16px 18px',
+                          borderRadius: '12px',
+                          border: isSelected ? '2px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                          background: isSelected ? 'rgba(6, 182, 212, 0.12)' : 'var(--bg-primary)',
+                          color: 'var(--text-primary)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '14px',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          boxShadow: isSelected ? '0 0 16px rgba(6, 182, 212, 0.25)' : 'none',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        {/* Swatch preview */}
+                        <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: atmo.baseColor, border: `2px solid ${atmo.accentColor}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, boxShadow: `0 0 10px ${atmo.accentColor}33` }}>
+                          <div style={{ width: '12px', height: '12px', borderRadius: '50%', background: atmo.accentColor }} />
+                        </div>
 
-                  <button
-                    type="button"
-                    onClick={() => theme !== 'light' && onToggleTheme()}
-                    style={{
-                      padding: '20px',
-                      borderRadius: '14px',
-                      border: theme === 'light' ? '2.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
-                      background: '#f8fafc',
-                      color: '#0f172a',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      alignItems: 'center',
-                      gap: '12px',
-                      cursor: 'pointer',
-                      boxShadow: theme === 'light' ? '0 0 20px rgba(6, 182, 212, 0.25)' : 'none',
-                      transition: 'all 0.15s ease'
-                    }}
-                  >
-                    <Sun size={32} className="text-amber-500" />
-                    <div style={{ textAlign: 'center' }}>
-                      <div style={{ fontWeight: 700, fontSize: '0.95rem' }}>Light Theme</div>
-                      <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '2px' }}>Crisp paper white with dark slate text</div>
-                    </div>
-                  </button>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                            <div style={{ fontWeight: 700, fontSize: '0.92rem', color: isSelected ? 'var(--accent-cyan)' : 'var(--text-primary)' }}>
+                              {atmo.name}
+                            </div>
+                            {isSelected && <Check size={16} style={{ color: 'var(--accent-cyan)' }} />}
+                          </div>
+                          <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                            {atmo.desc}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
+
+              {/* Card 2: 👁️ INTERACTIVE MULTI-VIEW ATMOSPHERE PREVIEW DECK */}
+              <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '18px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'var(--pill-bg)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-cyan)' }}>
+                      <Eye size={20} />
+                    </div>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700 }}>Interactive Multi-View Atmosphere Preview Deck</h3>
+                      <p style={{ margin: '2px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                        Live simulation of your active atmosphere across all core interfaces: Chat, Code Lab, Control Deck, and Exam Notes.
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Multi-View Tab Switcher */}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', padding: '4px', borderRadius: '12px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)' }}>
+                    {[
+                      { id: 'chat', label: '💬 Chat & Math', icon: Sparkles },
+                      { id: 'code', label: '💻 Code Lab', icon: Code },
+                      { id: 'deck', label: '🎛️ Control Deck', icon: Layers },
+                      { id: 'exam', label: '📝 Exam & Notes', icon: BookOpen }
+                    ].map(tab => {
+                      const isActive = activePreviewTab === tab.id;
+                      return (
+                        <button
+                          key={tab.id}
+                          type="button"
+                          onClick={() => setActivePreviewTab(tab.id as any)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            padding: '8px 14px',
+                            borderRadius: '8px',
+                            border: 'none',
+                            background: isActive ? 'var(--btn-primary-bg)' : 'transparent',
+                            color: isActive ? 'var(--btn-primary-text)' : 'var(--text-secondary)',
+                            fontWeight: isActive ? 700 : 500,
+                            fontSize: '0.82rem',
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                            boxShadow: isActive ? '0 2px 10px rgba(0,0,0,0.2)' : 'none'
+                          }}
+                        >
+                          <span>{tab.label}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* Simulated Viewport Frame */}
+                <div
+                  style={{
+                    borderRadius: '14px',
+                    border: '1px solid var(--border-color)',
+                    background: 'var(--bg-primary)',
+                    color: 'var(--text-primary)',
+                    padding: '20px',
+                    minHeight: '280px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                    boxShadow: 'inset 0 2px 12px rgba(0,0,0,0.25)',
+                    transition: 'all 0.25s ease'
+                  }}
+                  data-atmosphere={codeStyle.atmosphere || 'cyber_osmania'}
+                  data-theme={(codeStyle.atmosphere === 'oxford_daylight' || codeStyle.atmosphere === 'amber_parchment') ? 'light' : 'dark'}
+                >
+                  {/* VIEW 1: 💬 CHAT & MATH VIEW */}
+                  {activePreviewTab === 'chat' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      {/* User Bubble Row */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '4px', maxWidth: '85%', alignSelf: 'flex-end' }}>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <span style={{ fontWeight: 600 }}>You (OU Student)</span>
+                          <span>•</span>
+                          <span>10:42 AM</span>
+                        </div>
+                        <div className="user-bubble message-bubble" style={{ fontSize: '0.86rem', lineHeight: '1.45' }}>
+                          Prof. Joe, can you explain Bayes' Theorem formula for the Osmania University Sem IV Data Science exam?
+                        </div>
+                      </div>
+
+                      {/* Assistant Bubble Row */}
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '4px', maxWidth: '92%', alignSelf: 'flex-start' }}>
+                        <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <div style={{ width: '20px', height: '20px', borderRadius: '50%', overflow: 'hidden', border: '1px solid var(--accent-cyan)' }}>
+                            <img src="/joe-avatar.png" alt="Prof Joe" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          </div>
+                          <span style={{ fontWeight: 700, color: 'var(--accent-cyan)' }}>Prof. Joe AI</span>
+                          <span style={{ fontSize: '0.65rem', padding: '2px 8px', borderRadius: '6px', background: 'var(--pill-bg)', color: 'var(--accent-cyan)', fontWeight: 600, border: '1px solid var(--border-color)' }}>
+                            Auto-Free (Exam Mode)
+                          </span>
+                        </div>
+                        <div className="assistant-bubble message-bubble" style={{ fontSize: '0.86rem', lineHeight: '1.55', display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          <div>
+                            Under conditional probability, <strong>Bayes' Theorem</strong> calculates the posterior probability of hypothesis $A$ given evidence $B$:
+                          </div>
+
+                          {/* Display Math Equation */}
+                          <div style={{ padding: '12px 18px', borderRadius: '10px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', textAlign: 'center', fontFamily: 'var(--font-mono)', fontSize: '0.94rem', color: 'var(--accent-cyan)', boxShadow: '0 2px 8px rgba(0,0,0,0.1)' }}>
+                            P(A | B) = [ P(B | A) · P(A) ] / P(B)
+                          </div>
+
+                          <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', flexWrap: 'wrap', gap: '12px' }}>
+                            <span>• <strong>P(A|B)</strong>: Posterior probability</span>
+                            <span>• <strong>P(B|A)</strong>: Likelihood</span>
+                            <span>• <strong>P(A)</strong>: Prior probability</span>
+                          </div>
+
+                          {/* Message Quick Action Deck */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', paddingTop: '6px', borderTop: '1px solid var(--border-color)' }}>
+                            <button type="button" className="btn-theme-secondary" style={{ padding: '4px 10px', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '5px', borderRadius: '6px' }}>
+                              <Copy size={12} />
+                              <span>Copy Solution</span>
+                            </button>
+                            <button type="button" className="btn-theme-secondary" style={{ padding: '4px 10px', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '5px', borderRadius: '6px' }}>
+                              <Zap size={12} style={{ color: 'var(--accent-cyan)' }} />
+                              <span>Generate Practice Quiz</span>
+                            </button>
+                            <button type="button" className="btn-theme-secondary" style={{ padding: '4px 10px', fontSize: '0.72rem', display: 'flex', alignItems: 'center', gap: '5px', borderRadius: '6px' }}>
+                              <Volume2 size={12} />
+                              <span>Voice Narration</span>
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* VIEW 2: 💻 CODE LAB & TERMINAL VIEW */}
+                  {activePreviewTab === 'code' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {/* Code Editor Header */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: '10px 10px 0 0', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderBottom: 'none' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Terminal size={15} style={{ color: 'var(--accent-cyan)' }} />
+                          <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.84rem', fontWeight: 600 }}>neyman_pearson_simulation.py</span>
+                          <span style={{ fontSize: '0.65rem', padding: '2px 6px', borderRadius: '4px', background: 'var(--pill-bg)', color: 'var(--accent-cyan)', fontWeight: 700 }}>
+                            PYTHON 3.11
+                          </span>
+                        </div>
+                        <button type="button" className="btn-theme-primary" style={{ padding: '4px 12px', fontSize: '0.74rem', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                          <Play size={12} />
+                          <span>Run Script</span>
+                        </button>
+                      </div>
+
+                      {/* Code Editor Body */}
+                      <div style={{ margin: 0, padding: '14px 16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', borderRadius: '0 0 10px 10px', fontFamily: 'var(--font-mono)', fontSize: '0.82rem', lineHeight: '1.6', overflowX: 'auto' }}>
+                        <div style={{ color: 'var(--text-muted)' }}># Statistical Inference: Uniformly Most Powerful Region</div>
+                        <div><span style={{ color: 'var(--accent-cyan)', fontWeight: 700 }}>import</span> numpy <span style={{ color: 'var(--accent-cyan)', fontWeight: 700 }}>as</span> np</div>
+                        <br />
+                        <div><span style={{ color: 'var(--accent-cyan)', fontWeight: 700 }}>def</span> <span style={{ color: '#38bdf8' }}>neyman_pearson_ratio</span>(L1, L0, alpha=0.05):</div>
+                        <div style={{ paddingLeft: '18px' }}>likelihood_ratio = np.where(L0 &gt; 0, L1 / L0, np.inf)</div>
+                        <div style={{ paddingLeft: '18px' }}>k_threshold = np.percentile(likelihood_ratio, 100 * (1 - alpha))</div>
+                        <div style={{ paddingLeft: '18px' }}><span style={{ color: 'var(--accent-cyan)', fontWeight: 700 }}>return</span> k_threshold, np.mean(likelihood_ratio &gt;= k_threshold)</div>
+                      </div>
+
+                      {/* Simulated Execution Terminal */}
+                      <div style={{ padding: '10px 14px', borderRadius: '8px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontFamily: 'var(--font-mono)', fontSize: '0.76rem' }}>
+                        <span style={{ color: '#10b981', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <CheckCircle2 size={13} />
+                          <span>Output: Critical Value k = 2.71828 • Statistical Power 1-β = 0.942</span>
+                        </span>
+                        <span style={{ color: 'var(--text-muted)' }}>14.2ms • 100% OK</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* VIEW 3: 🎛️ CONTROL DECK & BENTO VIEW */}
+                  {activePreviewTab === 'deck' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                      {/* Drawer Top Header */}
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingBottom: '12px', borderBottom: '1px solid var(--border-color)' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Layers size={18} style={{ color: 'var(--accent-cyan)' }} />
+                          <span style={{ fontWeight: 700, fontSize: '0.92rem' }}>Session Control Deck</span>
+                          <span style={{ fontSize: '0.68rem', padding: '2px 8px', borderRadius: '12px', background: 'var(--pill-bg)', color: 'var(--accent-cyan)', fontWeight: 700 }}>
+                            STUDENT SUITE
+                          </span>
+                        </div>
+                        <button type="button" className="btn-theme-primary" style={{ padding: '6px 14px', fontSize: '0.78rem' }}>
+                          + New Session
+                        </button>
+                      </div>
+
+                      {/* Bento Action Grid */}
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '10px' }}>
+                        {[
+                          { icon: Globe, label: 'Web Grounding', desc: 'Live Academic Search', active: true },
+                          { icon: Cpu, label: 'Model Monitor', desc: 'gemini-2.5-pro • Free', active: true },
+                          { icon: FileText, label: 'Native Print / PDF', desc: 'Custom Exam Layout', active: false },
+                          { icon: Trash2, label: 'Purge Context', desc: 'Zero Token Reset', active: false }
+                        ].map((bento, idx) => (
+                          <div
+                            key={idx}
+                            style={{
+                              padding: '12px',
+                              borderRadius: '10px',
+                              background: 'var(--bg-secondary)',
+                              border: bento.active ? '1px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              gap: '6px',
+                              boxShadow: bento.active ? '0 0 10px rgba(6, 182, 212, 0.15)' : 'none'
+                            }}
+                          >
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                              <bento.icon size={16} style={{ color: bento.active ? 'var(--accent-cyan)' : 'var(--text-muted)' }} />
+                              {bento.active && <span style={{ width: '6px', height: '6px', borderRadius: '50%', background: 'var(--accent-cyan)' }} />}
+                            </div>
+                            <div style={{ fontWeight: 700, fontSize: '0.82rem', color: bento.active ? 'var(--accent-cyan)' : 'var(--text-primary)' }}>
+                              {bento.label}
+                            </div>
+                            <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>{bento.desc}</div>
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Active Persona Status Card */}
+                      <div style={{ padding: '12px 14px', borderRadius: '10px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                          <div style={{ width: '30px', height: '30px', borderRadius: '50%', overflow: 'hidden', border: '1.5px solid var(--accent-cyan)' }}>
+                            <img src="/joe-avatar.png" alt="Prof Joe" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          </div>
+                          <div>
+                            <div style={{ fontWeight: 700, fontSize: '0.84rem' }}>Prof. Joe (Academic Professor)</div>
+                            <div style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Osmania University Exam Rigor • S-Rank Reasoning</div>
+                          </div>
+                        </div>
+                        <span style={{ fontSize: '0.72rem', padding: '3px 10px', borderRadius: '20px', background: 'var(--pill-bg)', color: 'var(--accent-cyan)', fontWeight: 700, border: '1px solid var(--border-color)' }}>
+                          Active Persona
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* VIEW 4: 📝 EXAM & NOTES VIEW */}
+                  {activePreviewTab === 'exam' && (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                      {/* Exam Question Card */}
+                      <div style={{ padding: '16px', borderRadius: '12px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px' }}>
+                          <div className="deck-type-badge" style={{ color: 'var(--accent-cyan)', borderColor: 'var(--border-color)', background: 'var(--pill-bg)', display: 'flex', alignItems: 'center', gap: '6px', padding: '4px 10px', borderRadius: '6px', fontSize: '0.74rem', fontWeight: 700 }}>
+                            <Award size={13} style={{ color: 'var(--accent-cyan)' }} />
+                            <span>12-MARK ESSAY QUESTION • MDS-104-T INFERENCE</span>
+                          </div>
+                          <span style={{ fontSize: '0.74rem', color: '#10b981', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px' }}>
+                            <Flame size={13} /> High Exam Probability (98%)
+                          </span>
+                        </div>
+
+                        <div style={{ fontWeight: 700, fontSize: '0.94rem', color: 'var(--text-primary)' }}>
+                          Q3. (a) State and prove the Neyman-Pearson Lemma. Establish the existence of a Uniformly Most Powerful (UMP) test for testing simple $H_0$ against simple $H_1$.
+                        </div>
+
+                        {/* Scheme Breakdown */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 160px), 1fr))', gap: '8px', marginTop: '4px' }}>
+                          <div style={{ padding: '8px 10px', borderRadius: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', fontSize: '0.74rem' }}>
+                            <div style={{ fontWeight: 700, color: 'var(--accent-cyan)' }}>1. Ratio Setup [3M]</div>
+                            <div style={{ color: 'var(--text-muted)' }}>$L(x; \theta_1) / L(x; \theta_0) \ge k$</div>
+                          </div>
+                          <div style={{ padding: '8px 10px', borderRadius: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', fontSize: '0.74rem' }}>
+                            <div style={{ fontWeight: 700, color: 'var(--accent-cyan)' }}>2. Power Max [5M]</div>
+                            <div style={{ color: 'var(--text-muted)' }}>Lagrangian multiplier proof</div>
+                          </div>
+                          <div style={{ padding: '8px 10px', borderRadius: '8px', background: 'var(--bg-primary)', border: '1px solid var(--border-color)', fontSize: '0.74rem' }}>
+                            <div style={{ fontWeight: 700, color: 'var(--accent-cyan)' }}>3. Cutoff Threshold [4M]</div>
+                            <div style={{ color: 'var(--text-muted)' }}>Size &alpha; = P(Reject H₀ | H₀)</div>
+                          </div>
+                        </div>
+
+                        {/* Card Action Footer */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '8px', borderTop: '1px solid var(--border-color)' }}>
+                          <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                            Osmania University Syllabus • 12/12 Marks Scheme
+                          </span>
+                          <div style={{ display: 'flex', gap: '8px' }}>
+                            <button type="button" className="btn-theme-secondary" style={{ padding: '4px 10px', fontSize: '0.74rem' }}>
+                              Generate 14 Flashcards
+                            </button>
+                            <button type="button" className="btn-theme-primary" style={{ padding: '4px 12px', fontSize: '0.74rem' }}>
+                              Practice in Quiz Arena
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
             </div>
           )}
 

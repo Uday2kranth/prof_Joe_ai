@@ -487,6 +487,34 @@ export const MagicBento = ({
   const isMobile = useMobileDetection();
   const shouldDisableAnimations = disableAnimations || isMobile;
 
+  const [activeGlow, setActiveGlow] = useState(glowColor);
+
+  useEffect(() => {
+    const updateGlow = () => {
+      try {
+        const computed = getComputedStyle(document.documentElement).getPropertyValue('--bento-glow-color').trim();
+        if (computed) {
+          setActiveGlow(computed);
+        } else {
+          setActiveGlow(glowColor);
+        }
+      } catch {
+        setActiveGlow(glowColor);
+      }
+    };
+    updateGlow();
+    window.addEventListener('chatterbot_code_style_updated', updateGlow);
+    window.addEventListener('chatterbot_atmosphere_updated', updateGlow);
+    window.addEventListener('storage', updateGlow);
+    return () => {
+      window.removeEventListener('chatterbot_code_style_updated', updateGlow);
+      window.removeEventListener('chatterbot_atmosphere_updated', updateGlow);
+      window.removeEventListener('storage', updateGlow);
+    };
+  }, [glowColor]);
+
+  const effectiveGlow = glowColor !== DEFAULT_GLOW_COLOR ? glowColor : activeGlow;
+
   return (
     <>
       {enableSpotlight && (
@@ -495,7 +523,7 @@ export const MagicBento = ({
           disableAnimations={shouldDisableAnimations}
           enabled={enableSpotlight}
           spotlightRadius={spotlightRadius}
-          glowColor={glowColor}
+          glowColor={effectiveGlow}
         />
       )}
 
@@ -506,7 +534,7 @@ export const MagicBento = ({
             className: baseClassName,
             style: {
               backgroundColor: card.color,
-              '--glow-color': glowColor
+              '--glow-color': effectiveGlow
             },
             onClick: () => onCardClick && onCardClick(card)
           };

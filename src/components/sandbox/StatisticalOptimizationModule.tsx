@@ -1627,9 +1627,12 @@ export const StatisticalOptimizationModule: React.FC = () => {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: '14px',
+        gap: '8px',
         width: '100%',
-        color: '#f8fafc',
+        height: '100%',
+        minHeight: 0,
+        flex: 1,
+        color: 'var(--text-primary, #f8fafc)',
         userSelect: 'none'
       }}
     >
@@ -1642,19 +1645,20 @@ export const StatisticalOptimizationModule: React.FC = () => {
           flexWrap: 'wrap',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '10px',
-          padding: '10px 14px',
-          background: 'rgba(15, 23, 42, 0.85)',
-          borderRadius: '14px',
-          border: '1px solid rgba(51, 65, 85, 0.7)',
+          gap: '8px',
+          padding: '8px 12px',
+          background: 'var(--card-bg, rgba(15, 23, 42, 0.85))',
+          borderRadius: '12px',
+          border: '1px solid var(--card-border, rgba(51, 65, 85, 0.7))',
           backdropFilter: 'blur(10px)',
           minWidth: 0,
-          maxWidth: '100%'
+          maxWidth: '100%',
+          flexShrink: 0
         }}
       >
         {/* Mobile & Compact View: Grouped Model Selector Dropdown */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '1 1 260px', minWidth: 0, maxWidth: '100%' }}>
-          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
+          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-secondary, #94a3b8)', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
             MODEL:
           </span>
           <select
@@ -1670,9 +1674,9 @@ export const StatisticalOptimizationModule: React.FC = () => {
               minHeight: '36px',
               padding: '6px 12px',
               borderRadius: '8px',
-              background: 'rgba(30, 41, 59, 0.95)',
-              border: '1.5px solid #38bdf8',
-              color: '#f8fafc',
+              background: 'var(--dropdown-bg, rgba(30, 41, 59, 0.95))',
+              border: '1.5px solid var(--accent-cyan, #38bdf8)',
+              color: 'var(--text-primary, #f8fafc)',
               fontSize: '0.82rem',
               fontWeight: 800,
               cursor: 'pointer',
@@ -1811,12 +1815,12 @@ export const StatisticalOptimizationModule: React.FC = () => {
               top: '12px',
               left: '12px',
               padding: '6px 12px',
-              background: 'rgba(15, 23, 42, 0.9)',
+              background: 'var(--card-bg, rgba(15, 23, 42, 0.9))',
               backdropFilter: 'blur(8px)',
               borderRadius: '8px',
-              border: '1px solid rgba(51, 65, 85, 0.8)',
+              border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))',
               fontSize: '0.72rem',
-              color: '#94a3b8',
+              color: 'var(--text-secondary, #94a3b8)',
               display: 'flex',
               alignItems: 'center',
               gap: '6px'
@@ -1853,12 +1857,12 @@ export const StatisticalOptimizationModule: React.FC = () => {
                 alignItems: 'center',
                 gap: '6px',
                 padding: '4px 6px',
-                background: 'rgba(15, 23, 42, 0.9)',
+                background: 'var(--card-bg, rgba(15, 23, 42, 0.9))',
                 borderRadius: '8px',
-                border: '1px solid rgba(51, 65, 85, 0.8)'
+                border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))'
               }}
             >
-              <span style={{ fontSize: '0.7rem', color: '#94a3b8', fontWeight: 600 }}>Add:</span>
+              <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)', fontWeight: 600 }}>Add:</span>
               <button
                 type="button"
                 onClick={() => setLdaPlacementClass(0)}
@@ -1898,55 +1902,55 @@ export const StatisticalOptimizationModule: React.FC = () => {
         {/* Right Telemetry, Controls & Exam Notes Panel */}
         <div className={`stat-opt-controls-panel ${mobileActiveTab !== 'canvas' ? 'mobile-active' : 'mobile-hidden'}`}>
           {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid rgba(51, 65, 85, 0.6)', paddingBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))', paddingBottom: '10px' }}>
             <Activity size={16} color="#38bdf8" />
             <div>
-              <h4 style={{ fontSize: '0.85rem', fontWeight: 800, color: '#f8fafc', margin: 0, textTransform: 'uppercase' }}>
+              <h4 style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary, #f8fafc)', margin: 0, textTransform: 'uppercase' }}>
                 {activeModelMeta.name}
               </h4>
-              <span style={{ fontSize: '0.68rem', color: '#94a3b8' }}>{activeModelMeta.pillarTitle}</span>
+              <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>{activeModelMeta.pillarTitle}</span>
             </div>
           </div>
 
           {/* TELEMETRY CARDS */}
           <div className={`stat-opt-card-telemetry ${mobileActiveTab === 'telemetry' ? 'mobile-card-visible' : 'mobile-card-hidden'}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {selectedModel === 'clt_sampling' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Parent Dist:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Parent Dist:</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#38bdf8', textTransform: 'capitalize' }}>{cltPopDist}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Sample Size (N):</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Sample Size (N):</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#34d399', fontFamily: 'monospace' }}>{cltSampleSize}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Total Draws:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Total Draws:</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fbbf24', fontFamily: 'monospace' }}>{cltTotalDraws}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Std Error (σ/√N):</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Std Error (σ/√N):</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#c084fc', fontFamily: 'monospace' }}>{(0.55 / Math.sqrt(cltSampleSize)).toFixed(3)}</div>
               </div>
             </div>
           )}
 
           {selectedModel === 'hypothesis_power' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Significance (α):</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Significance (α):</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#ef4444', fontFamily: 'monospace' }}>{hypoAlpha}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Effect Size (d):</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Effect Size (d):</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#a855f7', fontFamily: 'monospace' }}>{hypoEffectSize}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Observed Z:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Observed Z:</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#fbbf24', fontFamily: 'monospace' }}>{hypoObservedZ.toFixed(2)}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Decision:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Decision:</div>
                 <div style={{ fontSize: '0.78rem', fontWeight: 800, color: Math.abs(hypoObservedZ) >= (hypoTails === 'two' ? 1.96 : 1.645) ? '#22c55e' : '#ef4444' }}>
                   {Math.abs(hypoObservedZ) >= (hypoTails === 'two' ? 1.96 : 1.645) ? 'REJECT H₀ (Sig)' : 'FAIL TO REJECT'}
                 </div>
@@ -1955,89 +1959,89 @@ export const StatisticalOptimizationModule: React.FC = () => {
           )}
 
           {selectedModel === 'linear_programming_simplex' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Objective:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Objective:</div>
                 <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#eab308' }}>{lpOptType.toUpperCase()} Z = {lpC1}x₁ + {lpC2}x₂</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Constraint 1:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Constraint 1:</div>
                 <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#38bdf8' }}>2x₁ + x₂ ≤ {lpB1}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Constraint 2:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Constraint 2:</div>
                 <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#38bdf8' }}>x₁ + 2x₂ ≤ {lpB2}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Optimum Vertex:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Optimum Vertex:</div>
                 <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#22c55e' }}>Point C (Simplex)</div>
               </div>
             </div>
           )}
 
           {selectedModel === 'bayesian_beta_binomial' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Flips (H / T):</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Flips (H / T):</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#38bdf8' }}>{bayesFlipsHeads} Heads / {bayesFlipsTails} Tails</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>MLE θ̂ = k/n:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>MLE θ̂ = k/n:</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#f59e0b', fontFamily: 'monospace' }}>{(bayesFlipsHeads / (bayesFlipsHeads + bayesFlipsTails || 1)).toFixed(3)}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Prior Beta:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Prior Beta:</div>
                 <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#a855f7' }}>Beta({bayesPriorAlpha}, {bayesPriorBeta})</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Posterior Mean:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Posterior Mean:</div>
                 <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#10b981', fontFamily: 'monospace' }}>{((bayesPriorAlpha + bayesFlipsHeads) / (bayesPriorAlpha + bayesPriorBeta + bayesFlipsHeads + bayesFlipsTails)).toFixed(3)}</div>
               </div>
             </div>
           )}
 
           {selectedModel === 'pca_projection' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Correlation ρ:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Correlation ρ:</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>{pcaCorrelation}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>PC₁ Var Explained:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>PC₁ Var Explained:</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#22c55e', fontFamily: 'monospace' }}>{pcaExplainedVar}%</div>
               </div>
             </div>
           )}
 
           {selectedModel === 'mle_map' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Sample Mean (MLE):</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Sample Mean (MLE):</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>{mleSampleMean.toFixed(3)}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Prior Mean:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Prior Mean:</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#f59e0b', fontFamily: 'monospace' }}>{mapPriorMean.toFixed(2)}</div>
               </div>
               <div style={{ gridColumn: 'span 2' }}>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Log-Likelihood ln L(θ):</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Log-Likelihood ln L(θ):</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#34d399', fontFamily: 'monospace' }}>{mleLogLikelihood.toFixed(2)}</div>
               </div>
             </div>
           )}
 
           {selectedModel === 'em_gmm' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>EM Iterations:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>EM Iterations:</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>{emIterations}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Log-Likelihood:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Log-Likelihood:</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#34d399', fontFamily: 'monospace' }}>{emLogLikelihood.toFixed(2)}</div>
               </div>
               <div style={{ gridColumn: 'span 2' }}>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Status:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Status:</div>
                 <div style={{ fontSize: '0.78rem', fontWeight: 700, color: emConverged ? '#22c55e' : '#f59e0b' }}>
                   {emConverged ? '✓ Converged to Local Maximum' : 'Iterating E-Step & M-Step...'}
                 </div>
@@ -2046,80 +2050,80 @@ export const StatisticalOptimizationModule: React.FC = () => {
           )}
 
           {selectedModel === 'mcmc_metropolis' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Acceptance Rate:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Acceptance Rate:</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#34d399', fontFamily: 'monospace' }}>{mcmcAcceptanceRate}%</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Proposal Std (σ_prop):</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Proposal Std (σ_prop):</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>{mcmcProposalStd}</div>
               </div>
               <div style={{ gridColumn: 'span 2' }}>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Total Samples:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Total Samples:</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#c084fc', fontFamily: 'monospace' }}>{mcmcTotalSamples} Samples Drawn</div>
               </div>
             </div>
           )}
 
           {selectedModel === 'bootstrap_resampling' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Replicas (B):</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Replicas (B):</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>{bootNumReplicas}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Bootstrap Mean:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Bootstrap Mean:</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#34d399', fontFamily: 'monospace' }}>{bootMeanEstimate.toFixed(3)}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Std Error (SE_B):</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Std Error (SE_B):</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fbbf24', fontFamily: 'monospace' }}>{bootStdError.toFixed(3)}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>95% Percentile CI:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>95% Percentile CI:</div>
                 <div style={{ fontSize: '0.78rem', fontWeight: 700, color: '#c084fc', fontFamily: 'monospace' }}>[{bootCI95.low.toFixed(2)}, {bootCI95.high.toFixed(2)}]</div>
               </div>
             </div>
           )}
 
           {selectedModel === 'markov_chains' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Step Count (t):</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Step Count (t):</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>{mcStepCount}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>P₁₂ (Bull → Bear):</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>P₁₂ (Bull → Bear):</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#f59e0b', fontFamily: 'monospace' }}>{mcP12}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>P₂₃ (Bear → Stagnant):</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>P₂₃ (Bear → Stagnant):</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#a855f7', fontFamily: 'monospace' }}>{mcP23}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>P₃₁ (Stagnant → Bull):</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>P₃₁ (Stagnant → Bull):</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#34d399', fontFamily: 'monospace' }}>{mcP31}</div>
               </div>
             </div>
           )}
 
           {selectedModel === 'first_order_optimizers' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Active Surface:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Active Surface:</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#38bdf8', textTransform: 'capitalize' }}>{optLossSurface}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Learning Rate (η):</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Learning Rate (η):</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#34d399', fontFamily: 'monospace' }}>{optLearningRate}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Momentum β:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Momentum β:</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fbbf24', fontFamily: 'monospace' }}>{optMomentumBeta}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Racers Legend:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Racers Legend:</div>
                 <div style={{ fontSize: '0.74rem', fontWeight: 800, display: 'flex', flexWrap: 'wrap', gap: '4px', marginTop: '2px' }}>
                   <span style={{ color: '#ef4444' }}>● SGD</span>
                   <span style={{ color: '#f59e0b' }}>● Mom</span>
@@ -2131,39 +2135,39 @@ export const StatisticalOptimizationModule: React.FC = () => {
           )}
 
           {selectedModel === 'newton_raphson' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Newton Steps:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Newton Steps:</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>{newtonStepCount}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Current x_k:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Current x_k:</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#34d399', fontFamily: 'monospace' }}>{newtonCurrentX.toFixed(4)}</div>
               </div>
             </div>
           )}
 
           {selectedModel === 'lagrange_kkt' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Constraint Radius c:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Constraint Radius c:</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#ec4899', fontFamily: 'monospace' }}>{lagrangeLevelC}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Multiplier λ:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Multiplier λ:</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>{lagrangeLambda}</div>
               </div>
             </div>
           )}
 
           {selectedModel === 'fisher_lda' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Scatter Ratio J(w):</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Scatter Ratio J(w):</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>{ldaSeparability}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Active Class:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Active Class:</div>
                 <div style={{ fontSize: '0.85rem', fontWeight: 800, color: ldaPlacementClass === 0 ? '#38bdf8' : '#f59e0b' }}>
                   Class {ldaPlacementClass}
                 </div>
@@ -2172,13 +2176,13 @@ export const StatisticalOptimizationModule: React.FC = () => {
           )}
 
           {selectedModel === 'svd_decomposition' && (
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Singular Value σ₁:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Singular Value σ₁:</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#d946ef', fontFamily: 'monospace' }}>{svdSingular1}</div>
               </div>
               <div>
-                <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Singular Value σ₂:</div>
+                <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Singular Value σ₂:</div>
                 <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>{svdSingular2}</div>
               </div>
             </div>
@@ -2195,7 +2199,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
             {selectedModel === 'clt_sampling' && (
               <>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Parent Population Shape</span>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '4px' }}>
@@ -2215,9 +2219,9 @@ export const StatisticalOptimizationModule: React.FC = () => {
                           fontSize: '0.68rem',
                           fontWeight: 700,
                           textTransform: 'capitalize',
-                          background: cltPopDist === shape ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)',
-                          color: cltPopDist === shape ? '#38bdf8' : '#94a3b8',
-                          border: cltPopDist === shape ? '1px solid #38bdf8' : '1px solid rgba(51, 65, 85, 0.6)',
+                          background: cltPopDist === shape ? 'rgba(56, 189, 248, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))',
+                          color: cltPopDist === shape ? '#38bdf8' : 'var(--text-secondary, #94a3b8)',
+                          border: cltPopDist === shape ? '1px solid #38bdf8' : '1px solid var(--border-color, rgba(51, 65, 85, 0.6))',
                           cursor: 'pointer'
                         }}
                       >
@@ -2228,7 +2232,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Sample Size N: <strong>{cltSampleSize}</strong></span>
                   </div>
                   <input
@@ -2247,7 +2251,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Simulation Speed: <strong>{cltDrawSpeed}x</strong></span>
                   </div>
                   <input
@@ -2302,7 +2306,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
             {selectedModel === 'hypothesis_power' && (
               <>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Significance Level (α): <strong>{hypoAlpha}</strong></span>
                   </div>
                   <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
@@ -2317,9 +2321,9 @@ export const StatisticalOptimizationModule: React.FC = () => {
                           borderRadius: '6px',
                           fontSize: '0.7rem',
                           fontWeight: 700,
-                          background: hypoAlpha === a ? 'rgba(239, 68, 68, 0.25)' : 'rgba(30, 41, 59, 0.6)',
-                          color: hypoAlpha === a ? '#ef4444' : '#94a3b8',
-                          border: hypoAlpha === a ? '1px solid #ef4444' : '1px solid rgba(51, 65, 85, 0.6)',
+                          background: hypoAlpha === a ? 'rgba(239, 68, 68, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))',
+                          color: hypoAlpha === a ? '#ef4444' : 'var(--text-secondary, #94a3b8)',
+                          border: hypoAlpha === a ? '1px solid #ef4444' : '1px solid var(--border-color, rgba(51, 65, 85, 0.6))',
                           cursor: 'pointer'
                         }}
                       >
@@ -2330,7 +2334,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Hypothesis Tails: <strong>{hypoTails === 'two' ? 'Two-Tailed' : 'One-Tailed'}</strong></span>
                   </div>
                   <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
@@ -2345,9 +2349,9 @@ export const StatisticalOptimizationModule: React.FC = () => {
                           borderRadius: '6px',
                           fontSize: '0.7rem',
                           fontWeight: 700,
-                          background: hypoTails === t ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)',
-                          color: hypoTails === t ? '#38bdf8' : '#94a3b8',
-                          border: hypoTails === t ? '1px solid #38bdf8' : '1px solid rgba(51, 65, 85, 0.6)',
+                          background: hypoTails === t ? 'rgba(56, 189, 248, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))',
+                          color: hypoTails === t ? '#38bdf8' : 'var(--text-secondary, #94a3b8)',
+                          border: hypoTails === t ? '1px solid #38bdf8' : '1px solid var(--border-color, rgba(51, 65, 85, 0.6))',
                           cursor: 'pointer'
                         }}
                       >
@@ -2358,7 +2362,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Sample Size (n): <strong>{hypoSampleSize}</strong></span>
                   </div>
                   <input
@@ -2373,7 +2377,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Effect Size (Cohen d): <strong>{hypoEffectSize}</strong></span>
                   </div>
                   <input
@@ -2392,7 +2396,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
             {selectedModel === 'mle_map' && (
               <>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Sample Spread (σ_sample): <strong>{mleSampleStd.toFixed(2)}</strong></span>
                   </div>
                   <input
@@ -2407,7 +2411,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Bayesian Prior Mean (μ_prior): <strong>{mapPriorMean.toFixed(2)}</strong></span>
                   </div>
                   <input
@@ -2422,7 +2426,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Prior Regularization Weight: <strong>{mapPriorWeight.toFixed(2)}</strong></span>
                   </div>
                   <input
@@ -2441,7 +2445,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
             {selectedModel === 'mcmc_metropolis' && (
               <>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Proposal Std (σ_proposal): <strong>{mcmcProposalStd.toFixed(2)}</strong></span>
                   </div>
                   <input
@@ -2460,7 +2464,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
             {selectedModel === 'bootstrap_resampling' && (
               <>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Number of Replicas (B): <strong>{bootNumReplicas}</strong></span>
                   </div>
                   <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
@@ -2475,9 +2479,9 @@ export const StatisticalOptimizationModule: React.FC = () => {
                           borderRadius: '6px',
                           fontSize: '0.7rem',
                           fontWeight: 700,
-                          background: bootNumReplicas === b ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)',
-                          color: bootNumReplicas === b ? '#38bdf8' : '#94a3b8',
-                          border: bootNumReplicas === b ? '1px solid #38bdf8' : '1px solid rgba(51, 65, 85, 0.6)',
+                          background: bootNumReplicas === b ? 'rgba(56, 189, 248, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))',
+                          color: bootNumReplicas === b ? '#38bdf8' : 'var(--text-secondary, #94a3b8)',
+                          border: bootNumReplicas === b ? '1px solid #38bdf8' : '1px solid var(--border-color, rgba(51, 65, 85, 0.6))',
                           cursor: 'pointer'
                         }}
                       >
@@ -2492,7 +2496,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
             {selectedModel === 'markov_chains' && (
               <>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>P₁₂ (Bull → Bear): <strong>{mcP12}</strong></span>
                   </div>
                   <input
@@ -2506,7 +2510,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>P₂₃ (Bear → Stagnant): <strong>{mcP23}</strong></span>
                   </div>
                   <input
@@ -2520,7 +2524,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
                   />
                 </div>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>P₃₁ (Stagnant → Bull): <strong>{mcP31}</strong></span>
                   </div>
                   <input
@@ -2613,7 +2617,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Prior Beta(α, β): <strong>Beta({bayesPriorAlpha}, {bayesPriorBeta})</strong></span>
                   </div>
                   <div style={{ display: 'flex', gap: '8px', marginTop: '4px' }}>
@@ -2637,7 +2641,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>True θ (Coin Bias): <strong>{bayesTrueTheta.toFixed(2)}</strong></span>
                   </div>
                   <input
@@ -2656,7 +2660,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
             {selectedModel === 'first_order_optimizers' && (
               <>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Loss Surface</span>
                   </div>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px', marginTop: '4px' }}>
@@ -2674,9 +2678,9 @@ export const StatisticalOptimizationModule: React.FC = () => {
                           fontSize: '0.68rem',
                           fontWeight: 700,
                           textTransform: 'capitalize',
-                          background: optLossSurface === surf ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)',
-                          color: optLossSurface === surf ? '#38bdf8' : '#94a3b8',
-                          border: optLossSurface === surf ? '1px solid #38bdf8' : '1px solid rgba(51, 65, 85, 0.6)',
+                          background: optLossSurface === surf ? 'rgba(56, 189, 248, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))',
+                          color: optLossSurface === surf ? '#38bdf8' : 'var(--text-secondary, #94a3b8)',
+                          border: optLossSurface === surf ? '1px solid #38bdf8' : '1px solid var(--border-color, rgba(51, 65, 85, 0.6))',
                           cursor: 'pointer'
                         }}
                       >
@@ -2687,7 +2691,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Learning Rate (η): <strong>{optLearningRate}</strong></span>
                   </div>
                   <input
@@ -2702,7 +2706,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Momentum Beta (β): <strong>{optMomentumBeta}</strong></span>
                   </div>
                   <input
@@ -2721,7 +2725,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
             {selectedModel === 'newton_raphson' && (
               <>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Newton Damping Factor: <strong>{newtonDamping}</strong></span>
                   </div>
                   <input
@@ -2740,7 +2744,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
             {selectedModel === 'lagrange_kkt' && (
               <>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Constraint Radius (c): <strong>{lagrangeLevelC}</strong></span>
                   </div>
                   <input
@@ -2755,7 +2759,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Multiplier (λ): <strong>{lagrangeLambda}</strong></span>
                   </div>
                   <input
@@ -2774,7 +2778,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
             {selectedModel === 'linear_programming_simplex' && (
               <>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Objective: <strong>{lpOptType.toUpperCase()}</strong></span>
                   </div>
                   <div style={{ display: 'flex', gap: '6px', marginTop: '4px' }}>
@@ -2790,9 +2794,9 @@ export const StatisticalOptimizationModule: React.FC = () => {
                           fontSize: '0.7rem',
                           fontWeight: 700,
                           textTransform: 'uppercase',
-                          background: lpOptType === opt ? 'rgba(234, 179, 8, 0.25)' : 'rgba(30, 41, 59, 0.6)',
-                          color: lpOptType === opt ? '#eab308' : '#94a3b8',
-                          border: lpOptType === opt ? '1px solid #eab308' : '1px solid rgba(51, 65, 85, 0.6)',
+                          background: lpOptType === opt ? 'rgba(234, 179, 8, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))',
+                          color: lpOptType === opt ? '#eab308' : 'var(--text-secondary, #94a3b8)',
+                          border: lpOptType === opt ? '1px solid #eab308' : '1px solid var(--border-color, rgba(51, 65, 85, 0.6))',
                           cursor: 'pointer'
                         }}
                       >
@@ -2803,7 +2807,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Obj Coeff c₁: <strong>{lpC1}</strong></span>
                   </div>
                   <input
@@ -2818,7 +2822,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Obj Coeff c₂: <strong>{lpC2}</strong></span>
                   </div>
                   <input
@@ -2833,7 +2837,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Constraint 1 Limit (b₁): <strong>{lpB1}</strong></span>
                   </div>
                   <input
@@ -2848,7 +2852,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Constraint 2 Limit (b₂): <strong>{lpB2}</strong></span>
                   </div>
                   <input
@@ -2867,7 +2871,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
             {selectedModel === 'pca_projection' && (
               <>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Feature Correlation (ρ): <strong>{pcaCorrelation.toFixed(2)}</strong></span>
                   </div>
                   <input
@@ -2882,7 +2886,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Variance X (Var[X₁]): <strong>{pcaVarX.toFixed(2)}</strong></span>
                   </div>
                   <input
@@ -2897,7 +2901,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Variance Y (Var[X₂]): <strong>{pcaVarY.toFixed(2)}</strong></span>
                   </div>
                   <input
@@ -2916,7 +2920,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
             {selectedModel === 'svd_decomposition' && (
               <>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Singular Value σ₁: <strong>{svdSingular1.toFixed(2)}</strong></span>
                   </div>
                   <input
@@ -2931,7 +2935,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     <span>Singular Value σ₂: <strong>{svdSingular2.toFixed(2)}</strong></span>
                   </div>
                   <input
@@ -2955,8 +2959,8 @@ export const StatisticalOptimizationModule: React.FC = () => {
               marginTop: 'auto',
               padding: '12px',
               borderRadius: '10px',
-              background: 'rgba(30, 41, 59, 0.5)',
-              border: '1px solid rgba(51, 65, 85, 0.6)',
+              background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.5))',
+              border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))',
               display: 'flex',
               flexDirection: 'column',
               gap: '6px'
@@ -2974,10 +2978,10 @@ export const StatisticalOptimizationModule: React.FC = () => {
                 fontFamily: 'monospace',
                 fontSize: '0.75rem',
                 color: '#34d399',
-                background: 'rgba(15, 23, 42, 0.8)',
+                background: 'var(--card-bg, rgba(15, 23, 42, 0.8))',
                 padding: '4px 8px',
                 borderRadius: '6px',
-                border: '1px solid rgba(51, 65, 85, 0.5)',
+                border: '1px solid var(--border-color, rgba(51, 65, 85, 0.5))',
                 marginTop: '4px'
               }}
             >

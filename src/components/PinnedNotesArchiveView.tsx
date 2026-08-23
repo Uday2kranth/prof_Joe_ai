@@ -143,7 +143,7 @@ export const PinnedNotesArchiveView: React.FC<PinnedNotesArchiveViewProps> = ({
           <button
             type="button"
             onClick={onBackToHub}
-            className="extractor-btn-secondary"
+            className="btn-theme-secondary"
             style={{ borderRadius: '10px', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700 }}
           >
             <ArrowLeft size={16} />
@@ -154,7 +154,7 @@ export const PinnedNotesArchiveView: React.FC<PinnedNotesArchiveViewProps> = ({
             <button
               type="button"
               onClick={onNavigateToChat}
-              className="extractor-btn-secondary"
+              className="btn-theme-secondary"
               style={{ borderRadius: '10px', padding: '8px 14px', display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', fontWeight: 700 }}
             >
               <MessageSquare size={15} />
@@ -214,8 +214,8 @@ export const PinnedNotesArchiveView: React.FC<PinnedNotesArchiveViewProps> = ({
                   onClearAllPins();
                 }
               }}
-              className="extractor-btn-secondary"
-              style={{ borderRadius: '10px', padding: '8px 12px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '6px', color: '#f87171' }}
+              className="btn-theme-danger"
+              style={{ borderRadius: '10px', padding: '8px 12px', fontSize: '0.82rem', display: 'flex', alignItems: 'center', gap: '6px' }}
               title="Clear all pinned notes"
             >
               <Trash2 size={14} />

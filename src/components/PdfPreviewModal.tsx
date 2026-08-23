@@ -336,9 +336,9 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
               type="button"
               onClick={handleExportPng}
               disabled={downloadingImage}
-              className="pdf-action-btn-secondary"
+              className="btn-theme-secondary"
               title="Save styled preview card as PNG Image"
-              style={{ padding: '8px 16px', borderRadius: '10px' }}
+              style={{ padding: '8px 16px', borderRadius: '10px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
             >
               <ImageIcon size={15} />
               <span>{downloadingImage ? 'Saving...' : 'Save PNG Image'}</span>
@@ -348,12 +348,14 @@ export const PdfPreviewModal: React.FC<PdfPreviewModalProps> = ({
               type="button"
               onClick={handleDownloadPdf}
               disabled={downloading}
-              className="pdf-action-btn-primary"
+              className="btn-theme-primary"
               title="Download themed PDF Document directly"
               style={{
                 padding: '8px 18px',
                 borderRadius: '10px',
-                background: `linear-gradient(135deg, ${activeTheme.primary} 0%, ${activeTheme.accent} 100%)`
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px'
               }}
             >
               <Download size={15} />

@@ -152,15 +152,11 @@ export const PROVIDERS: ProviderGroup[] = [
 ];
 
 export const PERSONAS: PersonaOption[] = [
-  { id: 'default', name: 'Prof. Joe Academic (Default)', icon: '🎓', description: 'Exam prep engine with Kroki diagrams', allowDiagrams: true },
-  { id: 'fools_gold_mds203', name: 'MDS-203 Optimization Mentor', icon: '📈', description: 'Simplex, Duality, Transport & PERT/CPM with Kroki', allowDiagrams: true },
-  { id: 'fools_gold_mds302', name: 'MDS-302 Computer Networks Mentor', icon: '🌐', description: 'OSI/TCP-IP, Routing, Protocols & Packet Diagrams', allowDiagrams: true },
-  { id: 'fools_gold_mds204t', name: 'MDS-204-T Software Eng Mentor', icon: '⚙️', description: 'SDLC, Agile, SQA, Testing & UML Diagrams', allowDiagrams: true },
-  { id: 'fools_gold_mds104t', name: 'MDS-104-T Stat Inference Mentor', icon: '📊', description: 'Estimation, Hypotheses, LRT & Bayes Distributions', allowDiagrams: true },
-  { id: 'computer', name: "Courage's Computer 🖥️", icon: '🖥️', description: 'Diagnostic expert, dry British wit & kroki diagrams', allowDiagrams: true },
-  { id: 'courage', name: 'Courage-Inspired 🐶', icon: '🐶', description: 'Timid, loyal step-by-step solver & kroki diagrams', allowDiagrams: true },
-  { id: 'peter', name: 'Peter-Inspired 🍺', icon: '🍺', description: 'Enthusiastic sitcom dad analogies (Text Mode)', allowDiagrams: false },
-  { id: 'stewie', name: 'Stewie-Inspired 👶', icon: '👶', description: 'Sophisticated child genius dry wit (Text Mode)', allowDiagrams: false },
-  { id: 'rick', name: 'Rick-Inspired 🧪', icon: '🧪', description: 'Eccentric super-genius scientist (Text Mode)', allowDiagrams: false },
-  { id: 'morty', name: 'Morty-Inspired 🧢', icon: '🧢', description: 'Kind-hearted & encouraging teenager (Text Mode)', allowDiagrams: false }
+  { id: 'default', name: 'Prof. Joe Academic (Default)', icon: '🎓', description: 'Exam prep engine with Kroki diagrams', allowDiagrams: true, category: 'Academic', franchise: 'Academic', catchphrase: 'Let us methodically break down this concept.' },
+  { id: 'computer', name: "Courage's Computer 🖥️", icon: '🖥️', description: 'Diagnostic expert, dry British wit & kroki diagrams', allowDiagrams: true, category: 'Classic Cartoons', franchise: 'Courage the Cowardly Dog', catchphrase: '"Twit 3000 online. State your diagnostic inquiry."' },
+  { id: 'courage', name: 'Courage the Cowardly Dog 🐶', icon: '🐶', description: 'Timid, loyal step-by-step solver & kroki diagrams', allowDiagrams: true, category: 'Classic Cartoons', franchise: 'Courage the Cowardly Dog', catchphrase: '"The things I do for learning! Let\'s be brave."' },
+  { id: 'peter', name: 'Peter Griffin 🍺', icon: '🍺', description: 'Enthusiastic sitcom dad analogies (Text Mode)', allowDiagrams: false, category: 'Adult Animation', franchise: 'Family Guy', catchphrase: '"Holy crap, this reminds me of the time..."' },
+  { id: 'stewie', name: 'Stewie Griffin 👶', icon: '👶', description: 'Sophisticated child genius dry wit (Text Mode)', allowDiagrams: false, category: 'Adult Animation', franchise: 'Family Guy', catchphrase: '"Victory shall be mine, you simpleton."' },
+  { id: 'rick', name: 'Rick Sanchez 🧪', icon: '🧪', description: 'Eccentric multiverse super-genius scientist (Text Mode)', allowDiagrams: false, category: 'Adult Animation', franchise: 'Rick & Morty', catchphrase: '"Wubba lubba dub-dub! Let\'s solve this fast."' },
+  { id: 'morty', name: 'Morty Smith 🧢', icon: '🧢', description: 'Kind-hearted & encouraging teenager (Text Mode)', allowDiagrams: false, category: 'Adult Animation', franchise: 'Rick & Morty', catchphrase: '"Aw geez, Rick... I think I actually get it!"' }
 ];

@@ -9662,7 +9662,7 @@ export const NeuralSimulatorModule: React.FC = () => {
         { word: 'étudier', prob: 0.164, raw: 6.9, color: '#38bdf8', isTop: false },
         { word: 'lire', prob: 0.048, raw: 5.6, color: '#fbbf24', isTop: false },
         { word: 'comprendre', prob: 0.029, raw: 5.1, color: '#c084fc', isTop: false },
-        { word: 'savoir', prob: 0.017, raw: 4.5, color: '#94a3b8', isTop: false }
+        { word: 'savoir', prob: 0.017, raw: 4.5, color: 'var(--text-secondary, #94a3b8)', isTop: false }
       ];
 
       const barStartY = rightY + 54;
@@ -11346,10 +11346,11 @@ export const NeuralSimulatorModule: React.FC = () => {
       style={{
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
+        gap: '8px',
         width: '100%',
         height: '100%',
-        minHeight: '720px'
+        minHeight: 0,
+        flex: 1
       }}
     >
       {/* ─── Top Control Bar: Model Preset + Operational Mode + Speed Control ─── */}
@@ -11360,19 +11361,20 @@ export const NeuralSimulatorModule: React.FC = () => {
           flexWrap: 'wrap',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '12px',
-          padding: '12px 18px',
-          background: 'rgba(15, 23, 42, 0.95)',
-          borderRadius: '16px',
-          border: '1px solid rgba(51, 65, 85, 0.8)',
-          boxShadow: '0 4px 20px rgba(0, 0, 0, 0.3)',
+          gap: '8px',
+          padding: '8px 14px',
+          background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
+          borderRadius: '12px',
+          border: '1px solid var(--card-border, rgba(51, 65, 85, 0.8))',
+          boxShadow: 'var(--card-shadow, 0 4px 20px rgba(0, 0, 0, 0.3))',
           minWidth: 0,
-          maxWidth: '100%'
+          maxWidth: '100%',
+          flexShrink: 0
         }}
       >
         {/* Left: Model Preset Selector */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', flex: '1 1 280px', minWidth: 0, maxWidth: '100%' }}>
-          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
+          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-secondary, #94a3b8)', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
             MODEL:
           </span>
           <select
@@ -11389,7 +11391,7 @@ export const NeuralSimulatorModule: React.FC = () => {
               borderRadius: '8px',
               background: 'rgba(30, 41, 59, 0.95)',
               border: '1.5px solid #a855f7',
-              color: '#f8fafc',
+              color: 'var(--text-primary, #f8fafc)',
               fontSize: '0.82rem',
               fontWeight: 800,
               cursor: 'pointer',
@@ -11436,7 +11438,7 @@ export const NeuralSimulatorModule: React.FC = () => {
           </select>
 
           {/* Operational Mode Toggle */}
-          <div style={{ display: 'flex', background: 'rgba(30, 41, 59, 0.85)', padding: '3px', borderRadius: '8px', border: '1px solid rgba(51, 65, 85, 0.8)', marginLeft: '6px' }}>
+          <div style={{ display: 'flex', background: 'rgba(30, 41, 59, 0.85)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))', marginLeft: '6px' }}>
             <button
               type="button"
               onClick={() => setSimMode('autoplay')}
@@ -11483,15 +11485,15 @@ export const NeuralSimulatorModule: React.FC = () => {
 
           {/* Interactive Class Placement */}
           {simMode === 'interactive' && ['logistic_regression', 'svm_classifier', 'decision_tree_split', 'naive_bayes', 'random_forest', 'gradient_boosting', 'neural_mlp', 'knn_classifier'].includes(selectedModel) && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(30, 41, 59, 0.85)', padding: '3px 8px', borderRadius: '8px', border: '1px solid rgba(51, 65, 85, 0.8)', marginLeft: '4px' }}>
-              <span style={{ fontSize: '0.72rem', color: '#94a3b8', fontWeight: 700 }}>Click adds:</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(30, 41, 59, 0.85)', padding: '3px 8px', borderRadius: '8px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))', marginLeft: '4px' }}>
+              <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary, #94a3b8)', fontWeight: 700 }}>Click adds:</span>
               <button type="button" onClick={() => setActivePlacementClass(0)} style={{ minHeight: '28px', padding: '3px 8px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700, background: activePlacementClass === 0 ? 'rgba(56, 189, 248, 0.3)' : 'transparent', color: '#38bdf8', border: activePlacementClass === 0 ? '1px solid #38bdf8' : 'none', cursor: 'pointer' }}>Class 0</button>
               <button type="button" onClick={() => setActivePlacementClass(1)} style={{ minHeight: '28px', padding: '3px 8px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700, background: activePlacementClass === 1 ? 'rgba(245, 158, 11, 0.3)' : 'transparent', color: '#fbbf24', border: activePlacementClass === 1 ? '1px solid #f59e0b' : 'none', cursor: 'pointer' }}>Class 1</button>
             </div>
           )}
 
           {/* Speed Controller */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(30, 41, 59, 0.85)', padding: '4px 10px', borderRadius: '8px', border: '1px solid rgba(51, 65, 85, 0.8)', marginLeft: '4px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(30, 41, 59, 0.85)', padding: '4px 10px', borderRadius: '8px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))', marginLeft: '4px' }}>
             <Gauge size={14} color="#fbbf24" />
             <span style={{ fontSize: '0.74rem', color: '#fbbf24', fontWeight: 800 }}>{simSpeed.toFixed(2)}x</span>
             <input
@@ -11773,8 +11775,8 @@ export const NeuralSimulatorModule: React.FC = () => {
             className="dsa-action-btn"
             style={{
               background: 'rgba(30, 41, 59, 0.85)',
-              border: '1px solid rgba(51, 65, 85, 0.8)',
-              color: '#94a3b8'
+              border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))',
+              color: 'var(--text-secondary, #94a3b8)'
             }}
             title="Reset Model"
           >
@@ -11833,9 +11835,9 @@ export const NeuralSimulatorModule: React.FC = () => {
           <div
             className={`neural-card-telemetry ${mobileActiveTab === 'telemetry' ? 'mobile-card-visible' : 'mobile-card-hidden'}`}
             style={{
-              background: 'rgba(15, 23, 42, 0.95)',
+              background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
               borderRadius: '16px',
-              border: '1px solid rgba(51, 65, 85, 0.8)',
+              border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))',
               padding: '16px',
               display: 'flex',
               flexDirection: 'column',
@@ -11844,28 +11846,28 @@ export const NeuralSimulatorModule: React.FC = () => {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Activity size={16} color="#c084fc" />
-              <h4 style={{ margin: 0, fontSize: '0.82rem', fontWeight: 800, color: '#f8fafc', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              <h4 style={{ margin: 0, fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-primary, #f8fafc)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                 {selectedModel.replace(/_/g, ' ')} TELEMETRY
               </h4>
             </div>
 
             {/* 1. PCA Telemetry */}
             {selectedModel === 'pca_reduction' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>PC1 Variance Ratio:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>PC1 Variance Ratio:</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>{pcaEVR1.toFixed(1)}%</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>PC2 Variance Ratio:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>PC2 Variance Ratio:</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: '#c084fc', fontFamily: 'monospace' }}>{pcaEVR2.toFixed(1)}%</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Feature Correlation (ρ):</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Feature Correlation (ρ):</div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fbbf24', fontFamily: 'monospace' }}>{pcaCorrelation.toFixed(2)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Dimensions Retained:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Dimensions Retained:</div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#34d399', fontFamily: 'monospace' }}>{pcaComponentsCount} / 2 Components</div>
                 </div>
               </div>
@@ -11873,21 +11875,21 @@ export const NeuralSimulatorModule: React.FC = () => {
 
             {/* 2. K-Means Telemetry */}
             {selectedModel === 'kmeans_clustering' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Cluster Count (K):</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Cluster Count (K):</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>K = {numClusters}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Silhouette Score:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Silhouette Score:</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: '#34d399', fontFamily: 'monospace' }}>{kmeansSilhouette.toFixed(2)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Within WCSS:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Within WCSS:</div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fbbf24', fontFamily: 'monospace' }}>{kmeansWCSS.toFixed(3)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Iterations:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Iterations:</div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 700, color: kmeansConverged ? '#34d399' : '#c084fc', fontFamily: 'monospace' }}>{kmeansIterations} ({kmeansConverged ? 'Converged' : 'Active'})</div>
                 </div>
               </div>
@@ -11895,21 +11897,21 @@ export const NeuralSimulatorModule: React.FC = () => {
 
             {/* 3. kNN Telemetry */}
             {selectedModel === 'knn_classifier' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>K Neighbors:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>K Neighbors:</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>K = {kParam}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Distance Metric:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Distance Metric:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#c084fc', textTransform: 'uppercase' }}>{knnDistance}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Weighting:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Weighting:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#34d399', textTransform: 'uppercase' }}>{knnWeighting}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Queries Sampled:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Queries Sampled:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fbbf24', fontFamily: 'monospace' }}>{knnQueriesChecked} Queries</div>
                 </div>
               </div>
@@ -11917,14 +11919,14 @@ export const NeuralSimulatorModule: React.FC = () => {
 
             {/* 4. Linear Regression Telemetry */}
             {selectedModel === 'linear_regression' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Mode & R² Fit:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Mode & R² Fit:</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: '#34d399', fontFamily: 'monospace' }}>R² = {r2Score.toFixed(3)}</div>
                   <div style={{ fontSize: '0.68rem', color: '#38bdf8', textTransform: 'uppercase', fontWeight: 700 }}>{linearViewMode.replace(/_/g, ' ')}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Fitted Model:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Fitted Model:</div>
                   <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#fbbf24', fontFamily: 'monospace', wordBreak: 'break-all' }}>
                     {linearViewMode === '3d_regression_plane'
                       ? `y = ${linearSlopeW1.toFixed(2)}x₁ + ${linearSlopeW2.toFixed(2)}x₂ + ${linearInterceptB.toFixed(2)}`
@@ -11934,11 +11936,11 @@ export const NeuralSimulatorModule: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Regularization:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Regularization:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#c084fc', textTransform: 'uppercase' }}>{linearRegMode} (λ={linearRidgeLambda.toFixed(2)})</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Residual Variance:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Residual Variance:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f43f5e', fontFamily: 'monospace' }}>{(1 - Math.max(0, r2Score)).toFixed(3)}</div>
                 </div>
               </div>
@@ -11946,27 +11948,27 @@ export const NeuralSimulatorModule: React.FC = () => {
 
             {/* 5. Logistic Regression Telemetry */}
             {selectedModel === 'logistic_regression' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>View Mode:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>View Mode:</div>
                   <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase' }}>
                     {logregViewMode === '3d_sigmoid_surface' ? '3D Sigmoid S-Surface' : logregViewMode === '1d_sigmoid_curve' ? '1D S-Activation Curve' : logregViewMode === '2d_heatmap_boundary' ? `2D ${logregBoundaryType.toUpperCase()} HEATMAP` : logregViewMode === 'log_loss_dual_curve' ? 'Dual Log-Loss Penalty' : '3-Class Softmax'}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Decision Threshold:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Decision Threshold:</div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#34d399', fontFamily: 'monospace' }}>
                     {logregViewMode === 'multinomial_softmax' ? `τ = ${logregTemperature.toFixed(2)}` : logregViewMode === 'log_loss_dual_curve' ? `T = ${logregThreshold.toFixed(2)} (y = ${logregTrueLabelY})` : `T = ${logregThreshold.toFixed(2)}`}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>{logregViewMode === '3d_sigmoid_surface' ? '3D Orbit Orientation:' : logregViewMode === 'log_loss_dual_curve' ? 'Active Logit z (x):' : 'Weight Vector (w):'}</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>{logregViewMode === '3d_sigmoid_surface' ? '3D Orbit Orientation:' : logregViewMode === 'log_loss_dual_curve' ? 'Active Logit z (x):' : 'Weight Vector (w):'}</div>
                   <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#fbbf24', fontFamily: 'monospace' }}>
                     {logregViewMode === '3d_sigmoid_surface' ? `Pitch:${logreg3dRotX}° Yaw:${logreg3dRotY}°` : logregViewMode === 'log_loss_dual_curve' ? `z = ${logregTestZ.toFixed(2)} (ŷ=${(100 / (1 + Math.exp(-logregTestZ))).toFixed(1)}%)` : `[${logregW1.toFixed(2)}, ${logregW2.toFixed(2)}]`}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Log-Loss / BCE Status:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Log-Loss / BCE Status:</div>
                   <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#c084fc', fontFamily: 'monospace' }}>
                     {logregViewMode === 'multinomial_softmax' ? '3-Class Argmax' : logregViewMode === 'log_loss_dual_curve' ? `J = ${(logregTrueLabelY === 1 ? -Math.log(Math.max(1e-5, 1 / (1 + Math.exp(-logregTestZ)))) : -Math.log(Math.max(1e-5, 1 - 1 / (1 + Math.exp(-logregTestZ))))).toFixed(4)}` : `‖w‖ = ${Math.hypot(logregW1, logregW2).toFixed(2)} (b=${logregBiasB.toFixed(2)})`}
                   </div>
@@ -11976,27 +11978,27 @@ export const NeuralSimulatorModule: React.FC = () => {
 
             {/* 6. SVM Telemetry */}
             {selectedModel === 'svm_classifier' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>View Mode:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>View Mode:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#c084fc', textTransform: 'uppercase' }}>
                     {svmViewMode === '2d_kernels' ? '2D Decision Boundaries' : svmViewMode === '1d_parabola' ? '1D ➔ 2D Parabola' : '2D ➔ 3D Kernel Trick'}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Kernel / Mapping:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Kernel / Mapping:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#38bdf8' }}>
                     {svmViewMode === '2d_kernels' ? `${svmKernel.toUpperCase()} (C=${svmC.toFixed(1)})` : svmViewMode === '1d_parabola' ? 'φ(x)=(x, x²)' : 'φ(x,y)=(x,y,x²+y²)'}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>{svmViewMode === '3d_kernel_trick' ? 'Slicing Height Z:' : svmViewMode === '1d_parabola' ? 'Parabola Lift Morph:' : 'Margin Width (2/‖w‖):'}</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>{svmViewMode === '3d_kernel_trick' ? 'Slicing Height Z:' : svmViewMode === '1d_parabola' ? 'Parabola Lift Morph:' : 'Margin Width (2/‖w‖):'}</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#34d399', fontFamily: 'monospace' }}>
                     {svmViewMode === '3d_kernel_trick' ? `z = ${svm3dSliceZ.toFixed(2)}` : svmViewMode === '1d_parabola' ? `${(svmLiftMorph * 100).toFixed(0)}% Lift` : `${(2.0 / Math.max(0.5, svmC)).toFixed(2)} units`}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>{svmViewMode === '3d_kernel_trick' ? 'Orbit Orientation:' : svmViewMode === '1d_parabola' ? 'Separation Status:' : 'Kernel Hyperparameters:'}</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>{svmViewMode === '3d_kernel_trick' ? 'Orbit Orientation:' : svmViewMode === '1d_parabola' ? 'Separation Status:' : 'Kernel Hyperparameters:'}</div>
                   <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fbbf24', fontFamily: 'monospace' }}>
                     {svmViewMode === '3d_kernel_trick' ? `Pitch:${svm3dRotX}° Yaw:${svm3dRotY}°` : svmViewMode === '1d_parabola' ? (svmLiftMorph > 0.4 ? '✓ 2D Separable' : 'Inseparable 1D') : `γ=${svmGamma.toFixed(2)}${svmKernel === 'poly' ? ` d=${svmPolyDegree}` : ''}`}
                   </div>
@@ -12006,21 +12008,21 @@ export const NeuralSimulatorModule: React.FC = () => {
 
             {/* 7. Decision Tree Telemetry */}
             {selectedModel === 'decision_tree_split' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Max Tree Depth:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Max Tree Depth:</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>Depth = {treeDepth}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Splitting Criterion:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Splitting Criterion:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#34d399', textTransform: 'uppercase' }}>{treeCriterion} Impurity</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Leaf Partitions:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Leaf Partitions:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fbbf24', fontFamily: 'monospace' }}>{Math.pow(2, treeDepth)} Regions</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Min Split Samples:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Min Split Samples:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#c084fc', fontFamily: 'monospace' }}>{treeMinSamplesSplit} Samples</div>
                 </div>
               </div>
@@ -12028,21 +12030,21 @@ export const NeuralSimulatorModule: React.FC = () => {
 
             {/* 8. Naive Bayes Telemetry */}
             {selectedModel === 'naive_bayes' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Class Prior P(C₀):</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Class Prior P(C₀):</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>{nbPriorC0.toFixed(2)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Class Prior P(C₁):</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Class Prior P(C₁):</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: '#c084fc', fontFamily: 'monospace' }}>{(1 - nbPriorC0).toFixed(2)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Variance Smoothing (ε):</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Variance Smoothing (ε):</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#34d399', fontFamily: 'monospace' }}>{nbVarSmoothing.toFixed(3)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Likelihood Mode:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Likelihood Mode:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fbbf24' }}>Gaussian 2D</div>
                 </div>
               </div>
@@ -12050,21 +12052,21 @@ export const NeuralSimulatorModule: React.FC = () => {
 
             {/* 9. Random Forest Telemetry */}
             {selectedModel === 'random_forest' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Ensemble Size:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Ensemble Size:</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>{forestNumTrees} Trees</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Aggregation Mode:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Aggregation Mode:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#34d399' }}>Majority Bagging</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Variance Reduction:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Variance Reduction:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fbbf24', fontFamily: 'monospace' }}>{((1 - 1 / forestNumTrees) * 100).toFixed(0)}%</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>OOB Score:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>OOB Score:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#c084fc', fontFamily: 'monospace' }}>{(0.82 + forestNumTrees * 0.015).toFixed(2)}</div>
                 </div>
               </div>
@@ -12072,21 +12074,21 @@ export const NeuralSimulatorModule: React.FC = () => {
 
             {/* 10. Gradient Boosting Telemetry */}
             {selectedModel === 'gradient_boosting' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Boosting Stages (M):</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Boosting Stages (M):</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>{boostStages} Stages</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Learning Rate (η):</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Learning Rate (η):</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: '#fbbf24', fontFamily: 'monospace' }}>{boostLearningRate.toFixed(2)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Base Bias F₀:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Base Bias F₀:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#34d399', fontFamily: 'monospace' }}>{boostBaseBiasF0.toFixed(2)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Residual Norm ‖r‖:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Residual Norm ‖r‖:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#c084fc', fontFamily: 'monospace' }}>{(0.45 * Math.pow(0.8, boostStages)).toFixed(3)}</div>
                 </div>
               </div>
@@ -12094,21 +12096,21 @@ export const NeuralSimulatorModule: React.FC = () => {
 
             {/* 11. GAN Telemetry */}
             {selectedModel === 'gan_minimax' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Formulation:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Formulation:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#c084fc', textTransform: 'uppercase' }}>{ganLossType}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Wasserstein Dist:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Wasserstein Dist:</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>{ganWassersteinDist.toFixed(3)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Generator Loss L_G:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Generator Loss L_G:</div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#ec4899', fontFamily: 'monospace' }}>{ganLossG.toFixed(3)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Training Epochs:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Training Epochs:</div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#fbbf24', fontFamily: 'monospace' }}>{ganEpochCount} Epochs</div>
                 </div>
               </div>
@@ -12116,21 +12118,21 @@ export const NeuralSimulatorModule: React.FC = () => {
 
             {/* 12. DDPM Telemetry */}
             {selectedModel === 'ddpm_diffusion' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Current Timestep (t):</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Current Timestep (t):</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>{ddpmTimestep} / {ddpmMaxSteps}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Process Mode:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Process Mode:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 800, color: ddpmDirection === 'reverse' ? '#34d399' : '#fbbf24', textTransform: 'uppercase' }}>{ddpmDirection} Process</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Signal Retention √ᾱ_t:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Signal Retention √ᾱ_t:</div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#38bdf8', fontFamily: 'monospace' }}>{((1 - ddpmTimestep / ddpmMaxSteps) * 100).toFixed(0)}%</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Denoise Steps:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Denoise Steps:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#c084fc', fontFamily: 'monospace' }}>{ddpmDenoiseStepCount} Steps</div>
                 </div>
               </div>
@@ -12138,21 +12140,21 @@ export const NeuralSimulatorModule: React.FC = () => {
 
             {/* 13. VAE Telemetry */}
             {selectedModel === 'vae_generative' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Latent Coordinates (z):</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Latent Coordinates (z):</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>[{vaeLatentZ1.toFixed(2)}, {vaeLatentZ2.toFixed(2)}]</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>KL Penalty (β):</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>KL Penalty (β):</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: '#c084fc', fontFamily: 'monospace' }}>β = {vaeBetaKL.toFixed(1)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Reconstruction Loss:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Reconstruction Loss:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fbbf24', fontFamily: 'monospace' }}>{(0.12 + 0.05 * (vaeLatentZ1 * vaeLatentZ1 + vaeLatentZ2 * vaeLatentZ2)).toFixed(3)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Latent Prior Divergence:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Latent Prior Divergence:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#34d399', fontFamily: 'monospace' }}>{(0.5 * (vaeLatentZ1 * vaeLatentZ1 + vaeLatentZ2 * vaeLatentZ2)).toFixed(3)}</div>
                 </div>
               </div>
@@ -12160,21 +12162,21 @@ export const NeuralSimulatorModule: React.FC = () => {
 
             {/* 14. Neural MLP Telemetry */}
             {selectedModel === 'neural_mlp' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Network Depth:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Network Depth:</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>{mlpLayers} Hidden Layers</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Neuron Activation:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Neuron Activation:</div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#34d399', textTransform: 'uppercase' }}>{mlpActivation}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Weight Scale:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Weight Scale:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fbbf24', fontFamily: 'monospace' }}>{mlpWeightScale.toFixed(2)}x</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Layer Sparsity:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Layer Sparsity:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#c084fc', fontFamily: 'monospace' }}>{mlpSparsity}%</div>
                 </div>
               </div>
@@ -12182,21 +12184,21 @@ export const NeuralSimulatorModule: React.FC = () => {
 
             {/* 15. Autodiff Telemetry */}
             {selectedModel === 'backprop_autodiff' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Backprop Steps:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Backprop Steps:</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: '#c084fc', fontFamily: 'monospace' }}>{autodiffStepCount} Steps</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Target vs Output:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Target vs Output:</div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>Target ŷ = {autodiffTarget.toFixed(1)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Current Loss:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Current Loss:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fbbf24', fontFamily: 'monospace' }}>{(0.5 * Math.pow((1 / (1 + Math.exp(-(autodiffW1 * autodiffX1 + autodiffW2 * autodiffX2 + autodiffBias)))) - autodiffTarget, 2)).toFixed(4)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Weights [w₁, w₂]:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Weights [w₁, w₂]:</div>
                   <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#34d399', fontFamily: 'monospace' }}>[{autodiffW1.toFixed(2)}, {autodiffW2.toFixed(2)}]</div>
                 </div>
               </div>
@@ -12204,27 +12206,27 @@ export const NeuralSimulatorModule: React.FC = () => {
 
             {/* 16. Conv Telemetry */}
             {selectedModel === 'conv_operations' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Learning Paradigm:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Learning Paradigm:</div>
                   <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase' }}>
                     {convMode === 'kernel_convolution' ? 'Kernel & Padding' : convMode === 'relu_and_pooling' ? 'ReLU & Pooling' : convMode === 'deep_cnn_pipeline' ? 'Deep CNN Pipeline' : 'ResNet Residual Block'}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Active Configuration:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Active Configuration:</div>
                   <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#34d399', textTransform: 'uppercase' }}>
                     {convMode === 'kernel_convolution' ? `Step #${(convScanStep % 9) + 1} (p=${convPadding}, s=${convStrideVal})` : convMode === 'relu_and_pooling' ? `${convPoolType.toUpperCase()} Pool (2×2, s=2)` : convMode === 'deep_cnn_pipeline' ? `Pattern: ${convInputDigit.replace('_', ' ')}` : 'Shortcut: F(x) + x'}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Receptive / Spatial Metric:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Receptive / Spatial Metric:</div>
                   <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#fbbf24', fontFamily: 'monospace' }}>
                     {convMode === 'kernel_convolution' ? `Field: ${3 + 2 * (convDilationRate - 1)}×${3 + 2 * (convDilationRate - 1)}` : convMode === 'relu_and_pooling' ? 'Compression: -75% Area' : convMode === 'deep_cnn_pipeline' ? 'Input: 28×28 ➔ Output: 10D' : 'Gradient: ∂F/∂x + 1'}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Feature / Filter Focus:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Feature / Filter Focus:</div>
                   <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#c084fc', fontFamily: 'monospace' }}>
                     {convMode === 'kernel_convolution' ? convFilterType.toUpperCase() : convMode === 'relu_and_pooling' ? 'Non-Linearity: ReLU' : convMode === 'deep_cnn_pipeline' ? 'Softmax Cross-Entropy' : 'Vanishing Grad: 0%'}
                   </div>
@@ -12234,21 +12236,21 @@ export const NeuralSimulatorModule: React.FC = () => {
 
             {/* 17. Recurrent Telemetry */}
             {selectedModel === 'seq_recurrent_gating' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Active Timestep:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Active Timestep:</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>t = {recurrentActiveT + 1} / {recurrentSeqLen}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Cell Architecture:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Cell Architecture:</div>
                   <div style={{ fontSize: '0.9rem', fontWeight: 800, color: '#c084fc', textTransform: 'uppercase' }}>{recurrentCellType} Highway</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Forget Bias (bf):</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Forget Bias (bf):</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fbbf24', fontFamily: 'monospace' }}>+{recurrentForgetBias.toFixed(1)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Weight Scale Wxh:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Weight Scale Wxh:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#34d399', fontFamily: 'monospace' }}>{recurrentWeightWxh.toFixed(2)}</div>
                 </div>
               </div>
@@ -12256,23 +12258,23 @@ export const NeuralSimulatorModule: React.FC = () => {
 
             {/* 18A. Transformer Architecture Telemetry */}
             {selectedModel === 'transformer_architecture' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Paradigm:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Paradigm:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase' }}>
                     {transformerMode === 'encoder' ? 'Encoder Stack' : transformerMode === 'decoder' ? 'Decoder Stack' : 'Full Transformer'}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Stack Depth:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Stack Depth:</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: '#c084fc', fontFamily: 'monospace' }}>N = {transformerNumLayers} Layers</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Selected Layer:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Selected Layer:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fbbf24', fontFamily: 'monospace' }}>Layer {transformerSelectedLayer + 1} of {transformerNumLayers}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Model Dimension:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Model Dimension:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#34d399', fontFamily: 'monospace' }}>d_model = {transformerModelDim}</div>
                 </div>
               </div>
@@ -12280,21 +12282,21 @@ export const NeuralSimulatorModule: React.FC = () => {
 
             {/* 18B. Attention Mechanisms Telemetry */}
             {selectedModel === 'attention_mechanisms' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Mechanism:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Mechanism:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#38bdf8', textTransform: 'uppercase' }}>{attnSubMode.replace(/_/g, ' ')}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Parallel Heads:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Parallel Heads:</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: '#c084fc', fontFamily: 'monospace' }}>{attnNumHeads} Heads</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Temperature (τ):</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Temperature (τ):</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fbbf24', fontFamily: 'monospace' }}>τ = {attnTemperature.toFixed(2)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Active Token:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Active Token:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#34d399', fontFamily: 'monospace' }}>Token #{attnSelectedTokenIdx + 1}</div>
                 </div>
               </div>
@@ -12302,21 +12304,21 @@ export const NeuralSimulatorModule: React.FC = () => {
 
             {/* 18C. Mixture of Experts (MoE) Telemetry */}
             {selectedModel === 'moe_architecture' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Routing Scheme:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Routing Scheme:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 800, color: '#fbbf24', textTransform: 'uppercase' }}>Top-{moeTopK} of {moeNumExperts} Experts</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Sparsity Factor:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Sparsity Factor:</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: '#34d399', fontFamily: 'monospace' }}>{((1 - moeTopK / moeNumExperts) * 100).toFixed(0)}% Idle</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Active Token:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Active Token:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#38bdf8', fontFamily: 'monospace' }}>Token #{moeSelectedTokenIdx + 1}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Capacity Factor:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Capacity Factor:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#c084fc', fontFamily: 'monospace' }}>C = {moeCapacityFactor.toFixed(2)}x</div>
                 </div>
               </div>
@@ -12324,25 +12326,25 @@ export const NeuralSimulatorModule: React.FC = () => {
 
             {/* 19. Loss Surface Optimization Telemetry */}
             {selectedModel === 'loss_surface_optimization' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Algorithm & Batch:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Algorithm & Batch:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 800, color: optAlgorithm === 'tri_variant_race' ? '#facc15' : '#38bdf8', textTransform: 'uppercase' }}>
                     {optAlgorithm === 'batch' ? 'Batch GD (m=500)' : optAlgorithm === 'mini_batch' ? `Mini-Batch (B=${optBatchSize})` : optAlgorithm === 'sgd' ? 'SGD (B=1 Single)' : optAlgorithm === 'tri_variant_race' ? 'Tri-Race (3 Models)' : optAlgorithm.toUpperCase()}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Current Loss J(θ):</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Current Loss J(θ):</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: '#facc15', fontFamily: 'monospace' }}>{optLoss.toFixed(4)}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>{optAlgorithm === 'tri_variant_race' ? 'Gradient Norm:' : 'Parameters (w₁, w₂):'}</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>{optAlgorithm === 'tri_variant_race' ? 'Gradient Norm:' : 'Parameters (w₁, w₂):'}</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#c084fc', fontFamily: 'monospace' }}>
                     {optAlgorithm === 'tri_variant_race' ? `‖∇J‖ = ${optGradNorm.toFixed(3)}` : `(${optPos.w1.toFixed(2)}, ${optPos.w2.toFixed(2)})`}
                   </div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Status / Steps:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Status / Steps:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: optStatus === 'local_min' ? '#34d399' : optStatus === 'overshooting' ? '#f43f5e' : '#38bdf8' }}>{optStatus.toUpperCase()} (#{optStepCount})</div>
                 </div>
               </div>
@@ -12350,21 +12352,21 @@ export const NeuralSimulatorModule: React.FC = () => {
 
             {/* 20. Q-Learning Telemetry */}
             {selectedModel === 'q_learning_rl' && (
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'rgba(30, 41, 59, 0.6)', borderRadius: '10px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Episodes Completed:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Episodes Completed:</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: '#38bdf8', fontFamily: 'monospace' }}>{rlEpisodes} Episodes</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Cumulative Reward:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Cumulative Reward:</div>
                   <div style={{ fontSize: '1rem', fontWeight: 800, color: rlCumulativeReward >= 0 ? '#34d399' : '#f43f5e', fontFamily: 'monospace' }}>{rlCumulativeReward} Pts</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Policy / Rate:</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Policy / Rate:</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#fbbf24' }}>{rlPolicy === 'eps_greedy' ? `ε=${rlEpsilon.toFixed(2)}` : `τ=${rlTemperature.toFixed(2)}`}</div>
                 </div>
                 <div>
-                  <div style={{ fontSize: '0.68rem', color: '#94a3b8' }}>Discount (γ) / LR (α):</div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Discount (γ) / LR (α):</div>
                   <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#34d399', fontFamily: 'monospace' }}>γ={rlDiscountGamma.toFixed(2)} • α={rlLearningRateAlpha.toFixed(2)}</div>
                 </div>
               </div>
@@ -12375,9 +12377,9 @@ export const NeuralSimulatorModule: React.FC = () => {
           <div
             className={`neural-card-hyperparams ${mobileActiveTab === 'controls' ? 'mobile-card-visible' : 'mobile-card-hidden'}`}
             style={{
-              background: 'rgba(15, 23, 42, 0.95)',
+              background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
               borderRadius: '16px',
-              border: '1px solid rgba(51, 65, 85, 0.8)',
+              border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))',
               padding: '16px',
               display: 'flex',
               flexDirection: 'column',
@@ -12386,7 +12388,7 @@ export const NeuralSimulatorModule: React.FC = () => {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Sliders size={16} color="#38bdf8" />
-              <h4 style={{ margin: 0, fontSize: '0.82rem', fontWeight: 800, color: '#f8fafc', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+              <h4 style={{ margin: 0, fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-primary, #f8fafc)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
                 HYPERPARAMETERS & DEDICATED CONTROLS
               </h4>
             </div>
@@ -12395,7 +12397,7 @@ export const NeuralSimulatorModule: React.FC = () => {
             {selectedModel === 'pca_reduction' && (
               <>
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>
                     PCA Visualization Mode:
                   </label>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
@@ -12426,7 +12428,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Projection Axis Angle (θ):</span>
                     <span style={{ fontWeight: 700, color: '#38bdf8' }}>{pcaRotationAngle}°</span>
                   </div>
@@ -12434,7 +12436,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Feature Correlation (ρ):</span>
                     <span style={{ fontWeight: 700, color: '#c084fc' }}>ρ = {pcaCorrelation.toFixed(2)}</span>
                   </div>
@@ -12442,7 +12444,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Data Scatter Spread (σ):</span>
                     <span style={{ fontWeight: 700, color: '#fbbf24' }}>{pcaDataSpread.toFixed(2)}</span>
                   </div>
@@ -12452,14 +12454,14 @@ export const NeuralSimulatorModule: React.FC = () => {
                 {pcaViewMode === '3d_to_2d_plane' && (
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Pitch:</span>
                         <span style={{ fontWeight: 700, color: '#38bdf8' }}>{pca3dRotX}°</span>
                       </div>
                       <input type="range" min="5" max="85" step="1" value={pca3dRotX} onChange={(e) => setPca3dRotX(parseInt(e.target.value))} style={{ width: '100%', accentColor: '#38bdf8', cursor: 'pointer' }} />
                     </div>
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Yaw:</span>
                         <span style={{ fontWeight: 700, color: '#fbbf24' }}>{pca3dRotY}°</span>
                       </div>
@@ -12470,7 +12472,7 @@ export const NeuralSimulatorModule: React.FC = () => {
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <input type="checkbox" id="pcaRes" checked={pcaShowResiduals} onChange={(e) => setPcaShowResiduals(e.target.checked)} style={{ accentColor: '#38bdf8', cursor: 'pointer' }} />
-                  <label htmlFor="pcaRes" style={{ fontSize: '0.72rem', color: '#cbd5e1', cursor: 'pointer' }}>Show Orthogonal Projection Residuals (d⊥)</label>
+                  <label htmlFor="pcaRes" style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', cursor: 'pointer' }}>Show Orthogonal Projection Residuals (d⊥)</label>
                 </div>
               </>
             )}
@@ -12479,7 +12481,7 @@ export const NeuralSimulatorModule: React.FC = () => {
             {selectedModel === 'knn_classifier' && (
               <>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>K Nearest Neighbors:</span>
                     <span style={{ fontWeight: 700, color: '#38bdf8' }}>{kParam}</span>
                   </div>
@@ -12487,7 +12489,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Distance Metric:</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Distance Metric:</label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
                     {(['euclidean', 'manhattan', 'cosine', 'chebyshev'] as const).map(d => (
                       <button key={d} type="button" onClick={() => setKnnDistance(d)} style={{ padding: '5px', borderRadius: '6px', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', background: knnDistance === d ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)', border: knnDistance === d ? '1px solid #38bdf8' : '1px solid rgba(51, 65, 85, 0.6)', color: knnDistance === d ? '#38bdf8' : '#94a3b8', cursor: 'pointer' }}>{d}</button>
@@ -12496,7 +12498,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Distance Weighting:</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Distance Weighting:</label>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     {(['uniform', 'distance'] as const).map(w => (
                       <button key={w} type="button" onClick={() => setKnnWeighting(w)} style={{ flex: 1, padding: '5px', borderRadius: '6px', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', background: knnWeighting === w ? 'rgba(52, 211, 153, 0.25)' : 'rgba(30, 41, 59, 0.6)', border: knnWeighting === w ? '1px solid #34d399' : '1px solid rgba(51, 65, 85, 0.6)', color: knnWeighting === w ? '#34d399' : '#94a3b8', cursor: 'pointer' }}>{w === 'uniform' ? 'Uniform (1/K)' : 'Inverse (1/d)'}</button>
@@ -12506,7 +12508,7 @@ export const NeuralSimulatorModule: React.FC = () => {
 
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <input type="checkbox" id="knnBound" checked={knnShowBoundary} onChange={(e) => setKnnShowBoundary(e.target.checked)} style={{ accentColor: '#38bdf8', cursor: 'pointer' }} />
-                  <label htmlFor="knnBound" style={{ fontSize: '0.72rem', color: '#cbd5e1', cursor: 'pointer' }}>Show Nearest Neighbor Radius Sphere</label>
+                  <label htmlFor="knnBound" style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', cursor: 'pointer' }}>Show Nearest Neighbor Radius Sphere</label>
                 </div>
               </>
             )}
@@ -12515,7 +12517,7 @@ export const NeuralSimulatorModule: React.FC = () => {
             {selectedModel === 'gan_minimax' && (
               <>
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Adversarial Formulation:</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Adversarial Formulation:</label>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     {(['wasserstein_gp', 'minimax'] as const).map(l => (
                       <button key={l} type="button" onClick={() => setGanLossType(l)} style={{ flex: 1, padding: '5px', borderRadius: '6px', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', background: ganLossType === l ? 'rgba(236, 72, 153, 0.25)' : 'rgba(30, 41, 59, 0.6)', border: ganLossType === l ? '1px solid #ec4899' : '1px solid rgba(51, 65, 85, 0.6)', color: ganLossType === l ? '#f472b6' : '#94a3b8', cursor: 'pointer' }}>{l === 'wasserstein_gp' ? 'WGAN-GP' : 'Minimax BCELoss'}</button>
@@ -12524,7 +12526,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Target Data Distribution:</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Target Data Distribution:</label>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
                     {(['bimodal', 'circle_8', 'swiss_roll'] as const).map(p => (
                       <button key={p} type="button" onClick={() => setGanModePreset(p)} style={{ padding: '4px', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', background: ganModePreset === p ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)', border: ganModePreset === p ? '1px solid #38bdf8' : '1px solid rgba(51, 65, 85, 0.6)', color: ganModePreset === p ? '#38bdf8' : '#94a3b8', cursor: 'pointer' }}>{p.replace('_', ' ')}</button>
@@ -12533,7 +12535,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Generator Learning Rate (η_G):</span>
                     <span style={{ fontWeight: 700, color: '#38bdf8' }}>{ganGenLR.toFixed(4)}</span>
                   </div>
@@ -12541,7 +12543,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Discriminator Learning Rate (η_D):</span>
                     <span style={{ fontWeight: 700, color: '#ec4899' }}>{ganDiscLR.toFixed(4)}</span>
                   </div>
@@ -12549,7 +12551,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Critic Steps per Gen Step (n_critic):</span>
                     <span style={{ fontWeight: 700, color: '#fbbf24' }}>{ganCriticSteps} Steps</span>
                   </div>
@@ -12557,7 +12559,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Latent Noise Dimension (d_z):</span>
                     <span style={{ fontWeight: 700, color: '#c084fc' }}>{ganLatentDim} Dimensions</span>
                   </div>
@@ -12570,7 +12572,7 @@ export const NeuralSimulatorModule: React.FC = () => {
             {selectedModel === 'ddpm_diffusion' && (
               <>
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Diffusion Process Mode:</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Diffusion Process Mode:</label>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <button type="button" onClick={() => setDdpmDirection('forward')} style={{ flex: 1, padding: '6px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700, background: ddpmDirection === 'forward' ? 'rgba(245, 158, 11, 0.25)' : 'rgba(30, 41, 59, 0.6)', border: ddpmDirection === 'forward' ? '1px solid #f59e0b' : '1px solid rgba(51, 65, 85, 0.6)', color: ddpmDirection === 'forward' ? '#fbbf24' : '#94a3b8', cursor: 'pointer' }}>Forward Noising (q)</button>
                     <button type="button" onClick={() => setDdpmDirection('reverse')} style={{ flex: 1, padding: '6px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700, background: ddpmDirection === 'reverse' ? 'rgba(52, 211, 153, 0.25)' : 'rgba(30, 41, 59, 0.6)', border: ddpmDirection === 'reverse' ? '1px solid #34d399' : '1px solid rgba(51, 65, 85, 0.6)', color: ddpmDirection === 'reverse' ? '#34d399' : '#94a3b8', cursor: 'pointer' }}>Reverse Denoising (p_θ)</button>
@@ -12578,7 +12580,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Timestep Scrubber (t):</span>
                     <span style={{ fontWeight: 700, color: '#38bdf8' }}>t = {ddpmTimestep} / {ddpmMaxSteps}</span>
                   </div>
@@ -12586,7 +12588,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Total Diffusion Steps (T):</span>
                     <span style={{ fontWeight: 700, color: '#fbbf24' }}>T = {ddpmMaxSteps}</span>
                   </div>
@@ -12594,7 +12596,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Noise Schedule:</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Noise Schedule:</label>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
                     {(['cosine', 'linear', 'sigmoid'] as const).map(s => (
                       <button key={s} type="button" onClick={() => setDdpmBetaSchedule(s)} style={{ padding: '4px', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', background: ddpmBetaSchedule === s ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)', border: ddpmBetaSchedule === s ? '1px solid #38bdf8' : '1px solid rgba(51, 65, 85, 0.6)', color: ddpmBetaSchedule === s ? '#38bdf8' : '#94a3b8', cursor: 'pointer' }}>{s}</button>
@@ -12603,7 +12605,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Noise Bounds (β_min ... β_max):</span>
                     <span style={{ fontWeight: 700, color: '#34d399' }}>{ddpmBetaMin.toFixed(4)} - {ddpmBetaMax.toFixed(3)}</span>
                   </div>
@@ -12619,7 +12621,7 @@ export const NeuralSimulatorModule: React.FC = () => {
             {selectedModel === 'neural_mlp' && (
               <>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Hidden Layers (1 to 5):</span>
                     <span style={{ fontWeight: 800, color: '#38bdf8' }}>{mlpLayers} Layers</span>
                   </div>
@@ -12627,7 +12629,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Activation Function:</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Activation Function:</label>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
                     {(['relu', 'sigmoid', 'tanh', 'leaky_relu', 'elu', 'gelu'] as const).map(act => (
                       <button key={act} type="button" onClick={() => setMlpActivation(act)} style={{ padding: '4px', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', background: mlpActivation === act ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)', border: mlpActivation === act ? '1px solid #38bdf8' : '1px solid rgba(51, 65, 85, 0.6)', color: mlpActivation === act ? '#38bdf8' : '#94a3b8', cursor: 'pointer' }}>{act}</button>
@@ -12636,7 +12638,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Weight & Bias Initialization:</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Weight & Bias Initialization:</label>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
                     {(['he', 'xavier', 'random', 'zeros', 'custom'] as const).map(init => (
                       <button key={init} type="button" onClick={() => { setMlpInitMode(init); if (init === 'he') { setMlpWeightScale(1.4); setMlpBiasOffset(0.01); } else if (init === 'xavier') { setMlpWeightScale(1.0); setMlpBiasOffset(0.0); } else if (init === 'random') { setMlpWeightScale(0.8); setMlpBiasOffset(0.2); } else if (init === 'zeros') { setMlpWeightScale(0.05); setMlpBiasOffset(0.0); } }} style={{ padding: '4px', borderRadius: '6px', fontSize: '0.65rem', fontWeight: 700, textTransform: 'uppercase', background: mlpInitMode === init ? 'rgba(192, 132, 252, 0.25)' : 'rgba(30, 41, 59, 0.6)', border: mlpInitMode === init ? '1px solid #c084fc' : '1px solid rgba(51, 65, 85, 0.6)', color: mlpInitMode === init ? '#c084fc' : '#94a3b8', cursor: 'pointer' }}>{init}</button>
@@ -12645,7 +12647,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Weight Scaling (W):</span>
                     <span style={{ fontWeight: 700, color: '#fbbf24' }}>{mlpWeightScale.toFixed(2)}x</span>
                   </div>
@@ -12653,7 +12655,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Neuron Bias Offset (+b):</span>
                     <span style={{ fontWeight: 700, color: '#34d399' }}>{mlpBiasOffset.toFixed(2)}</span>
                   </div>
@@ -12666,7 +12668,7 @@ export const NeuralSimulatorModule: React.FC = () => {
             {selectedModel === 'linear_regression' && (
               <>
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>
                     Linear Regression View & Dimensionality:
                   </label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
@@ -12701,7 +12703,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 {linearViewMode === '3d_regression_plane' && (
                   <>
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>3D Camera Orbit (Pitch & Yaw):</span>
                         <span style={{ fontWeight: 700, color: '#38bdf8' }}>{linear3dRotX.toFixed(0)}°, {linear3dRotY.toFixed(0)}°</span>
                       </div>
@@ -12721,9 +12723,9 @@ export const NeuralSimulatorModule: React.FC = () => {
                               borderRadius: '4px',
                               fontSize: '0.62rem',
                               fontWeight: 700,
-                              background: 'rgba(30, 41, 59, 0.6)',
-                              border: '1px solid rgba(51, 65, 85, 0.6)',
-                              color: '#94a3b8',
+                              background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))',
+                              border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))',
+                              color: 'var(--text-secondary, #94a3b8)',
                               cursor: 'pointer'
                             }}
                           >
@@ -12734,7 +12736,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                     </div>
 
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Slope w₁ (X₁ Axis Weight):</span>
                         <span style={{ fontWeight: 700, color: '#38bdf8' }}>{linearSlopeW1.toFixed(2)}</span>
                       </div>
@@ -12742,7 +12744,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                     </div>
 
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Slope w₂ (X₂ Axis Weight):</span>
                         <span style={{ fontWeight: 700, color: '#c084fc' }}>{linearSlopeW2.toFixed(2)}</span>
                       </div>
@@ -12750,7 +12752,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                     </div>
 
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Intercept (Bias b):</span>
                         <span style={{ fontWeight: 700, color: '#fbbf24' }}>{linearInterceptB.toFixed(2)}</span>
                       </div>
@@ -12798,7 +12800,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 {linearViewMode === '1d_scatter_fit' && (
                   <>
                     <div>
-                      <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Regularization Mode:</label>
+                      <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Regularization Mode:</label>
                       <div style={{ display: 'flex', gap: '6px' }}>
                         {(['ols', 'ridge', 'lasso'] as const).map(m => (
                           <button key={m} type="button" onClick={() => setLinearRegMode(m)} style={{ flex: 1, padding: '5px', borderRadius: '6px', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', background: linearRegMode === m ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)', border: linearRegMode === m ? '1px solid #38bdf8' : '1px solid rgba(51, 65, 85, 0.6)', color: linearRegMode === m ? '#38bdf8' : '#94a3b8', cursor: 'pointer' }}>{m.toUpperCase()}</button>
@@ -12806,21 +12808,21 @@ export const NeuralSimulatorModule: React.FC = () => {
                       </div>
                     </div>
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Slope (Weight w₁):</span>
                         <span style={{ fontWeight: 700, color: '#38bdf8' }}>{linearSlopeW1.toFixed(2)}</span>
                       </div>
                       <input type="range" min="-2.0" max="2.0" step="0.05" value={linearSlopeW1} onChange={(e) => setLinearSlopeW1(parseFloat(e.target.value))} style={{ width: '100%', accentColor: '#38bdf8', cursor: 'pointer' }} />
                     </div>
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Intercept (Bias b):</span>
                         <span style={{ fontWeight: 700, color: '#fbbf24' }}>{linearInterceptB.toFixed(2)}</span>
                       </div>
                       <input type="range" min="-1.0" max="1.0" step="0.05" value={linearInterceptB} onChange={(e) => setLinearInterceptB(parseFloat(e.target.value))} style={{ width: '100%', accentColor: '#fbbf24', cursor: 'pointer' }} />
                     </div>
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Regularization Strength (λ):</span>
                         <span style={{ fontWeight: 700, color: '#34d399' }}>{linearRidgeLambda.toFixed(2)}</span>
                       </div>
@@ -12852,14 +12854,14 @@ export const NeuralSimulatorModule: React.FC = () => {
                 {linearViewMode === 'polynomial_curves' && (
                   <>
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Polynomial Degree (k):</span>
                         <span style={{ fontWeight: 700, color: '#c084fc' }}>Degree {linearPolyDegree}</span>
                       </div>
                       <input type="range" min="1" max="5" step="1" value={linearPolyDegree} onChange={(e) => setLinearPolyDegree(parseInt(e.target.value))} style={{ width: '100%', accentColor: '#c084fc', cursor: 'pointer' }} />
                     </div>
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>L2 Penalty / Ridge Shrinkage (λ):</span>
                         <span style={{ fontWeight: 700, color: '#34d399' }}>{linearRidgeLambda.toFixed(2)}</span>
                       </div>
@@ -12891,14 +12893,14 @@ export const NeuralSimulatorModule: React.FC = () => {
                 {linearViewMode === 'residuals_analysis' && (
                   <>
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Slope (Weight w₁):</span>
                         <span style={{ fontWeight: 700, color: '#38bdf8' }}>{linearSlopeW1.toFixed(2)}</span>
                       </div>
                       <input type="range" min="-2.0" max="2.0" step="0.05" value={linearSlopeW1} onChange={(e) => setLinearSlopeW1(parseFloat(e.target.value))} style={{ width: '100%', accentColor: '#38bdf8', cursor: 'pointer' }} />
                     </div>
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Intercept (Bias b):</span>
                         <span style={{ fontWeight: 700, color: '#fbbf24' }}>{linearInterceptB.toFixed(2)}</span>
                       </div>
@@ -12913,7 +12915,7 @@ export const NeuralSimulatorModule: React.FC = () => {
             {selectedModel === 'logistic_regression' && (
               <>
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>
                     Logistic Regression Paradigm & View:
                   </label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
@@ -12965,7 +12967,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 {logregViewMode === 'log_loss_dual_curve' && (
                   <>
                     <div>
-                      <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
+                      <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>
                         Target Ground Truth Label (y):
                       </label>
                       <div style={{ display: 'flex', gap: '6px' }}>
@@ -13007,7 +13009,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                     </div>
 
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Linear Logit Input z = (w₁x + b):</span>
                         <span style={{ fontWeight: 700, color: '#38bdf8' }}>z = {logregTestZ.toFixed(2)}</span>
                       </div>
@@ -13023,7 +13025,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                     </div>
 
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Decision Threshold (T):</span>
                         <span style={{ fontWeight: 700, color: '#34d399' }}>T = {logregThreshold.toFixed(2)}</span>
                       </div>
@@ -13038,7 +13040,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                       />
                     </div>
 
-                    <div style={{ padding: '8px', background: 'rgba(30, 41, 59, 0.5)', borderRadius: '8px', fontSize: '0.68rem', color: '#94a3b8', lineHeight: 1.4 }}>
+                    <div style={{ padding: '8px', background: 'rgba(30, 41, 59, 0.5)', borderRadius: '8px', fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)', lineHeight: 1.4 }}>
                       💡 <strong style={{ color: '#fbbf24' }}>Intuition:</strong> Left panel shows the Sigmoid S-Curve mapping logit $z \to \hat&#123;y&#125;$. Right panel shows the Log-Loss curve penalizing confident misclassifications ($J \to \infty$ as error increases).
                     </div>
                   </>
@@ -13047,7 +13049,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 {logregViewMode === '3d_sigmoid_surface' && (
                   <>
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Decision Threshold (T):</span>
                         <span style={{ fontWeight: 700, color: '#34d399' }}>T = {logregThreshold.toFixed(2)}</span>
                       </div>
@@ -13064,7 +13066,7 @@ export const NeuralSimulatorModule: React.FC = () => {
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                       <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                           <span>Orbit Pitch:</span>
                           <span style={{ fontWeight: 700, color: '#38bdf8' }}>{logreg3dRotX}°</span>
                         </div>
@@ -13079,7 +13081,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                           <span>Orbit Yaw:</span>
                           <span style={{ fontWeight: 700, color: '#fbbf24' }}>{logreg3dRotY}°</span>
                         </div>
@@ -13099,28 +13101,28 @@ export const NeuralSimulatorModule: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => { setLogreg3dRotX(28); setLogreg3dRotY(42); }}
-                        style={{ flex: 1, padding: '4px', borderRadius: '4px', fontSize: '0.62rem', fontWeight: 600, background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(51, 65, 85, 0.8)', color: '#94a3b8', cursor: 'pointer' }}
+                        style={{ flex: 1, padding: '4px', borderRadius: '4px', fontSize: '0.62rem', fontWeight: 600, background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.8))', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))', color: 'var(--text-secondary, #94a3b8)', cursor: 'pointer' }}
                       >
                         📐 Isometric
                       </button>
                       <button
                         type="button"
                         onClick={() => { setLogreg3dRotX(85); setLogreg3dRotY(0); }}
-                        style={{ flex: 1, padding: '4px', borderRadius: '4px', fontSize: '0.62rem', fontWeight: 600, background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(51, 65, 85, 0.8)', color: '#94a3b8', cursor: 'pointer' }}
+                        style={{ flex: 1, padding: '4px', borderRadius: '4px', fontSize: '0.62rem', fontWeight: 600, background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.8))', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))', color: 'var(--text-secondary, #94a3b8)', cursor: 'pointer' }}
                       >
                         🔝 Top-Down
                       </button>
                       <button
                         type="button"
                         onClick={() => { setLogreg3dRotX(10); setLogreg3dRotY(115); }}
-                        style={{ flex: 1, padding: '4px', borderRadius: '4px', fontSize: '0.62rem', fontWeight: 600, background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(51, 65, 85, 0.8)', color: '#94a3b8', cursor: 'pointer' }}
+                        style={{ flex: 1, padding: '4px', borderRadius: '4px', fontSize: '0.62rem', fontWeight: 600, background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.8))', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))', color: 'var(--text-secondary, #94a3b8)', cursor: 'pointer' }}
                       >
                         ↔ Side S-Profile
                       </button>
                     </div>
 
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Weight w₁:</span>
                         <span style={{ fontWeight: 700, color: '#fbbf24' }}>{logregW1.toFixed(2)}</span>
                       </div>
@@ -13128,7 +13130,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                     </div>
 
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Weight w₂:</span>
                         <span style={{ fontWeight: 700, color: '#c084fc' }}>{logregW2.toFixed(2)}</span>
                       </div>
@@ -13136,7 +13138,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                     </div>
 
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Bias (b):</span>
                         <span style={{ fontWeight: 700, color: '#34d399' }}>{logregBiasB.toFixed(2)}</span>
                       </div>
@@ -13148,7 +13150,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 {logregViewMode === '1d_sigmoid_curve' && (
                   <>
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Decision Threshold (T):</span>
                         <span style={{ fontWeight: 700, color: '#34d399' }}>T = {logregThreshold.toFixed(2)}</span>
                       </div>
@@ -13167,28 +13169,28 @@ export const NeuralSimulatorModule: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => setLogregThreshold(0.5)}
-                        style={{ flex: 1, padding: '4px', borderRadius: '4px', fontSize: '0.62rem', fontWeight: 600, background: logregThreshold === 0.5 ? 'rgba(52, 211, 153, 0.25)' : 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(51, 65, 85, 0.8)', color: logregThreshold === 0.5 ? '#34d399' : '#94a3b8', cursor: 'pointer' }}
+                        style={{ flex: 1, padding: '4px', borderRadius: '4px', fontSize: '0.62rem', fontWeight: 600, background: logregThreshold === 0.5 ? 'rgba(52, 211, 153, 0.25)' : 'rgba(30, 41, 59, 0.8)', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))', color: logregThreshold === 0.5 ? '#34d399' : '#94a3b8', cursor: 'pointer' }}
                       >
                         Balanced (T=0.5)
                       </button>
                       <button
                         type="button"
                         onClick={() => setLogregThreshold(0.3)}
-                        style={{ flex: 1, padding: '4px', borderRadius: '4px', fontSize: '0.62rem', fontWeight: 600, background: logregThreshold === 0.3 ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(51, 65, 85, 0.8)', color: logregThreshold === 0.3 ? '#38bdf8' : '#94a3b8', cursor: 'pointer' }}
+                        style={{ flex: 1, padding: '4px', borderRadius: '4px', fontSize: '0.62rem', fontWeight: 600, background: logregThreshold === 0.3 ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.8)', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))', color: logregThreshold === 0.3 ? '#38bdf8' : '#94a3b8', cursor: 'pointer' }}
                       >
                         High Recall (T=0.3)
                       </button>
                       <button
                         type="button"
                         onClick={() => setLogregThreshold(0.7)}
-                        style={{ flex: 1, padding: '4px', borderRadius: '4px', fontSize: '0.62rem', fontWeight: 600, background: logregThreshold === 0.7 ? 'rgba(245, 158, 11, 0.25)' : 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(51, 65, 85, 0.8)', color: logregThreshold === 0.7 ? '#fbbf24' : '#94a3b8', cursor: 'pointer' }}
+                        style={{ flex: 1, padding: '4px', borderRadius: '4px', fontSize: '0.62rem', fontWeight: 600, background: logregThreshold === 0.7 ? 'rgba(245, 158, 11, 0.25)' : 'rgba(30, 41, 59, 0.8)', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))', color: logregThreshold === 0.7 ? '#fbbf24' : '#94a3b8', cursor: 'pointer' }}
                       >
                         High Precision (T=0.7)
                       </button>
                     </div>
 
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Sigmoid Slope / Weight (w):</span>
                         <span style={{ fontWeight: 700, color: '#38bdf8' }}>{logregW1.toFixed(2)}</span>
                       </div>
@@ -13196,7 +13198,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                     </div>
 
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Horizontal Bias Offset (b):</span>
                         <span style={{ fontWeight: 700, color: '#c084fc' }}>{logregBiasB.toFixed(2)}</span>
                       </div>
@@ -13208,7 +13210,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 {logregViewMode === '2d_heatmap_boundary' && (
                   <>
                     <div>
-                      <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
+                      <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>
                         Decision Boundary Geometry:
                       </label>
                       <div style={{ display: 'flex', gap: '6px' }}>
@@ -13230,7 +13232,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                     </div>
 
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Decision Threshold (T):</span>
                         <span style={{ fontWeight: 700, color: '#34d399' }}>T = {logregThreshold.toFixed(2)}</span>
                       </div>
@@ -13246,7 +13248,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                     </div>
 
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Weight w₁:</span>
                         <span style={{ fontWeight: 700, color: '#fbbf24' }}>{logregW1.toFixed(2)}</span>
                       </div>
@@ -13254,7 +13256,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                     </div>
 
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Weight w₂:</span>
                         <span style={{ fontWeight: 700, color: '#c084fc' }}>{logregW2.toFixed(2)}</span>
                       </div>
@@ -13266,7 +13268,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 {logregViewMode === 'multinomial_softmax' && (
                   <>
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Softmax Temperature (τ):</span>
                         <span style={{ fontWeight: 700, color: '#38bdf8' }}>τ = {logregTemperature.toFixed(2)}</span>
                       </div>
@@ -13280,7 +13282,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                         style={{ width: '100%', accentColor: '#38bdf8', cursor: 'pointer' }}
                       />
                     </div>
-                    <div style={{ padding: '8px', background: 'rgba(30, 41, 59, 0.5)', borderRadius: '8px', fontSize: '0.68rem', color: '#94a3b8', lineHeight: 1.4 }}>
+                    <div style={{ padding: '8px', background: 'rgba(30, 41, 59, 0.5)', borderRadius: '8px', fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)', lineHeight: 1.4 }}>
                       ⚡ 3-Class Voronoi Softmax: Class 0 (Red), Class 1 (Blue), Class 2 (Green) with triple-junction ray intersections.
                     </div>
                   </>
@@ -13292,7 +13294,7 @@ export const NeuralSimulatorModule: React.FC = () => {
             {selectedModel === 'svm_classifier' && (
               <>
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>
                     SVM View & Lifting Mode:
                   </label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px' }}>
@@ -13325,7 +13327,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 {svmViewMode === '2d_kernels' && (
                   <>
                     <div>
-                      <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
+                      <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>
                         Kernel Function:
                       </label>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
@@ -13353,7 +13355,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                     </div>
 
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Slack Soft Margin Penalty (C):</span>
                         <span style={{ fontWeight: 700, color: '#fbbf24' }}>{svmC.toFixed(1)}</span>
                       </div>
@@ -13370,7 +13372,7 @@ export const NeuralSimulatorModule: React.FC = () => {
 
                     {svmKernel !== 'linear' && (
                       <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                           <span>Kernel Gamma (γ):</span>
                           <span style={{ fontWeight: 700, color: '#c084fc' }}>{svmGamma.toFixed(2)}</span>
                         </div>
@@ -13389,7 +13391,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                     {svmKernel === 'poly' && (
                       <>
                         <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                             <span>Polynomial Degree (d):</span>
                             <span style={{ fontWeight: 700, color: '#ec4899' }}>d = {svmPolyDegree}</span>
                           </div>
@@ -13403,7 +13405,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                           />
                         </div>
                         <div>
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                             <span>Poly Intercept Coeff (r):</span>
                             <span style={{ fontWeight: 700, color: '#34d399' }}>{svmPolyIntercept.toFixed(1)}</span>
                           </div>
@@ -13422,7 +13424,7 @@ export const NeuralSimulatorModule: React.FC = () => {
 
                     {svmKernel === 'sigmoid' && (
                       <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                           <span>Sigmoid Intercept (r):</span>
                           <span style={{ fontWeight: 700, color: '#34d399' }}>{svmPolyIntercept.toFixed(1)}</span>
                         </div>
@@ -13439,7 +13441,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                     )}
 
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Hyperplane Bias (+b):</span>
                         <span style={{ fontWeight: 700, color: '#38bdf8' }}>{svmBiasB.toFixed(2)}</span>
                       </div>
@@ -13459,7 +13461,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 {svmViewMode === '1d_parabola' && (
                   <>
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Parabolic Lifting Morph (λ):</span>
                         <span style={{ fontWeight: 700, color: '#c084fc' }}>{(svmLiftMorph * 100).toFixed(0)}%</span>
                       </div>
@@ -13515,7 +13517,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 {svmViewMode === '3d_kernel_trick' && (
                   <>
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>3D Space Lifting Morph (λ):</span>
                         <span style={{ fontWeight: 700, color: '#c084fc' }}>{(svmLiftMorph * 100).toFixed(0)}%</span>
                       </div>
@@ -13530,7 +13532,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                       />
                     </div>
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>3D Slicing Hyperplane Height (Z):</span>
                         <span style={{ fontWeight: 700, color: '#34d399' }}>z = {svm3dSliceZ.toFixed(2)}</span>
                       </div>
@@ -13546,7 +13548,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                       <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: '#cbd5e1', marginBottom: '2px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '2px' }}>
                           <span>Orbit Pitch:</span>
                           <span style={{ fontWeight: 700, color: '#38bdf8' }}>{svm3dRotX}°</span>
                         </div>
@@ -13560,7 +13562,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                         />
                       </div>
                       <div>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: '#cbd5e1', marginBottom: '2px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '2px' }}>
                           <span>Orbit Yaw:</span>
                           <span style={{ fontWeight: 700, color: '#fbbf24' }}>{svm3dRotY}°</span>
                         </div>
@@ -13578,21 +13580,21 @@ export const NeuralSimulatorModule: React.FC = () => {
                       <button
                         type="button"
                         onClick={() => { setSvm3dRotX(25); setSvm3dRotY(40); }}
-                        style={{ flex: 1, padding: '4px', borderRadius: '4px', fontSize: '0.64rem', fontWeight: 700, background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(51, 65, 85, 0.8)', color: '#cbd5e1', cursor: 'pointer' }}
+                        style={{ flex: 1, padding: '4px', borderRadius: '4px', fontSize: '0.64rem', fontWeight: 700, background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.8))', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))', color: 'var(--text-primary, #cbd5e1)', cursor: 'pointer' }}
                       >
                         📐 Isometric
                       </button>
                       <button
                         type="button"
                         onClick={() => { setSvm3dRotX(80); setSvm3dRotY(0); }}
-                        style={{ flex: 1, padding: '4px', borderRadius: '4px', fontSize: '0.64rem', fontWeight: 700, background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(51, 65, 85, 0.8)', color: '#cbd5e1', cursor: 'pointer' }}
+                        style={{ flex: 1, padding: '4px', borderRadius: '4px', fontSize: '0.64rem', fontWeight: 700, background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.8))', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))', color: 'var(--text-primary, #cbd5e1)', cursor: 'pointer' }}
                       >
                         🔝 Top-Down
                       </button>
                       <button
                         type="button"
                         onClick={() => { setSvm3dRotX(10); setSvm3dRotY(90); }}
-                        style={{ flex: 1, padding: '4px', borderRadius: '4px', fontSize: '0.64rem', fontWeight: 700, background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(51, 65, 85, 0.8)', color: '#cbd5e1', cursor: 'pointer' }}
+                        style={{ flex: 1, padding: '4px', borderRadius: '4px', fontSize: '0.64rem', fontWeight: 700, background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.8))', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))', color: 'var(--text-primary, #cbd5e1)', cursor: 'pointer' }}
                       >
                         ↔ Side Slice
                       </button>
@@ -13606,14 +13608,14 @@ export const NeuralSimulatorModule: React.FC = () => {
             {selectedModel === 'decision_tree_split' && (
               <>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Max Tree Depth:</span>
                     <span style={{ fontWeight: 700, color: '#38bdf8' }}>{treeDepth}</span>
                   </div>
                   <input type="range" min="1" max="5" step="1" value={treeDepth} onChange={(e) => setTreeDepth(parseInt(e.target.value))} style={{ width: '100%', accentColor: '#38bdf8', cursor: 'pointer' }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Splitting Criterion:</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Splitting Criterion:</label>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     {(['gini', 'entropy'] as const).map(c => (
                       <button key={c} type="button" onClick={() => setTreeCriterion(c)} style={{ flex: 1, padding: '5px', borderRadius: '6px', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', background: treeCriterion === c ? 'rgba(52, 211, 153, 0.25)' : 'rgba(30, 41, 59, 0.6)', border: treeCriterion === c ? '1px solid #34d399' : '1px solid rgba(51, 65, 85, 0.6)', color: treeCriterion === c ? '#34d399' : '#94a3b8', cursor: 'pointer' }}>{c}</button>
@@ -13621,7 +13623,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Min Samples Split:</span>
                     <span style={{ fontWeight: 700, color: '#fbbf24' }}>{treeMinSamplesSplit}</span>
                   </div>
@@ -13634,7 +13636,7 @@ export const NeuralSimulatorModule: React.FC = () => {
             {selectedModel === 'naive_bayes' && (
               <>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Prior Probability P(C₀) [Amber]:</span>
                     <span style={{ fontWeight: 700, color: '#f59e0b' }}>{nbPriorC0.toFixed(2)} (C₁: {(1 - nbPriorC0).toFixed(2)})</span>
                   </div>
@@ -13642,7 +13644,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Variance Smoothing (ε):</span>
                     <span style={{ fontWeight: 700, color: '#34d399' }}>ε = {nbVarSmoothing.toFixed(3)}</span>
                   </div>
@@ -13650,7 +13652,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Class Mean Separation (Δμ):</span>
                     <span style={{ fontWeight: 700, color: '#38bdf8' }}>{nbFeatureMeanSeparation.toFixed(2)}</span>
                   </div>
@@ -13659,7 +13661,7 @@ export const NeuralSimulatorModule: React.FC = () => {
 
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
                   <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                       <span>Probe Q.x₁:</span>
                       <span style={{ fontWeight: 700, color: '#ec4899' }}>{nbProbePos.x.toFixed(2)}</span>
                     </div>
@@ -13678,7 +13680,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                     />
                   </div>
                   <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                       <span>Probe Q.x₂:</span>
                       <span style={{ fontWeight: 700, color: '#ec4899' }}>{nbProbePos.y.toFixed(2)}</span>
                     </div>
@@ -13698,7 +13700,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                   </div>
                 </div>
 
-                <div style={{ padding: '8px', background: 'rgba(30, 41, 59, 0.5)', borderRadius: '8px', fontSize: '0.68rem', color: '#94a3b8', lineHeight: 1.4 }}>
+                <div style={{ padding: '8px', background: 'rgba(30, 41, 59, 0.5)', borderRadius: '8px', fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)', lineHeight: 1.4 }}>
                   💡 <strong style={{ color: '#fbbf24' }}>Naive Bayes Assumption:</strong> Features $X_1$ and $X_2$ are assumed conditionally independent ($P(X_1, X_2 \mid C_k) = P(X_1 \mid C_k) \times P(X_2 \mid C_k)$). Drag probe $Q$ to test real-time posterior probabilities.
                 </div>
               </>
@@ -13708,7 +13710,7 @@ export const NeuralSimulatorModule: React.FC = () => {
             {selectedModel === 'random_forest' && (
               <>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Number of Trees:</span>
                     <span style={{ fontWeight: 700, color: '#38bdf8' }}>{forestNumTrees} Trees</span>
                   </div>
@@ -13721,21 +13723,21 @@ export const NeuralSimulatorModule: React.FC = () => {
             {selectedModel === 'gradient_boosting' && (
               <>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Boosting Stages (M):</span>
                     <span style={{ fontWeight: 700, color: '#38bdf8' }}>{boostStages} Stages</span>
                   </div>
                   <input type="range" min="1" max="8" step="1" value={boostStages} onChange={(e) => setBoostStages(parseInt(e.target.value))} style={{ width: '100%', accentColor: '#38bdf8', cursor: 'pointer' }} />
                 </div>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Learning Rate Shrinkage (η):</span>
                     <span style={{ fontWeight: 700, color: '#fbbf24' }}>{boostLearningRate.toFixed(2)}</span>
                   </div>
                   <input type="range" min="0.05" max="0.5" step="0.05" value={boostLearningRate} onChange={(e) => setBoostLearningRate(parseFloat(e.target.value))} style={{ width: '100%', accentColor: '#fbbf24', cursor: 'pointer' }} />
                 </div>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Initial Base Bias (F₀):</span>
                     <span style={{ fontWeight: 700, color: '#34d399' }}>{boostBaseBiasF0.toFixed(2)}</span>
                   </div>
@@ -13748,7 +13750,7 @@ export const NeuralSimulatorModule: React.FC = () => {
             {selectedModel === 'q_learning_rl' && (
               <>
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>GridWorld Environment Map:</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>GridWorld Environment Map:</label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
                     {(['classic', 'cliff', 'maze', 'dual_goal'] as const).map(map => (
                       <button key={map} type="button" onClick={() => setRlMapPreset(map)} style={{ padding: '5px', borderRadius: '6px', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', background: rlMapPreset === map ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)', border: rlMapPreset === map ? '1px solid #38bdf8' : '1px solid rgba(51, 65, 85, 0.6)', color: rlMapPreset === map ? '#38bdf8' : '#94a3b8', cursor: 'pointer' }}>{map.replace('_', ' ')}</button>
@@ -13756,7 +13758,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Action Selection Policy:</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Action Selection Policy:</label>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     {(['eps_greedy', 'softmax'] as const).map(pol => (
                       <button key={pol} type="button" onClick={() => setRlPolicy(pol)} style={{ flex: 1, padding: '5px', borderRadius: '6px', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', background: rlPolicy === pol ? 'rgba(192, 132, 252, 0.25)' : 'rgba(30, 41, 59, 0.6)', border: rlPolicy === pol ? '1px solid #c084fc' : '1px solid rgba(51, 65, 85, 0.6)', color: rlPolicy === pol ? '#c084fc' : '#94a3b8', cursor: 'pointer' }}>{pol === 'eps_greedy' ? 'ε-Greedy' : 'Softmax'}</button>
@@ -13764,21 +13766,21 @@ export const NeuralSimulatorModule: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Exploration Rate (ε) / Temperature (τ):</span>
                     <span style={{ fontWeight: 700, color: '#fbbf24' }}>{rlPolicy === 'eps_greedy' ? rlEpsilon.toFixed(2) : rlTemperature.toFixed(2)}</span>
                   </div>
                   <input type="range" min="0.01" max="1.0" step="0.02" value={rlPolicy === 'eps_greedy' ? rlEpsilon : rlTemperature} onChange={(e) => { if (rlPolicy === 'eps_greedy') setRlEpsilon(parseFloat(e.target.value)); else setRlTemperature(parseFloat(e.target.value)); }} style={{ width: '100%', accentColor: '#fbbf24', cursor: 'pointer' }} />
                 </div>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Discount Factor (γ):</span>
                     <span style={{ fontWeight: 700, color: '#38bdf8' }}>{rlDiscountGamma.toFixed(2)}</span>
                   </div>
                   <input type="range" min="0.5" max="0.99" step="0.01" value={rlDiscountGamma} onChange={(e) => setRlDiscountGamma(parseFloat(e.target.value))} style={{ width: '100%', accentColor: '#38bdf8', cursor: 'pointer' }} />
                 </div>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Learning Rate (α):</span>
                     <span style={{ fontWeight: 700, color: '#34d399' }}>{rlLearningRateAlpha.toFixed(2)}</span>
                   </div>
@@ -13791,7 +13793,7 @@ export const NeuralSimulatorModule: React.FC = () => {
             {selectedModel === 'backprop_autodiff' && (
               <>
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Backprop Topology & Paradigm:</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Backprop Topology & Paradigm:</label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '4px' }}>
                     <button type="button" onClick={() => setAutodiffMode('scalar_dag')} style={{ padding: '5px', borderRadius: '6px', fontSize: '0.66rem', fontWeight: 700, background: autodiffMode === 'scalar_dag' ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)', border: autodiffMode === 'scalar_dag' ? '1px solid #38bdf8' : '1px solid rgba(51, 65, 85, 0.6)', color: autodiffMode === 'scalar_dag' ? '#38bdf8' : '#94a3b8', cursor: 'pointer' }}>Scalar DAG</button>
                     <button type="button" onClick={() => setAutodiffMode('multilayer_mlp')} style={{ padding: '5px', borderRadius: '6px', fontSize: '0.66rem', fontWeight: 700, background: autodiffMode === 'multilayer_mlp' ? 'rgba(192, 132, 252, 0.25)' : 'rgba(30, 41, 59, 0.6)', border: autodiffMode === 'multilayer_mlp' ? '1px solid #c084fc' : '1px solid rgba(51, 65, 85, 0.6)', color: autodiffMode === 'multilayer_mlp' ? '#c084fc' : '#94a3b8', cursor: 'pointer' }}>Multi-Layer MLP</button>
@@ -13799,28 +13801,28 @@ export const NeuralSimulatorModule: React.FC = () => {
                   </div>
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Target Label (ŷ):</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Target Label (ŷ):</label>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <button type="button" onClick={() => setAutodiffTarget(1.0)} style={{ flex: 1, padding: '6px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700, background: autodiffTarget === 1.0 ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)', border: autodiffTarget === 1.0 ? '1px solid #38bdf8' : '1px solid rgba(51, 65, 85, 0.6)', color: autodiffTarget === 1.0 ? '#38bdf8' : '#94a3b8', cursor: 'pointer' }}>Target ŷ = 1.0</button>
                     <button type="button" onClick={() => setAutodiffTarget(0.0)} style={{ flex: 1, padding: '6px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700, background: autodiffTarget === 0.0 ? 'rgba(245, 158, 11, 0.25)' : 'rgba(30, 41, 59, 0.6)', border: autodiffTarget === 0.0 ? '1px solid #f59e0b' : '1px solid rgba(51, 65, 85, 0.6)', color: autodiffTarget === 0.0 ? '#fbbf24' : '#94a3b8', cursor: 'pointer' }}>Target ŷ = 0.0</button>
                   </div>
                 </div>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Input Feature x₁:</span>
                     <span style={{ fontWeight: 700, color: '#38bdf8' }}>{autodiffX1.toFixed(2)}</span>
                   </div>
                   <input type="range" min="-1.5" max="1.5" step="0.1" value={autodiffX1} onChange={(e) => setAutodiffX1(parseFloat(e.target.value))} style={{ width: '100%', accentColor: '#38bdf8', cursor: 'pointer' }} />
                 </div>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Input Feature x₂:</span>
                     <span style={{ fontWeight: 700, color: '#38bdf8' }}>{autodiffX2.toFixed(2)}</span>
                   </div>
                   <input type="range" min="-1.5" max="1.5" step="0.1" value={autodiffX2} onChange={(e) => setAutodiffX2(parseFloat(e.target.value))} style={{ width: '100%', accentColor: '#38bdf8', cursor: 'pointer' }} />
                 </div>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>SGD Learning Rate (η):</span>
                     <span style={{ fontWeight: 700, color: '#34d399' }}>{autodiffLR.toFixed(2)}</span>
                   </div>
@@ -13833,7 +13835,7 @@ export const NeuralSimulatorModule: React.FC = () => {
             {selectedModel === 'conv_operations' && (
               <>
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>CNN Learning Paradigm:</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>CNN Learning Paradigm:</label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
                     {[
                       { id: 'kernel_convolution', label: '🔬 Kernel & Pad' },
@@ -13866,7 +13868,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 {convMode === 'kernel_convolution' && (
                   <>
                     <div>
-                      <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Zero-Padding (P):</label>
+                      <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Zero-Padding (P):</label>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
                         {[
                           { p: 0, label: 'p=0 (Valid)' },
@@ -13897,7 +13899,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                     <div>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                         <div>
-                          <label style={{ fontSize: '0.7rem', color: '#cbd5e1', display: 'block', marginBottom: '2px' }}>Stride (S):</label>
+                          <label style={{ fontSize: '0.7rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '2px' }}>Stride (S):</label>
                           <div style={{ display: 'flex', gap: '4px' }}>
                             {([1, 2] as const).map(s => (
                               <button
@@ -13922,7 +13924,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                           </div>
                         </div>
                         <div>
-                          <label style={{ fontSize: '0.7rem', color: '#cbd5e1', display: 'block', marginBottom: '2px' }}>Dilation (D):</label>
+                          <label style={{ fontSize: '0.7rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '2px' }}>Dilation (D):</label>
                           <div style={{ display: 'flex', gap: '4px' }}>
                             {([1, 2] as const).map(d => (
                               <button
@@ -13950,7 +13952,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                     </div>
 
                     <div>
-                      <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>3×3 Filter Kernel:</label>
+                      <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>3×3 Filter Kernel:</label>
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
                         {[
                           { id: 'edge', label: 'Edge' },
@@ -13982,7 +13984,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                     </div>
 
                     <div>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                         <span>Post-Conv Bias (+b):</span>
                         <span style={{ fontWeight: 700, color: '#34d399' }}>{convPostBiasB.toFixed(1)}</span>
                       </div>
@@ -13994,7 +13996,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 {/* Sub-Controls for Mode 2: ReLU and Pooling */}
                 {convMode === 'relu_and_pooling' && (
                   <div>
-                    <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Pooling Aggregation Method:</label>
+                    <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Pooling Aggregation Method:</label>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
                       {[
                         { id: 'max', label: 'Max Pooling (max)' },
@@ -14025,7 +14027,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 {/* Sub-Controls for Mode 3: Deep CNN Pipeline */}
                 {convMode === 'deep_cnn_pipeline' && (
                   <div>
-                    <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Input Test Digit Pattern:</label>
+                    <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Input Test Digit Pattern:</label>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
                       {[
                         { id: 'digit_7', label: 'Digit "7"' },
@@ -14059,7 +14061,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 {convMode === 'resnet_skip_block' && (
                   <div style={{ padding: '8px', background: 'rgba(52, 211, 153, 0.1)', border: '1px solid rgba(52, 211, 153, 0.3)', borderRadius: '8px' }}>
                     <div style={{ fontSize: '0.72rem', fontWeight: 700, color: '#34d399', marginBottom: '2px' }}>Residual Highway Active:</div>
-                    <div style={{ fontSize: '0.66rem', color: '#94a3b8' }}>Identity shortcut $x$ feeds forward without parameter loss or attenuation.</div>
+                    <div style={{ fontSize: '0.66rem', color: 'var(--text-secondary, #94a3b8)' }}>Identity shortcut $x$ feeds forward without parameter loss or attenuation.</div>
                   </div>
                 )}
               </>
@@ -14069,7 +14071,7 @@ export const NeuralSimulatorModule: React.FC = () => {
             {selectedModel === 'seq_recurrent_gating' && (
               <>
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>
                     Active Sequence Timestep (t):
                   </label>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
@@ -14101,7 +14103,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Recurrent Architecture:</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Recurrent Architecture:</label>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     {(['lstm', 'gru', 'vanilla_rnn'] as const).map(a => (
                       <button
@@ -14128,7 +14130,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Forget Gate Bias (bf):</span>
                     <span style={{ fontWeight: 700, color: '#38bdf8' }}>+{recurrentForgetBias.toFixed(1)}</span>
                   </div>
@@ -14136,7 +14138,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Input Weight Scale (Wxh):</span>
                     <span style={{ fontWeight: 700, color: '#fbbf24' }}>{recurrentWeightWxh.toFixed(2)}</span>
                   </div>
@@ -14144,7 +14146,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Candidate State Activation:</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Candidate State Activation:</label>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     {(['tanh', 'relu', 'gelu'] as const).map(act => (
                       <button key={act} type="button" onClick={() => setRecurrentCandidateAct(act)} style={{ flex: 1, padding: '4px', borderRadius: '6px', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', background: recurrentCandidateAct === act ? 'rgba(52, 211, 153, 0.25)' : 'rgba(30, 41, 59, 0.6)', border: recurrentCandidateAct === act ? '1px solid #34d399' : '1px solid rgba(51, 65, 85, 0.6)', color: recurrentCandidateAct === act ? '#34d399' : '#94a3b8', cursor: 'pointer' }}>{act}</button>
@@ -14158,7 +14160,7 @@ export const NeuralSimulatorModule: React.FC = () => {
             {selectedModel === 'transformer_architecture' && (
               <>
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Transformer Architecture Paradigm:</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Transformer Architecture Paradigm:</label>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
                     {[
                       { id: 'encoder', label: '⚡ Encoder Stack' },
@@ -14187,7 +14189,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Layer Depth Stacking (N):</span>
                     <span style={{ fontWeight: 700, color: '#c084fc' }}>{transformerNumLayers} Layers</span>
                   </div>
@@ -14232,7 +14234,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Sampling Temperature (T):</span>
                     <span style={{ fontWeight: 700, color: '#38bdf8' }}>{transformerSamplingTemp.toFixed(2)}</span>
                   </div>
@@ -14240,7 +14242,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Top-k Vocabulary Cutoff:</span>
                     <span style={{ fontWeight: 700, color: '#fbbf24' }}>k = {transformerTopK}</span>
                   </div>
@@ -14253,7 +14255,7 @@ export const NeuralSimulatorModule: React.FC = () => {
             {selectedModel === 'attention_mechanisms' && (
               <>
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Attention Paradigm & Math Engine:</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Attention Paradigm & Math Engine:</label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
                     {(['scaled_dot_product', 'multi_head', 'cross_attention', 'causal_masked', 'recursive_recurrent', 'positional_encoding'] as const).map(m => (
                       <button
@@ -14279,7 +14281,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Temperature Scale (τ):</span>
                     <span style={{ fontWeight: 700, color: '#38bdf8' }}>{attnTemperature.toFixed(2)}</span>
                   </div>
@@ -14287,7 +14289,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Query Weight Scale (Wq):</span>
                     <span style={{ fontWeight: 700, color: '#fbbf24' }}>{attnWeightScaleWq.toFixed(2)}</span>
                   </div>
@@ -14295,7 +14297,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Parallel Heads (h):</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Parallel Heads (h):</label>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     {[1, 2, 4, 8].map(h => (
                       <button key={h} type="button" onClick={() => setAttnNumHeads(h)} style={{ flex: 1, padding: '5px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700, background: attnNumHeads === h ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)', border: attnNumHeads === h ? '1px solid #38bdf8' : '1px solid rgba(51, 65, 85, 0.6)', color: attnNumHeads === h ? '#38bdf8' : '#94a3b8', cursor: 'pointer' }}>{h} Heads</button>
@@ -14309,7 +14311,7 @@ export const NeuralSimulatorModule: React.FC = () => {
             {selectedModel === 'moe_architecture' && (
               <>
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Expert Population (E):</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Expert Population (E):</label>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     {[
                       { e: 4 as const, label: '4 Experts' },
@@ -14339,7 +14341,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Top-k Sparse Gating:</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Top-k Sparse Gating:</label>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     {[
                       { k: 1 as const, label: 'Top-1 (Switch)' },
@@ -14369,7 +14371,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Router Temperature (T_route):</span>
                     <span style={{ fontWeight: 700, color: '#38bdf8' }}>{moeRouterTemperature.toFixed(2)}</span>
                   </div>
@@ -14377,7 +14379,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Routing Noise (ϵ):</span>
                     <span style={{ fontWeight: 700, color: '#c084fc' }}>{moeRouterNoise.toFixed(2)}</span>
                   </div>
@@ -14390,7 +14392,7 @@ export const NeuralSimulatorModule: React.FC = () => {
             {selectedModel === 'loss_surface_optimization' && (
               <>
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Loss Surface Topography:</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Loss Surface Topography:</label>
                   <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px' }}>
                     {([
                       { id: 'multimodal_minima', name: 'Multimodal Minima' },
@@ -14423,7 +14425,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Optimization Algorithm:</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Optimization Algorithm:</label>
                   <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
                     {[
                       { id: 'batch', label: 'Batch GD' },
@@ -14480,7 +14482,7 @@ export const NeuralSimulatorModule: React.FC = () => {
 
                 {(optAlgorithm === 'mini_batch' || optAlgorithm === 'tri_variant_race') && (
                   <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                       <span>Mini-Batch Size (B):</span>
                       <span style={{ fontWeight: 700, color: '#38bdf8' }}>B = {optBatchSize} samples</span>
                     </div>
@@ -14510,7 +14512,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 )}
 
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Learning Rate (η):</span>
                     <span style={{ fontWeight: 700, color: '#38bdf8' }}>{optLearningRate.toFixed(3)}</span>
                   </div>
@@ -14527,7 +14529,7 @@ export const NeuralSimulatorModule: React.FC = () => {
 
                 {(optAlgorithm === 'momentum' || optAlgorithm === 'adam') && (
                   <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                       <span>Momentum Factor (γ / β):</span>
                       <span style={{ fontWeight: 700, color: '#c084fc' }}>{optMomentum.toFixed(2)}</span>
                     </div>
@@ -14545,7 +14547,7 @@ export const NeuralSimulatorModule: React.FC = () => {
 
                 {optAlgorithm === 'sgd' && (
                   <div>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                       <span>Single-Sample Stochastic Noise (σ):</span>
                       <span style={{ fontWeight: 700, color: '#fbbf24' }}>{optNoise.toFixed(3)}</span>
                     </div>
@@ -14590,21 +14592,21 @@ export const NeuralSimulatorModule: React.FC = () => {
             {selectedModel === 'vae_generative' && (
               <>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Latent Coordinate z₁:</span>
                     <span style={{ fontWeight: 700, color: '#38bdf8' }}>{vaeLatentZ1.toFixed(2)}</span>
                   </div>
                   <input type="range" min="-1.4" max="1.4" step="0.05" value={vaeLatentZ1} onChange={(e) => setVaeLatentZ1(parseFloat(e.target.value))} style={{ width: '100%', accentColor: '#38bdf8', cursor: 'pointer' }} />
                 </div>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Latent Coordinate z₂:</span>
                     <span style={{ fontWeight: 700, color: '#38bdf8' }}>{vaeLatentZ2.toFixed(2)}</span>
                   </div>
                   <input type="range" min="-1.4" max="1.4" step="0.05" value={vaeLatentZ2} onChange={(e) => setVaeLatentZ2(parseFloat(e.target.value))} style={{ width: '100%', accentColor: '#38bdf8', cursor: 'pointer' }} />
                 </div>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>KL Weight (β):</span>
                     <span style={{ fontWeight: 700, color: '#c084fc' }}>{vaeBetaKL.toFixed(1)}</span>
                   </div>
@@ -14617,28 +14619,28 @@ export const NeuralSimulatorModule: React.FC = () => {
             {selectedModel === 'kmeans_clustering' && (
               <>
                 <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: '#cbd5e1', marginBottom: '4px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', marginBottom: '4px' }}>
                     <span>Number of Clusters (K):</span>
                     <span style={{ fontWeight: 700, color: '#38bdf8' }}>{numClusters}</span>
                   </div>
                   <input type="range" min="2" max="6" value={numClusters} onChange={(e) => { setNumClusters(parseInt(e.target.value)); setKmeansConverged(false); setKmeansIterations(0); }} style={{ width: '100%', accentColor: '#38bdf8', cursor: 'pointer' }} />
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Initialization Mode:</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Initialization Mode:</label>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <button type="button" onClick={() => { setKmeansInitMode('kmeans_plus_plus'); reseedCentroids(); }} style={{ flex: 1, padding: '6px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700, background: kmeansInitMode === 'kmeans_plus_plus' ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)', border: kmeansInitMode === 'kmeans_plus_plus' ? '1px solid #38bdf8' : '1px solid rgba(51, 65, 85, 0.6)', color: kmeansInitMode === 'kmeans_plus_plus' ? '#38bdf8' : '#94a3b8', cursor: 'pointer' }}>K-Means++</button>
                     <button type="button" onClick={() => { setKmeansInitMode('random'); reseedCentroids(); }} style={{ flex: 1, padding: '6px', borderRadius: '6px', fontSize: '0.7rem', fontWeight: 700, background: kmeansInitMode === 'random' ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)', border: kmeansInitMode === 'random' ? '1px solid #38bdf8' : '1px solid rgba(51, 65, 85, 0.6)', color: kmeansInitMode === 'random' ? '#38bdf8' : '#94a3b8', cursor: 'pointer' }}>Random</button>
                   </div>
                 </div>
                 <div>
-                  <label style={{ fontSize: '0.72rem', color: '#cbd5e1', display: 'block', marginBottom: '4px' }}>Distance Metric:</label>
+                  <label style={{ fontSize: '0.72rem', color: 'var(--text-primary, #cbd5e1)', display: 'block', marginBottom: '4px' }}>Distance Metric:</label>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     {(['euclidean', 'manhattan'] as const).map(d => (
                       <button key={d} type="button" onClick={() => setKmeansDistance(d)} style={{ flex: 1, padding: '5px', borderRadius: '6px', fontSize: '0.68rem', fontWeight: 700, textTransform: 'uppercase', background: kmeansDistance === d ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)', border: kmeansDistance === d ? '1px solid #38bdf8' : '1px solid rgba(51, 65, 85, 0.6)', color: kmeansDistance === d ? '#38bdf8' : '#94a3b8', cursor: 'pointer' }}>{d}</button>
                     ))}
                   </div>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: '#94a3b8', background: 'rgba(30, 41, 59, 0.5)', padding: '6px 8px', borderRadius: '6px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)', background: 'rgba(30, 41, 59, 0.5)', padding: '6px 8px', borderRadius: '6px' }}>
                   <span>Iteration: <strong style={{ color: '#38bdf8' }}>{kmeansIterations}</strong></span>
                   <span>Silhouette: <strong style={{ color: '#34d399' }}>{kmeansSilhouette.toFixed(2)}</strong></span>
                   <span>WCSS: <strong style={{ color: '#fbbf24' }}>{kmeansWCSS.toFixed(3)}</strong></span>
@@ -14651,9 +14653,9 @@ export const NeuralSimulatorModule: React.FC = () => {
           <div
             className={`neural-card-theory ${mobileActiveTab === 'telemetry' ? 'mobile-card-visible' : 'mobile-card-hidden'}`}
             style={{
-              background: 'rgba(15, 23, 42, 0.95)',
+              background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
               borderRadius: '16px',
-              border: '1px solid rgba(51, 65, 85, 0.8)',
+              border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))',
               padding: '14px 16px',
               display: 'flex',
               flexDirection: 'column',
@@ -14662,11 +14664,11 @@ export const NeuralSimulatorModule: React.FC = () => {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <Sparkles size={14} color="#fbbf24" />
-              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#f8fafc', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-primary, #f8fafc)', textTransform: 'uppercase' }}>
                 MATHEMATICAL FORMULATION:
               </span>
             </div>
-            <div style={{ fontSize: '0.72rem', color: '#94a3b8', fontFamily: 'monospace', lineHeight: 1.4 }}>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary, #94a3b8)', fontFamily: 'monospace', lineHeight: 1.4 }}>
               {selectedModel === 'pca_reduction' && 'S_v = (1/N) Σ (x_i - μ)(x_i - μ)^T, Av_k = λ_k v_k'}
               {selectedModel === 'kmeans_clustering' && 'arg min_S Σ_{i=1}^k Σ_{x ∈ S_i} ‖x - μ_i‖²'}
               {selectedModel === 'knn_classifier' && 'y_hat = mode({y_i : x_i ∈ N_k(x)})'}

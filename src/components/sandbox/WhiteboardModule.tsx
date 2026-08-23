@@ -381,6 +381,20 @@ export const WHITEBOARD_FORMULA_PRESETS: Array<{ name: string; latex: string; ex
 ];
 
 export const WhiteboardModule: React.FC = () => {
+  // Dynamic Theme Tracking
+  const [isLightMode, setIsLightMode] = useState<boolean>(() => {
+    return document.documentElement.getAttribute('data-theme') === 'light';
+  });
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+      setIsLightMode(isLight);
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-atmosphere'] });
+    return () => observer.disconnect();
+  }, []);
+
   const [activeFormulaFeedback, setActiveFormulaFeedback] = useState<string | null>(null);
   const [showGrid] = useState<boolean>(true);
   const [bgGridType, setBgGridType] = useState<'grid' | 'dots' | 'isometric' | 'lined' | 'none'>('grid');
@@ -2029,12 +2043,13 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
         style={{
           display: 'flex',
           flexDirection: 'column',
-          gap: '8px',
-          padding: '10px 16px',
-          background: 'rgba(15, 23, 42, 0.96)',
-          borderRadius: '14px',
-          border: '1px solid rgba(51, 65, 85, 0.7)',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+          gap: '6px',
+          padding: '8px 14px',
+          background: 'var(--card-bg, rgba(15, 23, 42, 0.96))',
+          borderRadius: '12px',
+          border: '1px solid var(--card-border, rgba(51, 65, 85, 0.7))',
+          boxShadow: 'var(--card-shadow, 0 4px 20px rgba(0,0,0,0.5))',
+          flexShrink: 0
         }}
       >
         <div className="whiteboard-top-row" style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
@@ -2043,7 +2058,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
             <div style={{ padding: '5px', borderRadius: '8px', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', display: 'flex' }}>
               <Sparkles size={16} />
             </div>
-            <span style={{ fontSize: '0.84rem', fontWeight: 800, color: '#f8fafc' }}>
+            <span style={{ fontSize: '0.84rem', fontWeight: 800, color: 'var(--text-primary, #f8fafc)' }}>
               Prof. Joe Academic Board
             </span>
           </div>
@@ -2057,7 +2072,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
               style={{
                 padding: '4px 8px',
                 borderRadius: '6px',
-                background: 'rgba(30, 41, 59, 0.9)',
+                background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.9))',
                 border: '1px solid rgba(56, 189, 248, 0.4)',
                 color: '#38bdf8',
                 fontSize: '0.72rem',
@@ -2074,7 +2089,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
             </select>
 
             {/* LINE STYLE MULTI-TOGGLE (Solid / Dashed / Dotted) */}
-            <div style={{ display: 'flex', background: 'rgba(30, 41, 59, 0.8)', padding: '2px', borderRadius: '6px', border: '1px solid rgba(51, 65, 85, 0.6)', gap: '2px' }}>
+            <div style={{ display: 'flex', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.8))', padding: '2px', borderRadius: '6px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))', gap: '2px' }}>
               <button
                 type="button"
                 onClick={() => setLineStyle('solid')}
@@ -2102,7 +2117,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
             </div>
 
             {/* FILL MODE SELECTOR */}
-            <div style={{ display: 'flex', background: 'rgba(30, 41, 59, 0.8)', padding: '2px', borderRadius: '6px', border: '1px solid rgba(51, 65, 85, 0.6)', gap: '2px' }}>
+            <div style={{ display: 'flex', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.8))', padding: '2px', borderRadius: '6px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))', gap: '2px' }}>
               <button
                 type="button"
                 onClick={() => setFillMode('pastel')}
@@ -2130,8 +2145,8 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
             </div>
 
             {/* Stroke Width Slider */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(30, 41, 59, 0.6)', padding: '2px 8px', borderRadius: '6px' }}>
-              <span style={{ fontSize: '0.68rem', color: '#94a3b8', fontWeight: 700 }}>{strokeWidth}px</span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', padding: '2px 8px', borderRadius: '6px' }}>
+              <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)', fontWeight: 700 }}>{strokeWidth}px</span>
               <input
                 type="range"
                 min={1}
@@ -2174,7 +2189,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                 borderRadius: '8px',
                 fontSize: '0.72rem',
                 fontWeight: 700,
-                background: relationshipMode ? 'rgba(6, 182, 212, 0.3)' : 'rgba(30, 41, 59, 0.8)',
+                background: relationshipMode ? 'rgba(6, 182, 212, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.8))',
                 border: relationshipMode ? '1px solid #06b6d4' : '1px solid #334155',
                 color: relationshipMode ? '#22d3ee' : '#94a3b8',
                 cursor: 'pointer',
@@ -2322,7 +2337,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                 flexDirection: 'column',
                 gap: '8px',
                 padding: '10px 14px',
-                background: 'rgba(15, 23, 42, 0.96)',
+                background: 'var(--card-bg, rgba(15, 23, 42, 0.96))',
                 backdropFilter: 'blur(16px)',
                 borderRadius: '12px',
                 border: '1px solid rgba(56, 189, 248, 0.4)',
@@ -2361,10 +2376,10 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                 </div>
 
                 {/* Center: Dimensions Deck with Direct Numeric Inputs, +/- buttons and Lock Ratio */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(30, 41, 59, 0.7)', padding: '2px 8px', borderRadius: '8px', border: '1px solid rgba(51, 65, 85, 0.8)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.7))', padding: '2px 8px', borderRadius: '8px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))' }}>
                   {/* Width Control */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                    <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#94a3b8' }}>W:</span>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-secondary, #94a3b8)' }}>W:</span>
                     <input
                       type="number"
                       value={selectedItem.width}
@@ -2409,7 +2424,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                           )
                         );
                       }}
-                      style={{ padding: '2px 5px', borderRadius: '4px', background: '#334155', color: '#f8fafc', border: 'none', fontSize: '0.68rem', cursor: 'pointer', fontWeight: 700 }}
+                      style={{ padding: '2px 5px', borderRadius: '4px', background: '#334155', color: 'var(--text-primary, #f8fafc)', border: 'none', fontSize: '0.68rem', cursor: 'pointer', fontWeight: 700 }}
                     >
                       +
                     </button>
@@ -2428,7 +2443,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                           )
                         );
                       }}
-                      style={{ padding: '2px 5px', borderRadius: '4px', background: '#334155', color: '#f8fafc', border: 'none', fontSize: '0.68rem', cursor: 'pointer', fontWeight: 700 }}
+                      style={{ padding: '2px 5px', borderRadius: '4px', background: '#334155', color: 'var(--text-primary, #f8fafc)', border: 'none', fontSize: '0.68rem', cursor: 'pointer', fontWeight: 700 }}
                     >
                       -
                     </button>
@@ -2464,7 +2479,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
 
                   {/* Height Control */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                    <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#94a3b8' }}>H:</span>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-secondary, #94a3b8)' }}>H:</span>
                     <input
                       type="number"
                       value={selectedItem.height}
@@ -2509,7 +2524,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                           )
                         );
                       }}
-                      style={{ padding: '2px 5px', borderRadius: '4px', background: '#334155', color: '#f8fafc', border: 'none', fontSize: '0.68rem', cursor: 'pointer', fontWeight: 700 }}
+                      style={{ padding: '2px 5px', borderRadius: '4px', background: '#334155', color: 'var(--text-primary, #f8fafc)', border: 'none', fontSize: '0.68rem', cursor: 'pointer', fontWeight: 700 }}
                     >
                       +
                     </button>
@@ -2528,7 +2543,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                           )
                         );
                       }}
-                      style={{ padding: '2px 5px', borderRadius: '4px', background: '#334155', color: '#f8fafc', border: 'none', fontSize: '0.68rem', cursor: 'pointer', fontWeight: 700 }}
+                      style={{ padding: '2px 5px', borderRadius: '4px', background: '#334155', color: 'var(--text-primary, #f8fafc)', border: 'none', fontSize: '0.68rem', cursor: 'pointer', fontWeight: 700 }}
                     >
                       -
                     </button>
@@ -2536,7 +2551,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                 </div>
 
                 {/* Center: Rotation Angle Control */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(30, 41, 59, 0.7)', padding: '2px 8px', borderRadius: '8px', border: '1px solid rgba(51, 65, 85, 0.8)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.7))', padding: '2px 8px', borderRadius: '8px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))' }}>
                   <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#c084fc' }}>
                     {Math.round(selectedItem.rotation || 0)}°
                   </span>
@@ -2554,7 +2569,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                   <button
                     type="button"
                     onClick={() => setItems(prev => prev.map(it => it.id === selectedItem.id ? { ...it, rotation: 0 } : it))}
-                    style={{ padding: '2px 4px', borderRadius: '4px', background: '#334155', color: '#cbd5e1', border: 'none', fontSize: '0.65rem', cursor: 'pointer', fontWeight: 700 }}
+                    style={{ padding: '2px 4px', borderRadius: '4px', background: '#334155', color: 'var(--text-primary, #cbd5e1)', border: 'none', fontSize: '0.65rem', cursor: 'pointer', fontWeight: 700 }}
                     title="Reset Angle to 0°"
                   >
                     0°
@@ -2562,7 +2577,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                   <button
                     type="button"
                     onClick={() => setItems(prev => prev.map(it => it.id === selectedItem.id ? { ...it, rotation: ((it.rotation || 0) + 15) % 360 } : it))}
-                    style={{ padding: '2px 4px', borderRadius: '4px', background: '#334155', color: '#cbd5e1', border: 'none', fontSize: '0.65rem', cursor: 'pointer', fontWeight: 700 }}
+                    style={{ padding: '2px 4px', borderRadius: '4px', background: '#334155', color: 'var(--text-primary, #cbd5e1)', border: 'none', fontSize: '0.65rem', cursor: 'pointer', fontWeight: 700 }}
                     title="+15° Rotation Step"
                   >
                     ↻+15
@@ -2570,7 +2585,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                   <button
                     type="button"
                     onClick={() => setItems(prev => prev.map(it => it.id === selectedItem.id ? { ...it, rotation: ((it.rotation || 0) + 90) % 360 } : it))}
-                    style={{ padding: '2px 4px', borderRadius: '4px', background: '#334155', color: '#cbd5e1', border: 'none', fontSize: '0.65rem', cursor: 'pointer', fontWeight: 700 }}
+                    style={{ padding: '2px 4px', borderRadius: '4px', background: '#334155', color: 'var(--text-primary, #cbd5e1)', border: 'none', fontSize: '0.65rem', cursor: 'pointer', fontWeight: 700 }}
                     title="+90° Rotation Step"
                   >
                     +90°
@@ -2931,7 +2946,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                       setItems(prev => [...prev, newItem]);
                       setSelectedItemId(newItem.id);
                     }}
-                    style={{ padding: '4px 6px', borderRadius: '6px', background: 'rgba(51, 65, 85, 0.8)', color: '#f8fafc', border: '1px solid rgba(100, 116, 139, 0.5)', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}
+                    style={{ padding: '4px 6px', borderRadius: '6px', background: 'rgba(51, 65, 85, 0.8)', color: 'var(--text-primary, #f8fafc)', border: '1px solid rgba(100, 116, 139, 0.5)', fontSize: '0.7rem', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '3px' }}
                   >
                     <Copy size={11} />
                   </button>
@@ -2952,7 +2967,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                   <button
                     type="button"
                     onClick={() => setSelectedItemId(null)}
-                    style={{ padding: '4px', borderRadius: '6px', background: 'transparent', color: '#94a3b8', border: 'none', cursor: 'pointer' }}
+                    style={{ padding: '4px', borderRadius: '6px', background: 'transparent', color: 'var(--text-secondary, #94a3b8)', border: 'none', cursor: 'pointer' }}
                   >
                     <X size={13} />
                   </button>
@@ -3007,7 +3022,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                           style={{
                             padding: '3px 6px',
                             borderRadius: '5px',
-                            background: isActiveShape ? 'rgba(56, 189, 248, 0.3)' : 'rgba(30, 41, 59, 0.8)',
+                            background: isActiveShape ? 'rgba(56, 189, 248, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.8))',
                             border: `1px solid ${isActiveShape ? '#38bdf8' : 'rgba(51, 65, 85, 0.8)'}`,
                             color: isActiveShape ? '#38bdf8' : '#cbd5e1',
                             fontSize: '0.67rem',
@@ -3030,8 +3045,8 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                   <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
                     {/* Corner Radius Slider (for Rect / Rounded) */}
                     {(selectedItem.type === 'rect' || selectedItem.type === 'rounded_rect') && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '3px', background: 'rgba(30, 41, 59, 0.8)', padding: '2px 6px', borderRadius: '5px' }}>
-                        <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>Round:</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '3px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.8))', padding: '2px 6px', borderRadius: '5px' }}>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary, #94a3b8)' }}>Round:</span>
                         <input
                           type="range"
                           min={0}
@@ -3050,8 +3065,8 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
 
                     {/* Polygon Vertices Slider */}
                     {selectedItem.type === 'polygon' && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '3px', background: 'rgba(30, 41, 59, 0.8)', padding: '2px 6px', borderRadius: '5px' }}>
-                        <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>Sides ({selectedItem.polygonEdges || 5}):</span>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '3px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.8))', padding: '2px 6px', borderRadius: '5px' }}>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary, #94a3b8)' }}>Sides ({selectedItem.polygonEdges || 5}):</span>
                         <input
                           type="range"
                           min={3}
@@ -3106,7 +3121,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                           style={{
                             padding: '2px 5px',
                             borderRadius: '4px',
-                            background: selectedItem.fillMode === fm ? 'rgba(56, 189, 248, 0.3)' : 'rgba(30, 41, 59, 0.8)',
+                            background: selectedItem.fillMode === fm ? 'rgba(56, 189, 248, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.8))',
                             color: selectedItem.fillMode === fm ? '#38bdf8' : '#94a3b8',
                             border: 'none',
                             fontSize: '0.65rem',
@@ -3136,14 +3151,14 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
         onTouchEnd={handleTouchUpGlobal}
         style={{
           flex: 1,
-          minHeight: '680px',
-          height: 'calc(100vh - 210px)',
-          borderRadius: '16px',
+          height: '100%',
+          minHeight: 0,
+          borderRadius: '14px',
           overflow: 'hidden',
-          border: '1px solid rgba(51, 65, 85, 0.8)',
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
+          border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))',
+          boxShadow: 'var(--card-shadow, 0 10px 30px rgba(0, 0, 0, 0.5))',
           position: 'relative',
-          background: '#0b1120',
+          background: isLightMode ? '#ffffff' : 'var(--bg-primary, #0b1120)',
           touchAction: 'none'
         }}
       >
@@ -3152,18 +3167,18 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
           className="whiteboard-left-toolbar"
           style={{
             position: 'absolute',
-            top: '16px',
-            left: '16px',
+            top: '12px',
+            left: '12px',
             zIndex: 35,
             display: 'flex',
             flexDirection: 'column',
-            gap: '6px',
-            padding: '6px',
-            background: 'rgba(15, 23, 42, 0.95)',
+            gap: '5px',
+            padding: '5px',
+            background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
             backdropFilter: 'blur(16px)',
-            borderRadius: '14px',
-            border: '1px solid rgba(51, 65, 85, 0.8)',
-            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.6)'
+            borderRadius: '12px',
+            border: '1px solid var(--card-border, rgba(51, 65, 85, 0.8))',
+            boxShadow: 'var(--card-shadow, 0 8px 30px rgba(0, 0, 0, 0.6))'
           }}
         >
           {/* 1. SELECT (POINTER) */}
@@ -3219,7 +3234,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                   left: '52px',
                   top: '-10px',
                   width: '210px',
-                  background: 'rgba(15, 23, 42, 0.98)',
+                  background: 'var(--card-bg, rgba(15, 23, 42, 0.98))',
                   border: `1px solid ${laserColor}88`,
                   borderRadius: '14px',
                   padding: '10px',
@@ -3285,9 +3300,9 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                         style={{
                           padding: '6px 2px',
                           borderRadius: '6px',
-                          background: laserShape === s.id ? `${laserColor}33` : 'rgba(30, 41, 59, 0.6)',
+                          background: laserShape === s.id ? `${laserColor}33` : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))',
                           border: laserShape === s.id ? `1.5px solid ${laserColor}` : '1px solid rgba(51, 65, 85, 0.6)',
-                          color: '#f8fafc',
+                          color: 'var(--text-primary, #f8fafc)',
                           fontSize: '0.85rem',
                           cursor: 'pointer',
                           display: 'flex',
@@ -3349,7 +3364,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                   width: '280px',
                   maxHeight: '80vh',
                   overflowY: 'auto',
-                  background: 'rgba(15, 23, 42, 0.98)',
+                  background: 'var(--card-bg, rgba(15, 23, 42, 0.98))',
                   border: '1px solid rgba(168, 85, 247, 0.5)',
                   borderRadius: '14px',
                   padding: '12px',
@@ -3363,48 +3378,48 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
               >
                 <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#c084fc', padding: '2px 4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span>✏️ INKING & LINES</span>
-                  <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>{lineStyle.toUpperCase()}</span>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary, #94a3b8)' }}>{lineStyle.toUpperCase()}</span>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '4px' }}>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('pen'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'pen' ? 'rgba(168, 85, 247, 0.25)' : 'rgba(30, 41, 59, 0.6)', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'pen' ? 'rgba(168, 85, 247, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer' }}
                   >
                     ✏️ Pen Tool
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('highlighter'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'highlighter' ? 'rgba(168, 85, 247, 0.25)' : 'rgba(30, 41, 59, 0.6)', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'highlighter' ? 'rgba(168, 85, 247, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer' }}
                   >
                     🖍️ Highlighter
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('line'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'line' ? 'rgba(168, 85, 247, 0.25)' : 'rgba(30, 41, 59, 0.6)', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'line' ? 'rgba(168, 85, 247, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer' }}
                   >
                     📏 Straight Line
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('arrow'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'arrow' ? 'rgba(168, 85, 247, 0.25)' : 'rgba(30, 41, 59, 0.6)', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'arrow' ? 'rgba(168, 85, 247, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer' }}
                   >
                     ➔ One-Way Arrow
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('double_arrow'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'double_arrow' ? 'rgba(168, 85, 247, 0.25)' : 'rgba(30, 41, 59, 0.6)', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'double_arrow' ? 'rgba(168, 85, 247, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer' }}
                   >
                     ⇄ 2-Way Arrow
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('curve'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'curve' ? 'rgba(168, 85, 247, 0.25)' : 'rgba(30, 41, 59, 0.6)', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'curve' ? 'rgba(168, 85, 247, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer' }}
                   >
                     ➰ Bezier Curve
                   </button>
@@ -3412,7 +3427,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
 
                 {/* Highlighter Color Palette */}
                 <div style={{ marginTop: '4px' }}>
-                  <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-secondary, #94a3b8)', display: 'block', marginBottom: '4px' }}>
                     Highlighter Ink Tone:
                   </span>
                   <div style={{ display: 'flex', gap: '6px' }}>
@@ -3464,7 +3479,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                   width: '300px',
                   maxHeight: '80vh',
                   overflowY: 'auto',
-                  background: 'rgba(15, 23, 42, 0.98)',
+                  background: 'var(--card-bg, rgba(15, 23, 42, 0.98))',
                   border: '1px solid rgba(56, 189, 248, 0.5)',
                   borderRadius: '14px',
                   padding: '12px',
@@ -3484,77 +3499,77 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                   <button
                     type="button"
                     onClick={() => { setActiveTool('circle'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'circle' ? 'rgba(56, 189, 248, 0.3)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer', fontWeight: 600 }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'circle' ? 'rgba(56, 189, 248, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer', fontWeight: 600 }}
                   >
                     ⭕ Circle (1:1 Lock)
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('oval'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'oval' ? 'rgba(56, 189, 248, 0.3)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer', fontWeight: 600 }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'oval' ? 'rgba(56, 189, 248, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer', fontWeight: 600 }}
                   >
                     ⬭ Oval / Ellipse
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('rect'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'rect' ? 'rgba(56, 189, 248, 0.3)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'rect' ? 'rgba(56, 189, 248, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     ▭ Rectangle
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('rounded_rect'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'rounded_rect' ? 'rgba(56, 189, 248, 0.3)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'rounded_rect' ? 'rgba(56, 189, 248, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     ▢ Rounded Box
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('triangle'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'triangle' ? 'rgba(56, 189, 248, 0.3)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'triangle' ? 'rgba(56, 189, 248, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     🔺 Equilateral △
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('right_triangle'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'right_triangle' ? 'rgba(56, 189, 248, 0.3)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'right_triangle' ? 'rgba(56, 189, 248, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     📐 Right △ (90°)
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('diamond'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'diamond' ? 'rgba(56, 189, 248, 0.3)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'diamond' ? 'rgba(56, 189, 248, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     💎 Diamond
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('hexagon'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'hexagon' ? 'rgba(56, 189, 248, 0.3)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'hexagon' ? 'rgba(56, 189, 248, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     ⬡ Hexagon / Benzene
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('parallelogram'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'parallelogram' ? 'rgba(56, 189, 248, 0.3)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'parallelogram' ? 'rgba(56, 189, 248, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     ▱ Parallelogram
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('trapezoid'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'trapezoid' ? 'rgba(56, 189, 248, 0.3)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'trapezoid' ? 'rgba(56, 189, 248, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     ⏢ Trapezoid
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('star'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'star' ? 'rgba(56, 189, 248, 0.3)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'star' ? 'rgba(56, 189, 248, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     ⭐️ 5-Point Star
                   </button>
@@ -3567,7 +3582,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                       setActiveTool('polygon');
                       setActiveFlyout('none');
                     }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'polygon' ? 'rgba(56, 189, 248, 0.3)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'polygon' ? 'rgba(56, 189, 248, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     ⬡ N-gon ({polygonEdgeCount})
                   </button>
@@ -3583,42 +3598,42 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                   <button
                     type="button"
                     onClick={() => { setActiveTool('cloud'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'cloud' ? 'rgba(192, 132, 252, 0.3)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'cloud' ? 'rgba(192, 132, 252, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     ☁️ Cloud / Concept
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('thought_bubble'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'thought_bubble' ? 'rgba(192, 132, 252, 0.3)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'thought_bubble' ? 'rgba(192, 132, 252, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     💭 Thought Bubble
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('callout'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'callout' ? 'rgba(192, 132, 252, 0.3)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'callout' ? 'rgba(192, 132, 252, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     💬 Speech Callout
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('coordinate_axes'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'coordinate_axes' ? 'rgba(192, 132, 252, 0.3)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'coordinate_axes' ? 'rgba(192, 132, 252, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     📈 X-Y Axes
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('bracket'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'bracket' ? 'rgba(192, 132, 252, 0.3)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'bracket' ? 'rgba(192, 132, 252, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     {'}'} Curly Braces
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('arrow_block'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'arrow_block' ? 'rgba(192, 132, 252, 0.3)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'arrow_block' ? 'rgba(192, 132, 252, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     ➔ Block Arrow
                   </button>
@@ -3634,21 +3649,21 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                   <button
                     type="button"
                     onClick={() => { setActiveTool('cube'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'center', fontSize: '0.72rem', background: activeTool === 'cube' ? 'rgba(250, 204, 21, 0.3)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'center', fontSize: '0.72rem', background: activeTool === 'cube' ? 'rgba(250, 204, 21, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     🧊 Cube
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('cylinder'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'center', fontSize: '0.72rem', background: activeTool === 'cylinder' ? 'rgba(250, 204, 21, 0.3)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'center', fontSize: '0.72rem', background: activeTool === 'cylinder' ? 'rgba(250, 204, 21, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     🛢️ Cyl
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('cone'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'center', fontSize: '0.72rem', background: activeTool === 'cone' ? 'rgba(250, 204, 21, 0.3)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'center', fontSize: '0.72rem', background: activeTool === 'cone' ? 'rgba(250, 204, 21, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     🍦 Cone
                   </button>
@@ -3659,7 +3674,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                 {/* 1-Click Teaching Architecture Presets */}
                 <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#38bdf8', padding: '2px 4px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span>🏛️ 1-CLICK ARCHITECTURES</span>
-                  <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>Zero-Wait</span>
+                  <span style={{ fontSize: '0.62rem', color: 'var(--text-secondary, #94a3b8)' }}>Zero-Wait</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
                   {ACADEMIC_ARCHITECTURE_PRESETS.map(preset => (
@@ -3670,9 +3685,9 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                       style={{
                         padding: '6px 8px',
                         borderRadius: '6px',
-                        background: 'rgba(30, 41, 59, 0.6)',
-                        border: '1px solid rgba(51, 65, 85, 0.6)',
-                        color: '#f8fafc',
+                        background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))',
+                        border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))',
+                        color: 'var(--text-primary, #f8fafc)',
                         fontSize: '0.72rem',
                         fontWeight: 600,
                         textAlign: 'left',
@@ -3686,7 +3701,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                       <span>{preset.icon}</span>
                       <div style={{ display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
                         <span style={{ fontWeight: 700, whiteSpace: 'nowrap', textOverflow: 'ellipsis', overflow: 'hidden' }}>{preset.name}</span>
-                        <span style={{ fontSize: '0.62rem', color: '#94a3b8' }}>{preset.category}</span>
+                        <span style={{ fontSize: '0.62rem', color: 'var(--text-secondary, #94a3b8)' }}>{preset.category}</span>
                       </div>
                     </button>
                   ))}
@@ -3746,7 +3761,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                   left: '52px',
                   top: '-10px',
                   width: '220px',
-                  background: 'rgba(15, 23, 42, 0.98)',
+                  background: 'var(--card-bg, rgba(15, 23, 42, 0.98))',
                   border: '1px solid rgba(56, 189, 248, 0.4)',
                   borderRadius: '12px',
                   padding: '8px',
@@ -3762,21 +3777,21 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                 <button
                   type="button"
                   onClick={() => { setActiveTool('text'); setActiveFlyout('none'); }}
-                  style={{ padding: '6px 8px', borderRadius: '6px', background: 'transparent', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.75rem', cursor: 'pointer' }}
+                  style={{ padding: '6px 8px', borderRadius: '6px', background: 'transparent', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.75rem', cursor: 'pointer' }}
                 >
                   ✍️ Direct Canvas Text
                 </button>
                 <button
                   type="button"
                   onClick={() => { setShowQuickNoteModal(true); setActiveFlyout('none'); }}
-                  style={{ padding: '6px 8px', borderRadius: '6px', background: 'transparent', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.75rem', cursor: 'pointer' }}
+                  style={{ padding: '6px 8px', borderRadius: '6px', background: 'transparent', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.75rem', cursor: 'pointer' }}
                 >
                   📝 Draggable Sticky Note
                 </button>
                 <button
                   type="button"
                   onClick={() => { setShowFormulaModal(true); setActiveFlyout('none'); }}
-                  style={{ padding: '6px 8px', borderRadius: '6px', background: 'transparent', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.75rem', cursor: 'pointer' }}
+                  style={{ padding: '6px 8px', borderRadius: '6px', background: 'transparent', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.75rem', cursor: 'pointer' }}
                 >
                   📐 + Custom LaTeX Card
                 </button>
@@ -3802,7 +3817,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                   left: '52px',
                   top: '-10px',
                   width: '190px',
-                  background: 'rgba(15, 23, 42, 0.98)',
+                  background: 'var(--card-bg, rgba(15, 23, 42, 0.98))',
                   border: '1px solid rgba(244, 63, 94, 0.4)',
                   borderRadius: '12px',
                   padding: '8px',
@@ -3818,14 +3833,14 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                 <button
                   type="button"
                   onClick={() => { setActiveTool('eraser_object'); setActiveFlyout('none'); }}
-                  style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'eraser_object' ? 'rgba(244, 63, 94, 0.2)' : 'transparent', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.75rem', cursor: 'pointer' }}
+                  style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'eraser_object' ? 'rgba(244, 63, 94, 0.2)' : 'transparent', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.75rem', cursor: 'pointer' }}
                 >
                   🧹 Object Eraser (Click item)
                 </button>
                 <button
                   type="button"
                   onClick={() => { setActiveTool('eraser'); setActiveFlyout('none'); }}
-                  style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'eraser' ? 'rgba(244, 63, 94, 0.2)' : 'transparent', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.75rem', cursor: 'pointer' }}
+                  style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'eraser' ? 'rgba(244, 63, 94, 0.2)' : 'transparent', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.75rem', cursor: 'pointer' }}
                 >
                   ⚪ Whiteout Mask Brush
                 </button>
@@ -3858,7 +3873,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                   left: '52px',
                   top: '-10px',
                   width: '210px',
-                  background: 'rgba(15, 23, 42, 0.98)',
+                  background: 'var(--card-bg, rgba(15, 23, 42, 0.98))',
                   border: '1px solid rgba(168, 85, 247, 0.5)',
                   borderRadius: '12px',
                   padding: '8px',
@@ -3874,28 +3889,28 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                 <button
                   type="button"
                   onClick={() => { setIsProtractorVisible(!isProtractorVisible); setActiveFlyout('none'); }}
-                  style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: isProtractorVisible ? 'rgba(56, 189, 248, 0.25)' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: isProtractorVisible ? 'rgba(56, 189, 248, 0.25)' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
                   📐 {isProtractorVisible ? 'Hide Protractor' : 'Show 180° Protractor'}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setIsDiceRollerVisible(!isDiceRollerVisible); setActiveFlyout('none'); }}
-                  style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: isDiceRollerVisible ? 'rgba(168, 85, 247, 0.25)' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: isDiceRollerVisible ? 'rgba(168, 85, 247, 0.25)' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
                   🎲 {isDiceRollerVisible ? 'Hide Dice Roller' : 'Show 3D Dice Roller'}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setIsTrafficLightVisible(!isTrafficLightVisible); setActiveFlyout('none'); }}
-                  style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: isTrafficLightVisible ? 'rgba(34, 197, 94, 0.25)' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: isTrafficLightVisible ? 'rgba(34, 197, 94, 0.25)' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
                   🚦 {isTrafficLightVisible ? 'Hide Traffic Light' : 'Show Traffic Light'}
                 </button>
                 <button
                   type="button"
                   onClick={() => { setIsStudentPickerVisible(!isStudentPickerVisible); setActiveFlyout('none'); }}
-                  style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: isStudentPickerVisible ? 'rgba(234, 179, 8, 0.25)' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: isStudentPickerVisible ? 'rgba(234, 179, 8, 0.25)' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
                   👥 {isStudentPickerVisible ? 'Hide Student Picker' : 'Show Student Picker'}
                 </button>
@@ -3903,7 +3918,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                 <button
                   type="button"
                   onClick={() => { setIsTimerRunning(!isTimerRunning); setActiveFlyout('none'); }}
-                  style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
                   ⏱️ {isTimerRunning ? 'Pause Timer' : `Timer (${Math.floor(timerSeconds / 60)}:${(timerSeconds % 60).toString().padStart(2, '0')})`}
                 </button>
@@ -3927,7 +3942,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
           <button
             type="button"
             onClick={() => setPanOffset({ x: 0, y: 0 })}
-            style={{ width: '38px', height: '38px', borderRadius: '8px', background: 'transparent', color: '#94a3b8', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+            style={{ width: '38px', height: '38px', borderRadius: '8px', background: 'transparent', color: 'var(--text-secondary, #94a3b8)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
             title="Reset Canvas Pan Position"
           >
             <RotateCcw size={16} />
@@ -3945,7 +3960,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
               display: 'flex',
               alignItems: 'center',
               gap: '6px',
-              background: 'rgba(15, 23, 42, 0.96)',
+              background: 'var(--card-bg, rgba(15, 23, 42, 0.96))',
               padding: '6px 10px',
               borderRadius: '10px',
               border: '1px solid #38bdf8',
@@ -3996,7 +4011,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                 borderRadius: '6px',
                 background: 'transparent',
                 border: 'none',
-                color: '#94a3b8',
+                color: 'var(--text-secondary, #94a3b8)',
                 cursor: 'pointer'
               }}
             >
@@ -4898,7 +4913,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                         style={{
                           fontSize: '0.8rem',
                           fontWeight: 600,
-                          color: '#f8fafc',
+                          color: 'var(--text-primary, #f8fafc)',
                           lineHeight: '1.25',
                           maxWidth: '92%',
                           wordBreak: 'break-word'
@@ -5044,7 +5059,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                   top: curY,
                   left: curX,
                   width: `${item.width}px`,
-                  background: 'rgba(15, 23, 42, 0.96)',
+                  background: 'var(--card-bg, rgba(15, 23, 42, 0.96))',
                   backdropFilter: 'blur(12px)',
                   border: isSelected ? '2px solid #38bdf8' : '1.5px solid rgba(56, 189, 248, 0.6)',
                   borderRadius: '12px',
@@ -5156,7 +5171,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                     background: 'rgba(11, 17, 32, 0.9)',
                     overflowX: 'auto',
                     textAlign: 'center',
-                    color: '#f8fafc',
+                    color: 'var(--text-primary, #f8fafc)',
                     borderBottom: item.explanation ? '1px solid rgba(51, 65, 85, 0.6)' : 'none'
                   }}
                   dangerouslySetInnerHTML={{ __html: renderedHtml }}
@@ -5164,7 +5179,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
 
                 {/* Subtitle Explanation */}
                 {item.explanation && (
-                  <div style={{ padding: '8px 12px', fontSize: '0.72rem', color: '#94a3b8', lineHeight: '1.4' }}>
+                  <div style={{ padding: '8px 12px', fontSize: '0.72rem', color: 'var(--text-secondary, #94a3b8)', lineHeight: '1.4' }}>
                     💡 {item.explanation}
                   </div>
                 )}
@@ -5222,7 +5237,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
               style={{
                 marginTop: '6px',
                 padding: '2px 8px',
-                background: 'rgba(15, 23, 42, 0.85)',
+                background: 'var(--card-bg, rgba(15, 23, 42, 0.85))',
                 border: '1px solid rgba(239, 68, 68, 0.6)',
                 borderRadius: '6px',
                 color: '#fca5a5',
@@ -5355,7 +5370,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
             </svg>
 
             {/* Rotation & Close Controls */}
-            <div style={{ position: 'absolute', top: '-36px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '6px', background: 'rgba(15, 23, 42, 0.95)', padding: '3px 8px', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.4)', alignItems: 'center' }}>
+            <div style={{ position: 'absolute', top: '-36px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '6px', background: 'var(--card-bg, rgba(15, 23, 42, 0.95))', padding: '3px 8px', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.4)', alignItems: 'center' }}>
               <span style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: 800 }}>Angle: {Math.round(protractorPos.rotation % 360)}°</span>
               <button
                 type="button"
@@ -5399,7 +5414,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
               top: '20px',
               right: '20px',
               width: '180px',
-              background: 'rgba(15, 23, 42, 0.95)',
+              background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
               border: '1px solid rgba(168, 85, 247, 0.5)',
               borderRadius: '14px',
               padding: '14px',
@@ -5417,7 +5432,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
               <button
                 type="button"
                 onClick={() => setIsDiceRollerVisible(false)}
-                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '0.8rem' }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-secondary, #94a3b8)', cursor: 'pointer', fontSize: '0.8rem' }}
               >
                 ✕
               </button>
@@ -5487,7 +5502,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
               position: 'absolute',
               top: '20px',
               left: '70px',
-              background: 'rgba(15, 23, 42, 0.95)',
+              background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
               border: '1px solid rgba(56, 189, 248, 0.4)',
               borderRadius: '14px',
               padding: '12px',
@@ -5505,13 +5520,13 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
               <button
                 type="button"
                 onClick={() => setIsTrafficLightVisible(false)}
-                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '0.75rem' }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-secondary, #94a3b8)', cursor: 'pointer', fontSize: '0.75rem' }}
               >
                 ✕
               </button>
             </div>
 
-            <div style={{ display: 'flex', gap: '8px', background: '#090d16', padding: '6px 10px', borderRadius: '20px', border: '1px solid rgba(51, 65, 85, 0.8)' }}>
+            <div style={{ display: 'flex', gap: '8px', background: '#090d16', padding: '6px 10px', borderRadius: '20px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))' }}>
               {/* Red */}
               <div
                 onClick={() => setTrafficStatus('red')}
@@ -5570,7 +5585,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
               top: '20px',
               left: '260px',
               width: '240px',
-              background: 'rgba(15, 23, 42, 0.95)',
+              background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
               border: '1px solid rgba(234, 179, 8, 0.5)',
               borderRadius: '14px',
               padding: '12px',
@@ -5587,13 +5602,13 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
               <button
                 type="button"
                 onClick={() => setIsStudentPickerVisible(false)}
-                style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '0.75rem' }}
+                style={{ background: 'none', border: 'none', color: 'var(--text-secondary, #94a3b8)', cursor: 'pointer', fontSize: '0.75rem' }}
               >
                 ✕
               </button>
             </div>
 
-            <div style={{ padding: '8px', borderRadius: '8px', background: '#090d16', border: '1px solid rgba(51, 65, 85, 0.6)', textAlign: 'center', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <div style={{ padding: '8px', borderRadius: '8px', background: '#090d16', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))', textAlign: 'center', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               <span style={{ fontSize: '1rem', fontWeight: 900, color: '#38bdf8' }}>
                 {pickedStudent || 'Click Pick!'}
               </span>
@@ -5758,14 +5773,14 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Shapes size={20} color="#38bdf8" />
-                <span style={{ fontSize: '1rem', fontWeight: 700, color: '#f8fafc' }}>
+                <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary, #f8fafc)' }}>
                   {editingShapeId ? 'Edit Shape & Inner Text' : 'Insert Custom Vector Shape'}
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => setShowCustomShapeModal(false)}
-                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary, #94a3b8)', cursor: 'pointer' }}
               >
                 <X size={18} />
               </button>
@@ -5773,7 +5788,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
 
             {/* Shape Category Grid */}
             <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '8px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary, #94a3b8)', display: 'block', marginBottom: '8px' }}>
                 Select Shape Architecture:
               </label>
               <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px' }}>
@@ -5787,7 +5802,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                       style={{
                         padding: '10px 6px',
                         borderRadius: '10px',
-                        background: isCur ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.8)',
+                        background: isCur ? 'rgba(56, 189, 248, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.8))',
                         border: isCur ? '1.5px solid #38bdf8' : '1px solid rgba(51, 65, 85, 0.8)',
                         color: isCur ? '#38bdf8' : '#cbd5e1',
                         cursor: 'pointer',
@@ -5808,7 +5823,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
 
             {/* Text Input Inside Shape */}
             <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary, #94a3b8)', display: 'block', marginBottom: '4px' }}>
                 Text / Label Inside Shape:
               </label>
               <textarea
@@ -5823,7 +5838,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                   borderRadius: '8px',
                   background: '#1e293b',
                   border: '1px solid #334155',
-                  color: '#f8fafc',
+                  color: 'var(--text-primary, #f8fafc)',
                   fontSize: '0.85rem'
                 }}
               />
@@ -5831,7 +5846,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
 
             {/* Optional Shape Title Banner */}
             <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary, #94a3b8)', display: 'block', marginBottom: '4px' }}>
                 Shape Header Title (Optional):
               </label>
               <input
@@ -5845,7 +5860,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                   borderRadius: '8px',
                   background: '#1e293b',
                   border: '1px solid #334155',
-                  color: '#f8fafc',
+                  color: 'var(--text-primary, #f8fafc)',
                   fontSize: '0.82rem'
                 }}
               />
@@ -5855,7 +5870,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
               {/* Color Theme */}
               <div>
-                <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '6px' }}>
+                <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary, #94a3b8)', display: 'block', marginBottom: '6px' }}>
                   Outline Theme Color:
                 </label>
                 <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -5882,7 +5897,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
               {/* Rotation Angle with Slider & Number Input */}
               <div>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                  <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#94a3b8' }}>
+                  <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary, #94a3b8)' }}>
                     Rotation Angle:
                   </label>
                   <span style={{ fontSize: '0.75rem', fontWeight: 700, color: '#38bdf8' }}>
@@ -5905,9 +5920,9 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                     style={{
                       padding: '4px 8px',
                       borderRadius: '6px',
-                      background: 'rgba(30, 41, 59, 0.8)',
+                      background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.8))',
                       border: '1px solid #334155',
-                      color: '#cbd5e1',
+                      color: 'var(--text-primary, #cbd5e1)',
                       fontSize: '0.7rem',
                       cursor: 'pointer',
                       display: 'flex',
@@ -5926,7 +5941,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
             {/* Sizing Preset (When creating new shape) */}
             {!editingShapeId && (
               <div>
-                <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+                <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary, #94a3b8)', display: 'block', marginBottom: '4px' }}>
                   Initial Size Preset:
                 </label>
                 <div style={{ display: 'flex', gap: '8px' }}>
@@ -5943,7 +5958,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                         flex: 1,
                         padding: '6px 10px',
                         borderRadius: '8px',
-                        background: shapeFormSize === sz.id ? 'rgba(56, 189, 248, 0.2)' : 'rgba(30, 41, 59, 0.6)',
+                        background: shapeFormSize === sz.id ? 'rgba(56, 189, 248, 0.2)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))',
                         border: shapeFormSize === sz.id ? '1px solid #38bdf8' : '1px solid #334155',
                         color: shapeFormSize === sz.id ? '#38bdf8' : '#94a3b8',
                         fontSize: '0.75rem',
@@ -5966,9 +5981,9 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                 style={{
                   padding: '8px 14px',
                   borderRadius: '8px',
-                  background: 'rgba(30, 41, 59, 0.8)',
+                  background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.8))',
                   border: '1px solid #334155',
-                  color: '#cbd5e1',
+                  color: 'var(--text-primary, #cbd5e1)',
                   fontSize: '0.78rem',
                   cursor: 'pointer'
                 }}
@@ -6032,21 +6047,21 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <StickyNote size={18} color="#fbbf24" />
-                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f8fafc' }}>
+                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary, #f8fafc)' }}>
                   Add Sticky Note on Chalkboard
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => setShowQuickNoteModal(false)}
-                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary, #94a3b8)', cursor: 'pointer' }}
               >
                 <X size={18} />
               </button>
             </div>
 
             <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary, #94a3b8)', display: 'block', marginBottom: '4px' }}>
                 Note Content:
               </label>
               <textarea
@@ -6061,7 +6076,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                   borderRadius: '8px',
                   background: '#1e293b',
                   border: '1px solid #334155',
-                  color: '#f8fafc',
+                  color: 'var(--text-primary, #f8fafc)',
                   fontSize: '0.85rem'
                 }}
               />
@@ -6074,9 +6089,9 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                 style={{
                   padding: '8px 14px',
                   borderRadius: '8px',
-                  background: 'rgba(30, 41, 59, 0.8)',
+                  background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.8))',
                   border: '1px solid #334155',
-                  color: '#cbd5e1',
+                  color: 'var(--text-primary, #cbd5e1)',
                   fontSize: '0.78rem',
                   cursor: 'pointer'
                 }}
@@ -6136,14 +6151,14 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Plus size={18} color="#38bdf8" />
-                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f8fafc' }}>
+                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary, #f8fafc)' }}>
                   {editingItemId ? 'Edit KaTeX Formula Card' : 'Add Custom KaTeX Formula'}
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => setShowFormulaModal(false)}
-                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary, #94a3b8)', cursor: 'pointer' }}
               >
                 <X size={18} />
               </button>
@@ -6151,7 +6166,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
 
             {/* Formula Title */}
             <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary, #94a3b8)', display: 'block', marginBottom: '4px' }}>
                 Formula Title:
               </label>
               <input
@@ -6165,7 +6180,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                   borderRadius: '8px',
                   background: '#1e293b',
                   border: '1px solid #334155',
-                  color: '#f8fafc',
+                  color: 'var(--text-primary, #f8fafc)',
                   fontSize: '0.85rem'
                 }}
               />
@@ -6173,7 +6188,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
 
             {/* LaTeX Code */}
             <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary, #94a3b8)', display: 'block', marginBottom: '4px' }}>
                 LaTeX Mathematical Code:
               </label>
               <textarea
@@ -6207,11 +6222,11 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                   gap: '4px'
                 }}
               >
-                <span style={{ fontSize: '0.68rem', fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase' }}>
+                <span style={{ fontSize: '0.68rem', fontWeight: 700, color: 'var(--text-secondary, #94a3b8)', textTransform: 'uppercase' }}>
                   Live KaTeX Rendered Preview:
                 </span>
                 <div
-                  style={{ overflowX: 'auto', padding: '6px 0', color: '#f8fafc', textAlign: 'center' }}
+                  style={{ overflowX: 'auto', padding: '6px 0', color: 'var(--text-primary, #f8fafc)', textAlign: 'center' }}
                   dangerouslySetInnerHTML={{
                     __html: (() => {
                       try {
@@ -6227,7 +6242,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
 
             {/* Optional Explanation */}
             <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary, #94a3b8)', display: 'block', marginBottom: '4px' }}>
                 Explanation / Note (Optional):
               </label>
               <input
@@ -6241,7 +6256,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                   borderRadius: '8px',
                   background: '#1e293b',
                   border: '1px solid #334155',
-                  color: '#f8fafc',
+                  color: 'var(--text-primary, #f8fafc)',
                   fontSize: '0.8rem'
                 }}
               />
@@ -6255,9 +6270,9 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                 style={{
                   padding: '8px 14px',
                   borderRadius: '8px',
-                  background: 'rgba(30, 41, 59, 0.8)',
+                  background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.8))',
                   border: '1px solid #334155',
-                  color: '#cbd5e1',
+                  color: 'var(--text-primary, #cbd5e1)',
                   fontSize: '0.78rem',
                   cursor: 'pointer'
                 }}
@@ -6317,14 +6332,14 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Wand2 size={18} color="#c084fc" />
-                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f8fafc' }}>
+                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary, #f8fafc)' }}>
                   Ask AI to Generate KaTeX Formula
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => setShowAiModal(false)}
-                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary, #94a3b8)', cursor: 'pointer' }}
               >
                 <X size={18} />
               </button>
@@ -6333,7 +6348,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
             {/* Provider & Model Pickers */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <div>
-                <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+                <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary, #94a3b8)', display: 'block', marginBottom: '4px' }}>
                   AI Provider:
                 </label>
                 <select
@@ -6353,7 +6368,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                     borderRadius: '8px',
                     background: '#1e293b',
                     border: '1px solid #334155',
-                    color: '#f8fafc',
+                    color: 'var(--text-primary, #f8fafc)',
                     fontSize: '0.78rem'
                   }}
                 >
@@ -6364,7 +6379,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
               </div>
 
               <div>
-                <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+                <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary, #94a3b8)', display: 'block', marginBottom: '4px' }}>
                   Model:
                 </label>
                 <select
@@ -6415,7 +6430,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                     borderRadius: '6px',
                     background: '#0b1120',
                     border: '1px solid #38bdf8',
-                    color: '#f8fafc',
+                    color: 'var(--text-primary, #f8fafc)',
                     fontSize: '0.78rem'
                   }}
                 />
@@ -6424,7 +6439,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
 
             {/* Prompt Input */}
             <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary, #94a3b8)', display: 'block', marginBottom: '4px' }}>
                 Formula Concept or Topic:
               </label>
               <input
@@ -6442,7 +6457,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                   borderRadius: '8px',
                   background: '#1e293b',
                   border: '1px solid #334155',
-                  color: '#f8fafc',
+                  color: 'var(--text-primary, #f8fafc)',
                   fontSize: '0.85rem'
                 }}
               />
@@ -6478,9 +6493,9 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                 style={{
                   padding: '8px 14px',
                   borderRadius: '8px',
-                  background: 'rgba(30, 41, 59, 0.8)',
+                  background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.8))',
                   border: '1px solid #334155',
-                  color: '#cbd5e1',
+                  color: 'var(--text-primary, #cbd5e1)',
                   fontSize: '0.78rem',
                   cursor: 'pointer'
                 }}
@@ -6544,14 +6559,14 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Wand2 size={18} color="#38bdf8" />
-                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f8fafc' }}>
+                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary, #f8fafc)' }}>
                   Ask AI to Generate Concept Architecture & Diagram
                 </span>
               </div>
               <button
                 type="button"
                 onClick={() => setShowAiDiagramModal(false)}
-                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary, #94a3b8)', cursor: 'pointer' }}
               >
                 <X size={18} />
               </button>
@@ -6560,7 +6575,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
             {/* Provider & Model Pickers */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <div>
-                <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+                <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary, #94a3b8)', display: 'block', marginBottom: '4px' }}>
                   AI Provider:
                 </label>
                 <select
@@ -6580,7 +6595,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                     borderRadius: '8px',
                     background: '#1e293b',
                     border: '1px solid #334155',
-                    color: '#f8fafc',
+                    color: 'var(--text-primary, #f8fafc)',
                     fontSize: '0.78rem'
                   }}
                 >
@@ -6591,7 +6606,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
               </div>
 
               <div>
-                <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+                <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary, #94a3b8)', display: 'block', marginBottom: '4px' }}>
                   Model:
                 </label>
                 <select
@@ -6642,7 +6657,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                     borderRadius: '6px',
                     background: '#0b1120',
                     border: '1px solid #38bdf8',
-                    color: '#f8fafc',
+                    color: 'var(--text-primary, #f8fafc)',
                     fontSize: '0.78rem'
                   }}
                 />
@@ -6651,7 +6666,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
 
             {/* Diagram Concept Topic Prompt */}
             <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary, #94a3b8)', display: 'block', marginBottom: '4px' }}>
                 Architecture Concept or Teaching Topic:
               </label>
               <input
@@ -6669,7 +6684,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                   borderRadius: '8px',
                   background: '#1e293b',
                   border: '1px solid #334155',
-                  color: '#f8fafc',
+                  color: 'var(--text-primary, #f8fafc)',
                   fontSize: '0.85rem'
                 }}
               />
@@ -6712,9 +6727,9 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
                 style={{
                   padding: '8px 14px',
                   borderRadius: '8px',
-                  background: 'rgba(30, 41, 59, 0.8)',
+                  background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.8))',
                   border: '1px solid #334155',
-                  color: '#cbd5e1',
+                  color: 'var(--text-primary, #cbd5e1)',
                   fontSize: '0.78rem',
                   cursor: 'pointer'
                 }}
@@ -6756,7 +6771,7 @@ Position 3 to 6 cleanly spaced nodes with reasonable spatial offsets (x: 0 to 60
             bottom: '24px',
             right: '24px',
             zIndex: 60,
-            background: 'rgba(15, 23, 42, 0.95)',
+            background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
             border: '1px solid rgba(56, 189, 248, 0.5)',
             borderRadius: '10px',
             padding: '10px 16px',

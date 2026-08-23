@@ -107,7 +107,7 @@ export function QuickActionsPopover({
               }}
               className="quick-actions-item"
             >
-              <Image size={15} className="text-cyan-400" />
+              <Image size={15} style={{ color: 'var(--accent-cyan)' }} />
               <span>{attachedFile ? 'Replace Image / Document' : 'Upload Image / Document'}</span>
             </button>
 
@@ -120,7 +120,7 @@ export function QuickActionsPopover({
               }}
               className="quick-actions-item"
             >
-              <FileCode size={15} className="text-purple-400" />
+              <FileCode size={15} style={{ color: 'var(--accent-blue, var(--accent-cyan))' }} />
               <span>Import Code Snippet / Text File</span>
             </button>
 
@@ -132,9 +132,10 @@ export function QuickActionsPopover({
                   onOpenExtractorStudio();
                   onClose();
                 }}
-                className="quick-actions-item border-t border-slate-800/80 pt-2 mt-1 text-cyan-300 font-bold"
+                className="quick-actions-item border-t pt-2 mt-1 font-bold"
+                style={{ borderColor: 'var(--border-color)', color: 'var(--accent-cyan)' }}
               >
-                <Sparkles size={15} className="text-cyan-400" />
+                <Sparkles size={15} style={{ color: 'var(--accent-cyan)' }} />
                 <span>⚡ Quick Extraction Engine</span>
               </button>
             )}
@@ -146,10 +147,10 @@ export function QuickActionsPopover({
               title="Voice recording integration coming soon"
             >
               <span className="flex items-center gap-2.5">
-                <Mic size={15} className="text-amber-400" />
+                <Mic size={15} style={{ color: 'var(--text-muted)' }} />
                 <span>Record Voice Note</span>
               </span>
-              <span className="text-[9px] px-1.5 py-0.5 rounded bg-amber-500/20 text-amber-300 font-bold">SOON</span>
+              <span className="text-[9px] px-1.5 py-0.5 rounded font-bold" style={{ background: 'var(--pill-bg)', color: 'var(--pill-text)' }}>SOON</span>
             </button>
           </div>
         </motion.div>
@@ -176,40 +177,42 @@ export function FilePreviewModal({ isOpen, onClose, attachedFile }: FilePreviewM
         animate={{ opacity: 1, scale: 1, y: 0 }}
         exit={{ opacity: 0, scale: 0.95, y: 10 }}
         className="chatgpt-doc-modal-card"
+        style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}
       >
         {/* Header */}
-        <div className="chatgpt-doc-modal-header">
+        <div className="chatgpt-doc-modal-header" style={{ borderBottom: '1px solid var(--border-color)' }}>
           <div className="flex items-center gap-2.5 truncate">
             {attachedFile.type === 'image' ? (
-              <Image size={18} className="text-cyan-400 flex-shrink-0" />
+              <Image size={18} style={{ color: 'var(--accent-cyan)' }} className="flex-shrink-0" />
             ) : attachedFile.type === 'code' ? (
-              <FileCode size={18} className="text-purple-400 flex-shrink-0" />
+              <FileCode size={18} style={{ color: 'var(--accent-blue, var(--accent-cyan))' }} className="flex-shrink-0" />
             ) : (
-              <FileText size={18} className="text-rose-400 flex-shrink-0" />
+              <FileText size={18} style={{ color: 'var(--accent-cyan)' }} className="flex-shrink-0" />
             )}
-            <span className="font-bold text-base text-slate-100 truncate">{attachedFile.name}</span>
-            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold bg-slate-800 text-cyan-300 uppercase border border-slate-700">
+            <span className="font-bold text-base text-slate-100 truncate" style={{ color: 'var(--text-primary)' }}>{attachedFile.name}</span>
+            <span className="px-2 py-0.5 rounded-full text-[10px] font-mono font-bold uppercase" style={{ background: 'var(--bg-tertiary)', color: 'var(--accent-cyan)', border: '1px solid var(--border-color)' }}>
               {attachedFile.type} • {attachedFile.sizeKb} KB
             </span>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-1.5 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-1.5 rounded-xl transition-colors"
+            style={{ color: 'var(--text-muted)' }}
           >
             <X size={20} />
           </button>
         </div>
 
         {/* ChatGPT Style Document Toolbar */}
-        <div className="chatgpt-doc-modal-toolbar">
+        <div className="chatgpt-doc-modal-toolbar" style={{ borderBottom: '1px solid var(--border-color)', background: 'var(--bg-tertiary)' }}>
           <div className="flex items-center gap-3">
-            <span className="font-semibold text-slate-300">
+            <span className="font-semibold" style={{ color: 'var(--text-primary)' }}>
               {attachedFile.type === 'image' ? 'Image View' : `Document Stream (${lineCount} lines)`}
             </span>
           </div>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-slate-400 font-mono">100% Zoom</span>
+            <span className="text-xs font-mono" style={{ color: 'var(--text-muted)' }}>100% Zoom</span>
           </div>
         </div>
 
@@ -219,11 +222,12 @@ export function FilePreviewModal({ isOpen, onClose, attachedFile }: FilePreviewM
             <img
               src={attachedFile.previewUrl}
               alt={attachedFile.name}
-              className="max-w-full max-h-[60vh] object-contain rounded-2xl border border-slate-800 shadow-2xl"
+              className="max-w-full max-h-[60vh] object-contain rounded-2xl shadow-2xl"
+              style={{ border: '1px solid var(--border-color)' }}
             />
           ) : (
             <div className="w-full h-full flex flex-col">
-              <pre className="w-full h-full p-5 rounded-2xl bg-[#090d16] border border-slate-800 text-xs font-mono text-cyan-200 overflow-auto whitespace-pre-wrap leading-relaxed">
+              <pre className="w-full h-full p-5 rounded-2xl text-xs font-mono overflow-auto whitespace-pre-wrap leading-relaxed" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)', color: 'var(--text-primary)' }}>
                 {attachedFile.textContent || '[No text content available]'}
               </pre>
             </div>
@@ -231,14 +235,14 @@ export function FilePreviewModal({ isOpen, onClose, attachedFile }: FilePreviewM
         </div>
 
         {/* Footer */}
-        <div className="px-5 py-3 bg-[#0f172a] border-t border-slate-800/80 flex items-center justify-between">
-          <span className="text-xs text-slate-400">Press Esc or click Close to dismiss</span>
+        <div className="px-5 py-3 border-t flex items-center justify-between" style={{ background: 'var(--bg-secondary)', borderColor: 'var(--border-color)' }}>
+          <span className="text-xs" style={{ color: 'var(--text-muted)' }}>Press Esc or click Close to dismiss</span>
           <button
             type="button"
             onClick={onClose}
-            className="px-5 py-1.5 rounded-xl text-xs font-bold bg-rose-500 hover:bg-rose-600 text-white transition-colors shadow-lg shadow-rose-500/20"
+            className="btn-theme-primary px-5 py-1.5 rounded-xl text-xs font-bold"
           >
-            Close Viewer
+            Close
           </button>
         </div>
       </motion.div>

@@ -1440,7 +1440,8 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({
         if (!ctx) return;
 
         if (format === 'jpeg') {
-          ctx.fillStyle = '#0b1329';
+          const computedBg = getComputedStyle(document.documentElement).getPropertyValue('--bg-primary').trim() || '#0b1329';
+          ctx.fillStyle = computedBg;
           ctx.fillRect(0, 0, canvas.width, canvas.height);
         }
 
@@ -1662,8 +1663,8 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({
             {isProviderMenuOpen && (
               <div className="custom-dropdown-menu diagram-menu top-downward-menu dropdown-align-left" style={{ minWidth: '240px', width: '240px', maxHeight: '420px', overflowY: 'auto' }}>
                 <div className="dropdown-header">SELECT AI PROVIDER ({PROVIDERS.length})</div>
-                <div style={{ padding: '6px 8px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '6px', padding: '4px 8px' }}>
+                <div style={{ padding: '6px 8px', borderBottom: '1px solid var(--border-color)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg-tertiary)', borderRadius: '6px', padding: '4px 8px', border: '1px solid var(--border-color)' }}>
                     <Search size={12} className="text-slate-400" />
                     <input
                       type="text"
@@ -1671,7 +1672,7 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({
                       value={providerSearchQuery}
                       onChange={e => setProviderSearchQuery(e.target.value)}
                       onClick={e => e.stopPropagation()}
-                      style={{ background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: '0.78rem', width: '100%' }}
+                      style={{ background: 'transparent', border: 'none', outline: 'none', color: 'var(--text-primary)', fontSize: '0.78rem', width: '100%' }}
                     />
                   </div>
                 </div>
@@ -1713,8 +1714,8 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({
             {isModelMenuOpen && (
               <div className="custom-dropdown-menu diagram-menu top-downward-menu dropdown-align-left" style={{ minWidth: '310px', width: '310px', maxHeight: '420px', overflowY: 'auto' }}>
                 <div className="dropdown-header">AVAILABLE MODELS ({activeProvider.name})</div>
-                <div style={{ padding: '6px 8px', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(255,255,255,0.06)', borderRadius: '6px', padding: '4px 8px' }}>
+                <div style={{ padding: '6px 8px', borderBottom: '1px solid var(--border-color)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg-tertiary)', borderRadius: '6px', padding: '4px 8px', border: '1px solid var(--border-color)' }}>
                     <Search size={12} className="text-slate-400" />
                     <input
                       type="text"
@@ -1722,7 +1723,7 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({
                       value={modelSearchQuery}
                       onChange={e => setModelSearchQuery(e.target.value)}
                       onClick={e => e.stopPropagation()}
-                      style={{ background: 'transparent', border: 'none', outline: 'none', color: '#fff', fontSize: '0.78rem', width: '100%' }}
+                      style={{ background: 'transparent', border: 'none', outline: 'none', color: 'var(--text-primary)', fontSize: '0.78rem', width: '100%' }}
                     />
                   </div>
                 </div>
@@ -1785,21 +1786,21 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({
                 style={{
                   padding: '4px 10px',
                   borderRadius: '8px',
-                  background: 'rgba(30, 41, 59, 0.8)',
-                  border: '1px solid rgba(51, 65, 85, 0.7)',
+                  background: 'var(--bg-tertiary)',
+                  border: '1px solid var(--border-color)',
                   fontSize: '0.74rem',
                   fontWeight: 600,
-                  color: '#cbd5e1',
+                  color: 'var(--text-secondary)',
                   display: 'flex',
                   alignItems: 'center',
                   gap: '6px'
                 }}
                 title="Active AI Model (Change via toolbar above)"
               >
-                <span style={{ color: '#38bdf8' }}>⚡</span>
-                <span style={{ color: '#e2e8f0' }}>{activeProvider.name}</span>
-                <span style={{ color: '#64748b' }}>•</span>
-                <span style={{ color: '#c084fc', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                <span style={{ color: 'var(--accent-cyan)' }}>⚡</span>
+                <span style={{ color: 'var(--text-primary)' }}>{activeProvider.name}</span>
+                <span style={{ color: 'var(--text-muted)' }}>•</span>
+                <span style={{ color: 'var(--accent-cyan)', maxWidth: '140px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                   {currentModelName}
                 </span>
               </div>
@@ -2018,8 +2019,8 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({
             style={{
               display: 'flex',
               flexDirection: 'column',
-              background: 'var(--bg-secondary, #0f172a)',
-              border: '1px solid var(--border-color, #1e293b)',
+              background: 'var(--card-bg)',
+              border: '1px solid var(--card-border)',
               borderRadius: '16px',
               overflow: 'hidden'
             }}
@@ -2030,19 +2031,19 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '12px 16px',
-                borderBottom: '1px solid var(--border-color, #1e293b)',
-                background: 'rgba(15, 23, 42, 0.6)'
+                borderBottom: '1px solid var(--border-color)',
+                background: 'var(--bg-tertiary)'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Code2 size={15} className="text-cyan-400" />
-                <span style={{ fontWeight: 600, fontSize: '0.84rem', color: '#f8fafc' }}>Source Editor</span>
+                <span style={{ fontWeight: 600, fontSize: '0.84rem', color: 'var(--text-primary)' }}>Source Editor</span>
                 <span className="engine-active-pill">{activeEngine.toUpperCase()}</span>
               </div>
               <button
                 type="button"
                 onClick={() => handleCopyCode(diagramSource, 'main-editor')}
-                style={{ background: 'transparent', border: 'none', color: '#94a3b8', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', fontSize: '0.75rem', display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }}
               >
                 {copiedId === 'main-editor' ? <Check size={12} style={{ color: '#34d399' }} /> : <Copy size={12} />}
                 <span>{copiedId === 'main-editor' ? 'Copied' : 'Copy'}</span>
@@ -2059,7 +2060,7 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({
                 flex: 1,
                 padding: '14px',
                 background: 'transparent',
-                color: '#f8fafc',
+                color: 'var(--text-primary)',
                 fontFamily: 'monospace',
                 fontSize: '0.8rem',
                 border: 'none',
@@ -2076,8 +2077,8 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({
             style={{
               display: 'flex',
               flexDirection: 'column',
-              background: 'var(--bg-secondary, #0f172a)',
-              border: '1px solid var(--border-color, #1e293b)',
+              background: 'var(--card-bg)',
+              border: '1px solid var(--card-border)',
               borderRadius: '16px',
               overflow: 'hidden'
             }}
@@ -2088,13 +2089,13 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '12px 16px',
-                borderBottom: '1px solid var(--border-color, #1e293b)',
-                background: 'rgba(15, 23, 42, 0.6)'
+                borderBottom: '1px solid var(--border-color)',
+                background: 'var(--bg-tertiary)'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Sparkles size={15} className="text-cyan-400" />
-                <span style={{ fontWeight: 600, fontSize: '0.84rem', color: '#f8fafc' }}>Live Vector Preview</span>
+                <span style={{ fontWeight: 600, fontSize: '0.84rem', color: 'var(--text-primary)' }}>Live Vector Preview</span>
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
@@ -2102,30 +2103,33 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({
                   type="button"
                   onClick={handleDownloadSvg}
                   disabled={!renderedSvg}
-                  className="export-pill-btn export-btn-svg"
+                  className="btn-theme-secondary"
+                  style={{ fontSize: '0.74rem', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                   title="Export Clean Scalable Vector SVG"
                 >
-                  <Download size={12} style={{ color: '#38bdf8' }} />
+                  <Download size={12} style={{ color: 'var(--accent-cyan)' }} />
                   <span>SVG</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleExportImage('png')}
                   disabled={!renderedSvg}
-                  className="export-pill-btn export-btn-png"
+                  className="btn-theme-secondary"
+                  style={{ fontSize: '0.74rem', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                   title="Export High-Resolution PNG (Retina 2x)"
                 >
-                  <ImageIcon size={12} style={{ color: '#34d399' }} />
+                  <ImageIcon size={12} style={{ color: 'var(--accent-cyan)' }} />
                   <span>PNG</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => handleExportImage('jpeg')}
                   disabled={!renderedSvg}
-                  className="export-pill-btn export-btn-jpeg"
+                  className="btn-theme-secondary"
+                  style={{ fontSize: '0.74rem', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                   title="Export High-Resolution JPEG Image"
                 >
-                  <FileImage size={12} style={{ color: '#fbbf24' }} />
+                  <FileImage size={12} style={{ color: 'var(--accent-cyan)' }} />
                   <span>JPEG</span>
                 </button>
               </div>
@@ -2140,7 +2144,7 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({
                 justifyContent: 'center',
                 overflow: 'auto',
                 position: 'relative',
-                background: 'rgba(2, 6, 23, 0.5)'
+                background: 'var(--bg-primary)'
               }}
             >
               {isLoading && (
@@ -2193,8 +2197,8 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({
             style={{
               display: 'flex',
               flexDirection: 'column',
-              background: 'var(--bg-secondary, #0f172a)',
-              border: '1px solid var(--border-color, #1e293b)',
+              background: 'var(--card-bg)',
+              border: '1px solid var(--card-border)',
               borderRadius: '16px',
               overflow: 'hidden',
               height: '560px'
@@ -2206,13 +2210,13 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '12px 16px',
-                borderBottom: '1px solid var(--border-color, #1e293b)',
-                background: 'rgba(15, 23, 42, 0.6)'
+                borderBottom: '1px solid var(--border-color)',
+                background: 'var(--bg-tertiary)'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Code2 size={16} className="text-cyan-400" />
-                <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#f8fafc' }}>
+                <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
                   Source Code ({activeEngine.toUpperCase()})
                 </span>
               </div>
@@ -2225,9 +2229,9 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({
                     borderRadius: '6px',
                     fontSize: '0.75rem',
                     fontWeight: 600,
-                    background: 'rgba(30, 41, 59, 0.8)',
-                    border: '1px solid rgba(51, 65, 85, 0.7)',
-                    color: '#cbd5e1',
+                    background: 'var(--bg-tertiary)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-primary)',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
@@ -2237,7 +2241,7 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({
                   {copiedId === 'split-editor' ? <Check size={12} style={{ color: '#34d399' }} /> : <Copy size={12} />}
                   <span>{copiedId === 'split-editor' ? 'Copied' : 'Copy'}</span>
                 </button>
-                <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Edit code or JSON</span>
+                <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Edit code or JSON</span>
               </div>
             </div>
 
@@ -2251,7 +2255,7 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({
                 width: '100%',
                 padding: '16px',
                 background: 'transparent',
-                color: '#f8fafc',
+                color: 'var(--text-primary)',
                 fontFamily: 'monospace',
                 fontSize: '0.85rem',
                 border: 'none',
@@ -2268,8 +2272,8 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({
             style={{
               display: 'flex',
               flexDirection: 'column',
-              background: 'var(--bg-secondary, #0f172a)',
-              border: '1px solid var(--border-color, #1e293b)',
+              background: 'var(--card-bg)',
+              border: '1px solid var(--card-border)',
               borderRadius: '16px',
               overflow: 'hidden',
               height: '560px'
@@ -2281,13 +2285,13 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({
                 alignItems: 'center',
                 justifyContent: 'space-between',
                 padding: '12px 16px',
-                borderBottom: '1px solid var(--border-color, #1e293b)',
-                background: 'rgba(15, 23, 42, 0.6)'
+                borderBottom: '1px solid var(--border-color)',
+                background: 'var(--bg-tertiary)'
               }}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Sparkles size={16} className="text-cyan-400" />
-                <span style={{ fontWeight: 600, fontSize: '0.9rem', color: '#f8fafc' }}>
+                <span style={{ fontWeight: 600, fontSize: '0.9rem', color: 'var(--text-primary)' }}>
                   Live Vector SVG Preview
                 </span>
               </div>
@@ -2300,7 +2304,7 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({
                   className="export-pill-btn export-btn-svg"
                   title="Export Clean Scalable Vector SVG"
                 >
-                  <Download size={13} style={{ color: '#38bdf8' }} />
+                  <Download size={13} style={{ color: 'var(--accent-cyan)' }} />
                   <span>SVG</span>
                 </button>
 
@@ -2338,7 +2342,7 @@ export const DiagramStudioView: React.FC<DiagramStudioViewProps> = ({
                 justifyContent: 'center',
                 overflow: 'auto',
                 position: 'relative',
-                background: 'rgba(2, 6, 23, 0.5)'
+                background: 'var(--bg-primary)'
               }}
             >
               {isLoading && (

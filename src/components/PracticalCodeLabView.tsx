@@ -1352,19 +1352,19 @@ Follow these mandatory formatting rules for all responses:
                 <button
                   type="button"
                   onClick={() => handleCopyCode(activeFile.codeContent)}
-                  className="extractor-btn-secondary"
-                  style={{ fontSize: '0.74rem', padding: '4px 8px' }}
+                  className="btn-theme-secondary"
+                  style={{ fontSize: '0.74rem', padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                   title={isCopied ? 'Copied to clipboard' : 'Copy code to clipboard'}
                 >
-                  {isCopied ? <Check size={13} style={{ color: '#34d399' }} /> : <Copy size={13} />}
+                  {isCopied ? <Check size={13} style={{ color: 'var(--accent-cyan)' }} /> : <Copy size={13} />}
                   <span className="codelab-action-btn-text">{isCopied ? 'Copied!' : 'Copy'}</span>
                 </button>
 
                 <button
                   type="button"
                   onClick={() => handleDownloadSingleFile(activeFile)}
-                  className="extractor-btn-primary"
-                  style={{ fontSize: '0.74rem', padding: '4px 8px' }}
+                  className="btn-theme-primary"
+                  style={{ fontSize: '0.74rem', padding: '4px 8px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                   title={`Download ${activeFile.fileName}`}
                 >
                   <Download size={13} />
@@ -1375,8 +1375,8 @@ Follow these mandatory formatting rules for all responses:
                   <button
                     type="button"
                     onClick={handleDownloadZip}
-                    className="code-lab-zip-btn"
-                    style={{ fontSize: '0.74rem', padding: '4px 10px' }}
+                    className="btn-theme-secondary"
+                    style={{ fontSize: '0.74rem', padding: '4px 10px', display: 'inline-flex', alignItems: 'center', gap: '4px' }}
                     title="Download all open code files as ZIP archive"
                   >
                     <Package size={13} />

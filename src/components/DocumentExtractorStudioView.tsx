@@ -180,12 +180,12 @@ export function DocumentExtractorStudioView({ onSendToChat }: DocumentExtractorS
               {/* Action Bar */}
               <div className="extractor-action-bar">
                 <div style={{ display: 'flex', gap: '10px' }}>
-                  <button type="button" onClick={handleCopyText} className="extractor-btn-secondary">
-                    {isCopied ? <Check size={14} style={{ color: '#34d399' }} /> : <Copy size={14} />}
+                  <button type="button" onClick={handleCopyText} className="btn-theme-secondary" style={{ padding: '8px 14px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
+                    {isCopied ? <Check size={14} style={{ color: 'var(--accent-cyan)' }} /> : <Copy size={14} />}
                     <span>{isCopied ? 'Copied to Clipboard!' : 'Copy Extracted Text'}</span>
                   </button>
 
-                  <button type="button" onClick={handleDownloadTxt} className="extractor-btn-secondary">
+                  <button type="button" onClick={handleDownloadTxt} className="btn-theme-secondary" style={{ padding: '8px 14px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
                     <Download size={14} />
                     <span>Download TXT</span>
                   </button>
@@ -194,7 +194,8 @@ export function DocumentExtractorStudioView({ onSendToChat }: DocumentExtractorS
                 <button 
                   type="button" 
                   onClick={() => onSendToChat(parsedDoc.extractedText, parsedDoc.fileName)} 
-                  className="extractor-btn-primary"
+                  className="btn-theme-primary"
+                  style={{ padding: '8px 16px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                 >
                   <Send size={15} />
                   <span>Send Extracted Text to Prof. Joe Chat</span>

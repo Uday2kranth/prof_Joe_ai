@@ -84,15 +84,15 @@ export const DsaLabView: React.FC = () => {
         flexWrap: 'wrap',
         gap: '10px',
         padding: '10px 14px',
-        background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(30, 41, 59, 0.85))',
+        background: 'var(--card-bg)',
         borderRadius: '14px',
-        border: '1px solid rgba(56, 189, 248, 0.25)',
-        boxShadow: '0 4px 20px rgba(0, 0, 0, 0.4)'
+        border: '1px solid var(--card-border)',
+        boxShadow: 'var(--card-shadow)'
       }}>
         {/* Left: Category Selector Dropdown & Badge */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '1 1 260px', minWidth: 0, maxWidth: '100%', flexWrap: 'wrap' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 200px', minWidth: 0, maxWidth: '100%' }}>
-            <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
+            <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
               DSA:
             </span>
             <select
@@ -103,18 +103,18 @@ export const DsaLabView: React.FC = () => {
                 minHeight: '38px',
                 padding: '6px 12px',
                 borderRadius: '10px',
-                background: 'rgba(30, 41, 59, 0.95)',
-                border: '1.5px solid #38bdf8',
-                color: '#f8fafc',
+                background: 'var(--bg-tertiary)',
+                border: '1.5px solid var(--accent-cyan)',
+                color: 'var(--text-primary)',
                 fontSize: '0.84rem',
                 fontWeight: 800,
                 cursor: 'pointer',
                 outline: 'none',
-                boxShadow: '0 0 12px rgba(56, 189, 248, 0.25)'
+                boxShadow: '0 0 12px var(--cursor-glow)'
               }}
             >
               {DSA_CATEGORIES.map(cat => (
-                <option key={cat.id} value={cat.id} style={{ background: '#0f172a', color: '#f8fafc' }}>
+                <option key={cat.id} value={cat.id} style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)' }}>
                   {cat.icon} {cat.title} ({cat.count} Algos)
                 </option>
               ))}
@@ -128,9 +128,9 @@ export const DsaLabView: React.FC = () => {
             gap: '6px',
             padding: '4px 8px',
             borderRadius: '8px',
-            background: 'rgba(56, 189, 248, 0.12)',
-            border: '1px solid rgba(56, 189, 248, 0.3)',
-            color: '#38bdf8',
+            background: 'var(--pill-active-bg)',
+            border: '1px solid var(--card-border)',
+            color: 'var(--accent-cyan)',
             fontSize: '0.72rem',
             fontWeight: 700
           }}>
@@ -140,16 +140,16 @@ export const DsaLabView: React.FC = () => {
         </div>
 
         {/* Right: Global Speed Controller */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(0,0,0,0.3)', padding: '5px 10px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)', flexShrink: 0 }}>
-          <Zap size={14} color="#38bdf8" />
-          <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>Speed: <strong style={{ color: '#38bdf8' }}>{speed}x</strong></span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'var(--bg-tertiary)', padding: '5px 10px', borderRadius: '8px', border: '1px solid var(--border-color)', flexShrink: 0 }}>
+          <Zap size={14} color="var(--accent-cyan)" />
+          <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>Speed: <strong style={{ color: 'var(--accent-cyan)' }}>{speed}x</strong></span>
           <input
             type="range"
             min={1}
             max={8}
             value={speed}
             onChange={(e) => setSpeed(Number(e.target.value))}
-            style={{ width: '70px', accentColor: '#38bdf8', cursor: 'pointer' }}
+            style={{ width: '70px', accentColor: 'var(--accent-cyan)', cursor: 'pointer' }}
           />
         </div>
       </div>
@@ -185,7 +185,6 @@ export const DsaLabView: React.FC = () => {
               speed={speed}
             />
           )}
-
           {activeCategory === 'searching' && (
             <SearchingLab
               activeAlgorithm={activeAlgoId}
@@ -193,14 +192,12 @@ export const DsaLabView: React.FC = () => {
               speed={speed}
             />
           )}
-
           {activeCategory === 'data_structures' && (
             <DataStructuresLab
               activeAlgorithm={activeAlgoId}
               onSelectAlgorithm={setActiveAlgoId}
             />
           )}
-
           {activeCategory === 'graph' && (
             <GraphLab
               activeAlgorithm={activeAlgoId}
@@ -208,7 +205,6 @@ export const DsaLabView: React.FC = () => {
               speed={speed}
             />
           )}
-
           {activeCategory === 'recursion' && (
             <RecursionLab
               activeAlgorithm={activeAlgoId}
@@ -216,7 +212,6 @@ export const DsaLabView: React.FC = () => {
               speed={speed}
             />
           )}
-
           {activeCategory === 'dp' && (
             <DynamicProgrammingLab
               activeAlgorithm={activeAlgoId}
@@ -224,7 +219,6 @@ export const DsaLabView: React.FC = () => {
               speed={speed}
             />
           )}
-
           {activeCategory === 'backtracking' && (
             <BacktrackingLab
               activeAlgorithm={activeAlgoId}
@@ -232,7 +226,6 @@ export const DsaLabView: React.FC = () => {
               speed={speed}
             />
           )}
-
           {activeCategory === 'greedy_strings' && (
             <GreedyStringLab
               activeAlgorithm={activeAlgoId}
@@ -246,9 +239,10 @@ export const DsaLabView: React.FC = () => {
         <div className={`dsa-code-panel ${mobileActiveTab === 'code' ? 'mobile-active' : 'mobile-hidden'}`}>
           {/* Algorithm Info & Complexity Card */}
           <div style={{
-            background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.8))',
+            background: 'var(--card-bg)',
             borderRadius: '16px',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            border: '1px solid var(--card-border)',
+            boxShadow: 'var(--card-shadow)',
             padding: '18px',
             display: 'flex',
             flexDirection: 'column',
@@ -256,27 +250,27 @@ export const DsaLabView: React.FC = () => {
           }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
               <div>
-                <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#38bdf8', fontWeight: 800 }}>
+                <span style={{ fontSize: '0.7rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: 'var(--accent-cyan)', fontWeight: 800 }}>
                   {activeAlgo.category.toUpperCase().replace('_', ' ')}
                 </span>
-                <h2 style={{ margin: '4px 0 0 0', fontSize: '1.2rem', fontWeight: 800, color: '#ffffff' }}>
+                <h2 style={{ margin: '4px 0 0 0', fontSize: '1.2rem', fontWeight: 800, color: 'var(--text-primary)' }}>
                   {activeAlgo.name}
                 </h2>
               </div>
               <span style={{
                 padding: '4px 10px',
                 borderRadius: '6px',
-                background: 'rgba(56, 189, 248, 0.15)',
-                color: '#38bdf8',
+                background: 'var(--pill-active-bg)',
+                color: 'var(--accent-cyan)',
                 fontSize: '0.72rem',
                 fontWeight: 800,
-                border: '1px solid rgba(56, 189, 248, 0.3)'
+                border: '1px solid var(--card-border)'
               }}>
                 {activeAlgo.tag}
               </span>
             </div>
 
-            <p style={{ margin: 0, fontSize: '0.84rem', color: '#cbd5e1', lineHeight: '1.45' }}>
+            <p style={{ margin: 0, fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: '1.45' }}>
               {activeAlgo.description}
             </p>
 
@@ -287,8 +281,8 @@ export const DsaLabView: React.FC = () => {
               gap: '8px',
               paddingTop: '6px'
             }}>
-              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.7rem', color: '#94a3b8' }}>
+              <div style={{ background: 'var(--bg-tertiary)', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                   <Clock size={12} color="#34d399" />
                   <span>Best Time:</span>
                 </div>
@@ -297,8 +291,8 @@ export const DsaLabView: React.FC = () => {
                 </span>
               </div>
 
-              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.7rem', color: '#94a3b8' }}>
+              <div style={{ background: 'var(--bg-tertiary)', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                   <Clock size={12} color="#fbbf24" />
                   <span>Average Time:</span>
                 </div>
@@ -307,8 +301,8 @@ export const DsaLabView: React.FC = () => {
                 </span>
               </div>
 
-              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.7rem', color: '#94a3b8' }}>
+              <div style={{ background: 'var(--bg-tertiary)', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                   <Clock size={12} color="#f87171" />
                   <span>Worst Time:</span>
                 </div>
@@ -317,8 +311,8 @@ export const DsaLabView: React.FC = () => {
                 </span>
               </div>
 
-              <div style={{ background: 'rgba(0,0,0,0.3)', padding: '8px 12px', borderRadius: '8px', border: '1px solid rgba(255,255,255,0.06)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.7rem', color: '#94a3b8' }}>
+              <div style={{ background: 'var(--bg-tertiary)', padding: '8px 12px', borderRadius: '8px', border: '1px solid var(--border-color)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
                   <HardDrive size={12} color="#a78bfa" />
                   <span>Space Complexity:</span>
                 </div>
@@ -330,13 +324,13 @@ export const DsaLabView: React.FC = () => {
 
             {/* Recurrence Relation / Mathematical Formula */}
             <div style={{
-              background: 'rgba(0,0,0,0.4)',
+              background: 'var(--bg-tertiary)',
               padding: '10px 14px',
               borderRadius: '8px',
-              border: '1px solid rgba(56, 189, 248, 0.2)',
+              border: '1px solid var(--border-color)',
               marginTop: '4px'
             }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: '#38bdf8', fontWeight: 700, marginBottom: '4px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.72rem', color: 'var(--accent-cyan)', fontWeight: 700, marginBottom: '4px' }}>
                 <BookOpen size={13} />
                 <span>Mathematical Proof & Recurrence Relation:</span>
               </div>
@@ -346,9 +340,10 @@ export const DsaLabView: React.FC = () => {
 
           {/* Multi-Language Code Implementation Studio */}
           <div style={{
-            background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.9), rgba(30, 41, 59, 0.8))',
+            background: 'var(--card-bg)',
             borderRadius: '16px',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            border: '1px solid var(--card-border)',
+            boxShadow: 'var(--card-shadow)',
             padding: '16px',
             display: 'flex',
             flexDirection: 'column',

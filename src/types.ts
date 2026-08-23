@@ -46,6 +46,9 @@ export interface PersonaOption {
   icon: string;
   description: string;
   allowDiagrams: boolean;
+  category?: string;
+  franchise?: string;
+  catchphrase?: string;
 }
 
 export interface UserKeys {
@@ -153,14 +156,22 @@ export const DEFAULT_AI_TUNING: AiTuningConfig = {
 
 export type SupportedCodeTheme = 'onedark' | 'vscode_dark' | 'monokai' | 'tokyo_night' | 'github_light' | 'neon' | 'hc_black';
 
+export type WorkspaceAtmosphere = 'cyber_osmania' | 'midnight_academy' | 'emerald_scholar' | 'obsidian_oled' | 'oxford_daylight' | 'amber_parchment';
+
+export type ChatBubbleStyle = 'cyan_glass' | 'velvet_indigo' | 'scholar_emerald' | 'obsidian_minimal' | 'clean_card';
+
 export interface CodeStyleConfig {
   codeTheme: SupportedCodeTheme;
+  bubbleStyle?: ChatBubbleStyle;
+  atmosphere?: WorkspaceAtmosphere;
   katexScale: 'compact' | 'standard' | 'large';
   equationCopyMode: 'latex' | 'unicode';
 }
 
 export const DEFAULT_CODE_STYLE: CodeStyleConfig = {
   codeTheme: 'onedark',
+  bubbleStyle: 'cyan_glass',
+  atmosphere: 'cyber_osmania',
   katexScale: 'standard',
   equationCopyMode: 'latex'
 };

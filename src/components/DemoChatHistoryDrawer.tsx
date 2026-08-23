@@ -17,7 +17,9 @@ import {
   Award,
   Tag,
   Check,
-  RefreshCw
+  RefreshCw,
+  ChevronDown,
+  ChevronUp
 } from 'lucide-react';
 import type { ChatSession } from '../types';
 
@@ -70,6 +72,7 @@ export const DemoChatHistoryDrawer: React.FC<DemoChatHistoryDrawerProps> = ({
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTagFilter, setSelectedTagFilter] = useState<string>('ALL');
+  const [isTagsExpanded, setIsTagsExpanded] = useState<boolean>(false);
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [taggingSessionId, setTaggingSessionId] = useState<string | null>(null);
   const [isSyncing, setIsSyncing] = useState(false);
@@ -165,10 +168,10 @@ export const DemoChatHistoryDrawer: React.FC<DemoChatHistoryDrawerProps> = ({
         {/* Drawer Header */}
         <div className="demo-drawer-header">
           <div className="demo-drawer-title">
-            <Clock size={18} className="text-cyan-400" />
+            <Clock size={16} style={{ color: 'var(--accent-cyan)' }} />
             <h3>Chat Control Deck</h3>
           </div>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5">
             {onSyncSessions && (
               <button
                 type="button"
@@ -177,7 +180,7 @@ export const DemoChatHistoryDrawer: React.FC<DemoChatHistoryDrawerProps> = ({
                 title="Live Cloud Sync with Mobile & Other Devices"
                 disabled={isSyncing}
               >
-                <RefreshCw size={13} className={isSyncing ? 'animate-spin' : ''} />
+                <RefreshCw size={12} className={isSyncing ? 'animate-spin' : ''} />
                 <span>{isSyncing ? 'Syncing...' : 'Sync'}</span>
               </button>
             )}
@@ -187,193 +190,155 @@ export const DemoChatHistoryDrawer: React.FC<DemoChatHistoryDrawerProps> = ({
               className="demo-icon-btn"
               aria-label="Close Chat History Drawer"
             >
-              <X size={18} />
+              <X size={16} />
             </button>
           </div>
         </div>
 
-        {/* Primary Action Button */}
-        <div className="demo-drawer-action">
-          <button 
-            type="button" 
-            onClick={() => {
-              onNewSession();
-              onClose();
-            }} 
-            className="demo-new-chat-btn"
-          >
-            <Plus size={16} />
-            <span>New Chat Session</span>
-          </button>
-        </div>
-
-        {/* 🍱 BENTO CONTROL DECK */}
+        {/* 🍱 BENTO CONTROL DECK (4-COLUMN COMPACT GRID) */}
         <div className="demo-bento-deck">
           <div className="bento-deck-header">
-            <Sparkles size={13} className="text-cyan-400" />
-            <span>COMMAND CONTROLS</span>
+            <div className="flex items-center gap-1.5">
+              <Sparkles size={12} style={{ color: 'var(--accent-cyan)' }} />
+              <span>COMMAND CONTROLS</span>
+            </div>
+            {onClearActiveSession && (
+              <button
+                type="button"
+                onClick={() => setShowClearConfirm(true)}
+                className="bento-clear-context-btn"
+                title="Clear messages in active chat"
+              >
+                <RotateCcw size={11} />
+                <span>Clear Context</span>
+              </button>
+            )}
           </div>
 
-          <div className="bento-grid-container">
-            {/* Tile: Exam Cheat Sheet Deck */}
+          <div className="bento-grid-container-4col">
+            {/* Tile 1: Exam Cheat Sheet */}
             {onOpenCheatSheet && (
               <div 
-                className="bento-card-tile active-glow-amber"
+                className="bento-card-tile-compact active-glow-amber"
                 onClick={() => {
                   onOpenCheatSheet();
                   onClose();
                 }}
                 title="Open Pinned Formulas, Definitions & 1-Page Cheat Sheet Print"
               >
-                <div className="bento-tile-icon amber">
-                  <Pin size={16} />
+                <div className="bento-tile-icon-sm amber">
+                  <Pin size={13} />
                 </div>
-                <div className="bento-tile-content">
-                  <span className="bento-tile-title">Cheat Sheet</span>
-                  <span className="bento-tile-sub">Pinned Formulas</span>
-                </div>
+                <span className="bento-tile-label">Cheat Sheet</span>
               </div>
             )}
 
-            {/* Tile: Interactive Flashcards */}
+            {/* Tile 2: Interactive Flashcards */}
             {onOpenFlashcards && (
               <div 
-                className="bento-card-tile active-glow-cyan"
+                className="bento-card-tile-compact active-glow-cyan"
                 onClick={() => {
                   onOpenFlashcards();
                   onClose();
                 }}
                 title="Generate 3D Flip Flashcards from Active Discussion"
               >
-                <div className="bento-tile-icon cyan">
-                  <Layers size={16} />
+                <div className="bento-tile-icon-sm cyan">
+                  <Layers size={13} />
                 </div>
-                <div className="bento-tile-content">
-                  <span className="bento-tile-title">Flashcards</span>
-                  <span className="bento-tile-sub">3D Flip Cards</span>
-                </div>
+                <span className="bento-tile-label">Flashcards</span>
               </div>
             )}
 
-            {/* Tile: Practice Quiz */}
+            {/* Tile 3: Practice Quiz */}
             {onOpenQuiz && (
               <div 
-                className="bento-card-tile active-glow-emerald"
+                className="bento-card-tile-compact active-glow-emerald"
                 onClick={() => {
                   onOpenQuiz();
                   onClose();
                 }}
                 title="Generate 5-Question Practice Exam Quiz with Solutions"
               >
-                <div className="bento-tile-icon emerald">
-                  <Award size={16} />
+                <div className="bento-tile-icon-sm emerald">
+                  <Award size={13} />
                 </div>
-                <div className="bento-tile-content">
-                  <span className="bento-tile-title">Practice Quiz</span>
-                  <span className="bento-tile-sub">Exam Test</span>
-                </div>
+                <span className="bento-tile-label">Quiz</span>
               </div>
             )}
 
-            {/* Tile: Persistent Web Search */}
+            {/* Tile 4: Web Search */}
             <div 
-              className={`bento-card-tile ${isPersistentWebSearch ? 'active-glow-cyan' : ''}`}
+              className={`bento-card-tile-compact ${isPersistentWebSearch ? 'active-glow-cyan' : ''}`}
               onClick={onTogglePersistentWebSearch}
               title="Toggle Persistent Internet Search across all messages"
             >
-              <div className="bento-tile-icon cyan">
-                <Globe size={16} />
+              <div className="bento-tile-icon-sm cyan">
+                <Globe size={13} />
               </div>
-              <div className="bento-tile-content">
-                <span className="bento-tile-title">Web Search</span>
-                <span className="bento-tile-status">
-                  {isPersistentWebSearch ? '🟢 ON' : '⚪ OFF'}
-                </span>
-              </div>
+              <span className="bento-tile-label">Web Search</span>
+              <span className={`bento-mini-badge ${isPersistentWebSearch ? 'on' : 'off'}`}>
+                {isPersistentWebSearch ? 'ON' : 'OFF'}
+              </span>
             </div>
 
-            {/* Tile: Dedicated Visual Diagrams Toggle */}
+            {/* Tile 5: Visual Diagrams */}
             <div 
-              className={`bento-card-tile ${isDiagramsEnabled ? 'active-glow-purple' : ''}`}
+              className={`bento-card-tile-compact ${isDiagramsEnabled ? 'active-glow-purple' : ''}`}
               onClick={onToggleDiagrams}
               title="Toggle Multi-Engine Visual Diagrams (Mermaid, Kroki, Graphviz, PlantUML, FunctionPlot)"
             >
-              <div className="bento-tile-icon purple">
-                <Layers size={16} />
+              <div className="bento-tile-icon-sm purple">
+                <Layers size={13} />
               </div>
-              <div className="bento-tile-content">
-                <span className="bento-tile-title">Visual Diagrams</span>
-                <span className="bento-tile-status">
-                  {isDiagramsEnabled ? '🟢 ON' : '⚪ OFF'}
-                </span>
-              </div>
+              <span className="bento-tile-label">Diagrams</span>
+              <span className={`bento-mini-badge ${isDiagramsEnabled ? 'on' : 'off'}`}>
+                {isDiagramsEnabled ? 'ON' : 'OFF'}
+              </span>
             </div>
 
-            {/* Tile: Dedicated Beginner-Friendly Mode Toggle */}
+            {/* Tile 6: Beginner Mode */}
             <div 
-              className={`bento-card-tile ${isBeginnerFriendly ? 'active-glow-emerald' : ''}`}
+              className={`bento-card-tile-compact ${isBeginnerFriendly ? 'active-glow-emerald' : ''}`}
               onClick={onToggleBeginnerFriendly}
               title="Toggle 6-Stage Beginner-Friendly Scaffolding & Term Breakdown"
             >
-              <div className="bento-tile-icon emerald">
-                <GraduationCap size={16} />
+              <div className="bento-tile-icon-sm emerald">
+                <GraduationCap size={13} />
               </div>
-              <div className="bento-tile-content">
-                <span className="bento-tile-title">Beginner Mode</span>
-                <span className="bento-tile-status">
-                  {isBeginnerFriendly ? '🟢 ON' : '⚪ OFF'}
-                </span>
-              </div>
+              <span className="bento-tile-label">Beginner</span>
+              <span className={`bento-mini-badge ${isBeginnerFriendly ? 'on' : 'off'}`}>
+                {isBeginnerFriendly ? 'ON' : 'OFF'}
+              </span>
             </div>
 
-            {/* Tile: Preview Chat */}
+            {/* Tile 7: Preview Chat */}
             <div 
-              className="bento-card-tile"
+              className="bento-card-tile-compact"
               onClick={() => {
                 if (onOpenPdfPreview) onOpenPdfPreview();
                 onClose();
               }}
               title="Open styled in-app Preview Modal with Save Image & Save PDF"
             >
-              <div className="bento-tile-icon blue">
-                <Eye size={16} />
+              <div className="bento-tile-icon-sm blue">
+                <Eye size={13} />
               </div>
-              <div className="bento-tile-content">
-                <span className="bento-tile-title">Preview Chat</span>
-                <span className="bento-tile-sub">In-App Pop-up</span>
-              </div>
+              <span className="bento-tile-label">Preview</span>
             </div>
 
-            {/* Tile: Native Print / PDF */}
+            {/* Tile 8: Native Print / PDF */}
             <div 
-              className="bento-card-tile"
+              className="bento-card-tile-compact"
               onClick={() => {
                 if (onNativePrintPdf) onNativePrintPdf();
               }}
               title="Open System Native Chrome Print Preview Dialog"
             >
-              <div className="bento-tile-icon purple">
-                <Printer size={16} />
+              <div className="bento-tile-icon-sm purple">
+                <Printer size={13} />
               </div>
-              <div className="bento-tile-content">
-                <span className="bento-tile-title">Native Print</span>
-                <span className="bento-tile-sub">System Chrome</span>
-              </div>
-            </div>
-
-            {/* Tile: Clear Session Context */}
-            <div 
-              className="bento-card-tile span-2-tile danger-tile"
-              onClick={() => setShowClearConfirm(true)}
-              title="Clear messages in active session"
-            >
-              <div className="bento-tile-icon rose">
-                <RotateCcw size={16} />
-              </div>
-              <div className="bento-tile-content">
-                <span className="bento-tile-title">Clear Context</span>
-                <span className="bento-tile-sub">Reset Messages</span>
-              </div>
+              <span className="bento-tile-label">Print / PDF</span>
             </div>
           </div>
         </div>
@@ -404,106 +369,160 @@ export const DemoChatHistoryDrawer: React.FC<DemoChatHistoryDrawerProps> = ({
           </div>
         )}
 
-        {/* 🏷️ SUBJECT / UNIT TAG FILTER BAR (MULTI-ROW WRAPPING WITH CUSTOM TAGS) */}
-        <div className="demo-drawer-tags-bar">
-          <button
-            type="button"
-            onClick={() => setSelectedTagFilter('ALL')}
-            className={`drawer-tag-filter-pill ${selectedTagFilter === 'ALL' ? 'active' : ''}`}
+        {/* 🏷️ SUBJECT / UNIT TAG FILTER BAR (COLLAPSIBLE ACCORDION) */}
+        <div className="demo-drawer-tags-deck">
+          <div 
+            className="demo-drawer-tags-header"
+            onClick={() => setIsTagsExpanded(prev => !prev)}
+            title="Toggle tag filters"
           >
-            <Tag size={10} />
-            <span>All</span>
-          </button>
-
-          {allAvailableTags.map(tag => {
-            const isCustom = customTags.includes(tag);
-            const isSelected = selectedTagFilter === tag;
-
-            return (
-              <button
-                key={tag}
-                type="button"
-                onClick={() => setSelectedTagFilter(isSelected ? 'ALL' : tag)}
-                className={`drawer-tag-filter-pill ${isSelected ? 'active' : ''} ${isCustom ? 'custom-tag' : ''}`}
+            <div className="flex items-center gap-1.5 min-w-0">
+              <Tag size={12} style={{ color: 'var(--accent-cyan)' }} />
+              <span className="tags-header-label">TAG FILTERS</span>
+              {selectedTagFilter !== 'ALL' && (
+                <span className="tags-header-active-badge">#{selectedTagFilter}</span>
+              )}
+            </div>
+            <div className="flex items-center gap-1">
+              {selectedTagFilter !== 'ALL' && (
+                <span 
+                  className="tags-header-clear-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setSelectedTagFilter('ALL');
+                  }}
+                  title="Reset to All"
+                >
+                  Clear
+                </span>
+              )}
+              <button 
+                type="button" 
+                className="tag-toggle-btn"
+                aria-label={isTagsExpanded ? 'Collapse tags' : 'Expand tags'}
               >
-                <span>#{tag}</span>
-                {isCustom && (
-                  <span
-                    onClick={(e) => handleDeleteCustomTag(tag, e)}
-                    className="delete-custom-tag-btn"
-                    title={`Delete custom tag #${tag}`}
-                  >
-                    ×
-                  </span>
-                )}
-              </button>
-            );
-          })}
-
-          {/* Inline Custom Tag Creator */}
-          {isAddingCustomTag ? (
-            <div className="inline-tag-creator">
-              <input
-                type="text"
-                autoFocus
-                placeholder="tag name..."
-                value={newTagInput}
-                onChange={(e) => setNewTagInput(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter') handleCreateCustomTag();
-                  if (e.key === 'Escape') setIsAddingCustomTag(false);
-                }}
-                className="inline-tag-input"
-              />
-              <button
-                type="button"
-                onClick={() => handleCreateCustomTag()}
-                className="inline-tag-confirm-btn"
-                title="Add Tag"
-              >
-                ✓
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsAddingCustomTag(false)}
-                className="inline-tag-cancel-btn"
-                title="Cancel"
-              >
-                ✕
+                {isTagsExpanded ? <ChevronUp size={13} /> : <ChevronDown size={13} />}
               </button>
             </div>
-          ) : (
-            <button
-              type="button"
-              onClick={() => setIsAddingCustomTag(true)}
-              className="drawer-tag-filter-pill add-custom-tag-pill"
-              title="Add Custom Tag"
-            >
-              <Plus size={11} />
-              <span>Custom Tag</span>
-            </button>
+          </div>
+
+          {isTagsExpanded && (
+            <div className="demo-drawer-tags-bar">
+              <button
+                type="button"
+                onClick={() => setSelectedTagFilter('ALL')}
+                className={`drawer-tag-filter-pill ${selectedTagFilter === 'ALL' ? 'active' : ''}`}
+              >
+                <Tag size={10} />
+                <span>All</span>
+              </button>
+
+              {allAvailableTags.map(tag => {
+                const isCustom = customTags.includes(tag);
+                const isSelected = selectedTagFilter === tag;
+
+                return (
+                  <button
+                    key={tag}
+                    type="button"
+                    onClick={() => setSelectedTagFilter(isSelected ? 'ALL' : tag)}
+                    className={`drawer-tag-filter-pill ${isSelected ? 'active' : ''} ${isCustom ? 'custom-tag' : ''}`}
+                  >
+                    <span>#{tag}</span>
+                    {isCustom && (
+                      <span
+                        onClick={(e) => handleDeleteCustomTag(tag, e)}
+                        className="delete-custom-tag-btn"
+                        title={`Delete custom tag #${tag}`}
+                      >
+                        ×
+                      </span>
+                    )}
+                  </button>
+                );
+              })}
+
+              {/* Inline Custom Tag Creator */}
+              {isAddingCustomTag ? (
+                <div className="inline-tag-creator">
+                  <input
+                    type="text"
+                    autoFocus
+                    placeholder="tag name..."
+                    value={newTagInput}
+                    onChange={(e) => setNewTagInput(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter') handleCreateCustomTag();
+                      if (e.key === 'Escape') setIsAddingCustomTag(false);
+                    }}
+                    className="inline-tag-input"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleCreateCustomTag()}
+                    className="inline-tag-confirm-btn"
+                    title="Add Tag"
+                  >
+                    ✓
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setIsAddingCustomTag(false)}
+                    className="inline-tag-cancel-btn"
+                    title="Cancel"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setIsAddingCustomTag(true)}
+                  className="drawer-tag-filter-pill add-custom-tag-pill"
+                  title="Add Custom Tag"
+                >
+                  <Plus size={11} />
+                  <span>Custom Tag</span>
+                </button>
+              )}
+            </div>
           )}
         </div>
 
-        {/* 🔍 LIVE SEARCH INPUT */}
-        <div className="demo-drawer-search-bar">
-          <Search size={14} className="text-cyan-400" />
-          <input
-            type="text"
-            placeholder="Search past chats by prompt..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="demo-search-input"
-          />
-          {searchQuery && (
-            <button 
-              type="button" 
-              onClick={() => setSearchQuery('')} 
-              className="clear-search-btn"
-            >
-              <X size={12} />
-            </button>
-          )}
+        {/* 🔍 UNIFIED SEARCH BAR & NEW CHAT ACTION ROW (DIRECTLY ABOVE CHAT HISTORY) */}
+        <div className="demo-drawer-search-action-row">
+          <div className="demo-drawer-search-bar">
+            <Search size={14} style={{ color: 'var(--accent-cyan)' }} />
+            <input
+              type="text"
+              placeholder="Search past chats..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="demo-search-input"
+            />
+            {searchQuery && (
+              <button 
+                type="button" 
+                onClick={() => setSearchQuery('')} 
+                className="clear-search-btn"
+                aria-label="Clear search"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+          <button
+            type="button"
+            onClick={() => {
+              onNewSession();
+              onClose();
+            }}
+            className="drawer-new-chat-btn"
+            title="Start New Chat Session"
+          >
+            <Plus size={15} />
+            <span>New Chat</span>
+          </button>
         </div>
 
         {/* 📜 SCROLLABLE SESSIONS LIST */}
@@ -532,7 +551,7 @@ export const DemoChatHistoryDrawer: React.FC<DemoChatHistoryDrawerProps> = ({
                 >
                   <div className="flex items-center justify-between gap-2">
                     <div className="demo-session-info flex items-center gap-2 min-w-0 flex-1">
-                      <MessageSquare size={14} className={isActive ? 'text-cyan-400 flex-shrink-0' : 'text-slate-400 flex-shrink-0'} />
+                      <MessageSquare size={14} className="flex-shrink-0" style={{ color: isActive ? 'var(--accent-cyan)' : 'var(--text-muted)' }} />
                       <span className="demo-session-title truncate">
                         {titleText}
                       </span>

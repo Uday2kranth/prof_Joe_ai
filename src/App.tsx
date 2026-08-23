@@ -763,7 +763,24 @@ export const App: React.FC = () => {
   const [userRole, setUserRole] = useState<string>(() => localStorage.getItem('chatterbot_role') || 'student');
   const [authToken, setAuthToken] = useState<string>(() => localStorage.getItem('chatterbot_token') || '');
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(() => !localStorage.getItem('chatterbot_token'));
-  const [theme, setTheme] = useState<'dark' | 'light'>('dark');
+  const [theme, setTheme] = useState<'dark' | 'light'>(() => {
+    try {
+      const codeStyleSaved = localStorage.getItem('chatterbot_code_style');
+      if (codeStyleSaved) {
+        const parsed = JSON.parse(codeStyleSaved);
+        if (parsed.atmosphere) {
+          if (parsed.atmosphere === 'oxford_daylight' || parsed.atmosphere === 'amber_parchment') {
+            return 'light';
+          }
+        }
+      }
+      const savedAtmo = localStorage.getItem('chatterbot_atmosphere') || '';
+      if (savedAtmo === 'oxford_daylight' || savedAtmo === 'amber_parchment') return 'light';
+      const savedTheme = localStorage.getItem('chatterbot_theme') || localStorage.getItem('theme');
+      if (savedTheme === 'light' || savedTheme === 'dark') return savedTheme;
+    } catch {}
+    return 'dark';
+  });
 
   // 📌 Main Chat Persistent System Prompt (Persists across New Chat and Branching until explicitly disabled)
   const [persistentMainSystemPrompt, setPersistentMainSystemPrompt] = useState<{ title: string; prompt: string } | null>(() => {
@@ -973,6 +990,8 @@ export const App: React.FC = () => {
     setActiveHubWorkspaceState(ws);
     localStorage.setItem('chatterbot_active_hub_workspace', ws);
   };
+
+  const [prefilledChatPrompt, setPrefilledChatPrompt] = useState<string>('');
 
   // Android Native Hardware Back Button Listener (Navigates back to Landing Hub instead of closing app)
   useEffect(() => {
@@ -1411,13 +1430,109 @@ export const App: React.FC = () => {
     }
   };
 
+  const [atmosphere, setAtmosphere] = useState<string>(() => {
+    try {
+      const codeStyleSaved = localStorage.getItem('chatterbot_code_style');
+      if (codeStyleSaved) {
+        const parsed = JSON.parse(codeStyleSaved);
+        if (parsed.atmosphere) return parsed.atmosphere;
+      }
+      const saved = localStorage.getItem('chatterbot_atmosphere');
+      if (saved) return saved;
+    } catch {}
+    return 'cyber_osmania';
+  });
+
+  const [bubbleStyle, setBubbleStyle] = useState<string>(() => {
+    try {
+      const codeStyleSaved = localStorage.getItem('chatterbot_code_style');
+      if (codeStyleSaved) {
+        const parsed = JSON.parse(codeStyleSaved);
+        if (parsed.bubbleStyle) return parsed.bubbleStyle;
+      }
+      const saved = localStorage.getItem('chatterbot_bubble_style');
+      if (saved) return saved;
+    } catch {}
+    return 'cyan_glass';
+  });
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
-  }, [theme]);
+    document.documentElement.setAttribute('data-atmosphere', atmosphere);
+    document.documentElement.setAttribute('data-bubble-style', bubbleStyle);
+  }, [theme, atmosphere, bubbleStyle]);
 
+  useEffect(() => {
+    const handleAtmosphereUpdate = () => {
+      try {
+        let atmoToSet = '';
+        let bubbleToSet = '';
+        const codeStyleSaved = localStorage.getItem('chatterbot_code_style');
+        if (codeStyleSaved) {
+          const parsed = JSON.parse(codeStyleSaved);
+          if (parsed.atmosphere) atmoToSet = parsed.atmosphere;
+          if (parsed.bubbleStyle) bubbleToSet = parsed.bubbleStyle;
+        }
+        if (!atmoToSet) {
+          atmoToSet = localStorage.getItem('chatterbot_atmosphere') || '';
+        }
+        if (atmoToSet) {
+          setAtmosphere(atmoToSet);
+          document.documentElement.setAttribute('data-atmosphere', atmoToSet);
+          const isLight = atmoToSet === 'oxford_daylight' || atmoToSet === 'amber_parchment';
+          const newTheme = isLight ? 'light' : 'dark';
+          setTheme(newTheme);
+          document.documentElement.setAttribute('data-theme', newTheme);
+          localStorage.setItem('chatterbot_theme', newTheme);
+          localStorage.setItem('theme', newTheme);
+
+          // Android Capacitor: Sync native status bar icon contrast
+          import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
+            StatusBar.setStyle({ style: newTheme === 'light' ? Style.Light : Style.Dark }).catch(() => {});
+            StatusBar.setBackgroundColor({ color: newTheme === 'light' ? '#f8fafc' : '#0b0f19' }).catch(() => {});
+          }).catch(() => {});
+        }
+        if (bubbleToSet) {
+          setBubbleStyle(bubbleToSet);
+          document.documentElement.setAttribute('data-bubble-style', bubbleToSet);
+        }
+      } catch {}
+    };
+    window.addEventListener('chatterbot_code_style_updated', handleAtmosphereUpdate);
+    window.addEventListener('chatterbot_atmosphere_updated', handleAtmosphereUpdate);
+    window.addEventListener('storage', handleAtmosphereUpdate);
+    return () => {
+      window.removeEventListener('chatterbot_code_style_updated', handleAtmosphereUpdate);
+      window.removeEventListener('chatterbot_atmosphere_updated', handleAtmosphereUpdate);
+      window.removeEventListener('storage', handleAtmosphereUpdate);
+    };
+  }, []);
 
   const handleToggleTheme = () => {
-    setTheme(prev => (prev === 'dark' ? 'light' : 'dark'));
+    setTheme(prev => {
+      const nextTheme = prev === 'dark' ? 'light' : 'dark';
+      const nextAtmo = nextTheme === 'light' ? 'oxford_daylight' : 'cyber_osmania';
+      setAtmosphere(nextAtmo);
+      document.documentElement.setAttribute('data-theme', nextTheme);
+      document.documentElement.setAttribute('data-atmosphere', nextAtmo);
+      localStorage.setItem('chatterbot_theme', nextTheme);
+      localStorage.setItem('chatterbot_atmosphere', nextAtmo);
+      try {
+        const codeStyleSaved = localStorage.getItem('chatterbot_code_style');
+        const parsed = codeStyleSaved ? JSON.parse(codeStyleSaved) : {};
+        localStorage.setItem('chatterbot_code_style', JSON.stringify({ ...parsed, atmosphere: nextAtmo }));
+      } catch {}
+
+      // Android Capacitor: Sync native status bar
+      import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
+        StatusBar.setStyle({ style: nextTheme === 'light' ? Style.Light : Style.Dark }).catch(() => {});
+        StatusBar.setBackgroundColor({ color: nextTheme === 'light' ? '#f8fafc' : '#0b0f19' }).catch(() => {});
+      }).catch(() => {});
+
+      window.dispatchEvent(new Event('chatterbot_code_style_updated'));
+      window.dispatchEvent(new Event('chatterbot_atmosphere_updated'));
+      return nextTheme;
+    });
   };
 
   const handleNewSession = () => {
@@ -1871,7 +1986,9 @@ export const App: React.FC = () => {
     }
   };
 
-  const handleLoadPromptToChat = (_promptText: string) => {
+  const handleLoadPromptToChat = (promptText: string) => {
+    setPrefilledChatPrompt(promptText);
+    setActiveHubWorkspace('chat');
     setActiveView('chat');
   };
 
@@ -1935,7 +2052,7 @@ export const App: React.FC = () => {
   // Render Hub Landing View
   if (activeHubWorkspace === 'landing') {
     return (
-      <div className="app-container" data-theme={theme}>
+      <div className="app-container" data-theme={theme} data-atmosphere={atmosphere} data-bubble-style={bubbleStyle}>
         <DemoLandingHub
           onSelectWorkspace={(ws) => setActiveHubWorkspace(ws as ActiveViewType)}
           onOpenSettings={() => setIsSettingsOpen(true)}
@@ -1967,7 +2084,7 @@ export const App: React.FC = () => {
 
   // Full-Bleed Dedicated Workspace View inside Hub Demo
   return (
-      <div className="app-container" data-theme={theme}>
+      <div className="app-container" data-theme={theme} data-atmosphere={atmosphere} data-bubble-style={bubbleStyle}>
         <div className="app-main-viewport" style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column' }}>
           {/* Top Home Navigation Breadcrumb Bar */}
           <div className="demo-workspace-header">
@@ -1988,7 +2105,7 @@ export const App: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsDemoChatDrawerOpen(true)}
-                  className="demo-view-toggle-btn cyan-toggle-btn"
+                  className="demo-view-toggle-btn"
                   title="Open Control Deck"
                 >
                   <Menu size={16} />
@@ -2000,7 +2117,7 @@ export const App: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsPersonaDrawerOpen(true)}
-                  className="demo-view-toggle-btn rose-toggle-btn"
+                  className="demo-view-toggle-btn"
                   title="Open Fun Persona Deck & Character Selector"
                 >
                   <Menu size={16} />
@@ -2012,7 +2129,7 @@ export const App: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsCodeLabDrawerOpen(true)}
-                  className="demo-view-toggle-btn cyan-toggle-btn"
+                  className="demo-view-toggle-btn"
                   title="Open Code Lab Control Deck"
                 >
                   <Menu size={16} />
@@ -2024,7 +2141,7 @@ export const App: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsLectureDrawerOpen(true)}
-                  className="demo-view-toggle-btn cyan-toggle-btn"
+                  className="demo-view-toggle-btn"
                   title="Open Lecture Control Deck"
                 >
                   <Menu size={16} />
@@ -2049,7 +2166,7 @@ export const App: React.FC = () => {
                 className="demo-icon-btn"
                 title="Toggle Dark/Light Theme"
               >
-                {theme === 'dark' ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} className="text-purple-400" />}
+                {theme === 'dark' ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} style={{ color: 'var(--accent-cyan)' }} />}
               </button>
 
               {/* 5. Quick API Keys & Model Selector (Key Symbol) */}
@@ -2078,7 +2195,7 @@ export const App: React.FC = () => {
             </div>
 
             <div className="demo-header-middle-title" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span className="portal-tag cyan-tag" style={{ textTransform: 'uppercase' }}>
+              <span className="portal-tag" style={{ textTransform: 'uppercase' }}>
                 {activeHubWorkspace === 'code_lab'
                   ? 'CODE DUNGEON WORKSPACE 🏰'
                   : activeHubWorkspace === 'extractor_studio'
@@ -2137,6 +2254,8 @@ export const App: React.FC = () => {
                   onPromptModeChange={handlePromptModeChange}
                   isDemoView={true}
                   onOpenCommandDeck={() => setIsDemoChatDrawerOpen(true)}
+                  prefilledPrompt={prefilledChatPrompt}
+                  onClearPrefilledPrompt={() => setPrefilledChatPrompt('')}
                 />
 
                 {isDemoPdfPreviewOpen && activeSession && (

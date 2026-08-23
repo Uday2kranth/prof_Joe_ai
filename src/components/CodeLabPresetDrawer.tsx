@@ -474,28 +474,28 @@ export function CodeLabPresetDrawer({
                   >
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: isActive ? 'rgba(6, 182, 212, 0.25)' : 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(6, 182, 212, 0.4)', color: '#06b6d4', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: '38px', height: '38px', borderRadius: '12px', background: isActive ? 'var(--pill-active-bg, rgba(6, 182, 212, 0.25))' : 'var(--pill-bg, rgba(30, 41, 59, 0.8))', border: '1px solid var(--pill-border, rgba(6, 182, 212, 0.4))', color: 'var(--accent-cyan, #06b6d4)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <IconComponent size={20} />
                         </div>
                         <div>
-                          <h3 style={{ fontSize: '0.92rem', fontWeight: 700, color: '#f8fafc', margin: 0 }}>
+                          <h3 style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text-primary, #f8fafc)', margin: 0 }}>
                             {preset.name}
                           </h3>
-                          <span style={{ fontSize: '0.65rem', fontWeight: 700, color: '#38bdf8', letterSpacing: '0.05em' }}>
+                          <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--accent-cyan, #38bdf8)', letterSpacing: '0.05em' }}>
                             {preset.badge}
                           </span>
                         </div>
                       </div>
 
                       {isActive && (
-                        <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '3px 8px', borderRadius: '12px', background: 'rgba(52, 211, 153, 0.2)', color: '#34d399', border: '1px solid rgba(52, 211, 153, 0.4)', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 700, padding: '3px 8px', borderRadius: '12px', background: 'var(--pill-active-bg, rgba(6, 182, 212, 0.2))', color: 'var(--accent-cyan, #06b6d4)', border: '1px solid var(--pill-border, rgba(6, 182, 212, 0.4))', display: 'flex', alignItems: 'center', gap: '4px' }}>
                           <Check size={12} />
                           <span>ACTIVE</span>
                         </span>
                       )}
                     </div>
 
-                    <p style={{ fontSize: '0.78rem', color: '#94a3b8', margin: 0, lineHeight: 1.5 }}>
+                    <p style={{ fontSize: '0.78rem', color: 'var(--text-secondary, #94a3b8)', margin: 0, lineHeight: 1.5 }}>
                       {preset.description}
                     </p>
 
@@ -508,7 +508,7 @@ export function CodeLabPresetDrawer({
                     </div>
 
                     {/* Action Button */}
-                    <div style={{ paddingTop: '8px', borderTop: '1px solid rgba(255, 255, 255, 0.06)', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
+                    <div style={{ paddingTop: '8px', borderTop: '1px solid var(--border-color, rgba(255, 255, 255, 0.06))', display: 'flex', gap: '8px', justifyContent: 'flex-end' }}>
                       {isActive ? (
                         <>
                           {onResetPresetChat && (
@@ -539,8 +539,8 @@ export function CodeLabPresetDrawer({
                             onSelectPreset(preset);
                             onClose();
                           }}
-                          className="extractor-btn-primary"
-                          style={{ fontSize: '0.75rem', padding: '6px 14px' }}
+                          className="btn-theme-primary"
+                          style={{ fontSize: '0.75rem', padding: '6px 14px', borderRadius: '10px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                         >
                           <Zap size={13} />
                           <span>Activate Preset</span>

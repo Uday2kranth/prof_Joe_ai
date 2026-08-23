@@ -42,11 +42,17 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
   const containerRef = React.useRef<HTMLDivElement>(null);
   const rafId = React.useRef<number | null>(null);
 
+  React.useEffect(() => {
+    if (containerRef.current) {
+      containerRef.current.style.setProperty('--mouse-x', '30vw');
+      containerRef.current.style.setProperty('--mouse-y', '260px');
+    }
+  }, [theme]);
+
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
-    const rect = containerRef.current.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const y = e.clientY - rect.top;
+    const x = e.clientX;
+    const y = e.clientY;
 
     if (rafId.current) cancelAnimationFrame(rafId.current);
     rafId.current = requestAnimationFrame(() => {
@@ -179,13 +185,9 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
               <p>Chat seamlessly with OpenRouter, Gemini, Groq, and NVIDIA models. Multi-key rotation support.</p>
             </div>
             <div className="portal-card-footer">
-              <div className="portal-meta-features">
-                <span><Cpu size={12} /> 12+ AI Models</span>
-                <span>⚡ Multi-Key</span>
-              </div>
-              <button type="button" className="launch-portal-btn cyan-btn">
+              <button type="button" className="launch-portal-btn">
                 <span>Launch Chat</span>
-                <ArrowRight size={14} />
+                <ArrowRight size={14} className="launch-arrow" />
               </button>
             </div>
           </div>
@@ -195,26 +197,21 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
             <div 
               className="hub-portal-card lecture-portal"
               onClick={() => onSelectWorkspace('lecture_notes')}
-              style={{ borderColor: 'rgba(56, 189, 248, 0.4)', background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(12, 74, 110, 0.5))' }}
             >
               <div className="portal-card-header">
-                <div className="portal-icon-badge cyan-bg" style={{ backgroundColor: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8' }}>
+                <div className="portal-icon-badge cyan-bg">
                   <GraduationCap size={24} />
                 </div>
-                <span className="portal-tag cyan-tag" style={{ backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', borderColor: 'rgba(56, 189, 248, 0.3)' }}>Educator Studio</span>
+                <span className="portal-tag cyan-tag">Educator Studio</span>
               </div>
               <div className="portal-card-body">
                 <h3>Lecture Notes Studio 🎓</h3>
                 <p>Generate classroom scripts, blackboard notes, student handouts, and syllabus maps with print & PDF export.</p>
               </div>
               <div className="portal-card-footer">
-                <div className="portal-meta-features">
-                  <span>📘 4 Presets</span>
-                  <span>📄 Print & PDF</span>
-                </div>
-                <button type="button" className="launch-portal-btn cyan-btn">
+                <button type="button" className="launch-portal-btn">
                   <span>Open Studio</span>
-                  <ArrowRight size={14} />
+                  <ArrowRight size={14} className="launch-arrow" />
                 </button>
               </div>
             </div>
@@ -237,13 +234,9 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
                 <p>Interact with Balaraju, Aakash, Rick-inspired, and specialized AI tutor personas with custom tones.</p>
               </div>
               <div className="portal-card-footer">
-                <div className="portal-meta-features">
-                  <span>🎭 Balaraju & Aakash</span>
-                  <span>✨ Custom Tones</span>
-                </div>
-                <button type="button" className="launch-portal-btn rose-btn">
+                <button type="button" className="launch-portal-btn">
                   <span>Open Personas</span>
-                  <ArrowRight size={14} />
+                  <ArrowRight size={14} className="launch-arrow" />
                 </button>
               </div>
             </div>
@@ -265,13 +258,9 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
               <p>High-yield exam questions, syllabus breakdowns, 12-mark essay guides, and unit predictions.</p>
             </div>
             <div className="portal-card-footer">
-              <div className="portal-meta-features">
-                <span><BookOpen size={12} /> MIGFHT & Networks</span>
-                <span>⚡ High Yield</span>
-              </div>
-              <button type="button" className="launch-portal-btn emerald-btn">
+              <button type="button" className="launch-portal-btn">
                 <span>Open Exam Hub</span>
-                <ArrowRight size={14} />
+                <ArrowRight size={14} className="launch-arrow" />
               </button>
             </div>
           </div>
@@ -280,13 +269,9 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
           <div 
             className="hub-portal-card flashcards-portal"
             onClick={() => onSelectWorkspace('flashcards_studio')}
-            style={{
-              borderColor: 'rgba(6, 182, 212, 0.4)',
-              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(8, 145, 178, 0.35))'
-            }}
           >
             <div className="portal-card-header">
-              <div className="portal-icon-badge cyan-bg" style={{ color: '#06b6d4' }}>
+              <div className="portal-icon-badge cyan-bg">
                 <Layers size={24} />
               </div>
               <span className="portal-tag cyan-tag">Persistent Decks</span>
@@ -296,13 +281,9 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
               <p>3D interactive flip revision decks, spaced repetition cram mode, formula recall, and mastery tracking with 0 tokens.</p>
             </div>
             <div className="portal-card-footer">
-              <div className="portal-meta-features">
-                <span>🗂️ Saved Decks</span>
-                <span>✨ 3D Flip Mastery</span>
-              </div>
-              <button type="button" className="launch-portal-btn cyan-btn">
+              <button type="button" className="launch-portal-btn">
                 <span>Open Studio</span>
-                <ArrowRight size={14} />
+                <ArrowRight size={14} className="launch-arrow" />
               </button>
             </div>
           </div>
@@ -311,13 +292,9 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
           <div 
             className="hub-portal-card quiz-portal"
             onClick={() => onSelectWorkspace('quiz_arena')}
-            style={{
-              borderColor: 'rgba(16, 185, 129, 0.4)',
-              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(5, 150, 105, 0.35))'
-            }}
           >
             <div className="portal-card-header">
-              <div className="portal-icon-badge emerald-bg" style={{ color: '#10b981' }}>
+              <div className="portal-icon-badge emerald-bg">
                 <Award size={24} />
               </div>
               <span className="portal-tag emerald-tag">Exam Arena</span>
@@ -327,13 +304,9 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
               <p>Multiple-choice exam simulations, instant solution derivations, mistake drill replay, and readiness ratings.</p>
             </div>
             <div className="portal-card-footer">
-              <div className="portal-meta-features">
-                <span>📝 Instant MCQs</span>
-                <span>🎯 Solution Derivations</span>
-              </div>
-              <button type="button" className="launch-portal-btn emerald-btn">
+              <button type="button" className="launch-portal-btn">
                 <span>Launch Arena</span>
-                <ArrowRight size={14} />
+                <ArrowRight size={14} className="launch-arrow" />
               </button>
             </div>
           </div>
@@ -354,13 +327,9 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
               <p>50/50 Code-to-SVG Editor for Mermaid, PlantUML, and Graphviz architecture diagrams.</p>
             </div>
             <div className="portal-card-footer">
-              <div className="portal-meta-features">
-                <span><Layers size={12} /> Kroki Engine</span>
-                <span>PNG Export</span>
-              </div>
-              <button type="button" className="launch-portal-btn purple-btn">
+              <button type="button" className="launch-portal-btn">
                 <span>Open Studio</span>
-                <ArrowRight size={14} />
+                <ArrowRight size={14} className="launch-arrow" />
               </button>
             </div>
           </div>
@@ -369,16 +338,12 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
           <div 
             className="hub-portal-card dsa-portal"
             onClick={() => onSelectWorkspace('dsa_lab')}
-            style={{
-              borderColor: 'rgba(56, 189, 248, 0.4)',
-              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(2, 132, 199, 0.4))'
-            }}
           >
             <div className="portal-card-header">
-              <div className="portal-icon-badge" style={{ backgroundColor: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8' }}>
+              <div className="portal-icon-badge cyan-bg">
                 <Binary size={24} />
               </div>
-              <span className="portal-tag" style={{ backgroundColor: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', borderColor: 'rgba(56, 189, 248, 0.3)' }}>
+              <span className="portal-tag cyan-tag">
                 7 Sub-Labs
               </span>
             </div>
@@ -387,13 +352,9 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
               <p>Sorting, Two-Pointers, Stacks/Queues/AVL, Graph Dijkstra/BFS/DFS, DP Knapsack/LCS, N-Queens & KMP with Multi-Language Code.</p>
             </div>
             <div className="portal-card-footer">
-              <div className="portal-meta-features">
-                <span>📶 Sorting & Graphs</span>
-                <span>💻 Python/C++/Java</span>
-              </div>
-              <button type="button" className="launch-portal-btn" style={{ background: 'linear-gradient(135deg, #0284c7, #0369a1)', color: '#ffffff' }}>
+              <button type="button" className="launch-portal-btn">
                 <span>Launch DSA Lab</span>
-                <ArrowRight size={14} />
+                <ArrowRight size={14} className="launch-arrow" />
               </button>
             </div>
           </div>
@@ -402,16 +363,12 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
           <div 
             className="hub-portal-card sandbox-portal"
             onClick={() => onSelectWorkspace('sandbox')}
-            style={{
-              borderColor: 'rgba(168, 85, 247, 0.4)',
-              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(59, 7, 100, 0.5))'
-            }}
           >
             <div className="portal-card-header">
-              <div className="portal-icon-badge" style={{ backgroundColor: 'rgba(168, 85, 247, 0.2)', color: '#c084fc' }}>
+              <div className="portal-icon-badge purple-bg">
                 <FlaskConical size={24} />
               </div>
-              <span className="portal-tag" style={{ backgroundColor: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', borderColor: 'rgba(168, 85, 247, 0.3)' }}>
+              <span className="portal-tag purple-tag">
                 5-in-1 Lab
               </span>
             </div>
@@ -420,13 +377,9 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
               <p>Smart Teaching Board & 120+ Gizmos, Data Science & Neural AI Simulator, Statistical Lab, KaTeX Academic Board & Excalidraw.</p>
             </div>
             <div className="portal-card-footer">
-              <div className="portal-meta-features">
-                <span>🌟 120+ Gizmos & KaTeX</span>
-                <span>⚡ 60 FPS Neural Sim</span>
-              </div>
-              <button type="button" className="launch-portal-btn" style={{ background: 'linear-gradient(135deg, #a855f7, #6366f1)', color: '#ffffff' }}>
+              <button type="button" className="launch-portal-btn">
                 <span>Launch Sandbox</span>
-                <ArrowRight size={14} />
+                <ArrowRight size={14} className="launch-arrow" />
               </button>
             </div>
           </div>
@@ -447,13 +400,9 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
               <p>Curated AI persona system prompts, exam evaluator rules, and academic persona behaviors.</p>
             </div>
             <div className="portal-card-footer">
-              <div className="portal-meta-features">
-                <span>⚡ 1-Click System Lock</span>
-                <span>Verified Rules</span>
-              </div>
-              <button type="button" className="launch-portal-btn cyan-btn">
+              <button type="button" className="launch-portal-btn">
                 <span>Open System Prompts</span>
-                <ArrowRight size={14} />
+                <ArrowRight size={14} className="launch-arrow" />
               </button>
             </div>
           </div>
@@ -474,13 +423,9 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
               <p>Custom user exam prompt templates, quick revision shortcuts, and essay outline generators.</p>
             </div>
             <div className="portal-card-footer">
-              <div className="portal-meta-features">
-                <span>⚡ 1-Click Apply</span>
-                <span>Custom Library</span>
-              </div>
-              <button type="button" className="launch-portal-btn amber-btn">
+              <button type="button" className="launch-portal-btn">
                 <span>Open User Prompts</span>
-                <ArrowRight size={14} />
+                <ArrowRight size={14} className="launch-arrow" />
               </button>
             </div>
           </div>
@@ -502,13 +447,9 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
                 <p>Interactive Three.js physics canvas with real-time matrix, tilt sensitivity, and ripple controls.</p>
               </div>
               <div className="portal-card-footer">
-                <div className="portal-meta-features">
-                  <span>🎮 WebGL 3D</span>
-                  <span>Physics Sim</span>
-                </div>
-                <button type="button" className="launch-portal-btn blue-btn">
+                <button type="button" className="launch-portal-btn">
                   <span>Launch Lab</span>
-                  <ArrowRight size={14} />
+                  <ArrowRight size={14} className="launch-arrow" />
                 </button>
               </div>
             </div>
@@ -516,56 +457,46 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
 
           {/* Card 7: Textractor */}
           <div 
-            className="hub-portal-card diagram-portal text-extractor-portal"
+            className="hub-portal-card text-extractor-portal"
             onClick={() => onSelectWorkspace('extractor_studio')}
-            style={{ borderColor: 'rgba(6, 182, 212, 0.4)', background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(8, 51, 68, 0.6))' }}
           >
             <div className="portal-card-header">
-              <div className="portal-icon-badge cyan-bg" style={{ backgroundColor: 'rgba(6, 182, 212, 0.2)', color: '#06b6d4' }}>
+              <div className="portal-icon-badge cyan-bg">
                 <Cpu size={24} />
               </div>
-              <span className="portal-tag cyan-tag" style={{ backgroundColor: 'rgba(6, 182, 212, 0.15)', color: '#06b6d4', borderColor: 'rgba(6, 182, 212, 0.3)' }}>Client-Side Parser</span>
+              <span className="portal-tag cyan-tag">Client-Side Parser</span>
             </div>
             <div className="portal-card-body">
               <h3>Textractor ⚡</h3>
               <p>Extract text, inspect code, and parse PDF, DOCX, IPYNB & Images 100% locally in browser without token limits!</p>
             </div>
             <div className="portal-card-footer">
-              <div className="portal-meta-features">
-                <span>📄 PDF, DOCX & IPYNB</span>
-                <span>⚡ 0 Server Fee</span>
-              </div>
-              <button type="button" className="launch-portal-btn cyan-btn">
+              <button type="button" className="launch-portal-btn">
                 <span>Open Textractor</span>
-                <ArrowRight size={14} />
+                <ArrowRight size={14} className="launch-arrow" />
               </button>
             </div>
           </div>
 
           {/* Card 8: Code Dungeon */}
           <div 
-            className="hub-portal-card diagram-portal"
+            className="hub-portal-card code-dungeon-portal"
             onClick={() => onSelectWorkspace('code_lab')}
-            style={{ borderColor: 'rgba(168, 85, 247, 0.4)', background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(88, 28, 135, 0.5))' }}
           >
             <div className="portal-card-header">
-              <div className="portal-icon-badge purple-bg" style={{ backgroundColor: 'rgba(168, 85, 247, 0.2)', color: '#c084fc' }}>
+              <div className="portal-icon-badge purple-bg">
                 <PenTool size={24} />
               </div>
-              <span className="portal-tag purple-tag" style={{ backgroundColor: 'rgba(168, 85, 247, 0.15)', color: '#c084fc', borderColor: 'rgba(168, 85, 247, 0.3)' }}>Split IDE Workspace</span>
+              <span className="portal-tag purple-tag">Split IDE Workspace</span>
             </div>
             <div className="portal-card-body">
               <h3>Code Dungeon 🏰</h3>
               <p>Split-screen resizable IDE for ML, Web Dev & Systems labs with paper dataset OCR, 8 Bento presets, and .zip exports!</p>
             </div>
             <div className="portal-card-footer">
-              <div className="portal-meta-features">
-                <span>🧪 8 Bento Presets</span>
-                <span>📦 .zip Project Export</span>
-              </div>
-              <button type="button" className="launch-portal-btn purple-btn">
+              <button type="button" className="launch-portal-btn">
                 <span>Open Code Dungeon</span>
-                <ArrowRight size={14} />
+                <ArrowRight size={14} className="launch-arrow" />
               </button>
             </div>
           </div>
@@ -574,26 +505,21 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
           <div 
             className="hub-portal-card pinned-archive-portal"
             onClick={() => onSelectWorkspace('pinned_archive')}
-            style={{ borderColor: 'rgba(245, 158, 11, 0.4)', background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.95), rgba(180, 83, 9, 0.35))' }}
           >
             <div className="portal-card-header">
-              <div className="portal-icon-badge amber-bg" style={{ backgroundColor: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24' }}>
+              <div className="portal-icon-badge amber-bg">
                 <Pin size={24} className="fill-amber-400" />
               </div>
-              <span className="portal-tag amber-tag" style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', borderColor: 'rgba(245, 158, 11, 0.3)' }}>Exam Cheat Sheet</span>
+              <span className="portal-tag amber-tag">Exam Cheat Sheet</span>
             </div>
             <div className="portal-card-body">
               <h3>Pinned Notes & Exam Archive 🏛️</h3>
               <p>Centralized revision hub for all bookmarked formulas, definitions, algorithms, and 1-page print cheat sheets.</p>
             </div>
             <div className="portal-card-footer">
-              <div className="portal-meta-features">
-                <span>⭐ Cross-Workspace</span>
-                <span>🖨️ Master PDF Print</span>
-              </div>
-              <button type="button" className="launch-portal-btn amber-btn">
+              <button type="button" className="launch-portal-btn">
                 <span>Open Archive</span>
-                <ArrowRight size={14} />
+                <ArrowRight size={14} className="launch-arrow" />
               </button>
             </div>
           </div>

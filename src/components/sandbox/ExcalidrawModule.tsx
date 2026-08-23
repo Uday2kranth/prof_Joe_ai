@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Excalidraw } from '@excalidraw/excalidraw';
 import '@excalidraw/excalidraw/index.css';
 import { Wand2, X, Sparkles, Check, Copy, PenTool } from 'lucide-react';
@@ -17,6 +17,20 @@ export const ExcalidrawModule: React.FC = () => {
   );
   const [generatedFormula, setGeneratedFormula] = useState<{ name: string; latex: string; explanation?: string } | null>(null);
   const [copied, setCopied] = useState<boolean>(false);
+
+  // Dynamic Theme Detection
+  const [isLightMode, setIsLightMode] = useState<boolean>(() => {
+    return document.documentElement.getAttribute('data-theme') === 'light';
+  });
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+      setIsLightMode(isLight);
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-atmosphere'] });
+    return () => observer.disconnect();
+  }, []);
 
   const PROVIDER_OPTIONS = [
     { id: 'pollinations', name: 'Pollinations (Free / No Key)', defaultModel: 'openai' },
@@ -100,7 +114,7 @@ export const ExcalidrawModule: React.FC = () => {
   };
 
   return (
-    <div className="excalidraw-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', gap: '10px' }}>
+    <div className="excalidraw-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0, flex: 1, gap: '8px', overflow: 'hidden' }}>
       {/* Top Header Information Bar with AI Formula Trigger */}
       <div
         className="excalidraw-header-bar"
@@ -108,11 +122,12 @@ export const ExcalidrawModule: React.FC = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          padding: '10px 16px',
-          background: 'rgba(15, 23, 42, 0.95)',
-          borderRadius: '14px',
-          border: '1px solid rgba(51, 65, 85, 0.7)',
-          boxShadow: '0 4px 20px rgba(0,0,0,0.5)'
+          padding: '8px 14px',
+          background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
+          borderRadius: '12px',
+          border: '1px solid var(--card-border, rgba(51, 65, 85, 0.7))',
+          boxShadow: 'var(--card-shadow, 0 4px 20px rgba(0,0,0,0.5))',
+          flexShrink: 0
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -120,10 +135,10 @@ export const ExcalidrawModule: React.FC = () => {
             <PenTool size={16} />
           </div>
           <div>
-            <h3 style={{ fontSize: '0.85rem', fontWeight: 800, color: '#f8fafc', margin: 0 }}>
+            <h3 style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary, #f8fafc)', margin: 0 }}>
               Excalidraw Freehand Canvas
             </h3>
-            <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary, #94a3b8)' }}>
               Full-bleed infinite whiteboard, hand-drawn vector diagrams & AI formula integration
             </span>
           </div>
@@ -135,7 +150,7 @@ export const ExcalidrawModule: React.FC = () => {
             type="button"
             onClick={() => setShowAiModal(true)}
             style={{
-              padding: '6px 12px',
+              padding: '5px 12px',
               borderRadius: '8px',
               fontSize: '0.75rem',
               fontWeight: 700,
@@ -173,18 +188,18 @@ export const ExcalidrawModule: React.FC = () => {
         className="excalidraw-canvas-viewport"
         style={{
           flex: 1,
-          minHeight: '680px',
-          height: 'calc(100vh - 210px)',
-          borderRadius: '16px',
+          height: '100%',
+          minHeight: 0,
+          borderRadius: '14px',
           overflow: 'hidden',
-          border: '1px solid rgba(51, 65, 85, 0.8)',
-          boxShadow: '0 10px 30px rgba(0, 0, 0, 0.5)',
+          border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))',
+          boxShadow: 'var(--card-shadow, 0 10px 30px rgba(0, 0, 0, 0.5))',
           position: 'relative',
-          background: '#121212'
+          background: isLightMode ? '#ffffff' : 'var(--bg-primary, #121212)'
         }}
       >
         <Excalidraw
-          theme="dark"
+          theme={isLightMode ? 'light' : 'dark'}
           viewModeEnabled={false}
           zenModeEnabled={false}
           gridModeEnabled={true}
@@ -209,20 +224,21 @@ export const ExcalidrawModule: React.FC = () => {
             style={{
               width: '480px',
               maxWidth: '90vw',
-              background: '#0f172a',
+              background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
               borderRadius: '16px',
-              border: '1px solid rgba(168, 85, 247, 0.5)',
+              border: '1px solid var(--card-border, rgba(168, 85, 247, 0.5))',
               padding: '20px',
-              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.8)',
+              boxShadow: 'var(--card-shadow, 0 20px 40px rgba(0, 0, 0, 0.8))',
               display: 'flex',
               flexDirection: 'column',
-              gap: '14px'
+              gap: '14px',
+              backdropFilter: 'blur(16px)'
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Wand2 size={18} color="#c084fc" />
-                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: '#f8fafc' }}>
+                <Wand2 size={18} color="var(--accent-cyan, #c084fc)" />
+                <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text-primary, #f8fafc)' }}>
                   AI Formula Generator for Excalidraw
                 </span>
               </div>
@@ -232,7 +248,7 @@ export const ExcalidrawModule: React.FC = () => {
                   setShowAiModal(false);
                   setGeneratedFormula(null);
                 }}
-                style={{ background: 'transparent', border: 'none', color: '#94a3b8', cursor: 'pointer' }}
+                style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary, #94a3b8)', cursor: 'pointer' }}
               >
                 <X size={18} />
               </button>
@@ -241,7 +257,7 @@ export const ExcalidrawModule: React.FC = () => {
             {/* Provider & Model Selectors */}
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
               <div>
-                <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+                <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary, #94a3b8)', display: 'block', marginBottom: '4px' }}>
                   AI Provider:
                 </label>
                 <select
@@ -256,20 +272,20 @@ export const ExcalidrawModule: React.FC = () => {
                     width: '100%',
                     padding: '8px 10px',
                     borderRadius: '8px',
-                    background: '#1e293b',
-                    border: '1px solid #334155',
-                    color: '#f8fafc',
+                    background: 'var(--dropdown-bg, rgba(30, 41, 59, 0.95))',
+                    border: '1px solid var(--border-color, #334155)',
+                    color: 'var(--text-primary, #f8fafc)',
                     fontSize: '0.78rem'
                   }}
                 >
                   {PROVIDER_OPTIONS.map(p => (
-                    <option key={p.id} value={p.id}>{p.name}</option>
+                    <option key={p.id} value={p.id} style={{ background: 'var(--dropdown-bg, #0f172a)', color: 'var(--text-primary, #f8fafc)' }}>{p.name}</option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+                <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-secondary, #94a3b8)', display: 'block', marginBottom: '4px' }}>
                   Model:
                 </label>
                 <input
@@ -280,9 +296,9 @@ export const ExcalidrawModule: React.FC = () => {
                     width: '100%',
                     padding: '8px 10px',
                     borderRadius: '8px',
-                    background: '#1e293b',
-                    border: '1px solid #334155',
-                    color: '#f8fafc',
+                    background: 'var(--bg-tertiary, #1e293b)',
+                    border: '1px solid var(--border-color, #334155)',
+                    color: 'var(--text-primary, #f8fafc)',
                     fontSize: '0.78rem'
                   }}
                 />
@@ -291,7 +307,7 @@ export const ExcalidrawModule: React.FC = () => {
 
             {/* Prompt Input */}
             <div>
-              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+              <label style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary, #94a3b8)', display: 'block', marginBottom: '4px' }}>
                 Formula Concept or Topic:
               </label>
               <input
@@ -307,9 +323,9 @@ export const ExcalidrawModule: React.FC = () => {
                   width: '100%',
                   padding: '10px 12px',
                   borderRadius: '8px',
-                  background: '#1e293b',
-                  border: '1px solid #334155',
-                  color: '#f8fafc',
+                  background: 'var(--bg-tertiary, #1e293b)',
+                  border: '1px solid var(--border-color, #334155)',
+                  color: 'var(--text-primary, #f8fafc)',
                   fontSize: '0.85rem'
                 }}
               />
@@ -325,9 +341,9 @@ export const ExcalidrawModule: React.FC = () => {
                   style={{
                     padding: '3px 8px',
                     borderRadius: '6px',
-                    background: 'rgba(168, 85, 247, 0.15)',
-                    border: '1px solid rgba(168, 85, 247, 0.3)',
-                    color: '#c084fc',
+                    background: 'var(--pill-bg, rgba(168, 85, 247, 0.15))',
+                    border: '1px solid var(--pill-border, rgba(168, 85, 247, 0.3))',
+                    color: 'var(--accent-cyan, #c084fc)',
                     fontSize: '0.7rem',
                     cursor: 'pointer'
                   }}
@@ -343,15 +359,15 @@ export const ExcalidrawModule: React.FC = () => {
                 style={{
                   padding: '12px',
                   borderRadius: '10px',
-                  background: '#0b1120',
-                  border: '1px solid rgba(168, 85, 247, 0.4)',
+                  background: 'var(--bg-primary, #0b1120)',
+                  border: '1px solid var(--card-border, rgba(168, 85, 247, 0.4))',
                   display: 'flex',
                   flexDirection: 'column',
                   gap: '6px'
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: '#f8fafc' }}>
+                  <span style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--text-primary, #f8fafc)' }}>
                     📐 {generatedFormula.name}
                   </span>
                   <button
@@ -362,9 +378,9 @@ export const ExcalidrawModule: React.FC = () => {
                       setTimeout(() => setCopied(false), 2000);
                     }}
                     style={{
-                      background: 'rgba(168, 85, 247, 0.2)',
-                      border: '1px solid #a855f7',
-                      color: '#c084fc',
+                      background: 'var(--pill-active-bg, rgba(168, 85, 247, 0.2))',
+                      border: '1px solid var(--accent-cyan, #a855f7)',
+                      color: 'var(--accent-cyan, #c084fc)',
                       borderRadius: '6px',
                       padding: '3px 8px',
                       fontSize: '0.7rem',
@@ -378,11 +394,11 @@ export const ExcalidrawModule: React.FC = () => {
                     <span>{copied ? 'Copied LaTeX!' : 'Copy LaTeX'}</span>
                   </button>
                 </div>
-                <div style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#38bdf8', padding: '4px 0', wordBreak: 'break-all' }}>
+                <div style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: 'var(--accent-cyan, #38bdf8)', padding: '4px 0', wordBreak: 'break-all' }}>
                   {generatedFormula.latex}
                 </div>
                 {generatedFormula.explanation && (
-                  <div style={{ fontSize: '0.7rem', color: '#94a3b8' }}>
+                  <div style={{ fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
                     💡 {generatedFormula.explanation}
                   </div>
                 )}
@@ -400,9 +416,9 @@ export const ExcalidrawModule: React.FC = () => {
                 style={{
                   padding: '8px 14px',
                   borderRadius: '8px',
-                  background: 'rgba(30, 41, 59, 0.8)',
-                  border: '1px solid #334155',
-                  color: '#cbd5e1',
+                  background: 'var(--btn-secondary-bg, rgba(30, 41, 59, 0.8))',
+                  border: '1px solid var(--card-border, #334155)',
+                  color: 'var(--text-secondary, #cbd5e1)',
                   fontSize: '0.78rem',
                   cursor: 'pointer'
                 }}
@@ -416,9 +432,9 @@ export const ExcalidrawModule: React.FC = () => {
                 style={{
                   padding: '8px 16px',
                   borderRadius: '8px',
-                  background: 'linear-gradient(135deg, #a855f7, #6366f1)',
-                  border: 'none',
-                  color: '#ffffff',
+                  background: 'var(--btn-primary-bg, linear-gradient(135deg, #a855f7, #6366f1))',
+                  border: '1px solid var(--btn-primary-border, transparent)',
+                  color: 'var(--btn-primary-text, #ffffff)',
                   fontSize: '0.78rem',
                   fontWeight: 700,
                   display: 'flex',

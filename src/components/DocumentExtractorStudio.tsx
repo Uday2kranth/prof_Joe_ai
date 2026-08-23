@@ -189,40 +189,38 @@ export function DocumentExtractorStudio({ isOpen, onClose, onSendToChat }: Docum
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 bg-slate-950/90 border-b border-slate-800">
           <div className="flex items-center gap-3">
-            <div className="w-9 h-9 rounded-xl bg-cyan-500/20 border border-cyan-500/40 flex items-center justify-center text-cyan-400">
+            <div className="w-10 h-10 rounded-2xl flex items-center justify-center flex-shrink-0" style={{ background: 'var(--pill-bg)', border: '1px solid var(--border-color)', color: 'var(--accent-cyan)' }}>
               <Cpu size={20} />
             </div>
             <div>
-              <h3 className="font-bold text-base text-slate-100 flex items-center gap-2">
-                <span>Document & Code Text Extractor Studio</span>
-                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-rose-500/20 text-rose-300 border border-rose-500/40">DEMO STUDIO</span>
-              </h3>
-              <p className="text-xs text-slate-400">Extract, inspect & clean text from PDFs, DOCX, IPYNB, Code & Images client-side</p>
+              <h3 className="text-base font-bold" style={{ color: 'var(--text-primary)' }}>Document & Code Extractor Studio</h3>
+              <p className="text-xs" style={{ color: 'var(--text-muted)' }}>Extract, inspect & clean text from PDFs, DOCX, IPYNB, Code & Images client-side</p>
             </div>
           </div>
 
           <button
             type="button"
             onClick={onClose}
-            className="p-2 rounded-xl text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
+            className="p-2 rounded-xl transition-colors"
+            style={{ color: 'var(--text-muted)' }}
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Studio Body */}
-        <div className="flex-1 p-6 overflow-y-auto space-y-6 bg-slate-950/60">
+        <div className="flex-1 p-6 overflow-y-auto space-y-6" style={{ background: 'var(--bg-primary)' }}>
           {/* Drop & Drag Upload Zone */}
           <div
             onDragOver={(e) => { e.preventDefault(); setIsDragging(true); }}
             onDragLeave={() => setIsDragging(false)}
             onDrop={handleDrop}
             onClick={() => fileInputRef.current?.click()}
-            className={`border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
-              isDragging 
-                ? 'border-cyan-400 bg-cyan-500/10 scale-[1.01]' 
-                : 'border-slate-800 hover:border-cyan-500/50 bg-slate-900/50 hover:bg-slate-900/80'
-            }`}
+            className="border-2 border-dashed rounded-2xl p-8 flex flex-col items-center justify-center text-center cursor-pointer transition-all"
+            style={{
+              borderColor: isDragging ? 'var(--accent-cyan)' : 'var(--border-color)',
+              background: isDragging ? 'var(--pill-bg)' : 'var(--bg-secondary)'
+            }}
           >
             <input
               type="file"
@@ -231,22 +229,22 @@ export function DocumentExtractorStudio({ isOpen, onClose, onSendToChat }: Docum
               className="hidden"
             />
             
-            <div className="w-14 h-14 rounded-2xl bg-cyan-500/15 border border-cyan-500/30 flex items-center justify-center text-cyan-400 mb-3 shadow-lg shadow-cyan-500/10">
+            <div className="w-14 h-14 rounded-2xl flex items-center justify-center mb-3 shadow-lg" style={{ background: 'var(--pill-bg)', border: '1px solid var(--border-color)', color: 'var(--accent-cyan)' }}>
               <Upload size={24} />
             </div>
 
-            <h4 className="font-bold text-sm text-slate-200 mb-1">
-              Drag & Drop file here or <span className="text-cyan-400 underline">Browse File</span>
+            <h4 className="font-bold text-sm mb-1" style={{ color: 'var(--text-primary)' }}>
+              Drag & Drop file here or <span className="underline" style={{ color: 'var(--accent-cyan)' }}>Browse File</span>
             </h4>
-            <p className="text-xs text-slate-400 max-w-md">
-              Supports <strong className="text-slate-300">PDF, DOCX, IPYNB (Jupyter), JS, PY, CPP, HTML, TXT, MD, PNG, JPG</strong>
+            <p className="text-xs max-w-md" style={{ color: 'var(--text-muted)' }}>
+              Supports <strong style={{ color: 'var(--text-primary)' }}>PDF, DOCX, IPYNB (Jupyter), JS, PY, CPP, HTML, TXT, MD, PNG, JPG</strong>
             </p>
           </div>
 
           {/* Processing Indicator */}
           {isProcessing && (
-            <div className="flex items-center gap-3 p-4 rounded-xl bg-slate-900 border border-cyan-500/30 text-xs font-semibold text-cyan-300 animate-pulse">
-              <Sparkles size={16} className="text-cyan-400 animate-spin" />
+            <div className="flex items-center gap-3 p-4 rounded-xl text-xs font-semibold animate-pulse" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--accent-cyan)', color: 'var(--accent-cyan)' }}>
+              <Sparkles size={16} className="animate-spin" style={{ color: 'var(--accent-cyan)' }} />
               <span>{processingStatus}</span>
             </div>
           )}
@@ -255,29 +253,29 @@ export function DocumentExtractorStudio({ isOpen, onClose, onSendToChat }: Docum
           {parsedDoc && !isProcessing && (
             <div className="space-y-3">
               {/* File Info Bar */}
-              <div className="flex items-center justify-between p-3.5 rounded-xl bg-slate-900 border border-slate-800 text-xs">
+              <div className="flex items-center justify-between p-3.5 rounded-xl text-xs" style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
                 <div className="flex items-center gap-2.5 truncate">
-                  <FileCode size={16} className="text-rose-400 flex-shrink-0" />
-                  <span className="font-bold text-slate-100 truncate">{parsedDoc.fileName}</span>
-                  <span className="px-2 py-0.5 rounded-md font-mono text-[10px] bg-slate-800 text-cyan-300 font-bold">
+                  <FileCode size={16} style={{ color: 'var(--accent-cyan)' }} className="flex-shrink-0" />
+                  <span className="font-bold truncate" style={{ color: 'var(--text-primary)' }}>{parsedDoc.fileName}</span>
+                  <span className="px-2 py-0.5 rounded-md font-mono text-[10px] font-bold" style={{ background: 'var(--bg-tertiary)', color: 'var(--accent-cyan)' }}>
                     {parsedDoc.formatType}
                   </span>
                 </div>
-                <div className="flex items-center gap-4 text-slate-400 font-mono text-[11px]">
-                  <span>Size: <strong className="text-slate-200">{parsedDoc.fileSizeKb} KB</strong></span>
-                  <span>Words: <strong className="text-slate-200">{parsedDoc.wordCount.toLocaleString()}</strong></span>
-                  <span>Chars: <strong className="text-slate-200">{parsedDoc.charCount.toLocaleString()}</strong></span>
+                <div className="flex items-center gap-4 font-mono text-[11px]" style={{ color: 'var(--text-muted)' }}>
+                  <span>Size: <strong style={{ color: 'var(--text-primary)' }}>{parsedDoc.fileSizeKb} KB</strong></span>
+                  <span>Words: <strong style={{ color: 'var(--text-primary)' }}>{parsedDoc.wordCount.toLocaleString()}</strong></span>
+                  <span>Chars: <strong style={{ color: 'var(--text-primary)' }}>{parsedDoc.charCount.toLocaleString()}</strong></span>
                 </div>
               </div>
 
               {/* Text Viewer Box */}
-              <div className="relative rounded-2xl overflow-hidden bg-slate-950 border border-slate-800">
-                <div className="flex items-center justify-between px-4 py-2 bg-slate-900/90 border-b border-slate-800 text-[11px] text-slate-400 font-mono">
+              <div className="relative rounded-2xl overflow-hidden" style={{ background: 'var(--bg-primary)', border: '1px solid var(--border-color)' }}>
+                <div className="flex items-center justify-between px-4 py-2 text-[11px] font-mono" style={{ background: 'var(--bg-tertiary)', borderBottom: '1px solid var(--border-color)', color: 'var(--text-muted)' }}>
                   <span>Extracted Text Stream</span>
                   <span>UTF-8 • Client-Side Parsed</span>
                 </div>
 
-                <pre className="p-5 max-h-[380px] overflow-auto text-xs font-mono text-cyan-200 leading-relaxed whitespace-pre-wrap word-break-break-word">
+                <pre className="p-5 max-h-[380px] overflow-auto text-xs font-mono leading-relaxed whitespace-pre-wrap word-break-break-word" style={{ color: 'var(--text-primary)' }}>
                   {parsedDoc.extractedText}
                 </pre>
               </div>
@@ -288,16 +286,16 @@ export function DocumentExtractorStudio({ isOpen, onClose, onSendToChat }: Docum
                   <button
                     type="button"
                     onClick={handleCopyText}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
+                    className="btn-theme-secondary flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold"
                   >
-                    {isCopied ? <Check size={14} className="text-emerald-400" /> : <Copy size={14} />}
+                    {isCopied ? <Check size={14} style={{ color: 'var(--accent-cyan)' }} /> : <Copy size={14} />}
                     <span>{isCopied ? 'Copied!' : 'Copy Text'}</span>
                   </button>
 
                   <button
                     type="button"
                     onClick={handleDownloadTxt}
-                    className="flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition-colors"
+                    className="btn-theme-secondary flex items-center gap-1.5 px-3.5 py-2 rounded-xl text-xs font-semibold"
                   >
                     <Download size={14} />
                     <span>Download TXT</span>
@@ -310,7 +308,7 @@ export function DocumentExtractorStudio({ isOpen, onClose, onSendToChat }: Docum
                     onSendToChat(parsedDoc.extractedText, parsedDoc.fileName);
                     onClose();
                   }}
-                  className="flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold bg-gradient-to-r from-rose-500 to-purple-600 hover:from-rose-600 hover:to-purple-700 text-white transition-all shadow-lg shadow-rose-500/20"
+                  className="btn-theme-primary flex items-center gap-2 px-5 py-2 rounded-xl text-xs font-bold transition-all"
                 >
                   <Send size={14} />
                   <span>Send Extracted Text to Prof. Joe Chat</span>

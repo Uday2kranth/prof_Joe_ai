@@ -22,7 +22,8 @@ import {
   BookOpen,
   List,
   ListFilter,
-  ArrowRight
+  ArrowRight,
+  Sparkles
 } from 'lucide-react';
 import { useTypewriterPlaceholder } from '../hooks/useTypewriterPlaceholder';
 import type { Message, ChatSession, UserCustomModels, CodeStyleConfig } from '../types';
@@ -82,16 +83,16 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
   pinnedMessageIds = new Set(),
   personaSessions = [],
   activePersonaSessionId = '',
-  customModels,
   onSelectPersonaSession,
   onNewPersonaSession,
   onDeletePersonaSession,
+  customModels,
   isDemoView = false,
   isExternalDrawerOpen,
   onCloseExternalDrawer
 }) => {
   const [inputPrompt, setInputPrompt] = useState('');
-  const [isPersistentWebSearch, setIsPersistentWebSearch] = useState<boolean>(() => {
+  const [isPersistentWebSearch, setIsPersistentWebSearch] = useState(() => {
     return localStorage.getItem('chatterbot_persona_persistent_websearch') === 'true';
   });
   const [isSessionPreviewOpen, setIsSessionPreviewOpen] = useState(false);
@@ -138,9 +139,48 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
 
   // Persona Character Panel & History Drawer State
   const [isPersonaDrawerOpen, setIsPersonaDrawerOpen] = useState(false);
-  const [stagedPersona, setStagedPersona] = useState(selectedPersona);
   const [searchQuery, setSearchQuery] = useState('');
   const [showClearConfirm, setShowClearConfirm] = useState(false);
+
+  // 🎭 Top-Down Character Canopy Vault State
+  const [isCanopyOpen, setIsCanopyOpen] = useState(false);
+  const [canopyCategory, setCanopyCategory] = useState<string>('ALL');
+  const [canopySearch, setCanopySearch] = useState<string>('');
+
+  const canopyCategories = useMemo(() => {
+    const cats = new Set<string>();
+    // Main genres
+    PERSONAS.forEach(p => {
+      if (p.id !== 'default' && p.category && p.category !== 'Academic') {
+        cats.add(p.category);
+      }
+    });
+    // Specific shows / franchises
+    PERSONAS.forEach(p => {
+      if (p.id !== 'default' && p.franchise && p.franchise !== 'Academic') {
+        cats.add(p.franchise);
+      }
+    });
+    return ['ALL', ...Array.from(cats)];
+  }, []);
+
+  const filteredCanopyPersonas = useMemo(() => {
+    return PERSONAS.filter(p => {
+      // In specific franchise or category filters, omit default unless searched
+      if (canopyCategory !== 'ALL' && p.id === 'default' && !canopySearch.trim()) return false;
+      if (canopyCategory !== 'ALL' && p.category !== canopyCategory && p.franchise !== canopyCategory) return false;
+      if (!canopySearch.trim()) return true;
+      const q = canopySearch.toLowerCase();
+      return (
+        p.name.toLowerCase().includes(q) ||
+        p.description.toLowerCase().includes(q) ||
+        (p.catchphrase || '').toLowerCase().includes(q) ||
+        (p.category || '').toLowerCase().includes(q) ||
+        (p.franchise || '').toLowerCase().includes(q) ||
+        (p.id === 'default' && ('standard default academic none prof joe'.includes(q)))
+      );
+    });
+  }, [canopyCategory, canopySearch]);
 
   const effectiveDrawerOpen = isExternalDrawerOpen !== undefined ? isExternalDrawerOpen : isPersonaDrawerOpen;
 
@@ -376,12 +416,12 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
             {/* Drawer Header Bar */}
             <div className="demo-drawer-header">
               <div className="demo-drawer-title">
-                <Clock size={18} className="text-rose-400" />
+                <Clock size={16} style={{ color: 'var(--accent-cyan)' }} />
                 <div>
-                  <h3 style={{ fontSize: '0.94rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+                  <h3 style={{ fontSize: '0.92rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
                     Fun Persona Deck
                   </h3>
-                  <div style={{ fontSize: '0.7rem', color: '#f43f5e', fontWeight: 600 }}>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--accent-cyan)', fontWeight: 600 }}>
                     {activePersonaObj.name}
                   </div>
                 </div>
@@ -392,212 +432,126 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
                 className="demo-icon-btn"
                 aria-label="Close Persona Drawer"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
-            {/* Primary Action Button */}
-            {onNewPersonaSession && (
-              <div className="demo-drawer-action" style={{ marginBottom: '14px' }}>
-                <button 
-                  type="button" 
-                  onClick={() => {
-                    onNewPersonaSession();
-                    handleCloseDrawer();
-                  }} 
-                  className="demo-new-chat-btn rose-new-chat-btn"
-                  style={{
-                    width: '100%',
-                    padding: '10px 16px',
-                    borderRadius: '12px',
-                    background: 'linear-gradient(135deg, #f43f5e 0%, #e11d48 100%)',
-                    color: '#ffffff',
-                    fontWeight: 700,
-                    fontSize: '0.85rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    boxShadow: '0 4px 14px rgba(244, 63, 94, 0.35)',
-                    border: 'none',
-                    cursor: 'pointer'
-                  }}
-                >
-                  <Plus size={16} />
-                  <span>New Persona Chat Session</span>
-                </button>
-              </div>
-            )}
-
-            {/* SECTION 1: BENTO COMMAND CONTROL DECK (TOP PRIORITY CONTROLS) */}
+            {/* SECTION 1: BENTO COMMAND CONTROL DECK (4-COLUMN COMPACT GRID) */}
             {isDemoView && (
-              <div className="demo-bento-deck" style={{ marginBottom: '14px' }}>
+              <div className="demo-bento-deck">
                 <div className="bento-deck-header">
-                  <Zap size={13} className="text-rose-400" />
-                  <span>COMMAND CONTROLS</span>
+                  <div className="flex items-center gap-1.5">
+                    <Zap size={12} style={{ color: 'var(--accent-cyan)' }} />
+                    <span>COMMAND CONTROLS</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setShowClearConfirm(true)}
+                    className="bento-clear-context-btn"
+                    title="Clear messages in active persona session"
+                  >
+                    <RotateCcw size={11} />
+                    <span>Clear Context</span>
+                  </button>
                 </div>
 
-                <div className="bento-grid-container">
+                <div className="bento-grid-container-4col">
                   {/* Tile 1: Persistent Web Search */}
                   <div 
-                    className={`bento-card-tile ${isPersistentWebSearch ? 'active-glow-cyan' : ''}`}
+                    className={`bento-card-tile-compact ${isPersistentWebSearch ? 'active-glow-cyan' : ''}`}
                     onClick={handleTogglePersistentWebSearch}
                     title="Toggle Persistent Internet Search across all messages"
                   >
-                    <div className="bento-tile-icon cyan">
-                      <Globe size={16} />
+                    <div className="bento-tile-icon-sm cyan">
+                      <Globe size={13} />
                     </div>
-                    <div className="bento-tile-content">
-                      <span className="bento-tile-title">Web Search</span>
-                      <span className="bento-tile-status">
-                        {isPersistentWebSearch ? '🟢 Always ON' : '⚪ OFF'}
-                      </span>
-                    </div>
+                    <span className="bento-tile-label">Web Search</span>
+                    <span className={`bento-mini-badge ${isPersistentWebSearch ? 'on' : 'off'}`}>
+                      {isPersistentWebSearch ? 'ON' : 'OFF'}
+                    </span>
                   </div>
 
                   {/* Tile 2: Session Monitor */}
-                  <div className="bento-card-tile" title={`Model: ${selectedModel}`}>
-                    <div className="bento-tile-icon purple">
-                      <BarChart2 size={16} />
+                  <div className="bento-card-tile-compact" title={`Model: ${selectedModel}`}>
+                    <div className="bento-tile-icon-sm purple">
+                      <BarChart2 size={13} />
                     </div>
-                    <div className="bento-tile-content">
-                      <span className="bento-tile-title">{selectedModel.slice(0, 12)}</span>
-                      <span className="bento-tile-sub font-mono">{messages.length} msgs</span>
-                    </div>
+                    <span className="bento-tile-label">{selectedModel.slice(0, 10)}</span>
+                    <span className="bento-mini-badge off">{messages.length} msgs</span>
                   </div>
 
-                  {/* Tile 3: Preview Chat (In-App Styled Modal) */}
+                  {/* Tile 3: Preview Chat */}
                   <div 
-                    className="bento-card-tile"
+                    className="bento-card-tile-compact"
                     onClick={() => {
                       handleExportFullChatPdf();
                       handleCloseDrawer();
                     }}
                     title="Open styled in-app Preview Modal with Save Image & Save PDF"
                   >
-                    <div className="bento-tile-icon blue">
-                      <Eye size={16} />
+                    <div className="bento-tile-icon-sm blue">
+                      <Eye size={13} />
                     </div>
-                    <div className="bento-tile-content">
-                      <span className="bento-tile-title">Preview Chat</span>
-                      <span className="bento-tile-sub">In-App Pop-up</span>
-                    </div>
+                    <span className="bento-tile-label">Preview</span>
                   </div>
 
-                  {/* Tile 4: Native Print / PDF (Chrome Native Window) */}
+                  {/* Tile 4: Native Print / PDF */}
                   <div 
-                    className="bento-card-tile"
+                    className="bento-card-tile-compact"
                     onClick={handleDirectSessionPrint}
                     title="Open System Native Chrome Print Preview Dialog to print or save PDF"
                   >
-                    <div className="bento-tile-icon emerald">
-                      <Printer size={16} />
+                    <div className="bento-tile-icon-sm emerald">
+                      <Printer size={13} />
                     </div>
-                    <div className="bento-tile-content">
-                      <span className="bento-tile-title">Native Print / PDF</span>
-                      <span className="bento-tile-sub">System Chrome</span>
-                    </div>
-                  </div>
-
-                  {/* Tile 5 (Full Width Span 2): Clear Session Context */}
-                  <div 
-                    className="bento-card-tile span-2-tile danger-tile"
-                    onClick={() => setShowClearConfirm(true)}
-                    title="Clear messages in active persona session"
-                  >
-                    <div className="bento-tile-icon rose">
-                      <RotateCcw size={16} />
-                    </div>
-                    <div className="bento-tile-content" style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                      <span className="bento-tile-title">Clear Session Context</span>
-                      <span className="bento-tile-sub">Reset Messages</span>
-                    </div>
+                    <span className="bento-tile-label">Print / PDF</span>
                   </div>
                 </div>
               </div>
             )}
 
-            {/* SECTION 2: 3-COLUMN CHARACTER BENTO GRID */}
+            {/* SECTION 2: AI CHARACTER VAULT TRIGGER & UNIFIED STATUS ROW */}
             <div className="persona-drawer-section mb-3">
-              <div className="section-label mb-2">
-                <span>SELECT AI CHARACTER</span>
+              <div className="section-label mb-1.5 flex items-center justify-between" style={{ color: 'var(--text-muted)' }}>
+                <span>AI CHARACTER CONTROLS</span>
+                <span className="text-[11px] font-bold" style={{ color: (isPersonaEnabled && selectedPersona !== 'default') ? 'var(--accent-cyan)' : 'var(--text-muted)' }}>
+                  {(isPersonaEnabled && selectedPersona !== 'default') ? '● Persona Active' : '○ Standard Mode'}
+                </span>
               </div>
 
-              <div className="persona-bento-grid">
-                {PERSONAS.filter(p => p.id !== 'default').map(p => {
-                  const isSelected = p.id === stagedPersona;
-                  const cleanName = p.name
-                    .replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '')
-                    .replace("Courage's Computer", 'C. Computer')
-                    .replace('-Inspired', '')
-                    .trim();
-                  return (
-                    <div 
-                      key={p.id}
-                      className={`persona-bento-card ${isSelected ? 'selected' : ''}`}
-                      onClick={() => setStagedPersona(p.id)}
-                      title={`${p.name}: ${p.description}`}
-                    >
-                      <span className="persona-micro-icon">{p.icon}</span>
-                      <span className="persona-micro-name truncate">{cleanName}</span>
-                    </div>
-                  );
-                })}
-              </div>
-
-              {/* Drawer Action Controls: Apply + Enable Toggle Pill */}
-              <div className="flex items-center gap-2 mt-3">
+              <div className="flex items-center gap-2">
+                {/* 🎭 Button to open the Top-Down Persona Vault */}
                 <button
                   type="button"
-                  className="apply-persona-btn flex-1"
                   onClick={() => {
-                    onPersonaChange(stagedPersona);
-                    if (!isPersonaEnabled && onTogglePersonaEnabled) {
-                      onTogglePersonaEnabled();
-                    }
                     handleCloseDrawer();
+                    setIsCanopyOpen(true);
                   }}
-                  title="Apply character and automatically enable persona prompt"
+                  className="drawer-open-vault-btn flex-1"
+                  title="Open AI Persona Vault Deck"
                 >
-                  <span>Apply Selected Persona</span>
-                  <Check size={16} />
+                  <span className="drawer-vault-icon">{activePersonaObj.icon}</span>
+                  <div className="drawer-vault-text">
+                    <span className="drawer-vault-name truncate">
+                      {activePersonaObj.id === 'default'
+                        ? 'Standard Academic AI'
+                        : activePersonaObj.name.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').replace("Courage's Computer", 'C. Computer').replace('-Inspired', '').trim()}
+                    </span>
+                    <span className="drawer-vault-hint">Switch Character Vault ▾</span>
+                  </div>
+                  <Sparkles size={14} style={{ color: 'var(--accent-cyan)' }} />
                 </button>
 
+                {/* Status Toggle Pill: ON / OFF */}
                 {onTogglePersonaEnabled && (
                   <button
                     type="button"
                     onClick={onTogglePersonaEnabled}
-                    className="persona-status-toggle-pill flex-shrink-0"
-                    style={{
-                      padding: '8px 12px',
-                      borderRadius: '10px',
-                      fontSize: '11px',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      background: isPersonaEnabled
-                        ? 'linear-gradient(135deg, rgba(6, 182, 212, 0.3), rgba(244, 63, 94, 0.3))'
-                        : 'rgba(30, 41, 59, 0.7)',
-                      border: isPersonaEnabled
-                        ? '1.5px solid rgba(244, 63, 94, 0.7)'
-                        : '1px solid rgba(255, 255, 255, 0.15)',
-                      color: isPersonaEnabled ? '#fda4af' : '#94a3b8',
-                      boxShadow: isPersonaEnabled ? '0 0 12px rgba(244, 63, 94, 0.35)' : 'none',
-                      transition: 'all 0.2s ease',
-                      height: '38px'
-                    }}
-                    title="Toggle persona prompt ON or OFF"
+                    className={`persona-status-toggle-pill flex-shrink-0 ${isPersonaEnabled && selectedPersona !== 'default' ? 'active' : 'inactive'}`}
+                    title={isPersonaEnabled ? "Character flavor active (Tap to pause)" : "Character flavor paused (Tap to enable)"}
                   >
-                    <span style={{
-                      width: '7px',
-                      height: '7px',
-                      borderRadius: '50%',
-                      background: isPersonaEnabled ? '#f43f5e' : '#64748b',
-                      boxShadow: isPersonaEnabled ? '0 0 8px #f43f5e' : 'none'
-                    }} className={isPersonaEnabled ? 'animate-pulse' : ''} />
-                    <span>{isPersonaEnabled ? 'Active' : 'Disabled'}</span>
+                    <span className="status-dot" />
+                    <span>{isPersonaEnabled && selectedPersona !== 'default' ? 'ON' : 'OFF'}</span>
                   </button>
                 )}
               </div>
@@ -605,7 +559,7 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
 
             {/* Clear Context Safety Confirmation */}
             {showClearConfirm && (
-              <div className="demo-clear-confirm-banner" style={{ marginBottom: '14px' }}>
+              <div className="demo-clear-confirm-banner" style={{ marginBottom: '10px' }}>
                 <p>Clear all messages in active persona chat?</p>
                 <div className="flex items-center gap-2 mt-2">
                   <button 
@@ -629,30 +583,48 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
               </div>
             )}
 
-            {/* SECTION 3: SEARCH & PERSONA CHAT HISTORY */}
+            {/* SECTION 3: UNIFIED SEARCH & PERSONA CHAT HISTORY */}
             {isDemoView && (
-              <div className="persona-drawer-section persona-history-section" style={{ flex: 1, display: 'flex', flexDirection: 'column' }}>
-                <div className="section-label flex justify-between items-center mb-2">
+              <div className="persona-drawer-section persona-history-section" style={{ flex: 1, display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+                <div className="section-label flex justify-between items-center mb-1.5" style={{ color: 'var(--text-muted)' }}>
                   <span>PERSONA CHAT HISTORY</span>
                 </div>
 
-                {/* Live Persona Search Bar */}
-                <div className="demo-drawer-search-bar mb-3" style={{ padding: '6px 12px' }}>
-                  <Search size={14} className="text-rose-400" />
-                  <input
-                    type="text"
-                    placeholder="Search past persona chats..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    className="demo-search-input codelab-search-input"
-                  />
-                  {searchQuery && (
-                    <button 
-                      type="button" 
-                      onClick={() => setSearchQuery('')} 
-                      className="clear-search-btn"
+                {/* Unified Search & New Persona Chat Row */}
+                <div className="demo-drawer-search-action-row">
+                  <div className="demo-drawer-search-bar">
+                    <Search size={14} style={{ color: 'var(--accent-cyan)' }} />
+                    <input
+                      type="text"
+                      placeholder="Search past persona chats..."
+                      value={searchQuery}
+                      onChange={(e) => setSearchQuery(e.target.value)}
+                      className="demo-search-input codelab-search-input"
+                    />
+                    {searchQuery && (
+                      <button 
+                        type="button" 
+                        onClick={() => setSearchQuery('')} 
+                        className="clear-search-btn"
+                        aria-label="Clear search"
+                      >
+                        <X size={12} />
+                      </button>
+                    )}
+                  </div>
+
+                  {onNewPersonaSession && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        onNewPersonaSession();
+                        handleCloseDrawer();
+                      }}
+                      className="drawer-new-chat-btn"
+                      title="Start New Persona Chat"
                     >
-                      <X size={12} />
+                      <Plus size={15} />
+                      <span>New Chat</span>
                     </button>
                   )}
                 </div>
@@ -724,23 +696,148 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
         </div>
       )}
 
+      {/* 🎭 TOP-DOWN AI PERSONA VAULT / CHARACTER CANOPY DECK */}
+      {isCanopyOpen && (
+        <div className="persona-canopy-overlay" onClick={() => setIsCanopyOpen(false)}>
+          <div 
+            className="persona-canopy-sheet"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Canopy Header Bar */}
+            <div className="persona-canopy-header">
+              <div className="flex items-center gap-3">
+                <span className="persona-canopy-icon">🎭</span>
+                <div>
+                  <h3 className="persona-canopy-title">
+                    <span>AI Persona Vault</span>
+                    <span style={{ fontSize: '0.7rem', color: '#f43f5e', fontWeight: 800, padding: '2px 8px', borderRadius: '12px', background: 'rgba(244, 63, 94, 0.14)', border: '1px solid rgba(244, 63, 94, 0.3)' }}>
+                      {PERSONAS.filter(p => p.id !== 'default').length} Characters
+                    </span>
+                  </h3>
+                  <span className="persona-canopy-sub">Switch dynamic personality flavor for your discussions</span>
+                </div>
+              </div>
+
+              <div className="persona-canopy-actions">
+                {/* Expanded Live Search Input */}
+                <div className="persona-canopy-search-bar">
+                  <Search size={13} style={{ color: 'var(--accent-cyan)' }} />
+                  <input
+                    type="text"
+                    placeholder="Search 25+ characters..."
+                    value={canopySearch}
+                    onChange={(e) => setCanopySearch(e.target.value)}
+                    className="persona-canopy-search-input"
+                  />
+                  {canopySearch && (
+                    <button type="button" onClick={() => setCanopySearch('')} className="clear-search-btn" aria-label="Clear search">
+                      <X size={12} />
+                    </button>
+                  )}
+                </div>
+
+                {/* Close Canopy Button */}
+                <button
+                  type="button"
+                  onClick={() => setIsCanopyOpen(false)}
+                  className="persona-canopy-close-btn"
+                  title="Close Persona Vault"
+                >
+                  <ChevronUp size={15} />
+                  <span>Close Vault</span>
+                </button>
+              </div>
+            </div>
+
+            {/* Category Filter Tabs */}
+            <div className="persona-canopy-categories">
+              {canopyCategories.map(cat => (
+                <button
+                  key={cat}
+                  type="button"
+                  onClick={() => setCanopyCategory(cat)}
+                  className={`persona-canopy-cat-pill ${canopyCategory === cat ? 'active' : ''}`}
+                >
+                  <span>{cat === 'ALL' ? '★ All Characters' : cat}</span>
+                </button>
+              ))}
+            </div>
+
+            {/* Panoramic Grid of Character Cards */}
+            <div className="persona-canopy-grid">
+              {filteredCanopyPersonas.map(p => {
+                const isSelected = p.id === selectedPersona;
+                return (
+                  <div
+                    key={p.id}
+                    className={`persona-canopy-card ${isSelected ? 'selected' : ''}`}
+                    onClick={() => {
+                      if (p.id === 'default' || p.id === selectedPersona) {
+                        onPersonaChange('default');
+                        setIsCanopyOpen(false);
+                      } else {
+                        onPersonaChange(p.id);
+                        if (!isPersonaEnabled && onTogglePersonaEnabled) {
+                          onTogglePersonaEnabled();
+                        }
+                        setIsCanopyOpen(false);
+                      }
+                    }}
+                    title={isSelected ? `Active: Click to deselect (revert to Standard Mode)` : `Activate ${p.name}`}
+                  >
+                    <div className="persona-card-top">
+                      <span className="persona-card-emoji">{p.icon}</span>
+                      {isSelected && (
+                        <span className="persona-card-active-tag">Active</span>
+                      )}
+                    </div>
+                    <div className="persona-card-info">
+                      <h4 className="persona-card-name">{p.name}</h4>
+                      <p className="persona-card-desc">{p.description}</p>
+                      {p.catchphrase && (
+                        <span className="persona-card-quote">{p.catchphrase}</span>
+                      )}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        </div>
+      )}
+
       <div className="chat-window-container fun-persona-lounge-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}>
         <div 
           className="chat-messages-container" 
           ref={personaContainerRef}
           data-code-theme={codeStyle.codeTheme}
+          data-bubble-style={codeStyle.bubbleStyle || 'cyan_glass'}
           data-katex-scale={codeStyle.katexScale}
         >
           <TextSelectionToolbar containerRef={personaContainerRef} onQuickAction={handleQuickAction} />
           <div className="messages-inner">
             {messages.length === 0 ? (
               <div className="empty-chat-hero flex flex-col items-center justify-center h-full text-center p-6 space-y-4">
-                <div className="w-20 h-20 rounded-2xl bg-gradient-to-tr from-rose-500/20 to-purple-500/20 border border-rose-500/30 flex items-center justify-center text-4xl shadow-xl shadow-rose-500/10">
+                <div 
+                  onClick={() => setIsCanopyOpen(true)}
+                  className="w-20 h-20 rounded-2xl flex items-center justify-center text-4xl shadow-xl cursor-pointer hover:scale-105 transition-transform"
+                  style={{ background: 'var(--pill-bg)', border: '1.5px solid var(--border-color)', boxShadow: '0 8px 24px var(--cursor-glow)' }}
+                  title="Click to open Persona Vault & switch character"
+                >
                   {activePersonaObj.icon}
                 </div>
                 <div className="max-w-md space-y-2">
-                  <h2 className="text-xl font-bold text-slate-100">{activePersonaObj.name}</h2>
-                  <p className="text-sm text-slate-400 leading-relaxed">{activePersonaObj.description}</p>
+                  <h2 className="text-xl font-bold" style={{ color: 'var(--text-primary)' }}>{activePersonaObj.name}</h2>
+                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-muted)' }}>{activePersonaObj.description}</p>
+                  <button
+                    type="button"
+                    onClick={() => setIsCanopyOpen(true)}
+                    className="persona-hero-vault-btn"
+                    title="Open AI Persona Vault"
+                  >
+                    <Sparkles size={14} style={{ color: 'var(--accent-cyan)' }} />
+                    <span>Open Persona Vault (6 Characters) ▾</span>
+                  </button>
                 </div>
               </div>
             ) : (
@@ -861,7 +958,7 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
                 minHeight: '72px', 
                 fontSize: '0.92rem', 
                 padding: isDemoView ? '12px 56px 12px 16px' : '12px 16px',
-                caretColor: '#06b6d4',
+                caretColor: 'var(--accent-cyan)',
                 lineHeight: 1.5
               }}
               className="chat-textarea kokonut-textarea"
@@ -982,6 +1079,24 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
                       )}
                     </div>
 
+                    {/* 🎭 Persona Vault Trigger Pill */}
+                    <button
+                      type="button"
+                      onClick={() => setIsCanopyOpen(!isCanopyOpen)}
+                      className="custom-dropdown-pill persona-vault-trigger-btn"
+                      title="Open AI Persona Vault Deck"
+                      style={{
+                        background: 'linear-gradient(135deg, rgba(244, 63, 94, 0.16) 0%, rgba(168, 85, 247, 0.16) 100%)',
+                        borderColor: 'rgba(244, 63, 94, 0.45)',
+                        color: '#fda4af',
+                        fontWeight: 700
+                      }}
+                    >
+                      <span className="picker-icon">{activePersonaObj.icon}</span>
+                      <span className="truncate">{activePersonaObj.name.replace(/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/gu, '').replace("Courage's Computer", 'C. Computer').replace('-Inspired', '').trim()}</span>
+                      <ChevronDown size={13} className={`transition-transform duration-200 ${isCanopyOpen ? 'rotate-180' : ''}`} />
+                    </button>
+
                     {userQueries.length > 0 && (
                       <button
                         type="button"
@@ -1045,7 +1160,8 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
                           <button
                             type="button"
                             onClick={handleExportFullChatPdf}
-                            className="kokonut-action-btn export-pdf-action text-cyan-400"
+                            className="kokonut-action-btn export-pdf-action"
+                            style={{ color: 'var(--accent-cyan)' }}
                             title="Interactive Preview Modal"
                           >
                             <Eye size={14} />
@@ -1055,7 +1171,8 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
                           <button
                             type="button"
                             onClick={handleDirectSessionPrint}
-                            className="kokonut-action-btn export-pdf-action text-blue-400"
+                            className="kokonut-action-btn export-pdf-action"
+                            style={{ color: 'var(--accent-cyan)' }}
                             title="Direct System Print Preview"
                           >
                             <Printer size={14} />
@@ -1071,11 +1188,11 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
                     <button
                       type="button"
                       onClick={() => setIsPersonaDrawerOpen(true)}
-                      className="demo-view-toggle-btn rose-toggle-btn"
+                      className="demo-view-toggle-btn"
                       style={{ height: '32px', padding: '0 12px', fontSize: '11px', borderRadius: '16px' }}
                       title="Open Command Deck & Persona Drawer"
                     >
-                      <Zap size={13} className="text-rose-400" />
+                      <Zap size={13} style={{ color: 'var(--accent-cyan)' }} />
                       <span>📜 Command Deck</span>
                     </button>
                   )}

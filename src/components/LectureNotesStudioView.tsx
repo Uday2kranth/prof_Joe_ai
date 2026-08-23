@@ -1303,30 +1303,16 @@ Begin IMMEDIATELY on Line 1 with the next chapter, delivering full theoretical r
             <button
               type="button"
               onClick={() => setIsControlDeckOpen(true)}
-              className="demo-view-toggle-btn"
-              style={{
-                height: '34px',
-                padding: '0 12px',
-                fontSize: '12px',
-                borderRadius: '17px',
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: '6px',
-                background: 'rgba(6, 182, 212, 0.15)',
-                border: '1px solid rgba(6, 182, 212, 0.4)',
-                color: '#38bdf8',
-                fontWeight: 700,
-                cursor: 'pointer'
-              }}
+              className="demo-view-toggle-btn lecture-command-deck-btn"
               title="Open Lecture Control Deck & Saved History"
             >
-              <Zap size={14} className="text-cyan-400" />
+              <Zap size={14} />
               <span>📜 Command Deck</span>
             </button>
 
             {/* Brand Pill */}
             <div className="smart-brand-pill hidden sm:inline-flex">
-              <GraduationCap size={17} className="text-cyan-400" />
+              <GraduationCap size={17} />
               <span className="smart-brand-text">Lecture Studio</span>
               <span className="smart-role-tag">Educator</span>
             </div>
@@ -1751,7 +1737,7 @@ Begin IMMEDIATELY on Line 1 with the next chapter, delivering full theoretical r
             {/* 1. Drawer Header Bar */}
             <div className="demo-drawer-header">
               <div className="demo-drawer-title">
-                <Clock size={18} className="text-cyan-400" />
+                <Clock size={16} style={{ color: 'var(--accent-cyan)' }} />
                 <h3>Lecture Control Deck</h3>
               </div>
               <button
@@ -1760,64 +1746,56 @@ Begin IMMEDIATELY on Line 1 with the next chapter, delivering full theoretical r
                 className="demo-icon-btn"
                 aria-label="Close Lecture Control Deck"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </div>
 
-            {/* 2. Primary Action Button */}
-            <div className="demo-drawer-action">
-              <button
-                type="button"
-                onClick={() => {
-                  handleNewLectureSession();
-                  setIsControlDeckOpen(false);
-                }}
-                className="demo-new-chat-btn"
-              >
-                <Plus size={16} />
-                <span>New Lecture Note</span>
-              </button>
-            </div>
-
-            {/* 3. Bento Command Control Deck */}
+            {/* 2. Bento Command Control Deck (4-Column Compact Grid) */}
             <div className="demo-bento-deck">
               <div className="bento-deck-header">
-                <Sparkles size={13} className="text-cyan-400" />
-                <span>COMMAND CONTROLS</span>
+                <div className="flex items-center gap-1.5">
+                  <Sparkles size={12} style={{ color: 'var(--accent-cyan)' }} />
+                  <span>COMMAND CONTROLS</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowClearConfirm(true)}
+                  className="bento-clear-context-btn"
+                  title="Reset and clear all saved lecture note drafts"
+                >
+                  <RotateCcw size={11} />
+                  <span>Clear All</span>
+                </button>
               </div>
 
-              <div className="bento-grid-container">
+              <div className="bento-grid-container-4col">
                 {/* Tile 1: Persistent Web Search */}
                 <div
-                  className={`bento-card-tile ${webSearch ? 'active-glow-cyan' : ''}`}
+                  className={`bento-card-tile-compact ${webSearch ? 'active-glow-cyan' : ''}`}
                   onClick={handleToggleWebSearch}
                   title="Toggle Persistent Academic Web Search Grounding"
                 >
-                  <div className="bento-tile-icon cyan">
-                    <Globe size={16} />
+                  <div className="bento-tile-icon-sm cyan">
+                    <Globe size={13} />
                   </div>
-                  <div className="bento-tile-content">
-                    <span className="bento-tile-title">Web Search</span>
-                    <span className="bento-tile-status">
-                      {webSearch ? '🟢 Always ON' : '⚪ OFF'}
-                    </span>
-                  </div>
+                  <span className="bento-tile-label">Web Search</span>
+                  <span className={`bento-mini-badge ${webSearch ? 'on' : 'off'}`}>
+                    {webSearch ? 'ON' : 'OFF'}
+                  </span>
                 </div>
 
                 {/* Tile 2: Model & Session Monitor */}
-                <div className="bento-card-tile" title={`Provider: ${selectedProvider} | Model: ${selectedModel}`}>
-                  <div className="bento-tile-icon purple">
-                    <BarChart2 size={16} />
+                <div className="bento-card-tile-compact" title={`Provider: ${selectedProvider} | Model: ${selectedModel}`}>
+                  <div className="bento-tile-icon-sm purple">
+                    <BarChart2 size={13} />
                   </div>
-                  <div className="bento-tile-content">
-                    <span className="bento-tile-title">{selectedModel.slice(0, 12)}</span>
-                    <span className="bento-tile-sub font-mono">{sessions.length} drafts</span>
-                  </div>
+                  <span className="bento-tile-label">{selectedModel.slice(0, 10)}</span>
+                  <span className="bento-mini-badge off">{sessions.length} drafts</span>
                 </div>
 
                 {/* Tile 3: Preview Note Modal */}
                 <div
-                  className="bento-card-tile"
+                  className="bento-card-tile-compact"
                   onClick={() => {
                     if (generatedNotes) {
                       setIsPreviewModalOpen(true);
@@ -1827,18 +1805,15 @@ Begin IMMEDIATELY on Line 1 with the next chapter, delivering full theoretical r
                   title="Open styled in-app Document Preview Modal"
                   style={{ opacity: generatedNotes ? 1 : 0.6 }}
                 >
-                  <div className="bento-tile-icon blue">
-                    <Eye size={16} />
+                  <div className="bento-tile-icon-sm blue">
+                    <Eye size={13} />
                   </div>
-                  <div className="bento-tile-content">
-                    <span className="bento-tile-title">Preview Note</span>
-                    <span className="bento-tile-sub">In-App Pop-up</span>
-                  </div>
+                  <span className="bento-tile-label">Preview</span>
                 </div>
 
                 {/* Tile 4: Native Print / PDF */}
                 <div
-                  className="bento-card-tile"
+                  className="bento-card-tile-compact"
                   onClick={() => {
                     if (generatedNotes) {
                       handlePrint();
@@ -1848,35 +1823,17 @@ Begin IMMEDIATELY on Line 1 with the next chapter, delivering full theoretical r
                   title="Open System Native Chrome Print Preview Dialog"
                   style={{ opacity: generatedNotes ? 1 : 0.6 }}
                 >
-                  <div className="bento-tile-icon emerald">
-                    <Printer size={16} />
+                  <div className="bento-tile-icon-sm emerald">
+                    <Printer size={13} />
                   </div>
-                  <div className="bento-tile-content">
-                    <span className="bento-tile-title">Native Print / PDF</span>
-                    <span className="bento-tile-sub">System Chrome</span>
-                  </div>
-                </div>
-
-                {/* Tile 5 (Full Width Span 2): Clear All Lecture Drafts */}
-                <div
-                  className="bento-card-tile span-2-tile danger-tile"
-                  onClick={() => setShowClearConfirm(true)}
-                  title="Reset and clear all saved lecture note drafts"
-                >
-                  <div className="bento-tile-icon red">
-                    <RotateCcw size={16} />
-                  </div>
-                  <div className="bento-tile-content" style={{ display: 'flex', justifyContent: 'space-between', width: '100%', alignItems: 'center' }}>
-                    <span className="bento-tile-title">Clear All History</span>
-                    <span className="bento-tile-sub text-rose-400">Reset Notes</span>
-                  </div>
+                  <span className="bento-tile-label">Print / PDF</span>
                 </div>
               </div>
             </div>
 
             {/* Clear All Confirmation Modal Inside Drawer */}
             {showClearConfirm && (
-              <div className="demo-clear-confirm-banner">
+              <div className="demo-clear-confirm-banner" style={{ marginBottom: '10px' }}>
                 <p>Clear all saved lecture notes drafts?</p>
                 <div className="flex items-center gap-2 mt-2">
                   <button
@@ -1897,28 +1854,43 @@ Begin IMMEDIATELY on Line 1 with the next chapter, delivering full theoretical r
               </div>
             )}
 
-            {/* 4. Live Session Search Input (Exact Match to Screenshot 1) */}
-            <div className="demo-drawer-search-bar">
-              <Search size={14} className="text-cyan-400" />
-              <input
-                type="text"
-                placeholder="Search past lecture notes by topic..."
-                value={controlDeckSearchQuery}
-                onChange={(e) => setControlDeckSearchQuery(e.target.value)}
-                className="demo-search-input"
-              />
-              {controlDeckSearchQuery && (
-                <button
-                  type="button"
-                  onClick={() => setControlDeckSearchQuery('')}
-                  className="clear-search-btn"
-                >
-                  <X size={12} />
-                </button>
-              )}
+            {/* 3. Unified Search Bar & New Lecture Note Action Row */}
+            <div className="demo-drawer-search-action-row">
+              <div className="demo-drawer-search-bar">
+                <Search size={14} style={{ color: 'var(--accent-cyan)' }} />
+                <input
+                  type="text"
+                  placeholder="Search past lecture notes..."
+                  value={controlDeckSearchQuery}
+                  onChange={(e) => setControlDeckSearchQuery(e.target.value)}
+                  className="demo-search-input"
+                />
+                {controlDeckSearchQuery && (
+                  <button
+                    type="button"
+                    onClick={() => setControlDeckSearchQuery('')}
+                    className="clear-search-btn"
+                    aria-label="Clear search"
+                  >
+                    <X size={12} />
+                  </button>
+                )}
+              </div>
+              <button
+                type="button"
+                onClick={() => {
+                  handleNewLectureSession();
+                  setIsControlDeckOpen(false);
+                }}
+                className="drawer-new-chat-btn"
+                title="Create New Lecture Note"
+              >
+                <Plus size={15} />
+                <span>New Note</span>
+              </button>
             </div>
 
-            {/* 5. Scrollable Session List (Exact Match to Screenshot 1) */}
+            {/* 4. Scrollable Session List */}
             <div className="demo-drawer-sessions-list">
               {filteredSessions.length === 0 ? (
                 <div className="demo-empty-sessions">
@@ -1941,7 +1913,7 @@ Begin IMMEDIATELY on Line 1 with the next chapter, delivering full theoretical r
                       }}
                     >
                       <div className="demo-session-info">
-                        <GraduationCap size={15} className={isActive ? 'text-cyan-400' : 'text-slate-400'} />
+                        <GraduationCap size={15} style={{ color: isActive ? 'var(--accent-cyan)' : 'var(--text-muted)' }} />
                         <span className="demo-session-title">
                           {titleText}
                         </span>

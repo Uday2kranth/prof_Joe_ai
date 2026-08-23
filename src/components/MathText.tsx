@@ -190,6 +190,57 @@ export function renderMathHtml(content: string, options: RenderMathOptions = {})
   return parsedHtml;
 }
 
+/**
+ * Clean KaTeX math renderer for pre-formatted HTML payloads (e.g. Exam Prep syllabi and paper sets):
+ * Parses $$...$$, \[...\], \(...\), and $...$ math expressions directly without passing indented HTML lines through markdown code-block conversion.
+ */
+export function renderExamHtml(content: string): string {
+  if (!content) return '';
+  let prepped = content;
+
+  // 1. Block math $$...$$
+  prepped = prepped.replace(/\$\$([\s\S]*?)\$\$/g, (_, math) => {
+    try {
+      const sanitized = sanitizeLatexForKatex(math);
+      return `<div class="katex-display katex-block">${katex.renderToString(sanitized, { displayMode: true, throwOnError: false })}</div>`;
+    } catch {
+      return `$$${math}$$`;
+    }
+  });
+
+  // 2. Block math \[...\]
+  prepped = prepped.replace(/\\\[([\s\S]*?)\\\]/g, (_, math) => {
+    try {
+      const sanitized = sanitizeLatexForKatex(math);
+      return `<div class="katex-display katex-block">${katex.renderToString(sanitized, { displayMode: true, throwOnError: false })}</div>`;
+    } catch {
+      return `\\[${math}\\]`;
+    }
+  });
+
+  // 3. Inline math \(...\)
+  prepped = prepped.replace(/\\\(([\s\S]*?)\\\)/g, (_, math) => {
+    try {
+      const sanitized = sanitizeLatexForKatex(math);
+      return `<span class="katex-inline">${katex.renderToString(sanitized, { displayMode: false, throwOnError: false })}</span>`;
+    } catch {
+      return `\\(${math}\\)`;
+    }
+  });
+
+  // 4. Inline math $...$
+  prepped = prepped.replace(/\$([^\$\n\r]+?)\$/g, (_, math) => {
+    try {
+      const sanitized = sanitizeLatexForKatex(math);
+      return `<span class="katex-inline">${katex.renderToString(sanitized, { displayMode: false, throwOnError: false })}</span>`;
+    } catch {
+      return `$${math}$`;
+    }
+  });
+
+  return prepped;
+}
+
 interface MathTextProps {
   content?: string;
   inline?: boolean;

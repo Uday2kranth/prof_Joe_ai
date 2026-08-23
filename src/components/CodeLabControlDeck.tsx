@@ -5,7 +5,7 @@ import {
   Plus, 
   Globe, 
   Cpu, 
-  RefreshCw, 
+  RotateCcw, 
   Search, 
   MessageSquare, 
   Trash2, 
@@ -90,7 +90,7 @@ export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
           maxWidth: '88vw',
           borderRight: '1px solid var(--border-color)',
           backdropFilter: 'blur(16px)',
-          boxShadow: '0 0 35px rgba(6, 182, 212, 0.25)',
+          boxShadow: '10px 0 40px var(--card-shadow)',
           zIndex: 999999,
           display: 'flex',
           flexDirection: 'column',
@@ -98,14 +98,14 @@ export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
         }}
       >
         {/* Header Bar */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', paddingBottom: '12px', borderBottom: '1px solid var(--border-color)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Clock size={18} style={{ color: 'var(--accent-cyan)' }} />
+        <div className="demo-drawer-header">
+          <div className="demo-drawer-title">
+            <Clock size={16} style={{ color: 'var(--accent-cyan)' }} />
             <div>
-              <h3 style={{ fontSize: '0.94rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+              <h3 style={{ fontSize: '0.92rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
                 Code Dungeon Deck 🏰
               </h3>
-              <div style={{ fontSize: '0.7rem', color: 'var(--accent-cyan)', fontWeight: 600 }}>
+              <div style={{ fontSize: '0.68rem', color: 'var(--accent-cyan)', fontWeight: 600 }}>
                 {presetName}
               </div>
             </div>
@@ -114,226 +114,133 @@ export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
           <button 
             type="button" 
             onClick={onClose}
-            className="extractor-btn-secondary"
-            style={{
-              borderRadius: '8px',
-              cursor: 'pointer',
-              padding: '6px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center'
-            }}
+            className="demo-icon-btn"
+            aria-label="Close Code Lab Control Deck"
           >
             <X size={16} />
           </button>
         </div>
 
-        {/* New Session Action Button */}
-        <button
-          type="button"
-          onClick={() => {
-            onNewSession();
-          }}
-          className="extractor-btn-primary"
-          style={{ width: '100%', padding: '10px 14px', fontSize: '0.82rem', justifyContent: 'center', marginBottom: '14px', borderRadius: '12px' }}
-        >
-          <Plus size={16} />
-          <span>New {presetName} Session</span>
-        </button>
-
-        {/* 🍱 COMMAND CONTROLS CARD */}
-        <div className="codelab-command-controls-card" style={{ borderRadius: '14px', padding: '12px', marginBottom: '14px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.68rem', fontWeight: 800, color: 'var(--text-muted)', letterSpacing: '0.05em', marginBottom: '10px', textTransform: 'uppercase' }}>
-            <Sparkles size={12} style={{ color: 'var(--accent-cyan)' }} />
-            <span>⚡ Command Controls</span>
+        {/* 🍱 COMMAND CONTROLS CARD (4-COLUMN COMPACT GRID) */}
+        <div className="demo-bento-deck">
+          <div className="bento-deck-header">
+            <div className="flex items-center gap-1.5">
+              <Sparkles size={12} style={{ color: 'var(--accent-cyan)' }} />
+              <span>COMMAND CONTROLS</span>
+            </div>
+            <button
+              type="button"
+              onClick={onResetSession}
+              className="bento-clear-context-btn"
+              title="Clear context for this lab session"
+            >
+              <RotateCcw size={11} />
+              <span>Clear Context</span>
+            </button>
           </div>
 
-          {/* 2x2 Bento Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', marginBottom: '8px' }}>
+          <div className="bento-grid-container-4col">
             {/* Tile 1: Exam Cheat Sheet & Lab Notebook */}
             {onOpenCheatSheet && (
-              <button
-                type="button"
+              <div
                 onClick={() => {
                   onOpenCheatSheet();
                   onClose();
                 }}
-                className="codelab-control-pill"
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-start',
-                  justifyContent: 'center',
-                  gap: '4px',
-                  padding: '8px 10px',
-                  borderRadius: '10px',
-                  border: '1px solid rgba(245, 158, 11, 0.4)',
-                  background: 'rgba(245, 158, 11, 0.12)',
-                  color: '#fbbf24',
-                  cursor: 'pointer',
-                  textAlign: 'left'
-                }}
+                className="bento-card-tile-compact active-glow-amber"
                 title="View Pinned Formulas, Snippets & Print 1-Page Cheat Sheet"
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', width: '100%' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.74rem', fontWeight: 700 }}>
-                    <Pin size={13} className="fill-amber-400 text-amber-400" />
-                    <span>Cheat Sheet</span>
-                  </div>
-                  {pinnedCount > 0 && (
-                    <span style={{
-                      background: 'rgba(245, 158, 11, 0.3)',
-                      color: '#fbbf24',
-                      fontSize: '0.62rem',
-                      fontWeight: 800,
-                      padding: '1px 5px',
-                      borderRadius: '10px'
-                    }}>
-                      {pinnedCount}
-                    </span>
-                  )}
+                <div className="bento-tile-icon-sm amber">
+                  <Pin size={13} />
                 </div>
-                <span style={{ fontSize: '0.64rem', color: 'var(--text-muted)' }}>Pinned Notes ⭐</span>
-              </button>
+                <span className="bento-tile-label">Cheat Sheet</span>
+                {pinnedCount > 0 && (
+                  <span className="bento-mini-badge on">
+                    {pinnedCount}
+                  </span>
+                )}
+              </div>
             )}
 
             {/* Tile 2: Web Search Toggle */}
-            <button
-              type="button"
+            <div
               onClick={onToggleWebSearch}
-              className="codelab-control-pill"
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-                justifyContent: 'center',
-                gap: '4px',
-                padding: '8px 10px',
-                borderRadius: '10px',
-                border: '1px solid',
-                borderColor: webSearch ? 'rgba(52, 211, 153, 0.5)' : 'var(--border-color)',
-                background: webSearch ? 'rgba(52, 211, 153, 0.15)' : 'var(--bg-tertiary)',
-                color: webSearch ? '#34d399' : 'var(--text-secondary)',
-                cursor: 'pointer',
-                textAlign: 'left'
-              }}
+              className={`bento-card-tile-compact ${webSearch ? 'active-glow-cyan' : ''}`}
               title="Toggle Live Web Search for Dataset documentation and papers"
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.74rem', fontWeight: 700 }}>
+              <div className="bento-tile-icon-sm cyan">
                 <Globe size={13} />
-                <span>Web Search</span>
               </div>
-              <span style={{ fontSize: '0.64rem', color: webSearch ? '#34d399' : 'var(--text-muted)' }}>
-                {webSearch ? '🟢 Enabled' : '⚪ Disabled'}
+              <span className="bento-tile-label">Web Search</span>
+              <span className={`bento-mini-badge ${webSearch ? 'on' : 'off'}`}>
+                {webSearch ? 'ON' : 'OFF'}
               </span>
-            </button>
+            </div>
 
             {/* Tile 3: Selected Model Monitor */}
             <div
-              className="codelab-control-pill"
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-                justifyContent: 'center',
-                gap: '4px',
-                padding: '8px 10px',
-                borderRadius: '10px',
-                border: '1px solid var(--border-color)',
-                background: 'var(--bg-tertiary)',
-                color: 'var(--text-primary)',
-                overflow: 'hidden'
-              }}
+              className="bento-card-tile-compact"
               title={`Active Code Model: ${selectedModel}`}
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.74rem', fontWeight: 700 }}>
-                <Cpu size={13} style={{ color: 'var(--accent-cyan)' }} />
-                <span>AI Model</span>
+              <div className="bento-tile-icon-sm purple">
+                <Cpu size={13} />
               </div>
-              <span style={{ fontSize: '0.64rem', color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', width: '100%' }}>
-                {selectedModel}
+              <span className="bento-tile-label">Model</span>
+              <span className="bento-mini-badge off truncate max-w-full">
+                {selectedModel.slice(0, 8)}
               </span>
             </div>
 
             {/* Tile 4: Native Print / PDF Lab Session */}
-            <button
-              type="button"
+            <div
               onClick={() => {
                 if (onPrintSession) onPrintSession();
                 else window.print();
                 onClose();
               }}
-              className="codelab-control-pill"
-              style={{
-                display: 'flex',
-                flexDirection: 'column',
-                alignItems: 'flex-start',
-                justifyContent: 'center',
-                gap: '4px',
-                padding: '8px 10px',
-                borderRadius: '10px',
-                border: '1px solid var(--border-color)',
-                background: 'var(--bg-tertiary)',
-                color: 'var(--text-primary)',
-                cursor: 'pointer',
-                textAlign: 'left'
-              }}
+              className="bento-card-tile-compact"
               title="Print or Export Full Code Lab Session to PDF"
             >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.74rem', fontWeight: 700 }}>
-                <Printer size={13} style={{ color: '#38bdf8' }} />
-                <span>Print Lab</span>
+              <div className="bento-tile-icon-sm emerald">
+                <Printer size={13} />
               </div>
-              <span style={{ fontSize: '0.64rem', color: 'var(--text-muted)' }}>PDF / Paper 🖨️</span>
-            </button>
-          </div>
-
-          {/* Reset Context Button */}
-          <button
-            type="button"
-            onClick={onResetSession}
-            style={{
-              width: '100%',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'space-between',
-              padding: '8px 12px',
-              borderRadius: '10px',
-              border: '1px solid rgba(239, 68, 68, 0.3)',
-              background: 'rgba(239, 68, 68, 0.12)',
-              color: '#f87171',
-              fontSize: '0.74rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              marginTop: '4px'
-            }}
-            title="Clear context for this lab session"
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <RefreshCw size={13} />
-              <span>Clear Session Context</span>
+              <span className="bento-tile-label">Print Lab</span>
             </div>
-            <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>Reset</span>
-          </button>
+          </div>
         </div>
 
-        {/* Search Input Filter */}
-        <div style={{ position: 'relative', marginBottom: '12px' }}>
-          <Search size={14} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
-          <input
-            type="text"
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder={`Search past ${presetName} chats...`}
-            className="codelab-search-input"
-            style={{
-              width: '100%',
-              borderRadius: '10px',
-              padding: '8px 10px 8px 32px',
-              fontSize: '0.76rem',
-              outline: 'none'
-            }}
-          />
+        {/* Unified Search & New Session Action Row */}
+        <div className="demo-drawer-search-action-row">
+          <div className="demo-drawer-search-bar">
+            <Search size={14} style={{ color: 'var(--accent-cyan)' }} />
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={`Search ${presetName} chats...`}
+              className="demo-search-input codelab-search-input"
+            />
+            {searchQuery && (
+              <button 
+                type="button" 
+                onClick={() => setSearchQuery('')} 
+                className="clear-search-btn"
+                aria-label="Clear search"
+              >
+                <X size={12} />
+              </button>
+            )}
+          </div>
+
+          <button
+            type="button"
+            onClick={() => onNewSession()}
+            className="drawer-new-chat-btn"
+            title={`Start New ${presetName} Session`}
+          >
+            <Plus size={15} />
+            <span>New Lab</span>
+          </button>
         </div>
 
         {/* Segregated Sessions List */}
@@ -355,7 +262,7 @@ export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
                   style={{
                     padding: '10px 12px',
                     borderRadius: '12px',
-                    borderLeft: isActive ? '3px solid #06b6d4' : undefined,
+                    borderLeft: isActive ? '3px solid var(--accent-cyan)' : undefined,
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',

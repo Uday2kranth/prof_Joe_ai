@@ -39,14 +39,14 @@ export const ResetSessionModal: React.FC<ResetSessionModalProps> = ({
           transform: 'translate(-50%, -50%)',
           width: '420px',
           maxWidth: '90vw',
-          background: 'rgba(15, 23, 42, 0.95)',
-          border: '1px solid rgba(239, 68, 68, 0.4)',
+          background: 'var(--bg-secondary)',
+          border: '1px solid var(--border-color)',
           borderRadius: '20px',
           backdropFilter: 'blur(20px)',
-          boxShadow: '0 0 40px rgba(239, 68, 68, 0.25)',
+          boxShadow: '0 0 40px rgba(0, 0, 0, 0.45)',
           zIndex: 210,
           padding: '24px',
-          color: '#f8fafc'
+          color: 'var(--text-primary)'
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '16px' }}>
@@ -54,7 +54,7 @@ export const ResetSessionModal: React.FC<ResetSessionModalProps> = ({
             <div style={{ padding: '8px', borderRadius: '12px', background: 'rgba(239, 68, 68, 0.15)', color: '#ef4444' }}>
               <AlertTriangle size={20} />
             </div>
-            <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: '#f8fafc' }}>
+            <h3 style={{ fontSize: '1rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
               Confirm Session Reset
             </h3>
           </div>
@@ -62,21 +62,21 @@ export const ResetSessionModal: React.FC<ResetSessionModalProps> = ({
           <button
             type="button"
             onClick={onClose}
-            style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}
+            style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: '4px' }}
           >
             <X size={18} />
           </button>
         </div>
 
-        <p style={{ fontSize: '0.84rem', color: '#cbd5e1', lineHeight: '1.5', margin: '0 0 20px 0' }}>
-          Are you sure you want to clear your active chat history and code files for <strong style={{ color: '#ef4444' }}>{presetName}</strong>? Your session history remains safely saved in <strong style={{ color: '#38bdf8' }}>Lab History</strong>.
+        <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', lineHeight: '1.5', margin: '0 0 20px 0' }}>
+          Are you sure you want to clear your active chat history and code files for <strong style={{ color: '#ef4444' }}>{presetName}</strong>? Your session history remains safely saved in <strong style={{ color: 'var(--accent-cyan)' }}>Lab History</strong>.
         </p>
 
         <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
           <button
             type="button"
             onClick={onClose}
-            className="extractor-btn-secondary"
+            className="btn-theme-secondary"
             style={{ padding: '8px 16px', fontSize: '0.82rem' }}
           >
             Cancel

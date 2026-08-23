@@ -258,7 +258,7 @@ export const FlashcardsStudioView: React.FC<FlashcardsStudioViewProps> = ({
                   >
                     <div className="deck-card-top">
                       <div className="deck-type-badge">
-                        <Flame size={12} className="text-amber-400" />
+                        <Flame size={12} style={{ color: 'var(--accent-cyan)' }} />
                         <span>{deck.sourceType === 'message' ? 'Question Drill' : 'Full Session Deck'}</span>
                       </div>
                       <button
@@ -305,7 +305,7 @@ export const FlashcardsStudioView: React.FC<FlashcardsStudioViewProps> = ({
             </div>
           ) : (
             <div className="studio-empty-state">
-              <div className="studio-empty-icon cyan">
+              <div className="studio-empty-icon" style={{ background: 'var(--pill-bg)', color: 'var(--accent-cyan)' }}>
                 <Layers size={36} />
               </div>
               <h3>No Flashcard Decks Yet</h3>
@@ -316,7 +316,7 @@ export const FlashcardsStudioView: React.FC<FlashcardsStudioViewProps> = ({
                 <button 
                   type="button" 
                   onClick={onNavigateToChat}
-                  className="studio-primary-action-btn"
+                  className="btn-theme-primary flex items-center gap-2 px-5 py-2.5 rounded-xl font-bold"
                 >
                   <BookOpen size={16} />
                   <span>Go to Chat & Generate Deck</span>
@@ -414,7 +414,7 @@ export const FlashcardsStudioView: React.FC<FlashcardsStudioViewProps> = ({
                   {/* BACK FACE */}
                   <div className="flashcard-face back">
                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <span className="quiz-q-counter-pill" style={{ color: '#10b981', borderColor: 'rgba(16, 185, 129, 0.4)' }}>
+                      <span className="quiz-q-counter-pill" style={{ color: 'var(--accent-cyan)', borderColor: 'var(--border-color)', background: 'var(--pill-bg)' }}>
                         Answer & Derivation
                       </span>
                       <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -449,7 +449,8 @@ export const FlashcardsStudioView: React.FC<FlashcardsStudioViewProps> = ({
                 <button
                   type="button"
                   onClick={handlePrevCard}
-                  className="studio-nav-btn secondary"
+                  className="btn-theme-secondary"
+                  style={{ padding: '8px 16px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                 >
                   <ChevronLeft size={16} />
                   <span>Previous</span>
@@ -471,7 +472,8 @@ export const FlashcardsStudioView: React.FC<FlashcardsStudioViewProps> = ({
                 <button
                   type="button"
                   onClick={handleNextCard}
-                  className="studio-nav-btn primary"
+                  className="btn-theme-primary"
+                  style={{ padding: '8px 16px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
                 >
                   <span>Next</span>
                   <ChevronRight size={16} />
@@ -486,9 +488,10 @@ export const FlashcardsStudioView: React.FC<FlashcardsStudioViewProps> = ({
               <button
                 type="button"
                 onClick={() => setCramModeUnmastered(false)}
-                className="studio-primary-action-btn"
+                className="btn-theme-primary"
+                style={{ padding: '10px 20px', borderRadius: '12px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}
               >
-                <span>Review All Cards</span>
+                <span>View All Cards</span>
               </button>
             </div>
           )}

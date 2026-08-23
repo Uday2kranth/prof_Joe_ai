@@ -1552,11 +1552,11 @@ export const DataStructuresModule: React.FC = () => {
               display: 'flex',
               alignItems: 'center',
               gap: '10px',
-              boxShadow: '0 2px 10px rgba(0, 0, 0, 0.3)'
+              boxShadow: 'var(--card-shadow)'
             }}
           >
             <Sparkles size={16} color="#38bdf8" />
-            <span style={{ fontSize: '0.78rem', color: '#f8fafc', fontWeight: 600 }}>
+            <span style={{ fontSize: '0.78rem', color: 'var(--text-primary)', fontWeight: 600 }}>
               {operationLog}
             </span>
           </div>
@@ -1567,22 +1567,23 @@ export const DataStructuresModule: React.FC = () => {
           {/* Action Deck Card */}
           <div
             style={{
-              background: 'rgba(15, 23, 42, 0.95)',
+              background: 'var(--card-bg)',
               borderRadius: '16px',
-              border: '1px solid rgba(51, 65, 85, 0.8)',
+              border: '1px solid var(--card-border)',
+              boxShadow: 'var(--card-shadow)',
               padding: '18px',
               display: 'flex',
               flexDirection: 'column',
               gap: '12px'
             }}
           >
-            <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: '#f8fafc', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+            <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.04em' }}>
               Interactive Control Deck
             </h4>
 
             {/* Value Input */}
             <div>
-              <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+              <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
                 Element Value / Key:
               </label>
               <input
@@ -1594,9 +1595,9 @@ export const DataStructuresModule: React.FC = () => {
                   width: '100%',
                   padding: '8px 12px',
                   borderRadius: '8px',
-                  background: '#1e293b',
-                  border: '1px solid #334155',
-                  color: '#f8fafc',
+                  background: 'var(--bg-tertiary)',
+                  border: '1px solid var(--border-color)',
+                  color: 'var(--text-primary)',
                   fontSize: '0.85rem',
                   fontWeight: 600
                 }}
@@ -1606,7 +1607,7 @@ export const DataStructuresModule: React.FC = () => {
             {/* Array Index Input (Only for Dynamic Array) */}
             {selectedDS === 'dynamic_array' && (
               <div>
-                <label style={{ fontSize: '0.72rem', fontWeight: 600, color: '#94a3b8', display: 'block', marginBottom: '4px' }}>
+                <label style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--text-muted)', display: 'block', marginBottom: '4px' }}>
                   Target Index:
                 </label>
                 <input
@@ -1618,9 +1619,9 @@ export const DataStructuresModule: React.FC = () => {
                     width: '100%',
                     padding: '8px 12px',
                     borderRadius: '8px',
-                    background: '#1e293b',
-                    border: '1px solid #334155',
-                    color: '#f8fafc',
+                    background: 'var(--bg-tertiary)',
+                    border: '1px solid var(--border-color)',
+                    color: 'var(--text-primary)',
                     fontSize: '0.85rem',
                     fontWeight: 600
                   }}
@@ -1670,7 +1671,7 @@ export const DataStructuresModule: React.FC = () => {
                     style={{
                       padding: '8px',
                       borderRadius: '8px',
-                      background: 'rgba(30, 41, 59, 0.8)',
+                      background: 'var(--bg-tertiary)',
                       border: '1px solid #38bdf8',
                       color: '#38bdf8',
                       fontSize: '0.75rem',
@@ -1686,7 +1687,7 @@ export const DataStructuresModule: React.FC = () => {
                     style={{
                       padding: '8px',
                       borderRadius: '8px',
-                      background: 'rgba(30, 41, 59, 0.8)',
+                      background: 'var(--bg-tertiary)',
                       border: '1px solid #ef4444',
                       color: '#f87171',
                       fontSize: '0.75rem',
@@ -1852,7 +1853,7 @@ export const DataStructuresModule: React.FC = () => {
                     style={{
                       padding: '10px',
                       borderRadius: '8px',
-                      background: 'linear-gradient(135deg, #059669, #10b981)',
+                      background: 'linear-gradient(135deg, #10b981, #059669)',
                       border: 'none',
                       color: '#ffffff',
                       fontSize: '0.78rem',
@@ -1860,7 +1861,7 @@ export const DataStructuresModule: React.FC = () => {
                       cursor: 'pointer'
                     }}
                   >
-                    + Enqueue (Rear)
+                    + Enqueue (REAR)
                   </button>
                   <button
                     type="button"
@@ -1876,7 +1877,7 @@ export const DataStructuresModule: React.FC = () => {
                       cursor: 'pointer'
                     }}
                   >
-                    - Dequeue (Front)
+                    - Dequeue (FRONT)
                   </button>
                 </>
               )}
@@ -1897,7 +1898,7 @@ export const DataStructuresModule: React.FC = () => {
                       cursor: 'pointer'
                     }}
                   >
-                    + Insert (Auto-Balance)
+                    + Insert Node
                   </button>
                   <button
                     type="button"
@@ -1905,15 +1906,15 @@ export const DataStructuresModule: React.FC = () => {
                     style={{
                       padding: '10px',
                       borderRadius: '8px',
-                      background: 'rgba(16, 185, 129, 0.2)',
-                      border: '1px solid #10b981',
-                      color: '#34d399',
+                      background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                      border: 'none',
+                      color: '#ffffff',
                       fontSize: '0.78rem',
                       fontWeight: 700,
                       cursor: 'pointer'
                     }}
                   >
-                    🔍 Search Path
+                    🔍 Search BST
                   </button>
                   <button
                     type="button"
@@ -1921,9 +1922,9 @@ export const DataStructuresModule: React.FC = () => {
                     style={{
                       padding: '8px',
                       borderRadius: '8px',
-                      background: 'rgba(30, 41, 59, 0.8)',
-                      border: '1px solid #64748b',
-                      color: '#cbd5e1',
+                      background: 'var(--bg-tertiary)',
+                      border: '1px solid var(--border-color)',
+                      color: 'var(--text-muted)',
                       fontSize: '0.74rem',
                       fontWeight: 700,
                       cursor: 'pointer',
@@ -1988,7 +1989,7 @@ export const DataStructuresModule: React.FC = () => {
                     gridColumn: 'span 2'
                   }}
                 >
-                  + Hash & Chain Key
+                  + Insert (Key % TableSize)
                 </button>
               )}
 
@@ -2037,9 +2038,10 @@ export const DataStructuresModule: React.FC = () => {
           {/* Real Memory Allocation & Cache Locality Map */}
           <div
             style={{
-              background: 'rgba(15, 23, 42, 0.95)',
+              background: 'var(--card-bg)',
               borderRadius: '16px',
-              border: '1px solid rgba(51, 65, 85, 0.8)',
+              border: '1px solid var(--card-border)',
+              boxShadow: 'var(--card-shadow)',
               padding: '16px',
               display: 'flex',
               flexDirection: 'column',
@@ -2048,22 +2050,22 @@ export const DataStructuresModule: React.FC = () => {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Activity size={16} color="#34d399" />
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f8fafc', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase' }}>
                 Memory Layout Telemetry
               </span>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.74rem' }}>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#94a3b8' }}>Base Address Offset:</span>
-                <strong style={{ color: '#38bdf8', fontFamily: 'monospace' }}>0x7FFEE400</strong>
+                <span style={{ color: 'var(--text-muted)' }}>Base Address Offset:</span>
+                <strong style={{ color: 'var(--accent-cyan)', fontFamily: 'monospace' }}>0x7FFEE400</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#94a3b8' }}>Est. Node Footprint:</span>
-                <strong style={{ color: '#f8fafc' }}>{currentMeta.bytePerElement} Bytes / element</strong>
+                <span style={{ color: 'var(--text-muted)' }}>Est. Node Footprint:</span>
+                <strong style={{ color: 'var(--text-primary)' }}>{currentMeta.bytePerElement} Bytes / element</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: '#94a3b8' }}>Hardware Cache Locality:</span>
+                <span style={{ color: 'var(--text-muted)' }}>Hardware Cache Locality:</span>
                 <strong style={{ color: '#34d399' }}>{currentMeta.cacheLocality}</strong>
               </div>
             </div>
@@ -2072,9 +2074,10 @@ export const DataStructuresModule: React.FC = () => {
           {/* Big-O Asymptotic Complexity Card */}
           <div
             style={{
-              background: 'rgba(15, 23, 42, 0.95)',
+              background: 'var(--card-bg)',
               borderRadius: '16px',
-              border: '1px solid rgba(51, 65, 85, 0.8)',
+              border: '1px solid var(--card-border)',
+              boxShadow: 'var(--card-shadow)',
               padding: '16px',
               display: 'flex',
               flexDirection: 'column',
@@ -2083,26 +2086,26 @@ export const DataStructuresModule: React.FC = () => {
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Info size={16} color="#fbbf24" />
-              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: '#f8fafc', textTransform: 'uppercase' }}>
+              <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--text-primary)', textTransform: 'uppercase' }}>
                 Asymptotic Complexity (Big-O)
               </span>
             </div>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '0.74rem' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #1e293b' }}>
-                <span style={{ color: '#94a3b8' }}>Access / Lookup:</span>
-                <strong style={{ color: '#38bdf8' }}>{currentMeta.timeAccess}</strong>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--border-color)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Access / Lookup:</span>
+                <strong style={{ color: 'var(--accent-cyan)' }}>{currentMeta.timeAccess}</strong>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #1e293b' }}>
-                <span style={{ color: '#94a3b8' }}>Insertion:</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--border-color)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Insertion:</span>
                 <strong style={{ color: '#34d399' }}>{currentMeta.timeInsert}</strong>
               </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid #1e293b' }}>
-                <span style={{ color: '#94a3b8' }}>Deletion:</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: '1px solid var(--border-color)' }}>
+                <span style={{ color: 'var(--text-muted)' }}>Deletion:</span>
                 <strong style={{ color: '#fbbf24' }}>{currentMeta.timeDelete}</strong>
               </div>
               <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0' }}>
-                <span style={{ color: '#94a3b8' }}>Space Complexity:</span>
+                <span style={{ color: 'var(--text-muted)' }}>Space Complexity:</span>
                 <strong style={{ color: '#c084fc' }}>{currentMeta.spaceComp}</strong>
               </div>
             </div>

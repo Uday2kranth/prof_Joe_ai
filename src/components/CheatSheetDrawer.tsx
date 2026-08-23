@@ -199,8 +199,8 @@ export const CheatSheetDrawer: React.FC<CheatSheetDrawerProps> = ({
             type="button"
             onClick={handlePrintCheatSheet}
             disabled={filteredPins.length === 0}
-            className="cheat-sheet-print-btn"
-            style={{ opacity: filteredPins.length === 0 ? 0.4 : 1, padding: '7px 12px', fontSize: '0.76rem' }}
+            className="btn-theme-primary"
+            style={{ opacity: filteredPins.length === 0 ? 0.4 : 1, padding: '7px 12px', fontSize: '0.76rem', display: 'inline-flex', alignItems: 'center', gap: '5px' }}
             title="Export clean printable formula sheet for current selection"
           >
             <Printer size={13} />
@@ -215,7 +215,7 @@ export const CheatSheetDrawer: React.FC<CheatSheetDrawerProps> = ({
                   onClose();
                   onOpenArchive();
                 }}
-                className="extractor-btn-secondary"
+                className="btn-theme-secondary"
                 style={{ padding: '6px 10px', fontSize: '0.72rem', borderRadius: '8px', display: 'flex', alignItems: 'center', gap: '5px' }}
                 title="Open the complete Pinned Notes & Exam Archive Studio"
               >
@@ -229,7 +229,7 @@ export const CheatSheetDrawer: React.FC<CheatSheetDrawerProps> = ({
               <button
                 type="button"
                 onClick={onClearAllPins}
-                className="cheat-sheet-clear-btn"
+                className="btn-theme-danger"
                 style={{ padding: '6px 8px', fontSize: '0.72rem' }}
                 title="Clear all saved pins"
               >
@@ -304,7 +304,7 @@ export const CheatSheetDrawer: React.FC<CheatSheetDrawerProps> = ({
                         onClick={() => handlePrintSinglePin(item)}
                         className="pinned-card-btn"
                         title="Print This Note"
-                        style={{ color: '#0284c7' }}
+                        style={{ color: 'var(--accent-cyan)' }}
                       >
                         <Printer size={12} />
                       </button>

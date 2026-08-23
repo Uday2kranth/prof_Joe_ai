@@ -154,7 +154,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         <div className="modal-header" style={{ flexDirection: 'column', alignItems: 'stretch', gap: '12px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
             <div className="modal-title">
-              <Key className="text-cyan-400" size={20} />
+              <Key style={{ color: 'var(--accent-cyan)' }} size={20} />
               <h2>Settings & Model Workspace</h2>
             </div>
             <button onClick={onClose} className="close-btn"><X size={18} /></button>
@@ -273,11 +273,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
           {activeTab === 'keys' ? (
             <>
               <div className="json-sync-bar">
-                <button onClick={handleExportJson} className="btn btn-secondary" title="Export credentials to JSON file">
+                <button onClick={handleExportJson} className="btn-theme-secondary" style={{ padding: '6px 12px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }} title="Export credentials to JSON file">
                   <Download size={14} />
                   <span>Export JSON</span>
                 </button>
-                <button onClick={() => fileInputRef.current?.click()} className="btn btn-secondary" title="Import credentials from JSON file">
+                <button onClick={() => fileInputRef.current?.click()} className="btn-theme-secondary" style={{ padding: '6px 12px', fontSize: '0.78rem', display: 'inline-flex', alignItems: 'center', gap: '6px' }} title="Import credentials from JSON file">
                   <Upload size={14} />
                   <span>Import JSON</span>
                 </button>
@@ -338,7 +338,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               <div style={{ padding: '16px', borderRadius: '12px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <div style={{ fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Cpu size={16} className="text-cyan-400" />
+                    <Cpu size={16} style={{ color: 'var(--accent-cyan)' }} />
                     <span>Temperature & Creativity</span>
                   </div>
                   <span style={{ fontSize: '0.8rem', padding: '2px 8px', borderRadius: '12px', background: 'rgba(6, 182, 212, 0.2)', color: 'var(--accent-cyan)', fontWeight: 700 }}>
@@ -364,7 +364,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               {/* Max Output Tokens */}
               <div style={{ padding: '16px', borderRadius: '12px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '12px' }}>
                 <div style={{ fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <SlidersHorizontal size={16} className="text-cyan-400" />
+                  <SlidersHorizontal size={16} style={{ color: 'var(--accent-cyan)' }} />
                   <span>Maximum Output Tokens</span>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '6px' }}>
@@ -437,7 +437,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               {/* OU Exam Answer Schema */}
               <div style={{ padding: '16px', borderRadius: '12px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <BookOpen size={16} className="text-cyan-400" />
+                  <BookOpen size={16} style={{ color: 'var(--accent-cyan)' }} />
                   <span>OU Exam Answer Schema</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -477,7 +477,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               {/* Code Block Syntax Theme */}
               <div style={{ padding: '16px', borderRadius: '12px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Code size={16} className="text-cyan-400" />
+                  <Code size={16} style={{ color: 'var(--accent-cyan)' }} />
                   <span>Code Block Syntax Theme</span>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
@@ -515,7 +515,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               {/* KaTeX Math Scaling */}
               <div style={{ padding: '16px', borderRadius: '12px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Terminal size={16} className="text-cyan-400" />
+                  <Terminal size={16} style={{ color: 'var(--accent-cyan)' }} />
                   <span>KaTeX Math Formula Scaling</span>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
@@ -549,7 +549,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
               {/* Code Dungeon & Monaco Editor Settings */}
               <div style={{ padding: '16px', borderRadius: '12px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <Code size={16} className="text-cyan-400" />
+                  <Code size={16} style={{ color: 'var(--accent-cyan)' }} />
                   <span>Code Dungeon & Monaco Editor (IDE)</span>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
@@ -651,9 +651,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
         </div>
 
         <div className="modal-footer">
-          <button onClick={onClose} className="btn btn-secondary">Close</button>
+          <button onClick={onClose} className="btn-theme-secondary" style={{ padding: '8px 16px' }}>Close</button>
           {activeTab === 'keys' && (
-            <button onClick={handleSave} className="btn btn-primary">
+            <button onClick={handleSave} className="btn-theme-primary" style={{ padding: '8px 18px', display: 'inline-flex', alignItems: 'center', gap: '6px' }}>
               {saved ? <Check size={16} /> : <Save size={16} />}
               <span>{saved ? 'Saved!' : 'Save Credentials'}</span>
             </button>

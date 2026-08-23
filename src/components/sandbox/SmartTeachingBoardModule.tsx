@@ -93,7 +93,21 @@ export interface BoardConnection {
 }
 
 export const SmartTeachingBoardModule: React.FC = () => {
-  // ─── 1. TOOL SELECTION & FLYOUT STATES ───
+  // ─── 1. DYNAMIC THEME TRACKING ───
+  const [isLightMode, setIsLightMode] = useState<boolean>(() => {
+    return document.documentElement.getAttribute('data-theme') === 'light';
+  });
+
+  useEffect(() => {
+    const observer = new MutationObserver(() => {
+      const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+      setIsLightMode(isLight);
+    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-atmosphere'] });
+    return () => observer.disconnect();
+  }, []);
+
+  // ─── 2. TOOL SELECTION & FLYOUT STATES ───
   const [activeTool, setActiveTool] = useState<DrawingToolType>('pen');
   const [activeFlyout, setActiveFlyout] = useState<'none' | 'pen' | 'text' | 'eraser' | 'upload' | 'tools'>('none');
   const [polygonEdgeCount, setPolygonEdgeCount] = useState<number>(5);
@@ -1278,14 +1292,15 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
         display: 'flex',
         flexDirection: 'column',
         width: '100%',
-        height: 'calc(100vh - 120px)',
-        minHeight: '720px',
+        height: '100%',
+        minHeight: 0,
+        flex: 1,
         position: 'relative',
-        background: '#090d16',
-        borderRadius: '16px',
-        border: '1px solid rgba(56, 189, 248, 0.3)',
+        background: isLightMode ? 'var(--bg-secondary, #ffffff)' : 'var(--bg-primary, #090d16)',
+        borderRadius: '14px',
+        border: '1px solid var(--card-border, rgba(56, 189, 248, 0.3))',
         overflow: 'hidden',
-        boxShadow: '0 12px 40px rgba(0, 0, 0, 0.6)'
+        boxShadow: 'var(--card-shadow, 0 12px 40px rgba(0, 0, 0, 0.6))'
       }}
       onMouseMove={handleGlobalMouseMove}
       onMouseUp={handleGlobalMouseUp}
@@ -1301,15 +1316,16 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
           alignItems: 'center',
           justifyContent: 'space-between',
           padding: '6px 12px',
-          background: 'rgba(15, 23, 42, 0.95)',
-          borderBottom: '1px solid rgba(51, 65, 85, 0.6)',
+          background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
+          borderBottom: '1px solid var(--card-border, rgba(51, 65, 85, 0.6))',
           backdropFilter: 'blur(16px)',
           zIndex: 40,
           gap: '8px',
           overflowX: 'auto',
           flexWrap: 'nowrap',
           WebkitOverflowScrolling: 'touch',
-          scrollbarWidth: 'none'
+          scrollbarWidth: 'none',
+          flexShrink: 0
         }}
       >
         {/* Left: Undo, Redo, Clear, Zoom Controls */}
@@ -1327,7 +1343,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
               }
             }}
             disabled={historyStack.length === 0}
-            style={{ padding: '5px 7px', borderRadius: '6px', background: 'rgba(30, 41, 59, 0.6)', color: historyStack.length > 0 ? '#38bdf8' : '#475569', border: '1px solid rgba(51, 65, 85, 0.6)', cursor: historyStack.length > 0 ? 'pointer' : 'not-allowed' }}
+            style={{ padding: '5px 7px', borderRadius: '6px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', color: historyStack.length > 0 ? '#38bdf8' : '#475569', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))', cursor: historyStack.length > 0 ? 'pointer' : 'not-allowed' }}
             title="Undo"
           >
             <Undo size={13} />
@@ -1345,7 +1361,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
               }
             }}
             disabled={redoStack.length === 0}
-            style={{ padding: '5px 7px', borderRadius: '6px', background: 'rgba(30, 41, 59, 0.6)', color: redoStack.length > 0 ? '#38bdf8' : '#475569', border: '1px solid rgba(51, 65, 85, 0.6)', cursor: historyStack.length > 0 ? 'pointer' : 'not-allowed' }}
+            style={{ padding: '5px 7px', borderRadius: '6px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', color: redoStack.length > 0 ? '#38bdf8' : '#475569', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))', cursor: historyStack.length > 0 ? 'pointer' : 'not-allowed' }}
             title="Redo"
           >
             <Redo size={13} />
@@ -1370,7 +1386,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
           <button
             type="button"
             onClick={() => setZoomLevel(prev => Math.max(0.4, Number((prev - 0.1).toFixed(1))))}
-            style={{ minHeight: '36px', padding: '6px 10px', borderRadius: '8px', background: 'rgba(30, 41, 59, 0.7)', color: '#cbd5e1', border: '1px solid rgba(51, 65, 85, 0.7)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            style={{ minHeight: '36px', padding: '6px 10px', borderRadius: '8px', background: 'rgba(30, 41, 59, 0.7)', color: 'var(--text-primary, #cbd5e1)', border: '1px solid rgba(51, 65, 85, 0.7)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             <ZoomOut size={15} />
           </button>
@@ -1380,7 +1396,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
           <button
             type="button"
             onClick={() => setZoomLevel(prev => Math.min(2.5, Number((prev + 0.1).toFixed(1))))}
-            style={{ minHeight: '36px', padding: '6px 10px', borderRadius: '8px', background: 'rgba(30, 41, 59, 0.7)', color: '#cbd5e1', border: '1px solid rgba(51, 65, 85, 0.7)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+            style={{ minHeight: '36px', padding: '6px 10px', borderRadius: '8px', background: 'rgba(30, 41, 59, 0.7)', color: 'var(--text-primary, #cbd5e1)', border: '1px solid rgba(51, 65, 85, 0.7)', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
           >
             <ZoomIn size={15} />
           </button>
@@ -1389,7 +1405,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
           <select
             value={bgGridType}
             onChange={e => setBgGridType(e.target.value as any)}
-            style={{ minHeight: '36px', padding: '6px 12px', borderRadius: '8px', background: 'rgba(30, 41, 59, 0.9)', color: '#f8fafc', border: '1px solid rgba(51, 65, 85, 0.7)', fontSize: '0.8rem', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
+            style={{ minHeight: '36px', padding: '6px 12px', borderRadius: '8px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.9))', color: 'var(--text-primary, #f8fafc)', border: '1px solid rgba(51, 65, 85, 0.7)', fontSize: '0.8rem', fontWeight: 600, outline: 'none', cursor: 'pointer' }}
           >
             <option value="grid">Grid: Square</option>
             <option value="dots">Grid: Dots</option>
@@ -1459,7 +1475,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
 
           {/* Stroke Width Slider */}
           <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(30, 41, 59, 0.85)', padding: '4px 10px', borderRadius: '8px', border: '1px solid rgba(51, 65, 85, 0.7)' }}>
-            <span style={{ fontSize: '0.75rem', color: '#94a3b8', fontWeight: 700 }}>{strokeThickness}px</span>
+            <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary, #94a3b8)', fontWeight: 700 }}>{strokeThickness}px</span>
             <input
               type="range"
               min={1}
@@ -1572,7 +1588,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
         <div
           style={{
             width: '52px',
-            background: 'rgba(15, 23, 42, 0.95)',
+            background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
             borderRight: '1px solid rgba(51, 65, 85, 0.6)',
             display: 'flex',
             flexDirection: 'column',
@@ -1623,7 +1639,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                   width: '270px',
                   maxHeight: '80vh',
                   overflowY: 'auto',
-                  background: 'rgba(15, 23, 42, 0.98)',
+                  background: 'var(--card-bg, rgba(15, 23, 42, 0.98))',
                   border: '1px solid rgba(168, 85, 247, 0.5)',
                   borderRadius: '14px',
                   padding: '10px',
@@ -1637,48 +1653,48 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
               >
                 <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#c084fc', padding: '2px 4px', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <span>✏️ INKING & LINES</span>
-                  <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>{lineStyle.toUpperCase()}</span>
+                  <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary, #94a3b8)' }}>{lineStyle.toUpperCase()}</span>
                 </div>
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '4px' }}>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('pen'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'pen' ? 'rgba(168, 85, 247, 0.25)' : 'rgba(30, 41, 59, 0.6)', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'pen' ? 'rgba(168, 85, 247, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                   >
                     ✏️ Pen
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('highlighter'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'highlighter' ? 'rgba(168, 85, 247, 0.25)' : 'rgba(30, 41, 59, 0.6)', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'highlighter' ? 'rgba(168, 85, 247, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                   >
                     🖍️ Highlighter
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('line'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'line' ? 'rgba(168, 85, 247, 0.25)' : 'rgba(30, 41, 59, 0.6)', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'line' ? 'rgba(168, 85, 247, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                   >
                     📏 Line
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('arrow'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'arrow' ? 'rgba(168, 85, 247, 0.25)' : 'rgba(30, 41, 59, 0.6)', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'arrow' ? 'rgba(168, 85, 247, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                   >
                     ➔ Arrow
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('double_arrow'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'double_arrow' ? 'rgba(168, 85, 247, 0.25)' : 'rgba(30, 41, 59, 0.6)', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'double_arrow' ? 'rgba(168, 85, 247, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                   >
                     ⇄ 2-Way Arrow
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('curve'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'curve' ? 'rgba(168, 85, 247, 0.25)' : 'rgba(30, 41, 59, 0.6)', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'curve' ? 'rgba(168, 85, 247, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px' }}
                   >
                     ➰ Curve
                   </button>
@@ -1690,56 +1706,56 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                   <button
                     type="button"
                     onClick={() => { setActiveTool('shape_rect'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'shape_rect' ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'shape_rect' ? 'rgba(56, 189, 248, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     ▭ Rectangle
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('shape_circle'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'shape_circle' ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'shape_circle' ? 'rgba(56, 189, 248, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     ⭕ Circle / Oval
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('shape_triangle'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'shape_triangle' ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'shape_triangle' ? 'rgba(56, 189, 248, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     🔺 Triangle
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('shape_star'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'shape_star' ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'shape_star' ? 'rgba(56, 189, 248, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     ⭐️ 5-Point Star
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('shape_diamond'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'shape_diamond' ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'shape_diamond' ? 'rgba(56, 189, 248, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     💎 Diamond
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('shape_parallelogram'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'shape_parallelogram' ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'shape_parallelogram' ? 'rgba(56, 189, 248, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     ▱ Parallelogram
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('shape_speech_bubble'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'shape_speech_bubble' ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'shape_speech_bubble' ? 'rgba(56, 189, 248, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     💬 Speech Bubble
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('shape_arrow_block'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'shape_arrow_block' ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'shape_arrow_block' ? 'rgba(56, 189, 248, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     ➔ Block Arrow
                   </button>
@@ -1754,7 +1770,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                     setActiveTool('shape_polygon');
                     setActiveFlyout('none');
                   }}
-                  style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'shape_polygon' ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer', marginTop: '2px' }}
+                  style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.74rem', background: activeTool === 'shape_polygon' ? 'rgba(56, 189, 248, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer', marginTop: '2px' }}
                 >
                   ⬡ Parametric Polygon ({polygonEdgeCount}-Edges)
                 </button>
@@ -1765,21 +1781,21 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                   <button
                     type="button"
                     onClick={() => { setActiveTool('shape_cube'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'center', fontSize: '0.72rem', background: activeTool === 'shape_cube' ? 'rgba(250, 204, 21, 0.25)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'center', fontSize: '0.72rem', background: activeTool === 'shape_cube' ? 'rgba(250, 204, 21, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     🧊 3D Cube
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('shape_cylinder'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'center', fontSize: '0.72rem', background: activeTool === 'shape_cylinder' ? 'rgba(250, 204, 21, 0.25)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'center', fontSize: '0.72rem', background: activeTool === 'shape_cylinder' ? 'rgba(250, 204, 21, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     🛢️ Cylinder
                   </button>
                   <button
                     type="button"
                     onClick={() => { setActiveTool('shape_cone'); setActiveFlyout('none'); }}
-                    style={{ padding: '6px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'center', fontSize: '0.72rem', background: activeTool === 'shape_cone' ? 'rgba(250, 204, 21, 0.25)' : 'rgba(30, 41, 59, 0.6)', cursor: 'pointer' }}
+                    style={{ padding: '6px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'center', fontSize: '0.72rem', background: activeTool === 'shape_cone' ? 'rgba(250, 204, 21, 0.25)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', cursor: 'pointer' }}
                   >
                     🍦 3D Cone
                   </button>
@@ -1806,7 +1822,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                   left: '56px',
                   top: '-10px',
                   width: '220px',
-                  background: 'rgba(15, 23, 42, 0.96)',
+                  background: 'var(--card-bg, rgba(15, 23, 42, 0.96))',
                   border: '1px solid rgba(56, 189, 248, 0.4)',
                   borderRadius: '12px',
                   padding: '8px',
@@ -1826,7 +1842,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                     handleStampItem({ type: 'text', name: 'Text Card', text, width: 140, height: 50 });
                     setActiveFlyout('none');
                   }}
-                  style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: 'transparent', cursor: 'pointer' }}
+                  style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: 'transparent', cursor: 'pointer' }}
                 >
                   🔤 Click & Type Text
                 </button>
@@ -1839,7 +1855,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                     }
                     setActiveFlyout('none');
                   }}
-                  style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: 'transparent', cursor: 'pointer' }}
+                  style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: 'transparent', cursor: 'pointer' }}
                 >
                   <span style={{ fontFamily: 'serif', fontWeight: 700, color: '#c084fc' }}>eˣ</span> Math Equation Editor
                 </button>
@@ -1909,7 +1925,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                   left: '56px',
                   top: '-10px',
                   width: '180px',
-                  background: 'rgba(15, 23, 42, 0.96)',
+                  background: 'var(--card-bg, rgba(15, 23, 42, 0.96))',
                   border: '1px solid rgba(244, 63, 94, 0.4)',
                   borderRadius: '12px',
                   padding: '8px',
@@ -1925,14 +1941,14 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                 <button
                   type="button"
                   onClick={() => { setActiveTool('eraser_object'); setActiveFlyout('none'); }}
-                  style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'eraser_object' ? 'rgba(244, 63, 94, 0.2)' : 'transparent', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.75rem', cursor: 'pointer' }}
+                  style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'eraser_object' ? 'rgba(244, 63, 94, 0.2)' : 'transparent', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.75rem', cursor: 'pointer' }}
                 >
                   🧹 Object Eraser (Click item/stroke)
                 </button>
                 <button
                   type="button"
                   onClick={() => { setActiveTool('eraser_whiteout'); setActiveFlyout('none'); }}
-                  style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'eraser_whiteout' ? 'rgba(244, 63, 94, 0.2)' : 'transparent', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.75rem', cursor: 'pointer' }}
+                  style={{ padding: '6px 8px', borderRadius: '6px', background: activeTool === 'eraser_whiteout' ? 'rgba(244, 63, 94, 0.2)' : 'transparent', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.75rem', cursor: 'pointer' }}
                 >
                   ⚪ Whiteout Mask Brush
                 </button>
@@ -1958,7 +1974,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                   left: '56px',
                   top: '-10px',
                   width: '210px',
-                  background: 'rgba(15, 23, 42, 0.96)',
+                  background: 'var(--card-bg, rgba(15, 23, 42, 0.96))',
                   border: '1px solid rgba(168, 85, 247, 0.4)',
                   borderRadius: '12px',
                   padding: '8px',
@@ -1977,7 +1993,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                     setIsProtractorVisible(!isProtractorVisible);
                     setActiveFlyout('none');
                   }}
-                  style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: isProtractorVisible ? 'rgba(56, 189, 248, 0.25)' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: isProtractorVisible ? 'rgba(56, 189, 248, 0.25)' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
                   📐 {isProtractorVisible ? 'Hide Protractor' : 'Show 180° Protractor'}
                 </button>
@@ -1987,7 +2003,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                     setIsDiceRollerVisible(!isDiceRollerVisible);
                     setActiveFlyout('none');
                   }}
-                  style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: isDiceRollerVisible ? 'rgba(168, 85, 247, 0.25)' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: isDiceRollerVisible ? 'rgba(168, 85, 247, 0.25)' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
                   🎲 {isDiceRollerVisible ? 'Hide Dice Roller' : 'Show 3D Dice Roller'}
                 </button>
@@ -1997,7 +2013,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                     setIsTrafficLightVisible(!isTrafficLightVisible);
                     setActiveFlyout('none');
                   }}
-                  style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: isTrafficLightVisible ? 'rgba(34, 197, 94, 0.25)' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: isTrafficLightVisible ? 'rgba(34, 197, 94, 0.25)' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
                   🚦 {isTrafficLightVisible ? 'Hide Traffic Light' : 'Show Traffic Light'}
                 </button>
@@ -2007,7 +2023,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                     setIsStudentPickerVisible(!isStudentPickerVisible);
                     setActiveFlyout('none');
                   }}
-                  style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: isStudentPickerVisible ? 'rgba(234, 179, 8, 0.25)' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                  style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: isStudentPickerVisible ? 'rgba(234, 179, 8, 0.25)' : 'transparent', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
                 >
                   👥 {isStudentPickerVisible ? 'Hide Student Picker' : 'Show Student Picker'}
                 </button>
@@ -2015,7 +2031,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                 <button
                   type="button"
                   onClick={() => { setAreAnimationsPaused(!areAnimationsPaused); setActiveFlyout('none'); }}
-                  style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: 'transparent', cursor: 'pointer' }}
+                  style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: 'transparent', cursor: 'pointer' }}
                 >
                   ⏸️ {areAnimationsPaused ? 'Resume Animations' : 'Pause Animations'}
                 </button>
@@ -2025,7 +2041,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                     alert('✨ Whiteboard ready for high-resolution PNG export!');
                     setActiveFlyout('none');
                   }}
-                  style={{ padding: '6px 8px', borderRadius: '6px', color: '#f8fafc', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: 'transparent', cursor: 'pointer' }}
+                  style={{ padding: '6px 8px', borderRadius: '6px', color: 'var(--text-primary, #f8fafc)', border: 'none', textAlign: 'left', fontSize: '0.75rem', background: 'transparent', cursor: 'pointer' }}
                 >
                   💾 Download Board PNG
                 </button>
@@ -2045,16 +2061,16 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
             height: '100%',
             position: 'relative',
             touchAction: 'none',
-            background: '#090d16',
+            background: isLightMode ? '#ffffff' : 'var(--bg-primary, #090d16)',
             backgroundImage:
               bgGridType === 'grid'
-                ? 'radial-gradient(rgba(56, 189, 248, 0.18) 1px, transparent 1px)'
+                ? (isLightMode ? 'radial-gradient(rgba(124, 58, 237, 0.16) 1px, transparent 1px)' : 'radial-gradient(rgba(56, 189, 248, 0.18) 1px, transparent 1px)')
                 : bgGridType === 'dots'
-                ? 'radial-gradient(rgba(248, 250, 252, 0.22) 1.5px, transparent 1.5px)'
+                ? (isLightMode ? 'radial-gradient(rgba(15, 23, 42, 0.22) 1.5px, transparent 1.5px)' : 'radial-gradient(rgba(248, 250, 252, 0.22) 1.5px, transparent 1.5px)')
                 : bgGridType === 'isometric'
-                ? 'linear-gradient(60deg, rgba(56, 189, 248, 0.08) 1px, transparent 1px), linear-gradient(120deg, rgba(56, 189, 248, 0.08) 1px, transparent 1px)'
+                ? (isLightMode ? 'linear-gradient(60deg, rgba(124, 58, 237, 0.08) 1px, transparent 1px), linear-gradient(120deg, rgba(124, 58, 237, 0.08) 1px, transparent 1px)' : 'linear-gradient(60deg, rgba(56, 189, 248, 0.08) 1px, transparent 1px), linear-gradient(120deg, rgba(56, 189, 248, 0.08) 1px, transparent 1px)')
                 : bgGridType === 'lined'
-                ? 'linear-gradient(rgba(56, 189, 248, 0.15) 1px, transparent 1px)'
+                ? (isLightMode ? 'linear-gradient(rgba(124, 58, 237, 0.12) 1px, transparent 1px)' : 'linear-gradient(rgba(56, 189, 248, 0.15) 1px, transparent 1px)')
                 : 'none',
             backgroundSize: `${28 * zoomLevel}px ${28 * zoomLevel}px`,
             backgroundPosition: `${panOffset.x}px ${panOffset.y}px`,
@@ -2251,7 +2267,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                       style={{
                         width: '100%',
                         height: '100%',
-                        background: 'rgba(15, 23, 42, 0.9)',
+                        background: 'var(--card-bg, rgba(15, 23, 42, 0.9))',
                         border: '1px solid rgba(168, 85, 247, 0.4)',
                         color: '#c084fc',
                         padding: '8px',
@@ -2304,9 +2320,9 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                         bottom: '-20px',
                         padding: '1px 6px',
                         borderRadius: '4px',
-                        background: 'rgba(15, 23, 42, 0.9)',
+                        background: 'var(--card-bg, rgba(15, 23, 42, 0.9))',
                         border: '1px solid rgba(56, 189, 248, 0.3)',
-                        color: '#cbd5e1',
+                        color: 'var(--text-primary, #cbd5e1)',
                         fontSize: '0.62rem',
                         fontWeight: 700,
                         whiteSpace: 'nowrap',
@@ -2403,7 +2419,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
               </svg>
 
               {/* Rotation & Close Controls */}
-              <div style={{ position: 'absolute', top: '-36px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '6px', background: 'rgba(15, 23, 42, 0.95)', padding: '3px 8px', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.4)', alignItems: 'center' }}>
+              <div style={{ position: 'absolute', top: '-36px', left: '50%', transform: 'translateX(-50%)', display: 'flex', gap: '6px', background: 'var(--card-bg, rgba(15, 23, 42, 0.95))', padding: '3px 8px', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.4)', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.7rem', color: '#38bdf8', fontWeight: 800 }}>Angle: {Math.round(protractorPos.rotation % 360)}°</span>
                 <button
                   type="button"
@@ -2447,7 +2463,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                 top: '20px',
                 right: '20px',
                 width: '180px',
-                background: 'rgba(15, 23, 42, 0.95)',
+                background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
                 border: '1px solid rgba(168, 85, 247, 0.5)',
                 borderRadius: '14px',
                 padding: '14px',
@@ -2465,7 +2481,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                 <button
                   type="button"
                   onClick={() => setIsDiceRollerVisible(false)}
-                  style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '0.8rem' }}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-secondary, #94a3b8)', cursor: 'pointer', fontSize: '0.8rem' }}
                 >
                   ✕
                 </button>
@@ -2535,7 +2551,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                 position: 'absolute',
                 top: '20px',
                 left: '70px',
-                background: 'rgba(15, 23, 42, 0.95)',
+                background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
                 border: '1px solid rgba(56, 189, 248, 0.4)',
                 borderRadius: '14px',
                 padding: '12px',
@@ -2553,13 +2569,13 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                 <button
                   type="button"
                   onClick={() => setIsTrafficLightVisible(false)}
-                  style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '0.75rem' }}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-secondary, #94a3b8)', cursor: 'pointer', fontSize: '0.75rem' }}
                 >
                   ✕
                 </button>
               </div>
 
-              <div style={{ display: 'flex', gap: '8px', background: '#090d16', padding: '6px 10px', borderRadius: '20px', border: '1px solid rgba(51, 65, 85, 0.8)' }}>
+              <div style={{ display: 'flex', gap: '8px', background: '#090d16', padding: '6px 10px', borderRadius: '20px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))' }}>
                 {/* Red */}
                 <div
                   onClick={() => setTrafficStatus('red')}
@@ -2618,7 +2634,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                 top: '20px',
                 left: '260px',
                 width: '240px',
-                background: 'rgba(15, 23, 42, 0.95)',
+                background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
                 border: '1px solid rgba(234, 179, 8, 0.5)',
                 borderRadius: '14px',
                 padding: '12px',
@@ -2635,13 +2651,13 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                 <button
                   type="button"
                   onClick={() => setIsStudentPickerVisible(false)}
-                  style={{ background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '0.75rem' }}
+                  style={{ background: 'none', border: 'none', color: 'var(--text-secondary, #94a3b8)', cursor: 'pointer', fontSize: '0.75rem' }}
                 >
                   ✕
                 </button>
               </div>
 
-              <div style={{ padding: '8px', borderRadius: '8px', background: '#090d16', border: '1px solid rgba(51, 65, 85, 0.6)', textAlign: 'center', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <div style={{ padding: '8px', borderRadius: '8px', background: '#090d16', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))', textAlign: 'center', minHeight: '40px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                 <span style={{ fontSize: '1rem', fontWeight: 900, color: '#38bdf8' }}>
                   {pickedStudent || 'Click Pick!'}
                 </span>
@@ -2678,7 +2694,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                 bottom: '16px',
                 left: '50%',
                 transform: 'translateX(-50%)',
-                background: 'rgba(15, 23, 42, 0.96)',
+                background: 'var(--card-bg, rgba(15, 23, 42, 0.96))',
                 border: '1px solid rgba(56, 189, 248, 0.5)',
                 borderRadius: '12px',
                 padding: '8px 16px',
@@ -2696,7 +2712,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
 
               {/* Corner Rounding Morpher */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>Round:</span>
+                <span style={{ fontSize: '0.65rem', color: 'var(--text-secondary, #94a3b8)' }}>Round:</span>
                 <input
                   type="range"
                   min={0}
@@ -2748,7 +2764,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
               bottom: 0,
               width: '380px',
               maxWidth: '90vw',
-              background: 'rgba(15, 23, 42, 0.98)',
+              background: 'var(--card-bg, rgba(15, 23, 42, 0.98))',
               borderLeft: '1px solid rgba(56, 189, 248, 0.4)',
               display: 'flex',
               flexDirection: 'column',
@@ -2761,14 +2777,14 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
             {/* Header & Category Dropdown */}
             <div style={{ padding: '14px', borderBottom: '1px solid rgba(51, 65, 85, 0.6)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                <span style={{ fontSize: '0.85rem', fontWeight: 800, color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary, #f8fafc)', display: 'flex', alignItems: 'center', gap: '8px' }}>
                   <Box size={18} className="text-cyan-400" />
                   <span>Gizmos Library (1,200+ Items)</span>
                 </span>
                 <button
                   type="button"
                   onClick={() => setIsGizmoDrawerOpen(false)}
-                  style={{ width: '26px', height: '26px', borderRadius: '6px', background: 'rgba(51, 65, 85, 0.6)', color: '#94a3b8', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                  style={{ width: '26px', height: '26px', borderRadius: '6px', background: 'rgba(51, 65, 85, 0.6)', color: 'var(--text-secondary, #94a3b8)', border: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
                 >
                   <X size={15} />
                 </button>
@@ -2782,7 +2798,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                   placeholder="Search 80+ Telugu, Hindi, Robots, Math, Food..."
                   value={searchQuery}
                   onChange={e => setSearchQuery(e.target.value)}
-                  style={{ width: '100%', padding: '7px 10px 7px 32px', borderRadius: '8px', background: 'rgba(30, 41, 59, 0.8)', border: '1px solid rgba(51, 65, 85, 0.6)', color: '#f8fafc', fontSize: '0.75rem', outline: 'none' }}
+                  style={{ width: '100%', padding: '7px 10px 7px 32px', borderRadius: '8px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.8))', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))', color: 'var(--text-primary, #f8fafc)', fontSize: '0.75rem', outline: 'none' }}
                 />
               </div>
 
@@ -2824,7 +2840,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                     padding: '6px',
                     borderRadius: '10px',
                     background: 'rgba(30, 41, 59, 0.5)',
-                    border: '1px solid rgba(51, 65, 85, 0.6)',
+                    border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))',
                     cursor: 'pointer',
                     display: 'flex',
                     flexDirection: 'column',
@@ -2848,7 +2864,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                     dangerouslySetInnerHTML={{ __html: gizmo.svgContent }}
                   />
                   <div style={{ textAlign: 'center', width: '100%' }}>
-                    <div style={{ fontSize: '0.62rem', fontWeight: 700, color: '#f8fafc', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    <div style={{ fontSize: '0.62rem', fontWeight: 700, color: 'var(--text-primary, #f8fafc)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                       {gizmo.name}
                     </div>
                     {gizmo.badge && (
@@ -2872,7 +2888,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
             bottom: '68px',
             left: '50%',
             transform: 'translateX(-50%)',
-            background: 'rgba(15, 23, 42, 0.95)',
+            background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
             border: '1px solid rgba(56, 189, 248, 0.4)',
             borderRadius: '12px',
             padding: '6px 12px',
@@ -2891,14 +2907,14 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
           <button
             type="button"
             onClick={() => setItems(prev => prev.map(i => i.id === selectedItemId ? { ...i, scale: Math.max(0.4, Number((i.scale - 0.1).toFixed(1))) } : i))}
-            style={{ padding: '4px 8px', borderRadius: '6px', background: 'rgba(30, 41, 59, 0.6)', color: '#cbd5e1', border: '1px solid rgba(51, 65, 85, 0.6)', fontSize: '0.7rem', cursor: 'pointer' }}
+            style={{ padding: '4px 8px', borderRadius: '6px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', color: 'var(--text-primary, #cbd5e1)', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))', fontSize: '0.7rem', cursor: 'pointer' }}
           >
             A-
           </button>
           <button
             type="button"
             onClick={() => setItems(prev => prev.map(i => i.id === selectedItemId ? { ...i, scale: Math.min(2.5, Number((i.scale + 0.1).toFixed(1))) } : i))}
-            style={{ padding: '4px 8px', borderRadius: '6px', background: 'rgba(30, 41, 59, 0.6)', color: '#cbd5e1', border: '1px solid rgba(51, 65, 85, 0.6)', fontSize: '0.7rem', cursor: 'pointer' }}
+            style={{ padding: '4px 8px', borderRadius: '6px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', color: 'var(--text-primary, #cbd5e1)', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))', fontSize: '0.7rem', cursor: 'pointer' }}
           >
             A+
           </button>
@@ -2912,7 +2928,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
             style={{
               padding: '4px 8px',
               borderRadius: '6px',
-              background: selectedItem.animation?.type === 'move' && selectedItem.animation?.active ? 'rgba(168, 85, 247, 0.3)' : 'rgba(30, 41, 59, 0.6)',
+              background: selectedItem.animation?.type === 'move' && selectedItem.animation?.active ? 'rgba(168, 85, 247, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))',
               color: selectedItem.animation?.type === 'move' && selectedItem.animation?.active ? '#c084fc' : '#cbd5e1',
               border: '1px solid rgba(168, 85, 247, 0.4)',
               fontSize: '0.7rem',
@@ -2945,7 +2961,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
             style={{
               padding: '4px 8px',
               borderRadius: '6px',
-              background: selectedItem.animation?.type === 'color' && selectedItem.animation?.active ? 'rgba(56, 189, 248, 0.3)' : 'rgba(30, 41, 59, 0.6)',
+              background: selectedItem.animation?.type === 'color' && selectedItem.animation?.active ? 'rgba(56, 189, 248, 0.3)' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))',
               color: selectedItem.animation?.type === 'color' && selectedItem.animation?.active ? '#38bdf8' : '#cbd5e1',
               border: '1px solid rgba(56, 189, 248, 0.4)',
               fontSize: '0.7rem',
@@ -2975,7 +2991,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
                 })
               );
             }}
-            style={{ padding: '4px 8px', borderRadius: '6px', background: 'rgba(30, 41, 59, 0.6)', color: '#cbd5e1', border: '1px solid rgba(51, 65, 85, 0.6)', fontSize: '0.7rem', cursor: 'pointer' }}
+            style={{ padding: '4px 8px', borderRadius: '6px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', color: 'var(--text-primary, #cbd5e1)', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))', fontSize: '0.7rem', cursor: 'pointer' }}
           >
             🔄 Rotate
           </button>
@@ -2986,7 +3002,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
               const cloned = { ...selectedItem, id: `item_${Date.now()}`, x: selectedItem.x + 25, y: selectedItem.y + 25 };
               setItems(prev => [...prev, cloned]);
             }}
-            style={{ padding: '4px 8px', borderRadius: '6px', background: 'rgba(30, 41, 59, 0.6)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.4)', fontSize: '0.7rem', cursor: 'pointer' }}
+            style={{ padding: '4px 8px', borderRadius: '6px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.4)', fontSize: '0.7rem', cursor: 'pointer' }}
           >
             <Copy size={12} />
           </button>
@@ -3009,7 +3025,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
         className="smart-board-bottom-bar"
         style={{
           padding: '10px 18px',
-          background: 'rgba(15, 23, 42, 0.95)',
+          background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
           borderTop: '1px solid rgba(51, 65, 85, 0.7)',
           display: 'flex',
           alignItems: 'center',
@@ -3062,7 +3078,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
               borderRadius: '10px',
               background: 'rgba(30, 41, 59, 0.85)',
               border: '1px solid rgba(56, 189, 248, 0.4)',
-              color: '#f8fafc',
+              color: 'var(--text-primary, #f8fafc)',
               fontSize: '0.82rem',
               outline: 'none'
             }}
@@ -3102,7 +3118,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
             top: '60px',
             left: '50%',
             transform: 'translateX(-50%)',
-            background: 'rgba(15, 23, 42, 0.96)',
+            background: 'var(--card-bg, rgba(15, 23, 42, 0.96))',
             border: '1px solid rgba(56, 189, 248, 0.5)',
             color: '#38bdf8',
             borderRadius: '8px',

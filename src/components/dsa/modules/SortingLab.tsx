@@ -501,14 +501,15 @@ export const SortingLab: React.FC<SortingLabProps> = ({
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '8px',
-        background: 'rgba(15, 23, 42, 0.75)',
+        background: 'var(--card-bg)',
         padding: '8px 12px',
         borderRadius: '12px',
-        border: '1px solid rgba(255,255,255,0.08)'
+        border: '1px solid var(--card-border)',
+        boxShadow: 'var(--card-shadow)'
       }}>
         {/* Left: Sorting Algorithm Dropdown */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 200px', minWidth: 0, maxWidth: '100%' }}>
-          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
+          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
             SORT:
           </span>
           <select
@@ -519,14 +520,14 @@ export const SortingLab: React.FC<SortingLabProps> = ({
               minHeight: '36px',
               padding: '6px 10px',
               borderRadius: '8px',
-              background: 'rgba(30, 41, 59, 0.95)',
-              border: '1.5px solid #38bdf8',
-              color: '#f8fafc',
+              background: 'var(--bg-tertiary)',
+              border: '1.5px solid var(--accent-cyan)',
+              color: 'var(--text-primary)',
               fontSize: '0.82rem',
               fontWeight: 800,
               cursor: 'pointer',
               outline: 'none',
-              boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)'
+              boxShadow: '0 0 10px var(--cursor-glow)'
             }}
           >
             <option value="bubble_sort">📶 Bubble Sort (Adjacent Swaps)</option>
@@ -579,10 +580,11 @@ export const SortingLab: React.FC<SortingLabProps> = ({
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '8px',
-        background: 'rgba(15, 23, 42, 0.7)',
+        background: 'var(--card-bg)',
         padding: '6px 12px',
         borderRadius: '10px',
-        border: '1px solid rgba(255,255,255,0.08)'
+        border: '1px solid var(--card-border)',
+        boxShadow: 'var(--card-shadow)'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <button
@@ -605,9 +607,9 @@ export const SortingLab: React.FC<SortingLabProps> = ({
             disabled={currentStep === 0 || isPlaying}
             className="dsa-action-btn"
             style={{
-              border: '1px solid rgba(255,255,255,0.1)',
-              background: 'rgba(255,255,255,0.05)',
-              color: '#fff',
+              border: '1px solid var(--border-color)',
+              background: 'var(--bg-tertiary)',
+              color: 'var(--text-primary)',
               opacity: currentStep === 0 ? 0.4 : 1
             }}
           >
@@ -621,9 +623,9 @@ export const SortingLab: React.FC<SortingLabProps> = ({
             disabled={currentStep >= stepsHistoryRef.current.length - 1 || isPlaying}
             className="dsa-action-btn"
             style={{
-              border: '1px solid rgba(255,255,255,0.1)',
-              background: 'rgba(255,255,255,0.05)',
-              color: '#fff',
+              border: '1px solid var(--border-color)',
+              background: 'var(--bg-tertiary)',
+              color: 'var(--text-primary)',
               opacity: currentStep >= stepsHistoryRef.current.length - 1 ? 0.4 : 1
             }}
           >
@@ -636,8 +638,8 @@ export const SortingLab: React.FC<SortingLabProps> = ({
             onClick={handleReset}
             className="dsa-action-btn"
             style={{
-              border: '1px solid rgba(255,255,255,0.1)',
-              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid var(--border-color)',
+              background: 'var(--bg-tertiary)',
               color: 'var(--text-muted)'
             }}
           >
@@ -648,14 +650,14 @@ export const SortingLab: React.FC<SortingLabProps> = ({
 
         {/* Array Size Slider */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>N: <strong style={{ color: '#38bdf8' }}>{arraySize}</strong></span>
+          <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>N: <strong style={{ color: 'var(--accent-cyan)' }}>{arraySize}</strong></span>
           <input
             type="range"
             min="5"
             max="25"
             value={arraySize}
             onChange={(e) => setArraySize(parseInt(e.target.value, 10))}
-            style={{ width: '70px', accentColor: '#38bdf8' }}
+            style={{ width: '70px', accentColor: 'var(--accent-cyan)' }}
           />
         </div>
       </div>
@@ -665,19 +667,19 @@ export const SortingLab: React.FC<SortingLabProps> = ({
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
-        background: 'rgba(2, 132, 199, 0.1)',
-        border: '1px solid rgba(56, 189, 248, 0.25)',
+        background: 'var(--pill-active-bg)',
+        border: '1px solid var(--card-border)',
         padding: '6px 12px',
         borderRadius: '8px',
         gap: '8px',
         flexWrap: 'wrap'
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', minWidth: 0, flex: 1 }}>
-          <Zap size={14} color="#38bdf8" style={{ flexShrink: 0 }} />
-          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#38bdf8', flexShrink: 0 }}>
+          <Zap size={14} color="var(--accent-cyan)" style={{ flexShrink: 0 }} />
+          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--accent-cyan)', flexShrink: 0 }}>
             {currentStep}/{Math.max(0, stepsHistoryRef.current.length - 1)}
           </span>
-          <span style={{ fontSize: '0.76rem', color: '#f1f5f9', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+          <span style={{ fontSize: '0.76rem', color: 'var(--text-primary)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
             {currentLog.description}
           </span>
         </div>
