@@ -4,8 +4,9 @@ const fetch = globalThis.fetch || (typeof fetch !== 'undefined' ? fetch : requir
 // Zero hardcoded API keys are permitted.
 
 // Helper to scrape DuckDuckGo search snippets for free web search RAG capabilities
-async function getWebSearchSnippets(query) {
+async function getWebSearchSnippets(query, searchDepth = 'deep') {
     try {
+        const maxSnippets = searchDepth === 'fast' ? 3 : 10;
         const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
@@ -70,7 +71,7 @@ Title: "${title}"
 URL: "${cleanUrl}"
 Snippet: "${snippet}"`);
             
-            if (count >= 8) break;
+            if (count >= maxSnippets) break;
         }
         
         if (snippets.length === 0) return '';
@@ -159,7 +160,29 @@ export default async function handler(req, res) {
         return res.status(405).json({ error: 'Method Not Allowed. Please send a POST request.' });
     }
 
-    const { user, model, provider, messages, sessionId, sessionTitle, webSearch, imageSearch, mode, persona, systemPrompt, enableDiagrams, beginnerFriendly } = req.body || {};
+    const { 
+        user, 
+        model, 
+        provider, 
+        messages, 
+        sessionId, 
+        sessionTitle, 
+        webSearch, 
+        searchDepth, 
+        imageSearch, 
+        mode, 
+        persona, 
+        systemPrompt, 
+        enableDiagrams, 
+        beginnerFriendly,
+        temperature,
+        maxTokens,
+        max_tokens,
+        graderMode
+    } = req.body || {};
+
+    const targetTemperature = typeof temperature === 'number' ? Math.max(0, Math.min(1, temperature)) : 0.2;
+    const targetMaxTokens = typeof maxTokens === 'number' ? Math.max(256, Math.min(16384, maxTokens)) : (typeof max_tokens === 'number' ? Math.max(256, Math.min(16384, max_tokens)) : 4096);
 
     if (!user || !model || !provider || !messages || !Array.isArray(messages)) {
         return res.status(400).json({ error: 'Invalid request body. Fields "user", "model", "provider", and "messages" are required.' });
@@ -416,7 +439,7 @@ GENERAL AI ASSISTANT DIRECTIVES:
     // Optional: Fetch web search snippets if requested (Text-Only Grounding)
     let searchContext = '';
     if (webSearch) {
-        searchContext = await getWebSearchSnippets(prompt);
+        searchContext = await getWebSearchSnippets(prompt, searchDepth);
         apiMessages.unshift({
             role: "system",
             content: `You are in STRICT WEB GROUNDING MODE. Live search results have been retrieved for this query:
@@ -440,6 +463,23 @@ STRICT CITATION & FORMATTING DIRECTIVES:
             role: "system",
             content: "Always format mathematical notations, variables with subscripts (like M_1), powers (like x^2), calculations, and equations using standard LaTeX enclosed in single dollar signs $ for inline math (e.g. $M_1$) or double dollar signs $$ for block math. Box final numeric results using $$\\bbox[6px,border:2px solid #06b6d4]{\\text{Final Result} = X}$$."
         });
+    }
+
+    // Grader Mode Persona Tuning (when standard academic mode is active)
+    if ((!persona || persona === 'default') && !isCustomPresetPrompt) {
+        if (graderMode === 'step_by_step') {
+            apiMessages.unshift({
+                role: "system",
+                content: `🎓 STEP-BY-STEP FRIENDLY TUTOR DIRECTIVE:
+Break down concepts with warm, intuitive conversational explanations, crystal-clear bullet points, and real-world analogies before stating theorems. Walk through each derivation step-by-step.`
+            });
+        } else if (graderMode === 'compact') {
+            apiMessages.unshift({
+                role: "system",
+                content: `⚡ ULTRA-COMPACT CHEAT SHEET DIRECTIVE:
+Output exclusively critical theorems, KaTeX formulas, parameter definitions, and summary tables. Omit conversational filler, preambles, and meta-introductions.`
+            });
+        }
     }
 
     // 🎓 Dedicated Beginner-Friendly Concept Buildup & Scaffolding Directive (Active when Beginner Mode is ON)
@@ -534,6 +574,8 @@ Diagram generation and visual image embeddings are strictly turned OFF by user s
         let lastErrorText = 'No active keys provided';
         let lastStatus = 400;
         let responsePayload = null;
+        const targetTemperature = temperature || 0.7;
+        const targetMaxTokens = maxTokens || 8192;
 
         let successfulModel = model;
 
@@ -649,7 +691,8 @@ Diagram generation and visual image embeddings are strictly turned OFF by user s
                                     body: JSON.stringify({
                                         model: ep.model,
                                         messages: apiMessages,
-                                        max_tokens: 8192,
+                                        temperature: targetTemperature,
+                                        max_tokens: targetMaxTokens,
                                         stream: false
                                     })
                                 });
@@ -709,7 +752,8 @@ Diagram generation and visual image embeddings are strictly turned OFF by user s
                                     body: JSON.stringify({
                                         model: targetModel,
                                         messages: apiMessages,
-                                        max_tokens: 8192,
+                                        temperature: targetTemperature,
+                                        max_tokens: targetMaxTokens,
                                         stream: false
                                     })
                                 });
@@ -748,63 +792,55 @@ Diagram generation and visual image embeddings are strictly turned OFF by user s
                         if (!ollamaSuccess) {
                             // Automatic Seamless Fallback to Free OpenRouter / Pollinations Inference Engine
                             try {
-                                const fallbackModel = targetModel.includes('coder') ? 'qwen/qwen-2.5-coder-32b-instruct:free' 
-                                    : targetModel.includes('deepseek') ? 'deepseek/deepseek-chat:free' 
-                                    : 'openrouter/free';
-                                    
-                                const openrouterKey = req.headers['x-user-openrouter-key'] || process.env.OPENROUTER_API_KEY || '';
-                                const effectiveKey = openrouterKey ? openrouterKey.split(',')[0].trim() : '';
-                                
-                                if (effectiveKey) {
-                                    const fallbackRes = await fetch('https://openrouter.ai/api/v1/chat/completions', {
-                                        method: 'POST',
-                                        headers: {
-                                            'Content-Type': 'application/json',
-                                            'Authorization': `Bearer ${effectiveKey}`,
-                                            'HTTP-Referer': 'https://chatterbot-dashboard.vercel.app',
-                                            'X-Title': 'ChatterBot Dashboard'
-                                        },
-                                        body: JSON.stringify({
-                                            model: fallbackModel,
-                                            messages: apiMessages,
-                                            max_tokens: 4096
-                                        })
-                                    });
-                                    if (fallbackRes.ok) {
-                                        responsePayload = await fallbackRes.json();
-                                        successfulModel = targetModel;
-                                        ollamaSuccess = true;
-                                    }
+                                const fbModel = "openai/gpt-4o-mini";
+                                const fbRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+                                    method: "POST",
+                                    headers: {
+                                        "Content-Type": "application/json",
+                                        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY || ''}`,
+                                        "HTTP-Referer": "https://chatterbot-dashboard.vercel.app",
+                                        "X-Title": "ChatterBot Dashboard"
+                                    },
+                                    body: JSON.stringify({
+                                        model: fbModel,
+                                        messages: apiMessages,
+                                        temperature: targetTemperature,
+                                        max_tokens: targetMaxTokens
+                                    })
+                                });
+                                if (fbRes.ok) {
+                                    responsePayload = await fbRes.json();
+                                    successfulModel = `${fbModel} (Ollama Fallback)`;
+                                    break;
                                 }
-                            } catch (eFallback) {
-                                // Fail gracefully
-                            }
+                            } catch (eFb) {}
                         }
 
                         if (ollamaSuccess && responsePayload) break;
-                    } else if (targetProvider === "local_endpoint" || targetProvider === "local") {
-                        // Slot 2: Local Device / Ngrok Tunnel Slot
+                    } else if (targetProvider === "local") {
+                        // Slot 2: Local Device Hardware Inference Engine (LM Studio / Local Ollama / vLLM / TextGenWebUI)
                         const localEndpoints = [
                             req.headers['x-user-local-endpoint'],
-                            process.env.LOCAL_ENDPOINT,
+                            process.env.LOCAL_LLM_ENDPOINT,
                             "http://127.0.0.1:11434/v1/chat/completions",
-                            "http://localhost:11434/v1/chat/completions"
+                            "http://localhost:11434/v1/chat/completions",
+                            "http://127.0.0.1:1234/v1/chat/completions",
+                            "http://localhost:1234/v1/chat/completions",
+                            "http://127.0.0.1:8000/v1/chat/completions",
+                            "http://localhost:8000/v1/chat/completions"
                         ].filter(Boolean);
 
                         let localSuccess = false;
                         for (const ep of localEndpoints) {
                             try {
-                                const fetchUrl = ep.includes('/v1/chat/completions') || ep.includes('/api/chat')
-                                    ? ep 
-                                    : `${ep.replace(/\/$/, '')}/v1/chat/completions`;
-
-                                const res = await fetch(fetchUrl, {
+                                const res = await fetch(ep, {
                                     method: "POST",
                                     headers: { "Content-Type": "application/json" },
                                     body: JSON.stringify({
                                         model: targetModel,
                                         messages: apiMessages,
-                                        max_tokens: 8192,
+                                        temperature: targetTemperature,
+                                        max_tokens: targetMaxTokens,
                                         stream: false
                                     })
                                 });
@@ -851,7 +887,7 @@ Diagram generation and visual image embeddings are strictly turned OFF by user s
                         else if (pollModel === 'llama') pollModel = 'llama';
                         else pollModel = 'openai';
                         
-                        let pollUrl = `https://text.pollinations.ai/${encodeURIComponent(userMsg)}?system=${encodeURIComponent(systemMsg)}&model=${encodeURIComponent(pollModel)}`;
+                        let pollUrl = `https://text.pollinations.ai/${encodeURIComponent(userMsg)}?system=${encodeURIComponent(systemMsg)}&model=${encodeURIComponent(pollModel)}&temperature=${targetTemperature}`;
                         
                         response = await fetch(pollUrl, { method: "GET" });
 
@@ -887,7 +923,8 @@ Diagram generation and visual image embeddings are strictly turned OFF by user s
                             body: JSON.stringify({
                                 model: targetModel,
                                 messages: apiMessages,
-                                max_tokens: 8192
+                                temperature: targetTemperature,
+                                max_tokens: targetMaxTokens
                             })
                         });
 

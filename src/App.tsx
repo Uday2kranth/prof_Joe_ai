@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import type { ChatSession, Message, UserKeys, ActiveViewType, UserCustomModels, PinnedItem, Flashcard, QuizQuestion, FlashcardDeck, QuizDeck } from './types';
-import { Sidebar } from './components/Sidebar';
-import { Header } from './components/Header';
 import { ChatWindow } from './components/ChatWindow';
 import { CheatSheetDrawer } from './components/CheatSheetDrawer';
 import { FlashcardsModal } from './components/FlashcardsModal';
@@ -40,13 +38,12 @@ const SettingsStudioView = React.lazy(() => import('./components/SettingsStudioV
 import { ACADEMIC_PRESETS } from './components/CodeLabPresetDrawer';
 import { SettingsModal } from './components/SettingsModal';
 import { LoginModal } from './components/LoginModal';
-import { UserProfileModal } from './components/UserProfileModal';
 import { DemoLandingHub } from './components/DemoLandingHub';
 import { DemoChatHistoryDrawer } from './components/DemoChatHistoryDrawer';
 import { PdfPreviewModal } from './components/PdfPreviewModal';
 import { printSessionToPdf } from './services/printPdfService';
 import { pruneOldRenderCache } from './services/renderCacheService';
-import { Home, Layout, Key, Moon, Sun, User, Menu, RotateCw, Settings } from 'lucide-react';
+import { Home, Key, Moon, Sun, Menu, RotateCw, Settings } from 'lucide-react';
 import { sendChatMessage, getApiUrl } from './services/apiService';
 import { fetchCloudCodeLabPresetSessions, syncCodeLabPresetSessions } from './services/codelabSyncService';
 
@@ -220,11 +217,11 @@ export const App: React.FC = () => {
         let currentSessionId = activeSession?.id || 'chat-session';
         let currentSessionTitle = activeSession?.title || 'Academic Discussion';
 
-        if (activeHubWorkspace === 'code_lab' || activeView === 'code_lab') {
+        if (activeHubWorkspace === 'code_lab') {
           currentWorkspace = 'code_lab';
           currentSessionId = activeCodeLabSession?.id || `codelab-${activeCodeLabPresetId}`;
           currentSessionTitle = activeCodeLabSession?.title || 'Code Lab Session';
-        } else if (activeHubWorkspace === 'fun_personas' || activeView === 'fun_personas') {
+        } else if (activeHubWorkspace === 'fun_personas') {
           currentWorkspace = 'persona';
           currentSessionId = activePersonaSessionIdState || 'persona-session';
           currentSessionTitle = activePersonaSession?.title || `${selectedPersona || 'Character'} Chat`;
@@ -963,22 +960,11 @@ export const App: React.FC = () => {
   };
 
   const [isLoading, setIsLoading] = useState<boolean>(false);
-  const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isSettingsOpen, setIsSettingsOpen] = useState<boolean>(false);
-  const [isProfileModalOpen, setIsProfileModalOpen] = useState<boolean>(false);
-  const [appLayoutMode, setAppLayoutModeState] = useState<'standard' | 'hub-demo'>(() => {
-    const saved = localStorage.getItem('chatterbot_app_layout_mode');
-    return (saved === 'standard' || saved === 'hub-demo') ? saved : 'hub-demo';
-  });
-
-  const setAppLayoutMode = (mode: 'standard' | 'hub-demo') => {
-    setAppLayoutModeState(mode);
-    localStorage.setItem('chatterbot_app_layout_mode', mode);
-  };
 
   const [activeHubWorkspace, setActiveHubWorkspaceState] = useState<'landing' | ActiveViewType>(() => {
     const saved = localStorage.getItem('chatterbot_active_hub_workspace');
-    return (saved && ['landing', 'chat', 'prompts', 'examprep', 'system_prompts', 'diagrams', 'cubes', 'fun_personas', 'extractor_studio', 'code_lab', 'lecture_notes'].includes(saved))
+    return (saved && ['landing', 'chat', 'prompts', 'examprep', 'system_prompts', 'diagrams', 'cubes', 'fun_personas', 'extractor_studio', 'code_lab', 'lecture_notes', 'settings', 'dsa_lab', 'flashcards_studio', 'quiz_arena', 'pinned_archive', 'sandbox'].includes(saved))
       ? (saved as 'landing' | ActiveViewType)
       : 'landing';
   });
@@ -988,7 +974,7 @@ export const App: React.FC = () => {
     localStorage.setItem('chatterbot_active_hub_workspace', ws);
   };
 
-  // Android Native Hardware Back Button Listener (Navigates back to main view instead of closing app)
+  // Android Native Hardware Back Button Listener (Navigates back to Landing Hub instead of closing app)
   useEffect(() => {
     let sub: any = null;
     import('@capacitor/app').then(({ App: CapApp }) => {
@@ -997,16 +983,8 @@ export const App: React.FC = () => {
           setIsSettingsOpen(false);
           return;
         }
-        if (isProfileModalOpen) {
-          setIsProfileModalOpen(false);
-          return;
-        }
-        if (appLayoutMode === 'hub-demo' && activeHubWorkspace !== 'landing') {
+        if (activeHubWorkspace !== 'landing') {
           setActiveHubWorkspace('landing');
-          return;
-        }
-        if (activeView !== 'chat') {
-          setActiveView('chat');
           return;
         }
         CapApp.minimizeApp();
@@ -1016,7 +994,7 @@ export const App: React.FC = () => {
     return () => {
       if (sub && sub.remove) sub.remove();
     };
-  }, [activeView, appLayoutMode, activeHubWorkspace, isSettingsOpen, isProfileModalOpen]);
+  }, [activeHubWorkspace, isSettingsOpen]);
 
   const handleProviderChange = (provider: string) => {
     setSelectedProvider(provider);
@@ -1028,7 +1006,7 @@ export const App: React.FC = () => {
         s.id === activeSession.id ? { ...s, provider, updatedAt: Date.now() } : s
       )
     );
-    if ((activeView === 'fun_personas' || activeHubWorkspace === 'fun_personas') && activePersonaSession) {
+    if (activeHubWorkspace === 'fun_personas' && activePersonaSession) {
       setPersonaSessions(prev =>
         prev.map(s => s.id === activePersonaSession.id ? { ...s, provider, updatedAt: Date.now() } : s)
       );
@@ -1052,7 +1030,7 @@ export const App: React.FC = () => {
         s.id === activeSession.id ? { ...s, model, updatedAt: Date.now() } : s
       )
     );
-    if ((activeView === 'fun_personas' || activeHubWorkspace === 'fun_personas') && activePersonaSession) {
+    if (activeHubWorkspace === 'fun_personas' && activePersonaSession) {
       setPersonaSessions(prev =>
         prev.map(s => s.id === activePersonaSession.id ? { ...s, model, updatedAt: Date.now() } : s)
       );
@@ -1954,54 +1932,41 @@ export const App: React.FC = () => {
     );
   }
 
-  // Render Hub Demo Mode
-  if (appLayoutMode === 'hub-demo') {
-    if (activeHubWorkspace === 'landing') {
-      return (
-        <div className="app-container" data-theme={theme}>
-          <DemoLandingHub
-            onSelectWorkspace={(ws) => setActiveHubWorkspace(ws as ActiveViewType)}
-            onOpenSettings={() => setIsSettingsOpen(true)}
-            onOpenProfile={() => setIsProfileModalOpen(true)}
-            theme={theme}
-            onToggleTheme={handleToggleTheme}
-            onSwitchToStandard={() => setAppLayoutMode('standard')}
-            userRole={userRole}
-          />
-          <SettingsModal
-            isOpen={isSettingsOpen}
-            onClose={() => setIsSettingsOpen(false)}
-            userKeys={userKeys}
-            onSaveKeys={handleSaveUserKeys}
-            customModels={customModels}
-            onSaveCustomModels={handleSaveCustomModels}
-            activeProvider={selectedProvider}
-            activeModel={selectedModel}
-            onSelectActiveModel={handleSelectActiveModel}
-          />
-          <UserProfileModal
-            isOpen={isProfileModalOpen}
-            onClose={() => setIsProfileModalOpen(false)}
-            username={currentUser}
-            theme={theme}
-            onToggleTheme={handleToggleTheme}
-            onOpenSettings={() => setIsSettingsOpen(true)}
-            onOpenSettingsStudio={() => setActiveHubWorkspace('settings')}
-            onClearHistory={() => setSessions([])}
-            onLogout={handleLogout}
-          />
-          <LoginModal
-            isOpen={isLoginOpen}
-            preventClose={false}
-            onClose={() => setIsLoginOpen(false)}
-            onLoginSuccess={handleLoginSuccess}
-          />
-        </div>
-      );
-    }
-
-    // Full-Bleed Dedicated Workspace View inside Hub Demo
+  // Render Hub Landing View
+  if (activeHubWorkspace === 'landing') {
     return (
+      <div className="app-container" data-theme={theme}>
+        <DemoLandingHub
+          onSelectWorkspace={(ws) => setActiveHubWorkspace(ws as ActiveViewType)}
+          onOpenSettings={() => setIsSettingsOpen(true)}
+          onOpenSettingsStudio={() => setActiveHubWorkspace('settings')}
+          theme={theme}
+          onToggleTheme={handleToggleTheme}
+          userRole={userRole}
+        />
+        <SettingsModal
+          isOpen={isSettingsOpen}
+          onClose={() => setIsSettingsOpen(false)}
+          userKeys={userKeys}
+          onSaveKeys={handleSaveUserKeys}
+          customModels={customModels}
+          onSaveCustomModels={handleSaveCustomModels}
+          activeProvider={selectedProvider}
+          activeModel={selectedModel}
+          onSelectActiveModel={handleSelectActiveModel}
+        />
+        <LoginModal
+          isOpen={isLoginOpen}
+          preventClose={false}
+          onClose={() => setIsLoginOpen(false)}
+          onLoginSuccess={handleLoginSuccess}
+        />
+      </div>
+    );
+  }
+
+  // Full-Bleed Dedicated Workspace View inside Hub Demo
+  return (
       <div className="app-container" data-theme={theme}>
         <div className="app-main-viewport" style={{ width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column' }}>
           {/* Top Home Navigation Breadcrumb Bar */}
@@ -2077,29 +2042,7 @@ export const App: React.FC = () => {
                 <RotateCw size={16} />
               </button>
 
-              {/* 4. Quick API Keys Popup */}
-              <button 
-                type="button" 
-                onClick={() => setIsSettingsOpen(true)} 
-                className="demo-status-pill cyan-pill"
-                title="Quick API Credentials & Models"
-              >
-                <Key size={14} />
-                <span>API Keys</span>
-              </button>
-
-              {/* 4b. Full Settings Workspace */}
-              <button 
-                type="button" 
-                onClick={() => setActiveHubWorkspace('settings')} 
-                className="demo-status-pill purple-pill"
-                title="Open Settings & Print Studio"
-              >
-                <Settings size={14} />
-                <span>Settings</span>
-              </button>
-
-              {/* 5. Theme Toggle */}
+              {/* 4. Theme Toggle */}
               <button 
                 type="button" 
                 onClick={handleToggleTheme} 
@@ -2109,25 +2052,28 @@ export const App: React.FC = () => {
                 {theme === 'dark' ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} className="text-purple-400" />}
               </button>
 
-              {/* 6. User Profile */}
+              {/* 5. Quick API Keys & Model Selector (Key Symbol) */}
               <button 
                 type="button" 
-                onClick={() => setIsProfileModalOpen(true)} 
-                className="demo-profile-avatar-btn"
-                title="User Profile"
+                onClick={() => setIsSettingsOpen(true)} 
+                className="demo-quick-key-btn"
+                title="Quick API Keys & Model Selector"
+                aria-label="Quick API Keys & Model Selector"
+                style={{ width: '34px', height: '34px' }}
               >
-                <User size={16} />
+                <Key size={16} className="key-bounce-on-hover" />
               </button>
 
-              {/* 7. Switch to Classic View */}
+              {/* 6. Universal Settings & Print Studio 3D Gear Button */}
               <button 
                 type="button" 
-                onClick={() => setAppLayoutMode('standard')}
-                className="demo-view-toggle-btn"
-                title="Switch to Classic View"
+                onClick={() => setActiveHubWorkspace('settings')} 
+                className="demo-settings-gear-btn"
+                title="Open Universal Settings & Print Studio"
+                aria-label="Universal Settings & Print Studio"
+                style={{ width: '34px', height: '34px' }}
               >
-                <Layout size={14} />
-                <span className="demo-view-toggle-text">Classic View</span>
+                <Settings size={16} className="gear-spin-on-hover" />
               </button>
             </div>
 
@@ -2400,23 +2346,12 @@ export const App: React.FC = () => {
           activeModel={selectedModel}
           onSelectActiveModel={handleSelectActiveModel}
         />
-        <UserProfileModal
-          isOpen={isProfileModalOpen}
-          onClose={() => setIsProfileModalOpen(false)}
-          username={currentUser}
-          theme={theme}
-          onToggleTheme={handleToggleTheme}
-          onOpenSettings={() => setIsSettingsOpen(true)}
-          onOpenSettingsStudio={() => setActiveHubWorkspace('settings')}
-          onClearHistory={() => setSessions([])}
-          onLogout={handleLogout}
-        />
-        <LoginModal
-          isOpen={isLoginOpen}
-          preventClose={false}
-          onClose={() => setIsLoginOpen(false)}
-          onLoginSuccess={handleLoginSuccess}
-        />
+          <LoginModal
+            isOpen={isLoginOpen}
+            preventClose={false}
+            onClose={() => setIsLoginOpen(false)}
+            onLoginSuccess={handleLoginSuccess}
+          />
 
         <CheatSheetDrawer
           isOpen={isCheatSheetOpen}
@@ -2446,234 +2381,6 @@ export const App: React.FC = () => {
           sessionTitle={activeSession?.title}
         />
       </div>
-    );
-  }
-
-  // Render Standard Classic View
-  return (
-    <div className="app-container" data-theme={theme}>
-      {/* Mobile Backdrop Overlay */}
-      {isSidebarOpen && (
-        <div
-          className="sidebar-overlay"
-          onClick={() => setIsSidebarOpen(false)}
-        />
-      )}
-
-      <Sidebar
-        isOpen={isSidebarOpen}
-        onCloseMobile={() => setIsSidebarOpen(false)}
-        onViewChange={setActiveView}
-        sessions={activeView === 'fun_personas' ? personaSessions : sessions}
-        activeSessionId={activeView === 'fun_personas' ? activePersonaSessionIdState : (activeSession ? activeSession.id : activeSessionIdState)}
-        onSelectSession={activeView === 'fun_personas' ? setActivePersonaSessionIdState : setActiveSessionIdState}
-        onNewSession={activeView === 'fun_personas' ? handleNewPersonaSession : handleNewSession}
-        onDeleteSession={activeView === 'fun_personas' ? handleDeletePersonaSession : handleDeleteSession}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        theme={theme}
-        onToggleTheme={handleToggleTheme}
-        currentUser={currentUser}
-        onOpenProfileModal={() => setIsProfileModalOpen(true)}
-        onClearChat={handleClearChat}
-      />
-
-      <div className="app-main-viewport">
-        <Header
-          onToggleSidebar={() => setIsSidebarOpen(prev => !prev)}
-          onOpenSettings={() => setIsSettingsOpen(true)}
-          onClearChat={handleClearChat}
-          theme={theme}
-          onToggleTheme={handleToggleTheme}
-          activeView={activeView}
-          onViewChange={setActiveView}
-          username={currentUser}
-          userRole={userRole}
-          onLogout={handleLogout}
-          onOpenProfileModal={() => setIsProfileModalOpen(true)}
-          appLayoutMode={appLayoutMode}
-          onToggleAppLayoutMode={() => setAppLayoutMode('hub-demo')}
-        />
-
-        <main className="app-main">
-          <React.Suspense fallback={<div className="flex items-center justify-center h-full p-8 text-cyan-400 font-semibold gap-2">⏳ Loading Studio Workspace...</div>}>
-            {activeView === 'chat' && (
-              <ChatWindow
-                messages={activeSession ? activeSession.messages : []}
-                isLoading={isLoading}
-                onSendMessage={handleSendMessage}
-                selectedProvider={selectedProvider}
-                selectedModel={selectedModel}
-                onProviderChange={handleProviderChange}
-                onModelChange={handleModelChange}
-                onRetry={handleRetryLastAssistantMessage}
-                onEditUserMessage={handleEditLastUserMessage}
-                onBranchMessage={handleBranchSession}
-                onPinMessage={handleTogglePin}
-                pinnedMessageIds={pinnedMessageIds}
-                activeSystemPromptTitle={activeSession?.systemPromptTitle || persistentMainSystemPrompt?.title}
-                onClearSystemPrompt={handleClearSystemPrompt}
-                customModels={customModels}
-                promptMode={promptMode}
-                onPromptModeChange={handlePromptModeChange}
-              />
-            )}
-
-            {activeView === 'lecture_notes' && (
-              <LectureNotesStudioView
-                userKeys={userKeys}
-                customModels={customModels}
-                currentUser={currentUser}
-                isDemoView={false}
-              />
-            )}
-
-            {activeView === 'examprep' && (
-              <ExamPrepView onLoadQuestionToChat={handleLoadPromptToChat} />
-            )}
-
-            {activeView === 'system_prompts' && (
-              <SystemPromptLibraryView
-                onUsePrompt={handleLoadPromptToChat}
-                onApplyPrompt={handleApplySystemPrompt}
-              />
-            )}
-
-            {activeView === 'prompts' && (
-              <PromptLibraryView onUsePrompt={handleLoadPromptToChat} />
-            )}
-
-            {activeView === 'diagrams' && (
-              <DiagramStudioView
-                userKeys={userKeys}
-                selectedProvider={selectedProvider}
-                selectedModel={selectedModel}
-                customModels={customModels}
-                onProviderChange={handleProviderChange}
-                onModelChange={handleModelChange}
-              />
-            )}
-
-            {activeView === 'cubes' && (
-              <CubesPlaygroundView />
-            )}
-
-            {activeView === 'sandbox' && (
-              <InteractiveSandboxView />
-            )}
-
-            {activeView === 'dsa_lab' && (
-              <DsaLabView />
-            )}
-
-            {activeView === 'fun_personas' && (
-              <FunPersonaChatView
-                messages={activePersonaSession ? activePersonaSession.messages : []}
-                isLoading={isLoading}
-                onSendMessage={handleSendMessage}
-                selectedProvider={selectedProvider}
-                selectedModel={selectedModel}
-                selectedPersona={selectedPersona}
-                isPersonaEnabled={isPersonaEnabled}
-                onTogglePersonaEnabled={handleTogglePersonaEnabled}
-                onProviderChange={handleProviderChange}
-                onModelChange={handleModelChange}
-                onPersonaChange={handlePersonaChange}
-                onRetry={handleRetryLastAssistantMessage}
-                onEditUserMessage={handleEditLastUserMessage}
-                onBranchMessage={handleBranchPersonaSession}
-                onPinMessage={handleTogglePin}
-                pinnedMessageIds={pinnedMessageIds}
-                personaSessions={personaSessions}
-                activePersonaSessionId={activePersonaSessionIdState}
-                onSelectPersonaSession={setActivePersonaSessionIdState}
-                onNewPersonaSession={handleNewPersonaSession}
-                onDeletePersonaSession={handleDeletePersonaSession}
-                customModels={customModels}
-                isDemoView={false}
-              />
-            )}
-
-            {activeView === 'settings' && (
-              <SettingsStudioView
-                onBack={() => setActiveView('chat')}
-                currentUser={currentUser}
-                userRole={userRole}
-                theme={theme}
-                onToggleTheme={handleToggleTheme}
-                userKeys={userKeys}
-                onSaveKeys={handleSaveUserKeys}
-                customModels={customModels}
-                onSaveCustomModels={handleSaveCustomModels}
-                activeProvider={selectedProvider}
-                activeModel={selectedModel}
-                onSelectActiveModel={handleSelectActiveModel}
-                onClearHistory={handleClearChat}
-                onLogout={handleLogout}
-              />
-            )}
-          </React.Suspense>
-        </main>
-      </div>
-
-      <SettingsModal
-        isOpen={isSettingsOpen}
-        onClose={() => setIsSettingsOpen(false)}
-        userKeys={userKeys}
-        onSaveKeys={handleSaveUserKeys}
-        customModels={customModels}
-        onSaveCustomModels={handleSaveCustomModels}
-        activeProvider={selectedProvider}
-        activeModel={selectedModel}
-        onSelectActiveModel={handleSelectActiveModel}
-      />
-
-      <UserProfileModal
-        isOpen={isProfileModalOpen}
-        onClose={() => setIsProfileModalOpen(false)}
-        username={currentUser}
-        theme={theme}
-        onToggleTheme={handleToggleTheme}
-        onOpenSettings={() => setIsSettingsOpen(true)}
-        onOpenSettingsStudio={() => setActiveView('settings')}
-        onClearHistory={() => setSessions([])}
-        onLogout={handleLogout}
-      />
-
-      <LoginModal
-        isOpen={isLoginOpen}
-        preventClose={false}
-        onClose={() => setIsLoginOpen(false)}
-        onLoginSuccess={handleLoginSuccess}
-      />
-
-      <CheatSheetDrawer
-        isOpen={isCheatSheetOpen}
-        onClose={() => setIsCheatSheetOpen(false)}
-        pinnedItems={pinnedItems}
-        currentSessionId={activeSession?.id}
-        currentWorkspace="chat"
-        onDeletePin={handleDeletePin}
-        onClearAllPins={handleClearAllPins}
-        onOpenArchive={() => {
-          setIsCheatSheetOpen(false);
-          setActiveHubWorkspace('pinned_archive');
-        }}
-      />
-
-      <FlashcardsModal
-        isOpen={isFlashcardsOpen}
-        onClose={() => setIsFlashcardsOpen(false)}
-        flashcards={flashcards}
-        sessionTitle={activeSession?.title}
-      />
-
-      <QuizModal
-        isOpen={isQuizOpen}
-        onClose={() => setIsQuizOpen(false)}
-        questions={quizQuestions}
-        sessionTitle={activeSession?.title}
-      />
-    </div>
   );
 };
 

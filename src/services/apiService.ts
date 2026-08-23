@@ -33,6 +33,18 @@ export async function sendChatMessage(
   const activeUsername = localStorage.getItem('chatterbot_username') || 'Guest_Student';
   const activeToken = localStorage.getItem('chatterbot_token') || '';
 
+  // Read user-configured AI generation and tuning parameters
+  let aiTuningConfig: any = null;
+  try {
+    const rawTuning = localStorage.getItem('chatterbot_ai_tuning');
+    if (rawTuning) aiTuningConfig = JSON.parse(rawTuning);
+  } catch {}
+
+  const temperature = aiTuningConfig?.temperature ?? 0.2;
+  const maxTokens = aiTuningConfig?.maxTokens ?? 4096;
+  const searchDepth = aiTuningConfig?.searchDepth ?? 'deep';
+  const graderMode = aiTuningConfig?.graderMode ?? 'rigorous_12mark';
+
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
     'x-user-authorization': activeToken,
@@ -61,11 +73,15 @@ export async function sendChatMessage(
       model,
       messages: formattedMessages,
       webSearch,
+      searchDepth,
       mode,
       persona,
       systemPrompt: systemPrompt || '',
       enableDiagrams,
-      beginnerFriendly
+      beginnerFriendly,
+      temperature,
+      maxTokens,
+      graderMode
     })
   });
 

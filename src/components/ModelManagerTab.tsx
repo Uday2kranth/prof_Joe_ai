@@ -527,7 +527,7 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
         minHeight: '450px',
         overflowY: 'auto',
         display: 'grid',
-        gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+        gridTemplateColumns: 'repeat(auto-fill, minmax(min(100%, 280px), 1fr))',
         gap: '12px',
         paddingRight: '6px'
       } : {

@@ -25,7 +25,8 @@ import {
   ArrowRight
 } from 'lucide-react';
 import { useTypewriterPlaceholder } from '../hooks/useTypewriterPlaceholder';
-import type { Message, ChatSession, UserCustomModels } from '../types';
+import type { Message, ChatSession, UserCustomModels, CodeStyleConfig } from '../types';
+import { DEFAULT_CODE_STYLE } from '../types';
 import { MessageItem } from './MessageItem';
 import { PROVIDERS, PERSONAS } from '../constants';
 import { PdfPreviewModal } from './PdfPreviewModal';
@@ -96,6 +97,29 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
   const [isSessionPreviewOpen, setIsSessionPreviewOpen] = useState(false);
   const [isOutlineDrawerOpen, setIsOutlineDrawerOpen] = useState(false);
   const [outlineSearchQuery, setOutlineSearchQuery] = useState('');
+
+  const [codeStyle, setCodeStyle] = useState<CodeStyleConfig>(() => {
+    try {
+      const saved = localStorage.getItem('chatterbot_code_style');
+      if (saved) return { ...DEFAULT_CODE_STYLE, ...JSON.parse(saved) };
+    } catch {}
+    return DEFAULT_CODE_STYLE;
+  });
+
+  useEffect(() => {
+    const handleStyleUpdate = () => {
+      try {
+        const saved = localStorage.getItem('chatterbot_code_style');
+        if (saved) setCodeStyle({ ...DEFAULT_CODE_STYLE, ...JSON.parse(saved) });
+      } catch {}
+    };
+    window.addEventListener('chatterbot_code_style_updated', handleStyleUpdate);
+    window.addEventListener('storage', handleStyleUpdate);
+    return () => {
+      window.removeEventListener('chatterbot_code_style_updated', handleStyleUpdate);
+      window.removeEventListener('storage', handleStyleUpdate);
+    };
+  }, []);
 
   const personaContainerRef = useRef<HTMLDivElement>(null);
 
@@ -701,7 +725,12 @@ export const FunPersonaChatView: React.FC<FunPersonaChatViewProps> = ({
       )}
 
       <div className="chat-window-container fun-persona-lounge-container" style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}>
-        <div className="chat-messages-container" ref={personaContainerRef}>
+        <div 
+          className="chat-messages-container" 
+          ref={personaContainerRef}
+          data-code-theme={codeStyle.codeTheme}
+          data-katex-scale={codeStyle.katexScale}
+        >
           <TextSelectionToolbar containerRef={personaContainerRef} onQuickAction={handleQuickAction} />
           <div className="messages-inner">
             {messages.length === 0 ? (

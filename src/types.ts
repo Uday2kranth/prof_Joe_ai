@@ -135,4 +135,50 @@ export interface QuizDeck {
   questions: QuizQuestion[];
 }
 
+export interface AiTuningConfig {
+  temperature: number;
+  maxTokens: number;
+  streaming: boolean;
+  searchDepth: 'fast' | 'deep';
+  graderMode: 'rigorous_12mark' | 'step_by_step' | 'compact';
+}
+
+export const DEFAULT_AI_TUNING: AiTuningConfig = {
+  temperature: 0.2,
+  maxTokens: 4096,
+  streaming: true,
+  searchDepth: 'deep',
+  graderMode: 'rigorous_12mark'
+};
+
+export interface CodeStyleConfig {
+  codeTheme: 'onedark' | 'vscode_dark' | 'monokai' | 'tokyo_night' | 'github_light' | 'neon';
+  katexScale: 'compact' | 'standard' | 'large';
+  equationCopyMode: 'latex' | 'unicode';
+}
+
+export const DEFAULT_CODE_STYLE: CodeStyleConfig = {
+  codeTheme: 'onedark',
+  katexScale: 'standard',
+  equationCopyMode: 'latex'
+};
+
+export interface IdeConfig {
+  theme: 'vs-dark' | 'vs-light' | 'hc-black';
+  fontSize: number;
+  minimap: boolean;
+  tabSize: 2 | 4;
+  wordWrap: 'on' | 'off';
+  lineNumbers: 'on' | 'off';
+}
+
+export const DEFAULT_IDE_CONFIG: IdeConfig = {
+  theme: 'vs-dark',
+  fontSize: 13,
+  minimap: false,
+  tabSize: 2,
+  wordWrap: 'on',
+  lineNumbers: 'on'
+};
+
 

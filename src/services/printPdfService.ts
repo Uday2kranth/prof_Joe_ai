@@ -17,10 +17,19 @@ export interface PrintCustomConfig {
   paperSize: 'a4' | 'letter';
   orientation: 'portrait' | 'landscape';
   fontSize: 'compact' | 'standard' | 'large';
-  fontFamily: 'sans' | 'serif' | 'mono';
+  fontFamily: 'times' | 'sans' | 'serif' | 'mono' | 'latex';
   inkMode: 'rich' | 'eco' | 'mono';
   dpiQuality: '1200' | '600' | '300';
   watermarkText: string;
+  paperBgColor: string;
+  headerAccentColor: string;
+  headerStyle: 'minimal' | 'banner' | 'double_border' | 'accent_bar';
+  primaryInkColor: string;
+  watermarkOpacity: number;
+  watermarkAngle: number;
+  watermarkColor: string;
+  columnLayout: 'single' | 'two_column';
+  codeTheme: 'light' | 'dark' | 'minimal';
   includeProofs: boolean;
   includeCode: boolean;
   includeDiagrams: boolean;
@@ -43,6 +52,15 @@ export const DEFAULT_PRINT_CONFIG: PrintCustomConfig = {
   inkMode: 'rich',
   dpiQuality: '1200',
   watermarkText: '',
+  paperBgColor: '#ffffff',
+  headerAccentColor: '#0284c7',
+  headerStyle: 'minimal',
+  primaryInkColor: '#000000',
+  watermarkOpacity: 0.12,
+  watermarkAngle: -35,
+  watermarkColor: 'rgba(148, 163, 184, 0.15)',
+  columnLayout: 'single',
+  codeTheme: 'light',
   includeProofs: true,
   includeCode: true,
   includeDiagrams: true
@@ -601,8 +619,10 @@ export function buildPrintHtmlDocument(
   ` : '';
 
   const paperSizeRule = `${config.paperSize === 'letter' ? 'letter' : 'A4'} ${config.orientation === 'landscape' ? 'landscape' : 'portrait'}`;
-  const fontFamilyCss = config.fontFamily === 'serif'
-    ? "'Computer Modern', 'Times New Roman', Times, serif"
+  const fontFamilyCss = (config.fontFamily === 'times' || config.fontFamily === 'serif')
+    ? "'Times New Roman', 'Times', 'Liberation Serif', serif"
+    : config.fontFamily === 'latex'
+    ? "'Computer Modern', 'Latin Modern Roman', 'Times New Roman', serif"
     : config.fontFamily === 'mono'
     ? "'JetBrains Mono', 'Consolas', monospace"
     : "'Inter', system-ui, -apple-system, sans-serif";
@@ -612,6 +632,13 @@ export function buildPrintHtmlDocument(
     : config.fontSize === 'large'
     ? 'font-size: 12.5pt; line-height: 1.75;'
     : 'font-size: 10.5pt; line-height: 1.65;';
+
+  const effectiveBgColor = config.paperBgColor || bgColor;
+  const effectiveTextColor = config.primaryInkColor || textColor;
+  const effectiveHeaderColor = config.headerAccentColor || '#0284c7';
+  const watermarkOpacity = config.watermarkOpacity ?? 0.12;
+  const watermarkAngle = config.watermarkAngle ?? -35;
+  const watermarkColor = config.watermarkColor || `rgba(148, 163, 184, ${watermarkOpacity})`;
 
   const watermarkHtml = config.watermarkText?.trim() ? `
     <div class="print-watermark">${config.watermarkText.trim()}</div>
@@ -643,8 +670,8 @@ export function buildPrintHtmlDocument(
 
           body {
             font-family: ${fontFamilyCss};
-            background-color: ${bgColor};
-            color: ${textColor};
+            background-color: ${effectiveBgColor};
+            color: ${effectiveTextColor};
             ${fontSizeCss}
             ${config.marginPreset === 'none' ? 'padding: 8px 12px;' : config.marginPreset === 'compact' ? 'padding: 12px 16px;' : 'padding: 24px 32px;'}
             margin: 0;
@@ -655,10 +682,10 @@ export function buildPrintHtmlDocument(
             position: fixed;
             top: 45%;
             left: 50%;
-            transform: translate(-50%, -50%) rotate(-40deg);
+            transform: translate(-50%, -50%) rotate(${watermarkAngle}deg);
             font-size: 3.5rem;
             font-weight: 800;
-            color: rgba(148, 163, 184, 0.14);
+            color: ${watermarkColor};
             text-transform: uppercase;
             letter-spacing: 0.18em;
             pointer-events: none;
@@ -671,6 +698,14 @@ export function buildPrintHtmlDocument(
 
           ${!config.includeCode ? '.markdown-content pre, .markdown-content code { display: none !important; }' : ''}
           ${!config.includeDiagrams ? '.kroki-diagram-container, .diagram-container, svg { display: none !important; }' : ''}
+
+          ${config.columnLayout === 'two_column' ? `
+            .markdown-content {
+              column-count: 2 !important;
+              column-gap: 24px !important;
+              column-rule: 1px solid rgba(148, 163, 184, 0.25) !important;
+            }
+          ` : ''}
 
           ${config.inkMode === 'eco' ? `
             .markdown-content pre { background: #ffffff !important; border: 1px solid #cbd5e1 !important; }
@@ -687,32 +722,103 @@ export function buildPrintHtmlDocument(
           ` : `
             .markdown-content pre { background: #f8fafc; border: 1px solid #cbd5e1; }
             .markdown-content code { background: #f1f5f9; }
-            .markdown-content th { background: rgba(2, 132, 199, 0.1); color: #0369a1; }
+            .markdown-content th { background: rgba(2, 132, 199, 0.1); color: ${effectiveHeaderColor}; }
           `}
 
-          .print-header {
-            border-bottom: 2px solid rgba(2, 132, 199, 0.4);
-            padding-bottom: 12px;
-            margin-bottom: 24px;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            page-break-after: avoid;
-            break-after: avoid;
-          }
-
-          .print-header h1 {
-            font-size: 1.35rem;
-            margin: 0;
-            color: #0284c7;
-            font-weight: 700;
-          }
-
-          .print-meta {
-            font-size: 0.82rem;
-            color: #64748b;
-            font-weight: 500;
-          }
+          ${config.headerStyle === 'banner' ? `
+            .print-header {
+              background: ${effectiveHeaderColor} !important;
+              color: #ffffff !important;
+              padding: 16px 20px !important;
+              border-radius: 8px !important;
+              border: none !important;
+              margin-bottom: 24px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              page-break-after: avoid;
+              break-after: avoid;
+            }
+            .print-header h1 {
+              font-size: 1.35rem;
+              margin: 0;
+              color: #ffffff !important;
+              font-weight: 700;
+            }
+            .print-meta {
+              font-size: 0.82rem;
+              color: rgba(255, 255, 255, 0.88) !important;
+              font-weight: 500;
+            }
+          ` : config.headerStyle === 'double_border' ? `
+            .print-header {
+              border-top: 3px double ${effectiveHeaderColor} !important;
+              border-bottom: 3px double ${effectiveHeaderColor} !important;
+              padding: 12px 0 !important;
+              margin-bottom: 24px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              page-break-after: avoid;
+              break-after: avoid;
+            }
+            .print-header h1 {
+              font-size: 1.35rem;
+              margin: 0;
+              color: ${effectiveHeaderColor};
+              font-weight: 700;
+            }
+            .print-meta {
+              font-size: 0.82rem;
+              color: #64748b;
+              font-weight: 500;
+            }
+          ` : config.headerStyle === 'accent_bar' ? `
+            .print-header {
+              border-left: 6px solid ${effectiveHeaderColor} !important;
+              border-bottom: 1px solid #e2e8f0 !important;
+              padding: 6px 0 10px 14px !important;
+              margin-bottom: 24px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              page-break-after: avoid;
+              break-after: avoid;
+            }
+            .print-header h1 {
+              font-size: 1.35rem;
+              margin: 0;
+              color: ${effectiveHeaderColor};
+              font-weight: 700;
+            }
+            .print-meta {
+              font-size: 0.82rem;
+              color: #64748b;
+              font-weight: 500;
+            }
+          ` : `
+            .print-header {
+              border-bottom: 2px solid ${effectiveHeaderColor} !important;
+              padding-bottom: 12px;
+              margin-bottom: 24px;
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              page-break-after: avoid;
+              break-after: avoid;
+            }
+            .print-header h1 {
+              font-size: 1.35rem;
+              margin: 0;
+              color: ${effectiveHeaderColor};
+              font-weight: 700;
+            }
+            .print-meta {
+              font-size: 0.82rem;
+              color: #64748b;
+              font-weight: 500;
+            }
+          `}
 
           .markdown-content h1, 
           .markdown-content h2, 

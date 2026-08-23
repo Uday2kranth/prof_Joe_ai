@@ -2487,6 +2487,7 @@ body {
   font-size: 0.88rem;
   overflow-x: auto;
   margin: 12px 0;
+  transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
 }
 
 .markdown-body code {
@@ -2497,7 +2498,86 @@ body {
   font-size: 0.88rem;
 }
 
-/* KaTeX Display Math Equations & Formulas Containment */
+/* 💻 Dynamic Code Syntax Theme Overrides */
+[data-code-theme="onedark"] .markdown-body pre,
+[data-code-theme="onedark"] pre {
+  background: #282c34 !important;
+  color: #abb2bf !important;
+  border: 1px solid rgba(97, 175, 239, 0.3) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+[data-code-theme="onedark"] .markdown-body pre code,
+[data-code-theme="onedark"] pre code {
+  color: #61afef !important;
+  background: transparent !important;
+}
+
+[data-code-theme="vscode_dark"] .markdown-body pre,
+[data-code-theme="vscode_dark"] pre {
+  background: #1e1e1e !important;
+  color: #d4d4d4 !important;
+  border: 1px solid rgba(78, 201, 176, 0.3) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+[data-code-theme="vscode_dark"] .markdown-body pre code,
+[data-code-theme="vscode_dark"] pre code {
+  color: #4ec9b0 !important;
+  background: transparent !important;
+}
+
+[data-code-theme="monokai"] .markdown-body pre,
+[data-code-theme="monokai"] pre {
+  background: #272822 !important;
+  color: #f8f8f2 !important;
+  border: 1px solid rgba(255, 216, 102, 0.3) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+[data-code-theme="monokai"] .markdown-body pre code,
+[data-code-theme="monokai"] pre code {
+  color: #ffd866 !important;
+  background: transparent !important;
+}
+
+[data-code-theme="tokyo_night"] .markdown-body pre,
+[data-code-theme="tokyo_night"] pre {
+  background: #1a1b26 !important;
+  color: #a9b1d6 !important;
+  border: 1px solid rgba(122, 162, 247, 0.3) !important;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
+}
+[data-code-theme="tokyo_night"] .markdown-body pre code,
+[data-code-theme="tokyo_night"] pre code {
+  color: #7aa2f7 !important;
+  background: transparent !important;
+}
+
+[data-code-theme="github_light"] .markdown-body pre,
+[data-code-theme="github_light"] pre {
+  background: #f6f8fa !important;
+  color: #24292f !important;
+  border: 1px solid rgba(9, 105, 218, 0.3) !important;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+[data-code-theme="github_light"] .markdown-body pre code,
+[data-code-theme="github_light"] pre code {
+  color: #0969da !important;
+  background: transparent !important;
+}
+
+[data-code-theme="neon"] .markdown-body pre,
+[data-code-theme="neon"] pre {
+  background: #0b0f19 !important;
+  color: #38bdf8 !important;
+  border: 1px solid rgba(6, 182, 212, 0.55) !important;
+  box-shadow: 0 0 16px rgba(6, 182, 212, 0.22);
+}
+[data-code-theme="neon"] .markdown-body pre code,
+[data-code-theme="neon"] pre code {
+  color: #06b6d4 !important;
+  background: transparent !important;
+}
+
+/* 📐 KaTeX Display Math Equations & Formulas Containment & Dynamic Scaling */
 .markdown-body .katex-display,
 .katex-display,
 .katex {
@@ -2506,7 +2586,25 @@ body {
   overflow-y: hidden !important;
   -webkit-overflow-scrolling: touch;
   padding: 4px 0;
+  transition: font-size 0.2s ease, transform 0.2s ease;
 }
+
+/* KaTeX Scaling Tiers */
+[data-katex-scale="compact"] .katex-display,
+[data-katex-scale="compact"] .katex {
+  font-size: 0.9em !important;
+}
+
+[data-katex-scale="standard"] .katex-display,
+[data-katex-scale="standard"] .katex {
+  font-size: 1.0em !important;
+}
+
+[data-katex-scale="large"] .katex-display,
+[data-katex-scale="large"] .katex {
+  font-size: 1.15em !important;
+}
+
 
 .markdown-body table {
   display: block;
@@ -6068,6 +6166,108 @@ body {
 .demo-icon-btn:hover, .demo-profile-avatar-btn:hover {
   background: rgba(6, 182, 212, 0.2);
   border-color: #06b6d4;
+}
+
+.demo-settings-gear-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.18), rgba(147, 51, 234, 0.18));
+  border: 1.5px solid rgba(6, 182, 212, 0.45);
+  box-shadow: 0 2px 10px rgba(6, 182, 212, 0.25), inset 0 1px 1px rgba(255, 255, 255, 0.25);
+  color: #38bdf8;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.demo-settings-gear-btn:hover {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.35), rgba(147, 51, 234, 0.35));
+  border-color: #06b6d4;
+  box-shadow: 0 4px 16px rgba(6, 182, 212, 0.5), 0 0 12px rgba(147, 51, 234, 0.4);
+  transform: translateY(-1.5px) scale(1.05);
+}
+
+.demo-settings-gear-btn:active {
+  transform: translateY(0px) scale(0.98);
+}
+
+.demo-settings-gear-btn .gear-spin-on-hover {
+  transition: transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.demo-settings-gear-btn:hover .gear-spin-on-hover {
+  transform: rotate(90deg);
+  color: #ffffff;
+}
+
+[data-theme="light"] .demo-settings-gear-btn {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.15), rgba(147, 51, 234, 0.15));
+  border-color: rgba(6, 182, 212, 0.4);
+  box-shadow: 0 2px 8px rgba(6, 182, 212, 0.2);
+  color: #0284c7;
+}
+
+[data-theme="light"] .demo-settings-gear-btn:hover {
+  background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(147, 51, 234, 0.25));
+  border-color: #0284c7;
+  color: #0284c7;
+}
+
+/* Quick API Key & Model Button beside Settings Gear */
+.demo-quick-key-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 11px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.16), rgba(6, 182, 212, 0.16));
+  border: 1.5px solid rgba(245, 158, 11, 0.45);
+  box-shadow: 0 2px 10px rgba(245, 158, 11, 0.2), inset 0 1px 1px rgba(255, 255, 255, 0.2);
+  color: #fbbf24;
+  cursor: pointer;
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+  position: relative;
+  overflow: hidden;
+}
+
+.demo-quick-key-btn:hover {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.32), rgba(6, 182, 212, 0.32));
+  border-color: #f59e0b;
+  box-shadow: 0 4px 16px rgba(245, 158, 11, 0.45), 0 0 12px rgba(6, 182, 212, 0.35);
+  transform: translateY(-1.5px) scale(1.05);
+  color: #ffffff;
+}
+
+.demo-quick-key-btn:active {
+  transform: translateY(0px) scale(0.98);
+}
+
+.demo-quick-key-btn .key-bounce-on-hover {
+  transition: transform 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+.demo-quick-key-btn:hover .key-bounce-on-hover {
+  transform: rotate(-15deg) scale(1.1);
+  color: #fef08a;
+}
+
+[data-theme="light"] .demo-quick-key-btn {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.14), rgba(6, 182, 212, 0.14));
+  border-color: rgba(245, 158, 11, 0.45);
+  box-shadow: 0 2px 8px rgba(245, 158, 11, 0.2);
+  color: #d97706;
+}
+
+[data-theme="light"] .demo-quick-key-btn:hover {
+  background: linear-gradient(135deg, rgba(245, 158, 11, 0.25), rgba(6, 182, 212, 0.25));
+  border-color: #d97706;
+  color: #b45309;
 }
 
 .demo-hub-main {
@@ -14648,5 +14848,257 @@ body {
   align-items: center;
   justify-content: space-between;
   width: 100%;
+}
+
+/* ==========================================================================
+   📱 SETTINGS STUDIO & MODAL MOBILE-FIRST RESPONSIVE DESIGN SYSTEM
+   ========================================================================== */
+
+.settings-studio-container {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+.settings-studio-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 24px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  z-index: 10;
+  gap: 12px;
+}
+
+.settings-studio-layout {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.settings-studio-sidebar {
+  width: 240px;
+  border-right: 1px solid var(--border-color);
+  background: var(--bg-secondary);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px;
+  gap: 6px;
+  flex-shrink: 0;
+  overflow-y: auto;
+}
+
+.settings-studio-nav-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 14px;
+  border-radius: 10px;
+  font-weight: 500;
+  font-size: 0.86rem;
+  cursor: pointer;
+  text-align: left;
+  transition: all 0.15s ease;
+}
+
+.settings-studio-content {
+  flex: 1;
+  overflow-y: auto;
+  padding: 24px;
+}
+
+/* Bento Grid System for Settings */
+.settings-bento-2col {
+  display: grid;
+  grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.settings-bento-2col-equal {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 24px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.settings-bento-3col {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.settings-grid-sub {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  gap: 12px;
+}
+
+.settings-paper-swatches-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+  gap: 8px;
+}
+
+.settings-swatches-compact {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(42px, 1fr));
+  gap: 8px;
+}
+
+.settings-swatch-tile {
+  height: 42px;
+  border-radius: 8px;
+  cursor: pointer;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.settings-swatch-tile:hover {
+  transform: translateY(-2px);
+}
+
+.settings-desktop-title-block {
+  display: block;
+}
+
+.settings-mobile-menu-trigger {
+  display: none;
+}
+
+.settings-mobile-drawer-overlay {
+  display: none;
+}
+
+/* 📱 Responsive Breakpoint: Mobile & Compact Screens (< 860px) */
+@media (max-width: 860px) {
+  .settings-studio-header {
+    padding: 8px 10px !important;
+    gap: 8px !important;
+    flex-wrap: nowrap !important;
+  }
+
+  .settings-desktop-title-block {
+    display: none !important;
+  }
+
+  .settings-studio-header-title {
+    font-size: 1rem !important;
+  }
+
+  .settings-studio-header-desc {
+    display: none !important;
+  }
+
+  .settings-studio-layout {
+    flex-direction: column !important;
+  }
+
+  /* Desktop sidebar hidden on mobile */
+  .settings-desktop-sidebar {
+    display: none !important;
+  }
+
+  /* Mobile menu trigger visible */
+  .settings-mobile-menu-trigger {
+    display: inline-flex !important;
+  }
+
+  /* Slide-over Mobile Drawer */
+  .settings-mobile-drawer-overlay {
+    display: flex !important;
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.72);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: 1000;
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  .settings-mobile-drawer {
+    width: min(85vw, 320px);
+    height: 100%;
+    background: var(--bg-secondary);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    padding: 16px 12px;
+    gap: 6px;
+    box-shadow: 0 0 35px rgba(0, 0, 0, 0.6);
+    overflow-y: auto;
+    animation: slideInLeft 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  }
+
+  .settings-studio-content {
+    padding: 12px 10px !important;
+  }
+
+  .settings-bento-2col,
+  .settings-bento-2col-equal,
+  .settings-bento-3col {
+    grid-template-columns: 1fr !important;
+    gap: 14px !important;
+  }
+
+  .settings-grid-sub {
+    grid-template-columns: 1fr !important;
+    gap: 10px !important;
+  }
+
+  .settings-paper-swatches-grid {
+    grid-template-columns: repeat(4, 1fr) !important;
+    gap: 6px !important;
+  }
+
+  .settings-mobile-stack {
+    flex-direction: column !important;
+  }
+
+  .settings-mobile-1col {
+    grid-template-columns: 1fr !important;
+  }
+
+  .settings-mobile-2col {
+    grid-template-columns: 1fr 1fr !important;
+  }
+
+  /* Quick Settings Modal Tabs on Mobile */
+  .settings-modal-tabs {
+    overflow-x: auto !important;
+    white-space: nowrap !important;
+    scrollbar-width: none !important;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px !important;
+  }
+
+  .settings-modal-tabs::-webkit-scrollbar {
+    display: none;
+  }
+
+  .settings-modal-tabs button {
+    flex-shrink: 0 !important;
+  }
+}
+
+@keyframes slideInLeft {
+  from {
+    transform: translateX(-100%);
+  }
+  to {
+    transform: translateX(0);
+  }
 }
 

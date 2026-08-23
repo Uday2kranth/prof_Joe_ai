@@ -6,11 +6,10 @@ import {
   BookOpen, 
   Box, 
   ArrowRight, 
-  Key, 
+  Key,
   Moon, 
   Sun, 
-  User, 
-  Layout, 
+  Settings,
   Cpu, 
   PenTool, 
   Layers,
@@ -25,22 +24,18 @@ import { MorphingText } from './MorphingText';
 interface DemoLandingHubProps {
   onSelectWorkspace: (workspaceId: 'chat' | 'personas' | 'fun_personas' | 'examprep' | 'diagrams' | 'system_prompts' | 'prompts' | 'cubes' | 'extractor_studio' | 'code_lab' | 'lecture_notes' | 'sandbox' | 'dsa_lab' | 'flashcards_studio' | 'quiz_arena' | 'pinned_archive') => void;
   onOpenSettings: () => void;
-  onOpenProfile: () => void;
+  onOpenSettingsStudio?: () => void;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
-  onSwitchToStandard: () => void;
-  configuredKeysCount?: number;
   userRole?: string;
 }
 
 export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
   onSelectWorkspace,
   onOpenSettings,
-  onOpenProfile,
+  onOpenSettingsStudio,
   theme,
   onToggleTheme,
-  onSwitchToStandard,
-  configuredKeysCount = 8,
   userRole = 'student'
 }) => {
   const [isSpinning, setIsSpinning] = React.useState(false);
@@ -109,27 +104,6 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
         </div>
 
         <div className="demo-header-actions">
-          {/* View Switcher Pill */}
-          <button 
-            type="button" 
-            onClick={onSwitchToStandard} 
-            className="demo-view-toggle-btn"
-            title="Switch back to classic sidebar & tab bar interface"
-          >
-            <Layout size={14} />
-            <span>Classic View</span>
-          </button>
-
-          {/* Quick API Key Pill */}
-          <button 
-            type="button" 
-            onClick={onOpenSettings} 
-            className="demo-status-pill cyan-pill"
-          >
-            <Key size={14} />
-            <span>{configuredKeysCount} Keys Ready</span>
-          </button>
-
           {/* Theme Switcher */}
           <button 
             type="button" 
@@ -140,14 +114,26 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
             {theme === 'dark' ? <Sun size={18} className="text-amber-400" /> : <Moon size={18} className="text-purple-400" />}
           </button>
 
-          {/* User Profile Button */}
+          {/* Quick API Keys & Model Selector (Key Symbol) */}
           <button 
             type="button" 
-            onClick={onOpenProfile} 
-            className="demo-profile-avatar-btn"
-            aria-label="User Profile"
+            onClick={onOpenSettings} 
+            className="demo-quick-key-btn"
+            title="Quick API Keys & Model Selector"
+            aria-label="Quick API Keys & Model Selector"
           >
-            <User size={18} />
+            <Key size={18} className="key-bounce-on-hover" />
+          </button>
+
+          {/* Universal Settings & Print Studio 3D Gear Button */}
+          <button 
+            type="button" 
+            onClick={onOpenSettingsStudio || onOpenSettings} 
+            className="demo-settings-gear-btn"
+            title="Open Universal Settings & Print Studio"
+            aria-label="Universal Settings & Print Studio"
+          >
+            <Settings size={18} className="gear-spin-on-hover" />
           </button>
         </div>
       </header>

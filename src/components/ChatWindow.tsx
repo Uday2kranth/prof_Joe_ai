@@ -2,7 +2,8 @@ import React, { useState, useRef, useEffect, useMemo } from 'react';
 import { Send, Globe, X, Zap, FileText, FileCode, CheckSquare, MessageSquare, Paperclip, Eye, Printer, ChevronDown, ChevronUp, Check, ListFilter, RotateCw, BookOpen, List, Search, ArrowRight } from 'lucide-react';
 // @ts-ignore
 import TextType from './TextType';
-import type { Message, UserCustomModels } from '../types';
+import type { Message, UserCustomModels, CodeStyleConfig } from '../types';
+import { DEFAULT_CODE_STYLE } from '../types';
 import { MessageItem, renderMarkdownWithMathAndDiagrams } from './MessageItem';
 import { PROVIDERS } from '../constants';
 import { PdfPreviewModal } from './PdfPreviewModal';
@@ -75,6 +76,29 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
   const [selectedPreviewFile, setSelectedPreviewFile] = useState<AttachedFileDetails | null>(null);
   const [isFilePreviewModalOpen, setIsFilePreviewModalOpen] = useState(false);
   const [isExtractorStudioOpen, setIsExtractorStudioOpen] = useState(false);
+
+  const [codeStyle, setCodeStyle] = useState<CodeStyleConfig>(() => {
+    try {
+      const saved = localStorage.getItem('chatterbot_code_style');
+      if (saved) return { ...DEFAULT_CODE_STYLE, ...JSON.parse(saved) };
+    } catch {}
+    return DEFAULT_CODE_STYLE;
+  });
+
+  useEffect(() => {
+    const handleStyleUpdate = () => {
+      try {
+        const saved = localStorage.getItem('chatterbot_code_style');
+        if (saved) setCodeStyle({ ...DEFAULT_CODE_STYLE, ...JSON.parse(saved) });
+      } catch {}
+    };
+    window.addEventListener('chatterbot_code_style_updated', handleStyleUpdate);
+    window.addEventListener('storage', handleStyleUpdate);
+    return () => {
+      window.removeEventListener('chatterbot_code_style_updated', handleStyleUpdate);
+      window.removeEventListener('storage', handleStyleUpdate);
+    };
+  }, []);
 
   const providerRef = useRef<HTMLDivElement>(null);
   const modelRef = useRef<HTMLDivElement>(null);
@@ -313,7 +337,12 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
         </div>
       )}
 
-      <div className="chat-messages-container" ref={chatContainerRef}>
+      <div 
+        className="chat-messages-container" 
+        ref={chatContainerRef}
+        data-code-theme={codeStyle.codeTheme}
+        data-katex-scale={codeStyle.katexScale}
+      >
         <TextSelectionToolbar containerRef={chatContainerRef} onQuickAction={handleQuickAction} />
         <div className="messages-inner">
         {messages.length === 0 ? (
