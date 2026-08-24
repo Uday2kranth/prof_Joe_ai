@@ -35,6 +35,7 @@ const FlashcardsStudioView = React.lazy(() => import('./components/FlashcardsStu
 const QuizArenaView = React.lazy(() => import('./components/QuizArenaView').then(m => ({ default: m.QuizArenaView })));
 const PinnedNotesArchiveView = React.lazy(() => import('./components/PinnedNotesArchiveView').then(m => ({ default: m.PinnedNotesArchiveView })));
 const SettingsStudioView = React.lazy(() => import('./components/SettingsStudioView').then(m => ({ default: m.SettingsStudioView })));
+const TestDiagramsStudioView = React.lazy(() => import('./components/TestDiagramsStudioView').then(m => ({ default: m.TestDiagramsStudioView })));
 import { ACADEMIC_PRESETS } from './components/CodeLabPresetDrawer';
 import { SettingsModal } from './components/SettingsModal';
 import { LoginModal } from './components/LoginModal';
@@ -2225,6 +2226,8 @@ export const App: React.FC = () => {
                   ? 'CODE DUNGEON WORKSPACE 🏰'
                   : activeHubWorkspace === 'extractor_studio'
                   ? 'TEXTRACTOR WORKSPACE ⚡'
+                  : activeHubWorkspace === 'test_diagrams'
+                  ? 'MAFS • JSXGRAPH • PLOTLY • MATHBOX STUDIO 📐'
                   : `${activeHubWorkspace} Workspace`}
               </span>
             </div>
@@ -2474,6 +2477,10 @@ export const App: React.FC = () => {
                 onClearHistory={handleClearChat}
                 onLogout={handleLogout}
               />
+            )}
+
+            {activeHubWorkspace === 'test_diagrams' && (
+              <TestDiagramsStudioView />
             )}
             </React.Suspense>
           </main>

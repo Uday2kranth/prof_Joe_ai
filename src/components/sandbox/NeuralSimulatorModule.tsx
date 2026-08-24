@@ -18,6 +18,7 @@ import {
   MousePointer,
   PanelRightClose,
   PanelRightOpen,
+  EyeOff,
   X
 } from 'lucide-react';
 import { getCanvasTheme, drawCanvasAtmosphere, drawDiagramCard, withPlotBoxClip } from '../../utils/canvasThemeEngine';
@@ -77,6 +78,7 @@ export const NeuralSimulatorModule: React.FC = () => {
       return 'deep_void';
     }
   });
+  const [isHudMinimized, setIsHudMinimized] = useState<boolean>(false);
 
   useEffect(() => {
     const handleAtmosphereUpdate = () => {
@@ -2847,6 +2849,7 @@ export const NeuralSimulatorModule: React.FC = () => {
       performLinearRegressionStep();
     }
 
+    const theme = getCanvasTheme(canvasAtmosphere);
     const { points } = stateRef.current;
     const radX = (linear3dRotX * Math.PI) / 180;
     const radY = (linear3dRotY * Math.PI) / 180;
@@ -2866,7 +2869,7 @@ export const NeuralSimulatorModule: React.FC = () => {
     const groundY = -1.1;
     const gridSize = 1.3;
     const gridDivs = 10;
-    ctx.strokeStyle = 'rgba(51, 65, 85, 0.4)';
+    ctx.strokeStyle = theme.grid;
     ctx.lineWidth = 1;
     for (let i = 0; i <= gridDivs; i++) {
       const u = -gridSize + (2 * gridSize * i) / gridDivs;
@@ -2893,35 +2896,35 @@ export const NeuralSimulatorModule: React.FC = () => {
     const yAxis = project3D(0, 1.35, 0);
 
     // X1 Axis (Cyan)
-    ctx.strokeStyle = '#38bdf8';
+    ctx.strokeStyle = theme.accentCyan;
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.moveTo(origin.screenX, origin.screenY);
     ctx.lineTo(x1Axis.screenX, x1Axis.screenY);
     ctx.stroke();
-    ctx.fillStyle = '#38bdf8';
+    ctx.fillStyle = theme.accentCyan;
     ctx.font = 'bold 12px monospace';
     ctx.fillText('+X₁ (Feature 1)', x1Axis.screenX + 8, x1Axis.screenY + 4);
 
     // X2 Axis (Purple)
-    ctx.strokeStyle = '#c084fc';
+    ctx.strokeStyle = theme.accentPurple;
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.moveTo(origin.screenX, origin.screenY);
     ctx.lineTo(x2Axis.screenX, x2Axis.screenY);
     ctx.stroke();
-    ctx.fillStyle = '#c084fc';
+    ctx.fillStyle = theme.accentPurple;
     ctx.font = 'bold 12px monospace';
     ctx.fillText('+X₂ (Feature 2)', x2Axis.screenX + 8, x2Axis.screenY + 4);
 
     // Y Axis (Emerald)
-    ctx.strokeStyle = '#34d399';
+    ctx.strokeStyle = theme.accentEmerald;
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.moveTo(origin.screenX, origin.screenY);
     ctx.lineTo(yAxis.screenX, yAxis.screenY);
     ctx.stroke();
-    ctx.fillStyle = '#34d399';
+    ctx.fillStyle = theme.accentEmerald;
     ctx.font = 'bold 12px monospace';
     ctx.fillText('+Y (Target Value)', yAxis.screenX - 10, yAxis.screenY - 10);
 
@@ -2983,14 +2986,14 @@ export const NeuralSimulatorModule: React.FC = () => {
     const planeCenter = project3D(0, b, 0);
     const nLen = 0.55 / (Math.hypot(w1, 1, w2) || 1);
     const normalTip = project3D(-w1 * nLen, b + 1.0 * nLen, -w2 * nLen);
-    ctx.strokeStyle = '#f59e0b';
+    ctx.strokeStyle = theme.accentAmber;
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.moveTo(planeCenter.screenX, planeCenter.screenY);
     ctx.lineTo(normalTip.screenX, normalTip.screenY);
     ctx.stroke();
 
-    ctx.fillStyle = '#f59e0b';
+    ctx.fillStyle = theme.accentAmber;
     ctx.beginPath();
     ctx.arc(normalTip.screenX, normalTip.screenY, 4.5, 0, 2 * Math.PI);
     ctx.fill();
@@ -3034,7 +3037,7 @@ export const NeuralSimulatorModule: React.FC = () => {
         ctx.arc(p.ptGnd.screenX, p.ptGnd.screenY, 3.5, 0, 2 * Math.PI);
         ctx.fill();
 
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+        ctx.strokeStyle = theme.textMuted;
         ctx.lineWidth = 1;
         ctx.setLineDash([3, 3]);
         ctx.beginPath();
@@ -3046,7 +3049,7 @@ export const NeuralSimulatorModule: React.FC = () => {
 
       if (linearShowResiduals) {
         const isPositive = p.yAct >= p.yPred;
-        ctx.strokeStyle = isPositive ? 'rgba(52, 211, 153, 0.85)' : 'rgba(244, 63, 94, 0.85)';
+        ctx.strokeStyle = isPositive ? theme.accentEmerald : theme.accentRose;
         ctx.lineWidth = 1.8;
         ctx.beginPath();
         ctx.moveTo(p.ptAct.screenX, p.ptAct.screenY);
@@ -3073,7 +3076,7 @@ export const NeuralSimulatorModule: React.FC = () => {
         rad
       );
       glowGrad.addColorStop(0, '#ffffff');
-      glowGrad.addColorStop(0.4, '#fbbf24');
+      glowGrad.addColorStop(0.4, theme.accentAmber);
       glowGrad.addColorStop(1, '#d97706');
 
       ctx.fillStyle = glowGrad;
@@ -3081,31 +3084,24 @@ export const NeuralSimulatorModule: React.FC = () => {
       ctx.arc(p.ptAct.screenX, p.ptAct.screenY, rad, 0, 2 * Math.PI);
       ctx.fill();
 
-      ctx.strokeStyle = '#78350f';
+      ctx.strokeStyle = theme.cardBorder;
       ctx.lineWidth = 1;
       ctx.stroke();
     });
 
     // Top HUD
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-    ctx.strokeStyle = '#38bdf8';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.roundRect(cx - 240, 20, 480, 52, 10);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = '#38bdf8';
-    ctx.font = 'bold 13px sans-serif';
+    drawDiagramCard(ctx, cx - 250, 16, 500, 52, theme);
+    ctx.fillStyle = theme.accentCyan;
+    ctx.font = 'bold 12px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('3D MULTIPLE LINEAR HYPERPLANE: ŷ = w₁x₁ + w₂x₂ + b', cx, 40);
+    ctx.fillText('3D MULTIPLE LINEAR HYPERPLANE: ŷ = w₁x₁ + w₂x₂ + b', cx, 36);
 
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '11px sans-serif';
+    ctx.fillStyle = theme.textMuted;
+    ctx.font = '10px monospace';
     ctx.fillText(
       `🖱️ Drag Orbit (Pitch: ${linear3dRotX.toFixed(0)}°, Yaw: ${linear3dRotY.toFixed(0)}°) | ŷ = ${w1.toFixed(2)}x₁ + ${w2.toFixed(2)}x₂ + ${b.toFixed(2)}`,
       cx,
-      58
+      54
     );
     ctx.textAlign = 'left';
   };
@@ -3124,6 +3120,7 @@ export const NeuralSimulatorModule: React.FC = () => {
       performLinearRegressionStep();
     }
 
+    const theme = getCanvasTheme(canvasAtmosphere);
     const { points } = stateRef.current;
     const m = linearSlopeW1;
     const c = linearInterceptB;
@@ -3176,7 +3173,7 @@ export const NeuralSimulatorModule: React.FC = () => {
     const lineX2 = xMax;
     const lineY2 = m * lineX2 + c;
 
-    ctx.strokeStyle = '#38bdf8';
+    ctx.strokeStyle = theme.accentCyan;
     ctx.lineWidth = 3.5;
     ctx.beginPath();
     ctx.moveTo(cx + lineX1 * scale, cy - lineY1 * scale);
@@ -3187,7 +3184,7 @@ export const NeuralSimulatorModule: React.FC = () => {
     const meanPx = cx + meanX * scale;
     const meanPy = cy - meanY * scale;
 
-    ctx.strokeStyle = 'rgba(251, 191, 36, 0.6)';
+    ctx.strokeStyle = theme.accentAmber;
     ctx.lineWidth = 1.2;
     ctx.setLineDash([4, 4]);
     ctx.beginPath();
@@ -3196,14 +3193,14 @@ export const NeuralSimulatorModule: React.FC = () => {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    ctx.fillStyle = '#fbbf24';
+    ctx.fillStyle = theme.accentAmber;
     ctx.beginPath();
     ctx.arc(meanPx, meanPy, 6, 0, 2 * Math.PI);
     ctx.fill();
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2;
     ctx.stroke();
-    ctx.fillStyle = '#fbbf24';
+    ctx.fillStyle = theme.accentAmber;
     ctx.font = 'bold 11px monospace';
     ctx.fillText('Centroid (x̄, ȳ)', meanPx + 10, meanPy - 8);
 
@@ -3216,7 +3213,7 @@ export const NeuralSimulatorModule: React.FC = () => {
 
       if (linearShowResiduals) {
         const isPos = p.y >= yHat;
-        ctx.strokeStyle = isPos ? 'rgba(52, 211, 153, 0.75)' : 'rgba(244, 63, 94, 0.75)';
+        ctx.strokeStyle = isPos ? theme.accentEmerald : theme.accentRose;
         ctx.lineWidth = 1.5;
         ctx.beginPath();
         ctx.moveTo(px, py);
@@ -3224,36 +3221,29 @@ export const NeuralSimulatorModule: React.FC = () => {
         ctx.stroke();
       }
 
-      ctx.fillStyle = '#fbbf24';
+      ctx.fillStyle = theme.accentAmber;
       ctx.beginPath();
       ctx.arc(px, py, 4.5, 0, 2 * Math.PI);
       ctx.fill();
-      ctx.strokeStyle = '#78350f';
+      ctx.strokeStyle = theme.cardBorder;
       ctx.lineWidth = 1;
       ctx.stroke();
     });
 
     // Top HUD
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-    ctx.strokeStyle = '#38bdf8';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.roundRect(cx - 220, 20, 440, 52, 10);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = '#38bdf8';
-    ctx.font = 'bold 13px sans-serif';
+    drawDiagramCard(ctx, cx - 240, 16, 480, 52, theme);
+    ctx.fillStyle = theme.accentCyan;
+    ctx.font = 'bold 12px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('1D ORDINARY LEAST SQUARES (OLS): ŷ = w₁x + b', cx, 40);
+    ctx.fillText('1D ORDINARY LEAST SQUARES (OLS): ŷ = w₁x + b', cx, 36);
 
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '11px sans-serif';
-    ctx.fillText(`ŷ = ${m.toFixed(2)}x + ${c.toFixed(2)} | R² = ${r2Score.toFixed(3)} | Mode: ${linearRegMode.toUpperCase()} (λ=${linearRidgeLambda.toFixed(2)})`, cx, 58);
+    ctx.fillStyle = theme.textMuted;
+    ctx.font = '10px monospace';
+    ctx.fillText(`ŷ = ${m.toFixed(2)}x + ${c.toFixed(2)} | R² = ${r2Score.toFixed(3)} | Mode: ${linearRegMode.toUpperCase()} (λ=${linearRidgeLambda.toFixed(2)})`, cx, 54);
     ctx.textAlign = 'left';
   };
 
-  // 4C. Polynomial Regression & Overfitting Curves (ŷ = Σ w_k x^k)
+  // 4C. Polynomial Regression & Overfitting Curves (ŷ = Σ w_k x^k) with Shaded 95% Confidence Band
   const drawLinearPolynomialCurves = (
     ctx: CanvasRenderingContext2D,
     _w: number,
@@ -3267,6 +3257,7 @@ export const NeuralSimulatorModule: React.FC = () => {
       performLinearRegressionStep();
     }
 
+    const theme = getCanvasTheme(canvasAtmosphere);
     const { points } = stateRef.current;
     const deg = linearPolyDegree;
     const lambda = linearRidgeLambda;
@@ -3287,19 +3278,36 @@ export const NeuralSimulatorModule: React.FC = () => {
       return y;
     };
 
-    // 1. Draw Polynomial Curve
+    const n = Math.max(2, points.length);
+    const sePoly = Math.sqrt(Math.max(0.02, 1 - r2Score)) * 0.28;
     const steps = 100;
     const xMin = -1.6;
     const xMax = 1.6;
     const curvePts: { x: number; y: number }[] = [];
+    const ciUpperPts: { x: number; y: number }[] = [];
+    const ciLowerPts: { x: number; y: number }[] = [];
 
     for (let i = 0; i <= steps; i++) {
       const xVal = xMin + ((xMax - xMin) * i) / steps;
       const yVal = evalPoly(xVal);
+      const ciDelta = 1.96 * sePoly * Math.sqrt(1 / n + 0.15 * Math.pow(xVal, 2 * Math.min(3, deg)));
       curvePts.push({ x: cx + xVal * scale, y: cy - yVal * scale });
+      ciUpperPts.push({ x: cx + xVal * scale, y: cy - (yVal + ciDelta) * scale });
+      ciLowerPts.push({ x: cx + xVal * scale, y: cy - (yVal - ciDelta) * scale });
     }
 
-    ctx.strokeStyle = deg <= 2 ? '#38bdf8' : deg <= 3 ? '#a855f7' : '#ec4899';
+    // 1. Shaded 95% Confidence Interval Ribbon
+    ctx.fillStyle = deg <= 2 ? 'rgba(56, 189, 248, 0.12)' : deg <= 3 ? 'rgba(168, 85, 247, 0.12)' : 'rgba(236, 72, 153, 0.12)';
+    ctx.beginPath();
+    ctx.moveTo(ciUpperPts[0].x, ciUpperPts[0].y);
+    for (let i = 1; i < ciUpperPts.length; i++) ctx.lineTo(ciUpperPts[i].x, ciUpperPts[i].y);
+    for (let i = ciLowerPts.length - 1; i >= 0; i--) ctx.lineTo(ciLowerPts[i].x, ciLowerPts[i].y);
+    ctx.closePath();
+    ctx.fill();
+
+    // 2. Draw Polynomial Curve
+    const strokeColor = deg <= 2 ? theme.accentCyan : deg <= 3 ? theme.accentPurple : theme.accentRose;
+    ctx.strokeStyle = strokeColor;
     ctx.lineWidth = 3.5;
     ctx.beginPath();
     ctx.moveTo(curvePts[0].x, curvePts[0].y);
@@ -3308,7 +3316,7 @@ export const NeuralSimulatorModule: React.FC = () => {
     }
     ctx.stroke();
 
-    // 2. Data Points & Residual Droplines
+    // 3. Data Points & Residual Droplines
     points.forEach(p => {
       const yHat = evalPoly(p.x);
       const px = cx + p.x * scale;
@@ -3316,7 +3324,7 @@ export const NeuralSimulatorModule: React.FC = () => {
       const pyHat = cy - yHat * scale;
 
       if (linearShowResiduals) {
-        ctx.strokeStyle = p.y >= yHat ? 'rgba(52, 211, 153, 0.75)' : 'rgba(244, 63, 94, 0.75)';
+        ctx.strokeStyle = p.y >= yHat ? theme.accentEmerald : theme.accentRose;
         ctx.lineWidth = 1.2;
         ctx.beginPath();
         ctx.moveTo(px, py);
@@ -3324,30 +3332,26 @@ export const NeuralSimulatorModule: React.FC = () => {
         ctx.stroke();
       }
 
-      ctx.fillStyle = '#fbbf24';
+      ctx.fillStyle = theme.accentAmber;
       ctx.beginPath();
       ctx.arc(px, py, 4.5, 0, 2 * Math.PI);
       ctx.fill();
+      ctx.strokeStyle = theme.cardBorder;
+      ctx.lineWidth = 1;
+      ctx.stroke();
     });
 
     // Top HUD
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-    ctx.strokeStyle = deg <= 2 ? '#38bdf8' : deg <= 3 ? '#a855f7' : '#ec4899';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.roundRect(cx - 240, 20, 480, 52, 10);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = deg <= 2 ? '#38bdf8' : deg <= 3 ? '#c084fc' : '#f472b6';
-    ctx.font = 'bold 13px sans-serif';
+    drawDiagramCard(ctx, cx - 250, 16, 500, 52, theme);
+    ctx.fillStyle = strokeColor;
+    ctx.font = 'bold 12px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText(`POLYNOMIAL REGRESSION (DEGREE ${deg}): ŷ = Σ_{k=0}^d w_k x^k`, cx, 40);
+    ctx.fillText(`POLYNOMIAL REGRESSION (DEGREE ${deg}): ŷ = Σ_{k=0}^d w_k x^k`, cx, 36);
 
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '11px sans-serif';
+    ctx.fillStyle = theme.textMuted;
+    ctx.font = '10px monospace';
     const statusText = deg === 1 ? 'Underfitting (Linear Bias)' : deg <= 3 ? 'Optimal Non-Linear Fit' : lambda > 0.2 ? 'Regularized Overfit Prevention' : '⚠️ High-Variance Overfitting';
-    ctx.fillText(`Ridge Penalty λ = ${lambda.toFixed(2)} | Status: ${statusText}`, cx, 58);
+    ctx.fillText(`Ridge Penalty λ = ${lambda.toFixed(2)} | Status: ${statusText}`, cx, 54);
     ctx.textAlign = 'left';
   };
 
@@ -3355,12 +3359,13 @@ export const NeuralSimulatorModule: React.FC = () => {
   const drawLinearResidualsAndQQ = (
     ctx: CanvasRenderingContext2D,
     w: number,
-    _h: number,
+    h: number,
     cx: number,
     cy: number,
     _scale: number,
     _localFrame: number
   ) => {
+    const theme = getCanvasTheme(canvasAtmosphere);
     const { points } = stateRef.current;
     const m = linearSlopeW1;
     const c = linearInterceptB;
@@ -3381,137 +3386,133 @@ export const NeuralSimulatorModule: React.FC = () => {
     const meanE = sumE / n;
     const se = Math.sqrt(sumSqE / (n - 1)) || 1;
 
-    const panelW = (w - 80) / 2;
-    const panelH = 280;
-    const panelY = cy - 110;
-    const leftPanelX = 30;
-    const rightPanelX = cx + 15;
+    const panelW = Math.min(520, Math.max(300, (w - 60) / 2));
+    const panelH = Math.min(420, Math.max(260, h * 0.72));
+    const panelY = cy - panelH / 2 + 10;
+    const leftPanelX = cx - panelW - 10;
+    const rightPanelX = cx + 10;
 
-    [leftPanelX, rightPanelX].forEach(px => {
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
-      ctx.strokeStyle = 'rgba(51, 65, 85, 0.6)';
+    // Left Panel Card
+    drawDiagramCard(ctx, leftPanelX, panelY, panelW, panelH, theme, '📊 1. RESIDUALS VS. FITTED (e_i vs. ŷ_i)');
+    // Right Panel Card
+    drawDiagramCard(ctx, rightPanelX, panelY, panelW, panelH, theme, '📈 2. NORMAL Q-Q PLOT (GAUSSIAN RESIDUALS)');
+
+    // Left Panel: Residuals vs. Fitted Plot Box
+    const lPlotL = leftPanelX + 16;
+    const lPlotT = panelY + 42;
+    const lPlotW = panelW - 32;
+    const lPlotH = panelH - 58;
+    const lcx = lPlotL + lPlotW / 2;
+    const lcy = lPlotT + lPlotH / 2;
+
+    withPlotBoxClip(ctx, lPlotL, lPlotT, lPlotW, lPlotH, 6, () => {
+      // e = 0 Center Line
+      ctx.strokeStyle = theme.accentCyan;
       ctx.lineWidth = 1.5;
+      ctx.setLineDash([4, 4]);
       ctx.beginPath();
-      ctx.roundRect(px, panelY, panelW, panelH, 10);
-      ctx.fill();
+      ctx.moveTo(lPlotL, lcy);
+      ctx.lineTo(lPlotL + lPlotW, lcy);
       ctx.stroke();
-    });
+      ctx.setLineDash([]);
 
-    // Left Panel: Residuals vs. Fitted
-    const lcx = leftPanelX + panelW / 2;
-    const lcy = panelY + panelH / 2;
-
-    ctx.fillStyle = '#38bdf8';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText('1. Residuals vs. Fitted (e_i vs. ŷ_i)', leftPanelX + 16, panelY + 24);
-
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(leftPanelX + 20, lcy);
-    ctx.lineTo(leftPanelX + panelW - 20, lcy);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '10px monospace';
-    ctx.fillText('e = 0', leftPanelX + panelW - 48, lcy - 5);
-
-    const sigmaScale = (panelH * 0.38) / (3 * se);
-    ctx.strokeStyle = 'rgba(244, 63, 94, 0.35)';
-    ctx.lineWidth = 1;
-    ctx.setLineDash([2, 2]);
-    ctx.beginPath();
-    ctx.moveTo(leftPanelX + 20, lcy - 2 * se * sigmaScale);
-    ctx.lineTo(leftPanelX + panelW - 20, lcy - 2 * se * sigmaScale);
-    ctx.moveTo(leftPanelX + 20, lcy + 2 * se * sigmaScale);
-    ctx.lineTo(leftPanelX + panelW - 20, lcy + 2 * se * sigmaScale);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = 'rgba(244, 63, 94, 0.7)';
-    ctx.fillText('+2σ', leftPanelX + panelW - 45, lcy - 2 * se * sigmaScale - 4);
-    ctx.fillText('-2σ', leftPanelX + panelW - 45, lcy + 2 * se * sigmaScale + 12);
-
-    const xFitScale = (panelW * 0.38) / 1.5;
-    residuals.forEach(r => {
-      const rx = lcx + r.yHat * xFitScale;
-      const ry = lcy - r.e * sigmaScale;
-
-      ctx.fillStyle = Math.abs(r.e) > 2 * se ? '#f43f5e' : '#38bdf8';
-      ctx.beginPath();
-      ctx.arc(rx, ry, 4, 0, 2 * Math.PI);
-      ctx.fill();
-    });
-
-    // Right Panel: Normal Q-Q Plot
-    const rcx = rightPanelX + panelW / 2;
-    const rcy = panelY + panelH / 2;
-
-    ctx.fillStyle = '#34d399';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText('2. Normal Q-Q Plot (Gaussian Residuals)', rightPanelX + 16, panelY + 24);
-
-    const qqScale = (panelH * 0.38) / 2.5;
-    ctx.strokeStyle = '#34d399';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(rcx - 2.4 * qqScale, rcy + 2.4 * qqScale);
-    ctx.lineTo(rcx + 2.4 * qqScale, rcy - 2.4 * qqScale);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = '#34d399';
-    ctx.font = '10px monospace';
-    ctx.fillText('y = x (Normal Reference)', rcx + 1.2 * qqScale, rcy - 1.4 * qqScale);
-
-    const sortedResiduals = [...residuals].sort((a, b) => a.e - b.e);
-    const approxNormInv = (p: number) => {
-      const q = p - 0.5;
-      if (Math.abs(q) <= 0.42) {
-        const r = q * q;
-        return q * (((-25.44106049637 * r + 41.39119773534) * r - 18.61500062529) * r + 2.50662823884) /
-          ((((3.13082909833 * r - 21.06224101826) * r + 23.08336743743) * r - 8.47351093090) * r + 1.0);
-      }
-      const r = p < 0.5 ? p : 1 - p;
-      const s = Math.log(-Math.log(r));
-      const t = 0.3374754822726147 + s * (0.97616488908684 - s * (0.16079797149182 - s * (0.0231995545801 - s * (0.003950096985 - s * 0.00032549927))));
-      return p < 0.5 ? -t : t;
-    };
-
-    sortedResiduals.forEach((r, idx) => {
-      const pVal = (idx + 1 - 0.375) / (n + 0.25);
-      const theoreticalZ = approxNormInv(Math.max(0.001, Math.min(0.999, pVal)));
-      const sampleZ = (r.e - meanE) / se;
-
-      const qx = rcx + theoreticalZ * qqScale;
-      const qy = rcy - sampleZ * qqScale;
-
-      ctx.fillStyle = Math.abs(sampleZ) > 2.0 ? '#f43f5e' : '#fbbf24';
-      ctx.beginPath();
-      ctx.arc(qx, qy, 4.5, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.strokeStyle = '#ffffff';
+      const sigmaScale = (lPlotH * 0.38) / (3 * se);
+      ctx.strokeStyle = 'rgba(244, 63, 94, 0.35)';
       ctx.lineWidth = 1;
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.moveTo(lPlotL, lcy - 2 * se * sigmaScale);
+      ctx.lineTo(lPlotL + lPlotW, lcy - 2 * se * sigmaScale);
+      ctx.moveTo(lPlotL, lcy + 2 * se * sigmaScale);
+      ctx.lineTo(lPlotL + lPlotW, lcy + 2 * se * sigmaScale);
       ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = theme.accentRose;
+      ctx.font = '9px monospace';
+      ctx.fillText('+2σ', lPlotL + lPlotW - 28, lcy - 2 * se * sigmaScale - 4);
+      ctx.fillText('-2σ', lPlotL + lPlotW - 28, lcy + 2 * se * sigmaScale + 12);
+
+      const xFitScale = (lPlotW * 0.38) / 1.5;
+      residuals.forEach(r => {
+        const rx = lcx + r.yHat * xFitScale;
+        const ry = lcy - r.e * sigmaScale;
+
+        ctx.fillStyle = Math.abs(r.e) > 2 * se ? theme.accentRose : theme.accentCyan;
+        ctx.beginPath();
+        ctx.arc(rx, ry, 4, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      });
     });
 
-    // Top HUD Box
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-    ctx.strokeStyle = '#34d399';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.roundRect(cx - 240, 20, 480, 52, 10);
-    ctx.fill();
-    ctx.stroke();
+    // Right Panel: Normal Q-Q Plot Box
+    const rPlotL = rightPanelX + 16;
+    const rPlotT = panelY + 42;
+    const rPlotW = panelW - 32;
+    const rPlotH = panelH - 58;
+    const rcx = rPlotL + rPlotW / 2;
+    const rcy = rPlotT + rPlotH / 2;
 
-    ctx.fillStyle = '#34d399';
-    ctx.font = 'bold 13px sans-serif';
+    withPlotBoxClip(ctx, rPlotL, rPlotT, rPlotW, rPlotH, 6, () => {
+      const qqScale = (rPlotH * 0.38) / 2.5;
+      ctx.strokeStyle = theme.accentEmerald;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
+      ctx.beginPath();
+      ctx.moveTo(rcx - 2.4 * qqScale, rcy + 2.4 * qqScale);
+      ctx.lineTo(rcx + 2.4 * qqScale, rcy - 2.4 * qqScale);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = theme.accentEmerald;
+      ctx.font = '10px monospace';
+      ctx.fillText('y = x (Normal Ref)', rcx + 0.8 * qqScale, rcy - 1.2 * qqScale);
+
+      const sortedResiduals = [...residuals].sort((a, b) => a.e - b.e);
+      const approxNormInv = (p: number) => {
+        const q = p - 0.5;
+        if (Math.abs(q) <= 0.42) {
+          const r = q * q;
+          return q * (((-25.44106049637 * r + 41.39119773534) * r - 18.61500062529) * r + 2.50662823884) /
+            ((((3.13082909833 * r - 21.06224101826) * r + 23.08336743743) * r - 8.47351093090) * r + 1.0);
+        }
+        const r = p < 0.5 ? p : 1 - p;
+        const s = Math.log(-Math.log(r));
+        const t = 0.3374754822726147 + s * (0.97616488908684 - s * (0.16079797149182 - s * (0.0231995545801 - s * (0.003950096985 - s * 0.00032549927))));
+        return p < 0.5 ? -t : t;
+      };
+
+      sortedResiduals.forEach((r, idx) => {
+        const pVal = (idx + 1 - 0.375) / (n + 0.25);
+        const theoreticalZ = approxNormInv(Math.max(0.001, Math.min(0.999, pVal)));
+        const sampleZ = (r.e - meanE) / se;
+
+        const qx = rcx + theoreticalZ * qqScale;
+        const qy = rcy - sampleZ * qqScale;
+
+        ctx.fillStyle = Math.abs(sampleZ) > 2.0 ? theme.accentRose : theme.accentAmber;
+        ctx.beginPath();
+        ctx.arc(qx, qy, 4.5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+      });
+    });
+
+    // Top HUD
+    drawDiagramCard(ctx, cx - 250, 16, 500, 52, theme);
+    ctx.fillStyle = theme.accentEmerald;
+    ctx.font = 'bold 12px sans-serif';
     ctx.textAlign = 'center';
-    ctx.fillText('RESIDUALS DIAGNOSTICS & NORMAL Q-Q PLOT', cx, 40);
+    ctx.fillText('RESIDUALS DIAGNOSTICS & NORMAL Q-Q PLOT', cx, 36);
 
-    ctx.fillStyle = '#94a3b8';
-    ctx.font = '11px sans-serif';
-    ctx.fillText(`Residual Standard Error: s_e = ${se.toFixed(3)} | Normality: ✓ Gaussian (R² = ${r2Score.toFixed(3)})`, cx, 58);
+    ctx.fillStyle = theme.textMuted;
+    ctx.font = '10px monospace';
+    ctx.fillText(`Residual SE s_e = ${se.toFixed(3)} | Normality: ✓ Gaussian (R² = ${r2Score.toFixed(3)})`, cx, 54);
     ctx.textAlign = 'left';
   };
 
@@ -3560,6 +3561,7 @@ export const NeuralSimulatorModule: React.FC = () => {
       performLogisticRegressionStep();
     }
 
+    const theme = getCanvasTheme(canvasAtmosphere);
     const rotX = (logreg3dRotX * Math.PI) / 180;
     const rotY = ((logreg3dRotY + (simMode === 'autoplay' && isSimulating ? localFrame * 0.25 : 0)) * Math.PI) / 180;
     const scale3d = scale * 0.68;
@@ -3587,7 +3589,7 @@ export const NeuralSimulatorModule: React.FC = () => {
 
     // 1. Draw 3D Ground Coordinate Grid & Axes
     const boxSize = 1.4;
-    ctx.strokeStyle = 'rgba(51, 65, 85, 0.4)';
+    ctx.strokeStyle = theme.grid;
     ctx.lineWidth = 1;
 
     for (let i = -boxSize; i <= boxSize + 0.05; i += 0.35) {
@@ -3609,7 +3611,7 @@ export const NeuralSimulatorModule: React.FC = () => {
     // 2. Vertical Z Probability Axis (0.0 to 1.0)
     const zBase = project3D(-boxSize, -boxSize, 0);
     const zTop = project3D(-boxSize, -boxSize, 1.2);
-    ctx.strokeStyle = 'rgba(148, 163, 184, 0.8)';
+    ctx.strokeStyle = theme.axis;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(zBase.px, zBase.py);
@@ -3619,10 +3621,10 @@ export const NeuralSimulatorModule: React.FC = () => {
     // Z-axis ticks & labels
     [0.0, 0.25, 0.5, 0.75, 1.0].forEach(zVal => {
       const tickPos = project3D(-boxSize, -boxSize, zVal);
-      ctx.fillStyle = '#94a3b8';
+      ctx.fillStyle = theme.textMuted;
       ctx.font = '9px monospace';
       ctx.fillText(`P=${zVal.toFixed(2)}`, tickPos.px - 45, tickPos.py + 3);
-      ctx.fillStyle = '#38bdf8';
+      ctx.fillStyle = theme.accentCyan;
       ctx.beginPath();
       ctx.arc(tickPos.px, tickPos.py, 2, 0, 2 * Math.PI);
       ctx.fill();
@@ -3631,10 +3633,10 @@ export const NeuralSimulatorModule: React.FC = () => {
     // 3. Ground Axis Labels
     const axX = project3D(boxSize + 0.15, 0, 0);
     const axY = project3D(0, boxSize + 0.15, 0);
-    ctx.fillStyle = '#38bdf8';
+    ctx.fillStyle = theme.accentCyan;
     ctx.font = 'bold 11px monospace';
     ctx.fillText('Feature X₁', axX.px + 4, axX.py);
-    ctx.fillStyle = '#fbbf24';
+    ctx.fillStyle = theme.accentAmber;
     ctx.fillText('Feature X₂', axY.px, axY.py - 6);
 
     // 4. Generate and Render 3D Sigmoidal Surface Mesh
@@ -3694,14 +3696,12 @@ export const NeuralSimulatorModule: React.FC = () => {
       let fillCol: string;
       if (p < 0.5) {
         const t = p / 0.5;
-        // Amber (245, 158, 11) to Cyan (6, 182, 212)
         const r = Math.round(245 * (1 - t) + 6 * t);
         const g = Math.round(158 * (1 - t) + 182 * t);
         const bl = Math.round(11 * (1 - t) + 212 * t);
         fillCol = `rgba(${r}, ${g}, ${bl}, 0.55)`;
       } else {
         const t = (p - 0.5) / 0.5;
-        // Cyan (6, 182, 212) to Purple (168, 85, 247)
         const r = Math.round(6 * (1 - t) + 168 * t);
         const g = Math.round(182 * (1 - t) + 85 * t);
         const bl = Math.round(212 * (1 - t) + 247 * t);
@@ -3716,7 +3716,7 @@ export const NeuralSimulatorModule: React.FC = () => {
     });
 
     // 5. Draw 3D Decision Threshold Contour Line on the Sigmoid Surface (P = thresh)
-    ctx.strokeStyle = '#10b981';
+    ctx.strokeStyle = theme.accentEmerald;
     ctx.lineWidth = 3;
     ctx.beginPath();
     const logitT = Math.log(Math.max(0.01, thresh) / (1 - Math.max(0.01, thresh) + 1e-6));
@@ -3738,7 +3738,7 @@ export const NeuralSimulatorModule: React.FC = () => {
 
       // Label Decision Boundary on 3D Sheet
       const mid = threshPts[Math.floor(threshPts.length / 2)];
-      ctx.fillStyle = '#10b981';
+      ctx.fillStyle = theme.accentEmerald;
       ctx.font = 'bold 10px monospace';
       ctx.fillText(`⚡ Decision Boundary (P=${thresh.toFixed(2)})`, mid.px + 8, mid.py - 6);
     }
@@ -3752,13 +3752,13 @@ export const NeuralSimulatorModule: React.FC = () => {
       const onSurface = project3D(pt.x, pt.y, prob);
 
       // Ground shadow
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
+      ctx.fillStyle = 'rgba(15, 23, 42, 0.4)';
       ctx.beginPath();
       ctx.arc(ground.px, ground.py, 3, 0, 2 * Math.PI);
       ctx.fill();
 
       // Dotted Vertical Guide Ray from Ground to Surface
-      ctx.strokeStyle = pt.label === 1 ? 'rgba(56, 189, 248, 0.4)' : 'rgba(239, 68, 68, 0.4)';
+      ctx.strokeStyle = pt.label === 1 ? 'rgba(56, 189, 248, 0.45)' : 'rgba(239, 68, 68, 0.45)';
       ctx.lineWidth = 1;
       ctx.setLineDash([2, 2]);
       ctx.beginPath();
@@ -3768,16 +3768,14 @@ export const NeuralSimulatorModule: React.FC = () => {
       ctx.setLineDash([]);
 
       // True Class Point (Top P=1 or Bottom P=0)
-      ctx.fillStyle = pt.label === 1 ? '#38bdf8' : '#ef4444';
+      ctx.fillStyle = pt.label === 1 ? theme.accentCyan : theme.accentRose;
       ctx.beginPath();
       if (pt.label === 1) {
-        // Blue Triangle
         ctx.moveTo(elevatedTrue.px, elevatedTrue.py - 4.5);
         ctx.lineTo(elevatedTrue.px + 4, elevatedTrue.py + 3.5);
         ctx.lineTo(elevatedTrue.px - 4, elevatedTrue.py + 3.5);
         ctx.closePath();
       } else {
-        // Red Diamond
         ctx.moveTo(elevatedTrue.px, elevatedTrue.py - 4);
         ctx.lineTo(elevatedTrue.px + 4, elevatedTrue.py);
         ctx.lineTo(elevatedTrue.px, elevatedTrue.py + 4);
@@ -3790,35 +3788,28 @@ export const NeuralSimulatorModule: React.FC = () => {
       ctx.stroke();
 
       // Predicted Probability Bead on Sigmoid Surface
-      ctx.fillStyle = '#fbbf24';
+      ctx.fillStyle = theme.accentAmber;
       ctx.beginPath();
       ctx.arc(onSurface.px, onSurface.py, 2.5, 0, 2 * Math.PI);
       ctx.fill();
     });
 
     // 7. Header Banner & Interaction Hint
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(cx - 240, 16, 480, 48, 8);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = '#f8fafc';
+    drawDiagramCard(ctx, cx - 240, 16, 480, 48, theme);
+    ctx.fillStyle = theme.textPrimary;
     ctx.font = 'bold 11px monospace';
-    ctx.fillText('3D SIGMOID PROBABILITY SURFACE:  P(y=1|x) = σ(w₁x₁ + w₂x₂ + b)', cx - 220, 34);
+    ctx.fillText('3D SIGMOID PROBABILITY SURFACE: P(y=1|x) = σ(w₁x₁ + w₂x₂ + b)', cx - 220, 36);
 
-    ctx.fillStyle = '#94a3b8';
+    ctx.fillStyle = theme.textMuted;
     ctx.font = '10px monospace';
     ctx.fillText(
-      `🖱️ Drag to Orbit (Pitch: ${logreg3dRotX}°, Yaw: ${logreg3dRotY}°) | Threshold T = ${thresh.toFixed(2)}`,
+      `🖱️ Drag Orbit (Pitch: ${logreg3dRotX}°, Yaw: ${logreg3dRotY}°) | Threshold T = ${thresh.toFixed(2)}`,
       cx - 220,
-      50
+      52
     );
   };
 
-  // 5B. 1D Logistic Sigmoid Activation Curve & Decision Threshold
+  // 5B. 1D Sigmoidal Activation Curve with Thresholding
   const drawLogreg1dSigmoidCurve = (
     ctx: CanvasRenderingContext2D,
     _w: number,
@@ -3832,157 +3823,180 @@ export const NeuralSimulatorModule: React.FC = () => {
       performLogisticRegressionStep();
     }
 
+    const theme = getCanvasTheme(canvasAtmosphere);
     const w1 = logregW1 || 1.5;
     const b = logregBiasB;
     const thresh = logregThreshold;
-    const boxW = 460;
-    const boxH = 240;
+    const boxW = Math.min(840, Math.max(380, _w * 0.88));
+    const boxH = Math.min(500, Math.max(260, _h * 0.76));
     const originX = cx - boxW / 2;
     const originY = cy - boxH / 2;
 
     // Background Card
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-    ctx.strokeStyle = 'rgba(51, 65, 85, 0.8)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(originX, originY, boxW, boxH, 12);
-    ctx.fill();
-    ctx.stroke();
+    drawDiagramCard(ctx, originX, originY, boxW, boxH, theme, '📈 1D LOGISTIC SIGMOID CURVE & DECISION BOUNDARY');
 
     // Compute Critical Decision Split Point: z* = logit(T) -> x* = (logit(T) - b) / w1
     const logitT = Math.log(Math.max(0.01, thresh) / (1 - Math.max(0.01, thresh) + 1e-6));
     const xStar = (logitT - b) / (w1 || 1e-6);
 
+    // Plot Geometry
+    const plotL = originX + 50;
+    const plotR = originX + boxW - 30;
+    const plotT = originY + 45;
+    const plotB = originY + boxH - 45;
+    const plotW = plotR - plotL;
+    const plotH = plotB - plotT;
+
     // Map 1D coord to Canvas: x in [-3, 3] -> pixelX, P in [0, 1] -> pixelY
-    const toPx = (xVal: number) => originX + 40 + ((xVal + 3) / 6) * (boxW - 80);
-    const toPy = (pVal: number) => originY + boxH - 35 - pVal * (boxH - 70);
+    const toPx = (xVal: number) => plotL + ((xVal + 3) / 6) * plotW;
+    const toPy = (pVal: number) => plotB - pVal * plotH;
 
-    const splitPx = Math.max(originX + 40, Math.min(originX + boxW - 40, toPx(xStar)));
+    const splitPx = Math.max(plotL, Math.min(plotR, toPx(xStar)));
 
-    // Shaded Classification Regions
-    // Class 0 Region (Left: P < T)
-    ctx.fillStyle = 'rgba(239, 68, 68, 0.1)';
-    ctx.fillRect(originX + 40, originY + 30, splitPx - (originX + 40), boxH - 65);
-    ctx.fillStyle = '#ef4444';
-    ctx.font = 'bold 11px monospace';
-    ctx.fillText("Class '0' Region (P < T)", originX + 50, originY + 50);
+    // Strict boundary clipping for 1D curve and regions
+    withPlotBoxClip(ctx, plotL, plotT, plotW, plotH, 6, () => {
+      // Inner Plot Background
+      ctx.fillStyle = theme.plotBoxBg;
+      ctx.fillRect(plotL, plotT, plotW, plotH);
 
-    // Class 1 Region (Right: P >= T)
-    ctx.fillStyle = 'rgba(56, 189, 248, 0.1)';
-    ctx.fillRect(splitPx, originY + 30, originX + boxW - 40 - splitPx, boxH - 65);
-    ctx.fillStyle = '#38bdf8';
-    ctx.fillText("Class '1' Region (P ≥ T)", splitPx + 15, originY + 50);
+      // Shaded Classification Regions
+      // Class 0 Region (Left: P < T)
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.12)';
+      ctx.fillRect(plotL, plotT, splitPx - plotL, plotH);
 
-    // Grid lines & Axes
-    ctx.strokeStyle = 'rgba(51, 65, 85, 0.5)';
-    ctx.lineWidth = 1;
-    [0.0, 0.25, 0.5, 0.75, 1.0].forEach(pVal => {
-      const py = toPy(pVal);
-      ctx.beginPath();
-      ctx.moveTo(originX + 40, py);
-      ctx.lineTo(originX + boxW - 40, py);
-      ctx.stroke();
+      // Class 1 Region (Right: P >= T)
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.12)';
+      ctx.fillRect(splitPx, plotT, plotR - splitPx, plotH);
 
-      ctx.fillStyle = '#94a3b8';
-      ctx.font = '9px monospace';
-      ctx.fillText(pVal.toFixed(2), originX + 12, py + 3);
-    });
-
-    // Horizontal Decision Threshold Line (P = T)
-    const threshPy = toPy(thresh);
-    ctx.strokeStyle = '#34d399';
-    ctx.lineWidth = 1.8;
-    ctx.setLineDash([4, 4]);
-    ctx.beginPath();
-    ctx.moveTo(originX + 40, threshPy);
-    ctx.lineTo(originX + boxW - 40, threshPy);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    ctx.fillStyle = '#34d399';
-    ctx.font = 'bold 10px monospace';
-    ctx.fillText(`Threshold T = ${thresh.toFixed(2)}`, originX + boxW - 145, threshPy - 5);
-
-    // Vertical Decision Boundary Split Line (x = x*)
-    ctx.strokeStyle = '#fbbf24';
-    ctx.lineWidth = 2;
-    ctx.setLineDash([3, 3]);
-    ctx.beginPath();
-    ctx.moveTo(splitPx, originY + 30);
-    ctx.lineTo(splitPx, originY + boxH - 35);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    ctx.fillStyle = '#fbbf24';
-    ctx.fillText(`x* = ${xStar.toFixed(2)}`, splitPx - 25, originY + boxH - 18);
-
-    // Draw Smooth 1D Sigmoid S-Curve
-    ctx.strokeStyle = '#38bdf8';
-    ctx.lineWidth = 3.5;
-    ctx.shadowColor = '#38bdf8';
-    ctx.shadowBlur = 8;
-    ctx.beginPath();
-    for (let xVal = -3.0; xVal <= 3.05; xVal += 0.05) {
-      const z = w1 * xVal + b;
-      const prob = 1 / (1 + Math.exp(-Math.max(-10, Math.min(10, z))));
-      const px = toPx(xVal);
-      const py = toPy(prob);
-      if (xVal === -3.0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
-    }
-    ctx.stroke();
-    ctx.shadowBlur = 0;
-
-    // Mark Intersection Star on Sigmoid Curve
-    const starPy = toPy(thresh);
-    ctx.fillStyle = '#34d399';
-    ctx.beginPath();
-    ctx.arc(splitPx, starPy, 5, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.strokeStyle = '#ffffff';
-    ctx.lineWidth = 2;
-    ctx.stroke();
-
-    // Draw 1D Points at Top (P=1) and Bottom (P=0) with Drop Lines
-    const { points } = stateRef.current;
-    points.forEach(pt => {
-      const ptX = pt.x * 2.0; // scale to [-3, 3]
-      const px = toPx(ptX);
-      const z = w1 * ptX + b;
-      const prob = 1 / (1 + Math.exp(-Math.max(-10, Math.min(10, z))));
-      const curvePy = toPy(prob);
-      const targetPy = toPy(pt.label === 1 ? 1.0 : 0.0);
-
-      // Vertical Drop Line to Curve
-      ctx.strokeStyle = pt.label === 1 ? 'rgba(56, 189, 248, 0.35)' : 'rgba(239, 68, 68, 0.35)';
+      // Grid lines & Axes
+      ctx.strokeStyle = theme.grid;
       ctx.lineWidth = 1;
-      ctx.setLineDash([2, 2]);
+      [0.0, 0.25, 0.5, 0.75, 1.0].forEach(pVal => {
+        const py = toPy(pVal);
+        ctx.beginPath();
+        ctx.moveTo(plotL, py);
+        ctx.lineTo(plotR, py);
+        ctx.stroke();
+      });
+
+      [-3, -2, -1, 0, 1, 2, 3].forEach(xVal => {
+        const gx = toPx(xVal);
+        ctx.beginPath();
+        ctx.moveTo(gx, plotT);
+        ctx.lineTo(gx, plotB);
+        ctx.stroke();
+      });
+
+      // Horizontal Decision Threshold Line (P = T)
+      const threshPy = toPy(thresh);
+      ctx.strokeStyle = theme.accentEmerald;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([4, 4]);
       ctx.beginPath();
-      ctx.moveTo(px, targetPy);
-      ctx.lineTo(px, curvePy);
+      ctx.moveTo(plotL, threshPy);
+      ctx.lineTo(plotR, threshPy);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Point at Top/Bottom rail
-      ctx.fillStyle = pt.label === 1 ? '#38bdf8' : '#ef4444';
+      // Vertical Decision Boundary Split Line (x = x*)
+      ctx.strokeStyle = theme.accentAmber;
+      ctx.lineWidth = 2;
+      ctx.setLineDash([3, 3]);
       ctx.beginPath();
-      ctx.arc(px, targetPy, 4.5, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1;
+      ctx.moveTo(splitPx, plotT);
+      ctx.lineTo(splitPx, plotB);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Draw Smooth 1D Sigmoid S-Curve
+      ctx.strokeStyle = theme.accentCyan;
+      ctx.lineWidth = 3.5;
+      ctx.beginPath();
+      for (let xVal = -3.0; xVal <= 3.05; xVal += 0.04) {
+        const z = w1 * xVal + b;
+        const prob = 1 / (1 + Math.exp(-Math.max(-10, Math.min(10, z))));
+        const px = toPx(xVal);
+        const py = toPy(prob);
+        if (xVal === -3.0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
       ctx.stroke();
 
-      // Point on Sigmoid Curve
-      ctx.fillStyle = '#fbbf24';
+      // Mark Intersection Star on Sigmoid Curve
+      const starPy = toPy(thresh);
+      ctx.fillStyle = theme.accentEmerald;
       ctx.beginPath();
-      ctx.arc(px, curvePy, 2.5, 0, 2 * Math.PI);
+      ctx.arc(splitPx, starPy, 5.5, 0, 2 * Math.PI);
       ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.stroke();
+
+      // Draw 1D Points at Top (P=1) and Bottom (P=0) with Drop Lines
+      const { points } = stateRef.current;
+      points.forEach(pt => {
+        const ptX = pt.x * 2.0; // scale to [-3, 3]
+        const px = toPx(ptX);
+        const z = w1 * ptX + b;
+        const prob = 1 / (1 + Math.exp(-Math.max(-10, Math.min(10, z))));
+        const curvePy = toPy(prob);
+        const targetPy = toPy(pt.label === 1 ? 1.0 : 0.0);
+
+        // Vertical Drop Line to Curve
+        ctx.strokeStyle = pt.label === 1 ? 'rgba(56, 189, 248, 0.45)' : 'rgba(239, 68, 68, 0.45)';
+        ctx.lineWidth = 1;
+        ctx.setLineDash([2, 2]);
+        ctx.beginPath();
+        ctx.moveTo(px, targetPy);
+        ctx.lineTo(px, curvePy);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Point at Top/Bottom rail
+        ctx.fillStyle = pt.label === 1 ? theme.accentCyan : theme.accentRose;
+        ctx.beginPath();
+        ctx.arc(px, targetPy, 4.5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1;
+        ctx.stroke();
+
+        // Point on Sigmoid Curve
+        ctx.fillStyle = theme.accentAmber;
+        ctx.beginPath();
+        ctx.arc(px, curvePy, 3, 0, 2 * Math.PI);
+        ctx.fill();
+      });
     });
 
-    // Title
-    ctx.fillStyle = '#f8fafc';
-    ctx.font = 'bold 12px monospace';
-    ctx.fillText('1D LOGISTIC SIGMOID CURVE:  P(y=1|x) = 1 / (1 + e^{-(wx + b)})', originX + 20, originY + 22);
+    // Outer Axis Labels and Titles
+    [0.0, 0.25, 0.5, 0.75, 1.0].forEach(pVal => {
+      const py = toPy(pVal);
+      ctx.fillStyle = theme.textMuted;
+      ctx.font = '9px monospace';
+      ctx.fillText(pVal.toFixed(2), originX + 16, py + 3);
+    });
+
+    [-3, -2, -1, 0, 1, 2, 3].forEach(xVal => {
+      const gx = toPx(xVal);
+      ctx.fillStyle = theme.textMuted;
+      ctx.font = '9px monospace';
+      ctx.fillText(xVal.toString(), gx - 4, plotB + 16);
+    });
+
+    ctx.fillStyle = theme.accentRose;
+    ctx.font = 'bold 10px sans-serif';
+    ctx.fillText("Class '0' Zone (P < T)", plotL + 10, plotT + 18);
+
+    ctx.fillStyle = theme.accentCyan;
+    ctx.fillText("Class '1' Zone (P ≥ T)", splitPx + 10, plotT + 18);
+
+    ctx.fillStyle = theme.accentEmerald;
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText(`Threshold T = ${thresh.toFixed(2)}`, plotR - 130, toPy(thresh) - 6);
+
+    ctx.fillStyle = theme.accentAmber;
+    ctx.fillText(`Decision Boundary x* = ${xStar.toFixed(2)}`, splitPx - 40, originY + boxH - 12);
   };
 
   // 5C. 2D Probability Continuous Heatmap & Decision Boundary
@@ -3999,6 +4013,7 @@ export const NeuralSimulatorModule: React.FC = () => {
       performLogisticRegressionStep();
     }
 
+    const theme = getCanvasTheme(canvasAtmosphere);
     const { points } = stateRef.current;
     const w1 = logregW1;
     const w2 = logregW2;
@@ -4043,8 +4058,6 @@ export const NeuralSimulatorModule: React.FC = () => {
     // 2. Decision Boundary Line / Contour
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 3.5;
-    ctx.shadowColor = '#ffffff';
-    ctx.shadowBlur = 6;
     ctx.beginPath();
 
     const logitT = Math.log(Math.max(0.01, thresh) / (1 - Math.max(0.01, thresh) + 1e-6));
@@ -4066,53 +4079,64 @@ export const NeuralSimulatorModule: React.FC = () => {
       ctx.lineTo(cx + span * scale, cy - y2 * scale);
     }
     ctx.stroke();
-    ctx.shadowBlur = 0;
 
-    // Normal Gradient Arrow
-    const normLen = 40;
-    const normX = (w1 / Math.hypot(w1, w2 || 1e-6)) * normLen;
-    const normY = (w2 / Math.hypot(w1, w2 || 1e-6)) * normLen;
-    ctx.strokeStyle = '#fbbf24';
+    // 3. Normal Gradient Arrowhead (Steepest Ascent ∇P > 0)
+    const normLen = 45;
+    const hyp = Math.hypot(w1, w2 || 1e-6);
+    const normX = (w1 / hyp) * normLen;
+    const normY = (w2 / hyp) * normLen;
+    const tipX = cx + normX;
+    const tipY = cy - normY;
+
+    ctx.strokeStyle = theme.accentAmber;
     ctx.lineWidth = 2.5;
     ctx.beginPath();
     ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + normX, cy - normY);
+    ctx.lineTo(tipX, tipY);
     ctx.stroke();
 
-    // Data Points
+    // Draw Arrowhead
+    const angle = Math.atan2(-normY, normX);
+    const headLen = 9;
+    ctx.fillStyle = theme.accentAmber;
+    ctx.beginPath();
+    ctx.moveTo(tipX, tipY);
+    ctx.lineTo(tipX - headLen * Math.cos(angle - Math.PI / 6), tipY - headLen * Math.sin(angle - Math.PI / 6));
+    ctx.lineTo(tipX - headLen * Math.cos(angle + Math.PI / 6), tipY - headLen * Math.sin(angle + Math.PI / 6));
+    ctx.closePath();
+    ctx.fill();
+
+    ctx.fillStyle = theme.accentAmber;
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('∇P = w', tipX + 8, tipY + 4);
+
+    // 4. Data Points
     points.forEach(p => {
       const px = cx + p.x * scale;
       const py = cy - p.y * scale;
-      ctx.fillStyle = p.label === 1 ? '#38bdf8' : '#ef4444';
+      ctx.fillStyle = p.label === 1 ? theme.accentCyan : theme.accentRose;
       ctx.beginPath();
-      ctx.arc(px, py, 5, 0, 2 * Math.PI);
+      ctx.arc(px, py, 5.5, 0, 2 * Math.PI);
       ctx.fill();
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 1.5;
       ctx.stroke();
     });
 
-    // Equation Banner
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-    ctx.strokeStyle = 'rgba(51, 65, 85, 0.8)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(cx - 220, 16, 440, 38, 8);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = '#34d399';
+    // 5. Equation Banner
+    drawDiagramCard(ctx, cx - 220, 16, 440, 42, theme);
+    ctx.fillStyle = theme.accentEmerald;
     ctx.font = 'bold 11px monospace';
     ctx.fillText(
       isPoly
-        ? `Polynomial Boundary: σ(${w1.toFixed(2)}x₁ + ${w2.toFixed(2)}x₂ - 1.8‖x‖² + ${b.toFixed(2)}) = ${thresh.toFixed(2)}`
+        ? `Polynomial: σ(${w1.toFixed(2)}x₁ + ${w2.toFixed(2)}x₂ - 1.8‖x‖² + ${b.toFixed(2)}) = ${thresh.toFixed(2)}`
         : `Linear Boundary: w₁x₁ + w₂x₂ + b = logit(${thresh.toFixed(2)})`,
       cx - 200,
-      38
+      40
     );
   };
 
-  // 5D. 3-Class Multinomial Softmax Logistic Regression
+  // 5D. 3-Class Multinomial Softmax Logistic Regression (Dynamic Decision Rays)
   const drawLogregMultinomialSoftmax = (
     ctx: CanvasRenderingContext2D,
     _w: number,
@@ -4126,6 +4150,7 @@ export const NeuralSimulatorModule: React.FC = () => {
       performLogisticRegressionStep();
     }
 
+    const theme = getCanvasTheme(canvasAtmosphere);
     const tau = logregTemperature || 1.0;
     const span = 1.6;
     const step = 0.09;
@@ -4166,22 +4191,68 @@ export const NeuralSimulatorModule: React.FC = () => {
       }
     }
 
-    // 2. Triple Junction Decision Rays (Where 2 classes have equal logit)
+    // 2. Dynamic Triple Junction Decision Boundaries
+    // Solve for (x*, y*) where z0 = z1 = z2
+    // (w01 - w11)x + (w02 - w12)y = -(b0 - b1)
+    // (w01 - w21)x + (w02 - w22)y = -(b0 - b2)
+    const a11 = W[0].w1 - W[1].w1;
+    const a12 = W[0].w2 - W[1].w2;
+    const bVec1 = -(W[0].b - W[1].b);
+
+    const a21 = W[0].w1 - W[2].w1;
+    const a22 = W[0].w2 - W[2].w2;
+    const bVec2 = -(W[0].b - W[2].b);
+
+    const det = a11 * a22 - a12 * a21;
+    let juncX = 0;
+    let juncY = 0;
+    if (Math.abs(det) > 1e-4) {
+      juncX = (bVec1 * a22 - a12 * bVec2) / det;
+      juncY = (a11 * bVec2 - bVec1 * a21) / det;
+    }
+
+    const juncPx = cx + juncX * scale;
+    const juncPy = cy - juncY * scale;
+
+    // Draw dynamic decision rays outward from junction
+    const drawDecisionRay = (wDiffX: number, wDiffY: number, checkCls: number) => {
+      const dir1X = -wDiffY;
+      const dir1Y = wDiffX;
+      const dir2X = wDiffY;
+      const dir2Y = -wDiffX;
+
+      const testX = juncX + dir1X * 0.5;
+      const testY = juncY + dir1Y * 0.5;
+      const zTest0 = W[0].w1 * testX + W[0].w2 * testY + W[0].b;
+      const zTest1 = W[1].w1 * testX + W[1].w2 * testY + W[1].b;
+      const zTest2 = W[2].w1 * testX + W[2].w2 * testY + W[2].b;
+      const testZList = [zTest0, zTest1, zTest2];
+      const maxZ = Math.max(...testZList);
+
+      const chosenDir = testZList[checkCls] < maxZ ? { dx: dir1X, dy: dir1Y } : { dx: dir2X, dy: dir2Y };
+      const mag = Math.hypot(chosenDir.dx, chosenDir.dy) || 1;
+      const rayLen = 2.0;
+
+      ctx.beginPath();
+      ctx.moveTo(juncPx, juncPy);
+      ctx.lineTo(cx + (juncX + (chosenDir.dx / mag) * rayLen) * scale, cy - (juncY + (chosenDir.dy / mag) * rayLen) * scale);
+      ctx.stroke();
+    };
+
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2.5;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(cx + 1.4 * scale, cy + 1.2 * scale); // Ray 0-2
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(cx - 1.4 * scale, cy + 1.2 * scale); // Ray 1-2
-    ctx.moveTo(cx, cy);
-    ctx.lineTo(cx, cy - 1.6 * scale);               // Ray 0-1
-    ctx.stroke();
+
+    // Ray separating Class 0 and Class 1 (away from Class 2)
+    drawDecisionRay(W[0].w1 - W[1].w1, W[0].w2 - W[1].w2, 2);
+    // Ray separating Class 1 and Class 2 (away from Class 0)
+    drawDecisionRay(W[1].w1 - W[2].w1, W[1].w2 - W[2].w2, 0);
+    // Ray separating Class 2 and Class 0 (away from Class 1)
+    drawDecisionRay(W[2].w1 - W[0].w1, W[2].w2 - W[0].w2, 1);
 
     // Central Triple-Junction Point
-    ctx.fillStyle = '#fbbf24';
+    ctx.fillStyle = theme.accentAmber;
     ctx.beginPath();
-    ctx.arc(cx, cy, 6, 0, 2 * Math.PI);
+    ctx.arc(juncPx, juncPy, 6, 0, 2 * Math.PI);
     ctx.fill();
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2;
@@ -4189,21 +4260,18 @@ export const NeuralSimulatorModule: React.FC = () => {
 
     // 3. Multi-Class Sample Data Points
     const multiPoints = [
-      // Class 0 (Red - Right/Bottom)
       { x: 0.8, y: -0.6, label: 0 },
       { x: 0.9, y: -0.9, label: 0 },
       { x: 0.6, y: -1.1, label: 0 },
       { x: 1.1, y: -0.4, label: 0 },
       { x: 1.2, y: -0.8, label: 0 },
       { x: 0.7, y: -1.3, label: 0 },
-      // Class 1 (Blue - Left/Bottom)
       { x: -0.8, y: -0.7, label: 1 },
       { x: -1.0, y: -1.0, label: 1 },
       { x: -0.6, y: -1.2, label: 1 },
       { x: -1.1, y: -0.5, label: 1 },
       { x: -1.2, y: -0.9, label: 1 },
       { x: -0.7, y: -1.4, label: 1 },
-      // Class 2 (Green - Top)
       { x: 0.0, y: 0.9, label: 2 },
       { x: 0.3, y: 1.1, label: 2 },
       { x: -0.3, y: 1.0, label: 2 },
@@ -4215,7 +4283,7 @@ export const NeuralSimulatorModule: React.FC = () => {
     multiPoints.forEach(pt => {
       const px = cx + pt.x * scale;
       const py = cy - pt.y * scale;
-      ctx.fillStyle = pt.label === 0 ? '#ef4444' : pt.label === 1 ? '#3b82f6' : '#10b981';
+      ctx.fillStyle = pt.label === 0 ? theme.accentRose : pt.label === 1 ? theme.accentCyan : theme.accentEmerald;
       ctx.beginPath();
       if (pt.label === 0) {
         ctx.arc(px, py, 5.5, 0, 2 * Math.PI);
@@ -4239,25 +4307,18 @@ export const NeuralSimulatorModule: React.FC = () => {
 
     // Region Labels
     ctx.font = 'bold 11px sans-serif';
-    ctx.fillStyle = '#ef4444';
+    ctx.fillStyle = theme.accentRose;
     ctx.fillText('🔴 Class 0 (P₀ > P₁, P₂)', cx + 0.5 * scale, cy + 0.9 * scale);
-    ctx.fillStyle = '#38bdf8';
+    ctx.fillStyle = theme.accentCyan;
     ctx.fillText('🔷 Class 1 (P₁ > P₀, P₂)', cx - 1.3 * scale, cy + 0.9 * scale);
-    ctx.fillStyle = '#34d399';
+    ctx.fillStyle = theme.accentEmerald;
     ctx.fillText('🔺 Class 2 (P₂ > P₀, P₁)', cx - 0.4 * scale, cy - 1.2 * scale);
 
     // Banner
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-    ctx.strokeStyle = 'rgba(51, 65, 85, 0.8)';
-    ctx.lineWidth = 1;
-    ctx.beginPath();
-    ctx.roundRect(cx - 230, 16, 460, 38, 8);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = '#38bdf8';
+    drawDiagramCard(ctx, cx - 230, 16, 460, 42, theme);
+    ctx.fillStyle = theme.accentCyan;
     ctx.font = 'bold 11px monospace';
-    ctx.fillText('MULTINOMIAL SOFTMAX: P(y=k|x) = e^{w_k^T x + b_k} / Σ e^{w_j^T x + b_j}', cx - 210, 38);
+    ctx.fillText('MULTINOMIAL SOFTMAX: P(y=k|x) = e^{w_k^T x + b_k} / Σ e^{w_j^T x + b_j}', cx - 210, 40);
   };
 
   // 5E. Logistic Regression Sigmoid Probability S-Curve vs Binary Cross-Entropy Log-Loss Dual Penalty Curve
@@ -4274,10 +4335,11 @@ export const NeuralSimulatorModule: React.FC = () => {
       performLogisticRegressionStep();
     }
 
-    const panelW = Math.min(480, w * 0.47);
-    const panelH = 340;
-    const leftX = cx - panelW - 14;
-    const rightX = cx + 14;
+    const theme = getCanvasTheme(canvasAtmosphere);
+    const panelW = Math.min(540, Math.max(320, (w - 60) / 2));
+    const panelH = Math.min(480, Math.max(280, _h * 0.78));
+    const leftX = cx - panelW - 12;
+    const rightX = cx + 12;
     const topY = cy - panelH / 2;
 
     const thresh = logregThreshold;
@@ -4288,22 +4350,12 @@ export const NeuralSimulatorModule: React.FC = () => {
     const gradientDz = predProb - targetY; // dJ/dz = y_hat - y
 
     // ─── 1. LEFT PANEL: SIGMOID PROBABILITY S-CURVE (σ(z) = 1/(1+e^-z)) ───
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-    ctx.strokeStyle = 'rgba(51, 65, 85, 0.9)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.roundRect(leftX, topY, panelW, panelH, 12);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = '#38bdf8';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText('📈 SIGMOID PROBABILITY S-CURVE: ŷ = σ(z)', leftX + 16, topY + 24);
+    drawDiagramCard(ctx, leftX, topY, panelW, panelH, theme, '📈 SIGMOID PROBABILITY S-CURVE');
 
     // Subtitle formula
-    ctx.fillStyle = '#94a3b8';
+    ctx.fillStyle = theme.textMuted;
     ctx.font = '10px monospace';
-    ctx.fillText('σ(z) = 1 / (1 + e^{-(w₁x + b)})', leftX + 16, topY + 40);
+    ctx.fillText('ŷ = σ(z) = 1 / (1 + e^{-(w₁x + b)})', leftX + 16, topY + 44);
 
     // Plot geometry for Left Panel
     const plotL = leftX + 46;
@@ -4321,124 +4373,134 @@ export const NeuralSimulatorModule: React.FC = () => {
     const zStar = Math.log(Math.max(0.02, Math.min(0.98, thresh)) / (1 - Math.max(0.02, Math.min(0.98, thresh))));
     const splitX = Math.max(plotL, Math.min(plotR, mapZToX(zStar)));
 
-    // Decision region tints
-    ctx.fillStyle = 'rgba(239, 68, 68, 0.08)';
-    ctx.fillRect(plotL, plotT, splitX - plotL, plotH);
-    ctx.fillStyle = '#f87171';
-    ctx.font = 'bold 9px sans-serif';
-    ctx.fillText(`CLASS '0' ZONE (ŷ < ${thresh.toFixed(2)})`, plotL + 8, plotT + 16);
+    // Strict boundary clipping for Left Panel
+    withPlotBoxClip(ctx, plotL, plotT, plotW, plotH, 6, () => {
+      ctx.fillStyle = theme.plotBoxBg;
+      ctx.fillRect(plotL, plotT, plotW, plotH);
 
-    ctx.fillStyle = 'rgba(52, 211, 153, 0.08)';
-    ctx.fillRect(splitX, plotT, plotR - splitX, plotH);
-    ctx.fillStyle = '#34d399';
-    ctx.fillText(`CLASS '1' ZONE (ŷ ≥ ${thresh.toFixed(2)})`, splitX + 8, plotT + 16);
+      // Decision region tints
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.12)';
+      ctx.fillRect(plotL, plotT, splitX - plotL, plotH);
 
-    // Grid lines
-    ctx.strokeStyle = 'rgba(51, 65, 85, 0.5)';
-    ctx.lineWidth = 1;
+      ctx.fillStyle = 'rgba(52, 211, 153, 0.12)';
+      ctx.fillRect(splitX, plotT, plotR - splitX, plotH);
+
+      // Grid lines
+      ctx.strokeStyle = theme.grid;
+      ctx.lineWidth = 1;
+      [0.0, 0.25, 0.5, 0.75, 1.0].forEach(pVal => {
+        const gy = mapPToY(pVal);
+        ctx.beginPath();
+        ctx.moveTo(plotL, gy);
+        ctx.lineTo(plotR, gy);
+        ctx.stroke();
+      });
+
+      [-6, -4, -2, 0, 2, 4, 6].forEach(zVal => {
+        const gx = mapZToX(zVal);
+        ctx.beginPath();
+        ctx.moveTo(gx, plotT);
+        ctx.lineTo(gx, plotB);
+        ctx.stroke();
+      });
+
+      // Decision Threshold Line
+      const threshY = mapPToY(thresh);
+      ctx.strokeStyle = theme.accentAmber;
+      ctx.setLineDash([4, 4]);
+      ctx.lineWidth = 1.5;
+      ctx.beginPath();
+      ctx.moveTo(plotL, threshY);
+      ctx.lineTo(plotR, threshY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Draw Sigmoid S-Curve
+      ctx.strokeStyle = theme.accentCyan;
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      for (let sx = 0; sx <= plotW; sx += 2) {
+        const curZ = -6 + (sx / plotW) * 12;
+        const curSig = 1 / (1 + Math.exp(-curZ));
+        const px = plotL + sx;
+        const py = mapPToY(curSig);
+        if (sx === 0) ctx.moveTo(px, py);
+        else ctx.lineTo(px, py);
+      }
+      ctx.stroke();
+
+      // Active Operating Point Bead on Sigmoid Curve
+      const curPtX = mapZToX(testZ);
+      const curPtY = mapPToY(predProb);
+
+      // Drop rays
+      ctx.strokeStyle = theme.accentAmber;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.moveTo(curPtX, plotB);
+      ctx.lineTo(curPtX, curPtY);
+      ctx.lineTo(plotL, curPtY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Pulsing bead
+      const pulseR = 6 + Math.sin(localFrame * 0.1) * 1.5;
+      ctx.fillStyle = theme.accentAmber;
+      ctx.beginPath();
+      ctx.arc(curPtX, curPtY, pulseR, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+
+    // Left Panel Axis Labels
     [0.0, 0.25, 0.5, 0.75, 1.0].forEach(pVal => {
       const gy = mapPToY(pVal);
-      ctx.beginPath();
-      ctx.moveTo(plotL, gy);
-      ctx.lineTo(plotR, gy);
-      ctx.stroke();
-      ctx.fillStyle = '#64748b';
+      ctx.fillStyle = theme.textMuted;
       ctx.font = '9px monospace';
-      ctx.fillText(pVal.toFixed(2), leftX + 18, gy + 3);
+      ctx.fillText(pVal.toFixed(2), leftX + 16, gy + 3);
     });
 
     [-6, -4, -2, 0, 2, 4, 6].forEach(zVal => {
       const gx = mapZToX(zVal);
-      ctx.beginPath();
-      ctx.moveTo(gx, plotT);
-      ctx.lineTo(gx, plotB);
-      ctx.stroke();
-      ctx.fillStyle = '#64748b';
+      ctx.fillStyle = theme.textMuted;
       ctx.font = '9px monospace';
       ctx.fillText(zVal.toString(), gx - 4, plotB + 16);
     });
 
-    // Decision Threshold Line
-    const threshY = mapPToY(thresh);
-    ctx.strokeStyle = '#f59e0b';
-    ctx.setLineDash([4, 4]);
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.moveTo(plotL, threshY);
-    ctx.lineTo(plotR, threshY);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.fillStyle = '#fbbf24';
+    ctx.fillStyle = theme.accentRose;
+    ctx.font = 'bold 9px sans-serif';
+    ctx.fillText(`CLASS '0' ZONE (ŷ < ${thresh.toFixed(2)})`, plotL + 8, plotT + 16);
+
+    ctx.fillStyle = theme.accentEmerald;
+    ctx.fillText(`CLASS '1' ZONE (ŷ ≥ ${thresh.toFixed(2)})`, splitX + 8, plotT + 16);
+
+    ctx.fillStyle = theme.accentAmber;
     ctx.font = 'bold 9px monospace';
-    ctx.fillText(`Threshold T = ${thresh.toFixed(2)}`, plotR - 105, threshY - 4);
-
-    // Draw Sigmoid S-Curve
-    ctx.strokeStyle = '#38bdf8';
-    ctx.lineWidth = 3;
-    ctx.beginPath();
-    for (let sx = 0; sx <= plotW; sx += 2) {
-      const curZ = -6 + (sx / plotW) * 12;
-      const curSig = 1 / (1 + Math.exp(-curZ));
-      const px = plotL + sx;
-      const py = mapPToY(curSig);
-      if (sx === 0) ctx.moveTo(px, py);
-      else ctx.lineTo(px, py);
-    }
-    ctx.stroke();
-
-    // Active Operating Point Bead on Sigmoid Curve
-    const curPtX = mapZToX(testZ);
-    const curPtY = mapPToY(predProb);
-
-    // Drop rays
-    ctx.strokeStyle = 'rgba(251, 191, 36, 0.6)';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([2, 2]);
-    ctx.beginPath();
-    ctx.moveTo(curPtX, plotB);
-    ctx.lineTo(curPtX, curPtY);
-    ctx.lineTo(plotL, curPtY);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    ctx.fillStyle = '#fbbf24';
-    ctx.shadowColor = '#fbbf24';
-    ctx.shadowBlur = 10;
-    ctx.beginPath();
-    ctx.arc(curPtX, curPtY, 7, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.shadowBlur = 0;
+    ctx.fillText(`Threshold T = ${thresh.toFixed(2)}`, plotR - 105, mapPToY(thresh) - 4);
 
     // Telemetry Badge on Left Panel
-    ctx.fillStyle = 'rgba(30, 41, 59, 0.85)';
-    ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
+    ctx.fillStyle = theme.cardBg;
+    ctx.strokeStyle = theme.cardBorder;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.roundRect(leftX + 16, plotB + 22, panelW - 32, 22, 6);
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = '#f8fafc';
+    ctx.fillStyle = theme.textPrimary;
     ctx.font = 'bold 9px monospace';
-    ctx.fillText(`Input Logit z = ${testZ.toFixed(2)}  ➔  ŷ = P(y=1) = ${(predProb * 100).toFixed(1)}%  [${predProb >= thresh ? 'Class 1' : 'Class 0'}]`, leftX + 24, plotB + 36);
+    ctx.fillText(`Logit z = ${testZ.toFixed(2)} ➔ ŷ = ${(predProb * 100).toFixed(1)}% [${predProb >= thresh ? 'Class 1' : 'Class 0'}]`, leftX + 24, plotB + 36);
 
     // ─── 2. RIGHT PANEL: BINARY CROSS-ENTROPY / LOG-LOSS DUAL CURVE ───
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-    ctx.strokeStyle = 'rgba(51, 65, 85, 0.9)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.roundRect(rightX, topY, panelW, panelH, 12);
-    ctx.fill();
-    ctx.stroke();
-
-    ctx.fillStyle = '#fbbf24';
-    ctx.font = 'bold 12px sans-serif';
-    ctx.fillText('📉 LOG-LOSS PENALTY: J(θ) = -log(ŷ) or -log(1-ŷ)', rightX + 16, topY + 24);
+    drawDiagramCard(ctx, rightX, topY, panelW, panelH, theme, '📉 BCE LOG-LOSS PENALTY');
 
     // Subtitle formula
-    ctx.fillStyle = '#94a3b8';
+    ctx.fillStyle = theme.textMuted;
     ctx.font = '10px monospace';
-    ctx.fillText(`Target: y=${targetY} | J = -[y·log(ŷ) + (1-y)·log(1-ŷ)]`, rightX + 16, topY + 40);
+    ctx.fillText(`Target: y=${targetY} | J(θ) = -[y·log(ŷ) + (1-y)·log(1-ŷ)]`, rightX + 16, topY + 44);
 
     // Plot geometry for Right Panel
     const rPlotL = rightX + 46;
@@ -4452,105 +4514,121 @@ export const NeuralSimulatorModule: React.FC = () => {
     const mapYHatToX = (yHat: number) => rPlotL + yHat * rPlotW;
     const mapLossToY = (lossVal: number) => rPlotB - (Math.min(4.5, lossVal) / 4.5) * rPlotH;
 
-    // Grid lines for Right Panel
-    ctx.strokeStyle = 'rgba(51, 65, 85, 0.5)';
-    ctx.lineWidth = 1;
+    // Strict boundary clipping for Right Panel (Eliminates vertical loss explosion overflow!)
+    withPlotBoxClip(ctx, rPlotL, rPlotT, rPlotW, rPlotH, 6, () => {
+      ctx.fillStyle = theme.plotBoxBg;
+      ctx.fillRect(rPlotL, rPlotT, rPlotW, rPlotH);
+
+      // Grid lines for Right Panel
+      ctx.strokeStyle = theme.grid;
+      ctx.lineWidth = 1;
+      [0, 1, 2, 3, 4].forEach(lVal => {
+        const gy = mapLossToY(lVal);
+        ctx.beginPath();
+        ctx.moveTo(rPlotL, gy);
+        ctx.lineTo(rPlotR, gy);
+        ctx.stroke();
+      });
+
+      [0.0, 0.2, 0.4, 0.6, 0.8, 1.0].forEach(yVal => {
+        const gx = mapYHatToX(yVal);
+        ctx.beginPath();
+        ctx.moveTo(gx, rPlotT);
+        ctx.lineTo(gx, rPlotB);
+        ctx.stroke();
+      });
+
+      // Plot Curve 1: y = 1 -> J = -log(ŷ) [Solid Emerald Green]
+      ctx.strokeStyle = targetY === 1 ? theme.accentEmerald : 'rgba(52, 211, 153, 0.35)';
+      ctx.lineWidth = targetY === 1 ? 3 : 1.5;
+      if (targetY !== 1) ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      for (let px = 2; px <= rPlotW; px += 2) {
+        const yHat = px / rPlotW;
+        const lossVal = -Math.log(Math.max(1e-4, yHat));
+        const cxPos = rPlotL + px;
+        const cyPos = mapLossToY(lossVal);
+        if (px === 2) ctx.moveTo(cxPos, cyPos);
+        else ctx.lineTo(cxPos, cyPos);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Plot Curve 2: y = 0 -> J = -log(1 - ŷ) [Amber/Orange]
+      ctx.strokeStyle = targetY === 0 ? theme.accentAmber : 'rgba(245, 158, 11, 0.35)';
+      ctx.lineWidth = targetY === 0 ? 3 : 1.5;
+      if (targetY !== 0) ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      for (let px = 0; px <= rPlotW - 2; px += 2) {
+        const yHat = px / rPlotW;
+        const lossVal = -Math.log(Math.max(1e-4, 1 - yHat));
+        const cxPos = rPlotL + px;
+        const cyPos = mapLossToY(lossVal);
+        if (px === 0) ctx.moveTo(cxPos, cyPos);
+        else ctx.lineTo(cxPos, cyPos);
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      // Active Loss Operating Point on Right Curve
+      const activeLossX = mapYHatToX(predProb);
+      const activeLossY = mapLossToY(logLoss);
+
+      ctx.strokeStyle = targetY === 1 ? theme.accentEmerald : theme.accentAmber;
+      ctx.lineWidth = 1.5;
+      ctx.setLineDash([2, 2]);
+      ctx.beginPath();
+      ctx.moveTo(activeLossX, rPlotB);
+      ctx.lineTo(activeLossX, activeLossY);
+      ctx.lineTo(rPlotL, activeLossY);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      const pulseR = 6 + Math.sin(localFrame * 0.1) * 1.5;
+      ctx.fillStyle = logLoss > 2.0 ? theme.accentRose : targetY === 1 ? theme.accentEmerald : theme.accentAmber;
+      ctx.beginPath();
+      ctx.arc(activeLossX, activeLossY, pulseR, 0, 2 * Math.PI);
+      ctx.fill();
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+    });
+
+    // Right Panel Axis Labels
     [0, 1, 2, 3, 4].forEach(lVal => {
       const gy = mapLossToY(lVal);
-      ctx.beginPath();
-      ctx.moveTo(rPlotL, gy);
-      ctx.lineTo(rPlotR, gy);
-      ctx.stroke();
-      ctx.fillStyle = '#64748b';
+      ctx.fillStyle = theme.textMuted;
       ctx.font = '9px monospace';
       ctx.fillText(`J=${lVal}`, rightX + 16, gy + 3);
     });
 
     [0.0, 0.2, 0.4, 0.6, 0.8, 1.0].forEach(yVal => {
       const gx = mapYHatToX(yVal);
-      ctx.beginPath();
-      ctx.moveTo(gx, rPlotT);
-      ctx.lineTo(gx, rPlotB);
-      ctx.stroke();
-      ctx.fillStyle = '#64748b';
+      ctx.fillStyle = theme.textMuted;
       ctx.font = '9px monospace';
       ctx.fillText(yVal.toFixed(1), gx - 8, rPlotB + 16);
     });
 
-    // Plot Curve 1: y = 1 -> J = -log(ŷ) [Solid Emerald Green]
-    ctx.strokeStyle = targetY === 1 ? '#34d399' : 'rgba(52, 211, 153, 0.35)';
-    ctx.lineWidth = targetY === 1 ? 3 : 1.5;
-    if (targetY !== 1) ctx.setLineDash([3, 3]);
-    ctx.beginPath();
-    for (let px = 2; px <= rPlotW; px += 2) {
-      const yHat = px / rPlotW;
-      const lossVal = -Math.log(Math.max(1e-4, yHat));
-      const cxPos = rPlotL + px;
-      const cyPos = mapLossToY(lossVal);
-      if (px === 2) ctx.moveTo(cxPos, cyPos);
-      else ctx.lineTo(cxPos, cyPos);
-    }
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    // Plot Curve 2: y = 0 -> J = -log(1 - ŷ) [Amber/Orange]
-    ctx.strokeStyle = targetY === 0 ? '#f59e0b' : 'rgba(245, 158, 11, 0.35)';
-    ctx.lineWidth = targetY === 0 ? 3 : 1.5;
-    if (targetY !== 0) ctx.setLineDash([3, 3]);
-    ctx.beginPath();
-    for (let px = 0; px <= rPlotW - 2; px += 2) {
-      const yHat = px / rPlotW;
-      const lossVal = -Math.log(Math.max(1e-4, 1 - yHat));
-      const cxPos = rPlotL + px;
-      const cyPos = mapLossToY(lossVal);
-      if (px === 0) ctx.moveTo(cxPos, cyPos);
-      else ctx.lineTo(cxPos, cyPos);
-    }
-    ctx.stroke();
-    ctx.setLineDash([]);
-
     // Curve Legend Badges
-    ctx.fillStyle = '#34d399';
+    ctx.fillStyle = theme.accentEmerald;
     ctx.font = 'bold 9px monospace';
     ctx.fillText('— y=1: J = -log(ŷ)', rPlotR - 130, rPlotT + 14);
 
-    ctx.fillStyle = '#fbbf24';
+    ctx.fillStyle = theme.accentAmber;
     ctx.fillText('— y=0: J = -log(1-ŷ)', rPlotR - 130, rPlotT + 28);
 
-    // Active Loss Operating Point on Right Curve
-    const activeLossX = mapYHatToX(predProb);
-    const activeLossY = mapLossToY(logLoss);
-
-    ctx.strokeStyle = targetY === 1 ? '#34d399' : '#fbbf24';
-    ctx.lineWidth = 1.5;
-    ctx.setLineDash([2, 2]);
-    ctx.beginPath();
-    ctx.moveTo(activeLossX, rPlotB);
-    ctx.lineTo(activeLossX, activeLossY);
-    ctx.lineTo(rPlotL, activeLossY);
-    ctx.stroke();
-    ctx.setLineDash([]);
-
-    ctx.fillStyle = logLoss > 2.0 ? '#f43f5e' : targetY === 1 ? '#34d399' : '#fbbf24';
-    ctx.shadowColor = ctx.fillStyle;
-    ctx.shadowBlur = 10;
-    ctx.beginPath();
-    ctx.arc(activeLossX, activeLossY, 7, 0, 2 * Math.PI);
-    ctx.fill();
-    ctx.shadowBlur = 0;
-
     // Telemetry Badge on Right Panel
-    ctx.fillStyle = 'rgba(30, 41, 59, 0.85)';
-    ctx.strokeStyle = logLoss > 2.0 ? 'rgba(244, 63, 94, 0.6)' : 'rgba(52, 211, 153, 0.4)';
+    ctx.fillStyle = theme.cardBg;
+    ctx.strokeStyle = logLoss > 2.0 ? theme.accentRose : theme.cardBorder;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.roundRect(rightX + 16, rPlotB + 22, panelW - 32, 22, 6);
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = logLoss > 2.0 ? '#f87171' : '#f8fafc';
+    ctx.fillStyle = logLoss > 2.0 ? theme.accentRose : theme.textPrimary;
     ctx.font = 'bold 9px monospace';
-    ctx.fillText(`Active Loss J = ${logLoss.toFixed(4)}  |  ∂J/∂z = ${gradientDz >= 0 ? '+' : ''}${gradientDz.toFixed(3)} ${logLoss > 2.0 ? '⚠️ HIGH PENALTY' : '✓ LOW LOSS'}`, rightX + 24, rPlotB + 36);
+    ctx.fillText(`Loss J = ${logLoss.toFixed(4)} | ∂J/∂z = ${gradientDz >= 0 ? '+' : ''}${gradientDz.toFixed(3)} ${logLoss > 2.0 ? '⚠️ HIGH LOSS' : '✓ LOW LOSS'}`, rightX + 24, rPlotB + 36);
   };
 
   // Master Switch for Logistic Regression
@@ -4578,7 +4656,7 @@ export const NeuralSimulatorModule: React.FC = () => {
 
   // ─── 6. Support Vector Machine (SVM) Canvas Engine (2D Kernels, 1D Parabola, 3D Kernel Trick) ───
 
-  // 6A. 2D Kernels Renderer (Linear, Polynomial, RBF, Sigmoid)
+  // 6A. 2D Kernels Renderer (Linear, Polynomial, RBF, Sigmoid) with Dynamic Margin Band & Pulsing SV Halos
   const drawSvm2dKernels = (
     ctx: CanvasRenderingContext2D,
     _w: number,
@@ -4592,6 +4670,7 @@ export const NeuralSimulatorModule: React.FC = () => {
       performSvmStep();
     }
 
+    const theme = getCanvasTheme(canvasAtmosphere);
     const { points } = stateRef.current;
     const pts = points.length > 0 ? points : [
       { x: -0.8, y: 0.6, label: 1 }, { x: -0.6, y: 0.8, label: 1 }, { x: -0.4, y: 0.9, label: 1 },
@@ -4631,7 +4710,7 @@ export const NeuralSimulatorModule: React.FC = () => {
     };
 
     // 1. Grid Background Evaluation (Marching Squares / Shading)
-    const gridRes = 32;
+    const gridRes = 36;
     const minX = -1.8;
     const maxX = 1.8;
     const minY = -1.8;
@@ -4649,7 +4728,7 @@ export const NeuralSimulatorModule: React.FC = () => {
       }
     }
 
-    // Soft Dual-Color Shading
+    // Soft Dual-Color Shading & Margin Corridor Glow
     for (let i = 0; i < gridRes; i++) {
       const gx1 = minX + i * stepX;
       const sx1 = cx + gx1 * scale;
@@ -4661,10 +4740,18 @@ export const NeuralSimulatorModule: React.FC = () => {
         const sh = stepY * scale;
 
         const avgScore = (gridScores[i][j] + gridScores[i + 1][j] + gridScores[i][j + 1] + gridScores[i + 1][j + 1]) / 4;
-        if (avgScore > 0) {
-          ctx.fillStyle = `rgba(56, 189, 248, ${Math.min(0.18, 0.04 + Math.abs(avgScore) * 0.05)})`;
+        const absScore = Math.abs(avgScore);
+
+        if (absScore <= 1.0) {
+          // Inside Margin Corridor [-1, +1]
+          const corridorGlow = 0.10 + 0.08 * (1 - absScore);
+          ctx.fillStyle = `rgba(192, 132, 252, ${corridorGlow})`;
+        } else if (avgScore > 0) {
+          // Positive Region f > +1
+          ctx.fillStyle = `rgba(56, 189, 248, ${Math.min(0.18, 0.04 + absScore * 0.04)})`;
         } else {
-          ctx.fillStyle = `rgba(245, 158, 11, ${Math.min(0.18, 0.04 + Math.abs(avgScore) * 0.05)})`;
+          // Negative Region f < -1
+          ctx.fillStyle = `rgba(245, 158, 11, ${Math.min(0.18, 0.04 + absScore * 0.04)})`;
         }
         ctx.fillRect(sx1, sy1, sw + 0.5, sh + 0.5);
       }
@@ -4725,17 +4812,20 @@ export const NeuralSimulatorModule: React.FC = () => {
     };
 
     // Positive margin f(x) = +1
-    drawContourLevel(1.0, 'rgba(56, 189, 248, 0.65)', 1.8, true);
+    drawContourLevel(1.0, theme.accentCyan, 1.8, true);
     // Negative margin f(x) = -1
-    drawContourLevel(-1.0, 'rgba(245, 158, 11, 0.65)', 1.8, true);
+    drawContourLevel(-1.0, theme.accentAmber, 1.8, true);
     // Decision boundary f(x) = 0 (Luminous Purple)
-    ctx.shadowColor = '#c084fc';
+    ctx.shadowColor = theme.accentPurple;
     ctx.shadowBlur = 10;
-    drawContourLevel(0.0, '#c084fc', 3.5, false);
+    drawContourLevel(0.0, theme.accentPurple, 3.5, false);
     ctx.shadowBlur = 0;
 
-    // 3. Render Data Points & Identify Support Vectors
+    // 3. Render Data Points & Identify Support Vectors & Slack Penalties
     let svCount = 0;
+    let slackViolatorCount = 0;
+    let totalSlack = 0;
+
     pts.forEach(p => {
       const px = cx + p.x * scale;
       const py = cy - p.y * scale;
@@ -4743,20 +4833,23 @@ export const NeuralSimulatorModule: React.FC = () => {
       const y_i = p.label === 1 ? 1.0 : -1.0;
       const marginDist = y_i * score;
       const isSupportVector = marginDist <= 1.15;
+      const isSlackViolator = marginDist < 1.0;
 
       if (isSupportVector) {
         svCount++;
-        // Glowing Halo Ring for Support Vector
+        const pulse = Math.sin(localFrame * 0.12) * 1.5;
+        // Inner Glowing Halo Ring
         ctx.strokeStyle = '#ffffff';
-        ctx.lineWidth = 2.2;
+        ctx.lineWidth = 2.0;
         ctx.beginPath();
-        ctx.arc(px, py, 9.5, 0, 2 * Math.PI);
+        ctx.arc(px, py, 9.5 + pulse, 0, 2 * Math.PI);
         ctx.stroke();
 
-        ctx.strokeStyle = '#c084fc';
+        // Outer Accent Ring
+        ctx.strokeStyle = theme.accentPurple;
         ctx.lineWidth = 1.2;
         ctx.beginPath();
-        ctx.arc(px, py, 14, 0, 2 * Math.PI);
+        ctx.arc(px, py, 14 + pulse * 1.2, 0, 2 * Math.PI);
         ctx.stroke();
 
         ctx.fillStyle = '#ffffff';
@@ -4764,42 +4857,55 @@ export const NeuralSimulatorModule: React.FC = () => {
         ctx.fillText('SV', px + 12, py - 4);
       }
 
-      // Slack error violation line
-      if (marginDist < 1.0) {
-        ctx.strokeStyle = 'rgba(244, 63, 94, 0.7)';
+      // Slack error violation line & indicator (ξ_i = max(0, 1 - y_i·f(x_i)))
+      if (isSlackViolator) {
+        slackViolatorCount++;
+        const xi = 1.0 - marginDist;
+        totalSlack += xi;
+
+        ctx.strokeStyle = theme.accentRose;
         ctx.lineWidth = 1.5;
         ctx.setLineDash([2, 2]);
         ctx.beginPath();
         ctx.moveTo(px, py);
-        ctx.lineTo(px + (p.label === 1 ? -12 : 12), py + (p.label === 1 ? 12 : -12));
+        ctx.lineTo(px + (p.label === 1 ? -14 : 14), py + (p.label === 1 ? 14 : -14));
         ctx.stroke();
         ctx.setLineDash([]);
+
+        ctx.fillStyle = theme.accentRose;
+        ctx.font = 'bold 8px monospace';
+        ctx.fillText(`ξ=${xi.toFixed(2)}`, px + (p.label === 1 ? -32 : 18), py + (p.label === 1 ? 22 : -18));
       }
 
       // Data Point Body
-      ctx.fillStyle = p.label === 1 ? '#38bdf8' : '#fbbf24';
+      ctx.fillStyle = p.label === 1 ? theme.accentCyan : theme.accentAmber;
       ctx.beginPath();
       ctx.arc(px, py, isSupportVector ? 6.5 : 4.5, 0, 2 * Math.PI);
       ctx.fill();
-      ctx.strokeStyle = '#0f172a';
+      ctx.strokeStyle = theme.cardBorder;
       ctx.lineWidth = 1.5;
       ctx.stroke();
     });
 
-    // 4. Header HUD Banner
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
-    ctx.fillRect(cx - 240, 10, 480, 36);
-    ctx.strokeStyle = 'rgba(192, 132, 252, 0.6)';
-    ctx.lineWidth = 1;
-    ctx.strokeRect(cx - 240, 10, 480, 36);
-
-    ctx.fillStyle = '#c084fc';
+    // 4. Header HUD Card
+    drawDiagramCard(ctx, cx - 250, 16, 500, 52, theme);
+    ctx.fillStyle = theme.accentPurple;
     ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center';
     ctx.fillText(
       `SVM KERNEL: ${svmKernel.toUpperCase()} | SVs: ${svCount}/${pts.length} | C=${svmC.toFixed(1)} | γ=${svmGamma.toFixed(2)}${svmKernel === 'poly' ? ` | d=${svmPolyDegree}` : ''}`,
-      cx - 225,
-      32
+      cx,
+      36
     );
+
+    ctx.fillStyle = theme.textMuted;
+    ctx.font = '10px monospace';
+    ctx.fillText(
+      `Margin Width: M ≈ ${(2 / Math.max(0.1, Math.sqrt(svmC * 0.42))).toFixed(2)} | Slack Violators (ξ>0): ${slackViolatorCount} (Total ξ = ${totalSlack.toFixed(2)})`,
+      cx,
+      54
+    );
+    ctx.textAlign = 'left';
   };
 
   // 6B. 1D to 2D Parabola Lifting Renderer (x -> x^2)
@@ -4816,6 +4922,7 @@ export const NeuralSimulatorModule: React.FC = () => {
       performSvmStep();
     }
 
+    const theme = getCanvasTheme(canvasAtmosphere);
     const morph = svmLiftMorph;
     const baselineY = cy + 40;
 
@@ -4831,20 +4938,20 @@ export const NeuralSimulatorModule: React.FC = () => {
     ];
 
     // Draw 1D Horizontal Axis Line
-    ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+    ctx.strokeStyle = theme.axis;
     ctx.lineWidth = 2;
     ctx.beginPath();
     ctx.moveTo(cx - 1.2 * scale, baselineY);
     ctx.lineTo(cx + 1.2 * scale, baselineY);
     ctx.stroke();
 
-    ctx.fillStyle = '#94a3b8';
+    ctx.fillStyle = theme.textMuted;
     ctx.font = '10px monospace';
     ctx.fillText('1D Input Axis (x₁)', cx + 1.2 * scale - 120, baselineY + 18);
 
-    // Parabolic Guide Curve: y = morph * (1.8 * x^2 - 0.42)
+    // Parabolic Guide Curve: y = morph * (1.85 * x^2 - 0.42)
     if (morph > 0.05) {
-      ctx.strokeStyle = 'rgba(192, 132, 252, 0.45)';
+      ctx.strokeStyle = theme.accentPurple;
       ctx.lineWidth = 2;
       ctx.setLineDash([4, 4]);
       ctx.beginPath();
@@ -4858,18 +4965,24 @@ export const NeuralSimulatorModule: React.FC = () => {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Horizontal Separating Hyperplane in 2D: y = c
+      // Horizontal Separating Hyperplane in 2D: y = c with Margin Band
       const cutY = baselineY - morph * (-0.02) * scale;
-      ctx.strokeStyle = '#34d399';
-      ctx.lineWidth = 3;
+      const marginH = 22 * morph;
+
+      // Margin Band
+      ctx.fillStyle = 'rgba(52, 211, 153, 0.12)';
+      ctx.fillRect(cx - 1.2 * scale, cutY - marginH, 2.4 * scale, 2 * marginH);
+
+      ctx.strokeStyle = theme.accentEmerald;
+      ctx.lineWidth = 2.5;
       ctx.beginPath();
       ctx.moveTo(cx - 1.2 * scale, cutY);
       ctx.lineTo(cx + 1.2 * scale, cutY);
       ctx.stroke();
 
-      ctx.fillStyle = '#34d399';
+      ctx.fillStyle = theme.accentEmerald;
       ctx.font = 'bold 11px monospace';
-      ctx.fillText('2D Separating Line: y = c (w₁·x₁ + w₂·x₁² + b = 0)', cx - 180, cutY - 8);
+      ctx.fillText('2D Separating Line: y = c (w₁·x₁ + w₂·x₁² + b = 0)', cx - 180, cutY - 10);
     }
 
     // Render Data Points with Vertical Motion Lift Trails
@@ -4889,14 +5002,14 @@ export const NeuralSimulatorModule: React.FC = () => {
         ctx.stroke();
 
         // 1D Ghost Footprint
-        ctx.fillStyle = 'rgba(71, 85, 105, 0.6)';
+        ctx.fillStyle = theme.textMuted;
         ctx.beginPath();
         ctx.arc(px, py1d, 3.5, 0, 2 * Math.PI);
         ctx.fill();
       }
 
       // Active Transformed Point
-      ctx.fillStyle = p.label === 1 ? '#38bdf8' : '#fbbf24';
+      ctx.fillStyle = p.label === 1 ? theme.accentCyan : theme.accentAmber;
       ctx.beginPath();
       ctx.arc(px, py2d, 6.5, 0, 2 * Math.PI);
       ctx.fill();
@@ -4905,23 +5018,21 @@ export const NeuralSimulatorModule: React.FC = () => {
       ctx.stroke();
     });
 
-    // Pedagogical HUD Box
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-    ctx.fillRect(cx - 260, 10, 520, 48);
-    ctx.strokeStyle = '#c084fc';
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(cx - 260, 10, 520, 48);
-
-    ctx.fillStyle = '#f8fafc';
+    // Pedagogical HUD Card
+    drawDiagramCard(ctx, cx - 260, 16, 520, 52, theme);
+    ctx.fillStyle = theme.accentPurple;
     ctx.font = 'bold 12px sans-serif';
-    ctx.fillText('1D ➔ 2D POLYNOMIAL PARABOLIC LIFTING: φ(x) = (x, x²)', cx - 240, 28);
-    ctx.fillStyle = '#38bdf8';
+    ctx.textAlign = 'center';
+    ctx.fillText('1D ➔ 2D POLYNOMIAL PARABOLIC LIFTING: φ(x) = (x, x²)', cx, 36);
+
+    ctx.fillStyle = theme.accentCyan;
     ctx.font = '11px monospace';
     ctx.fillText(
       morph > 0.5 ? '✓ Linearly Separable in 2D Feature Space!' : '1D: Inseparable Sandwich Trap (No single threshold splits classes)',
-      cx - 240,
-      47
+      cx,
+      54
     );
+    ctx.textAlign = 'left';
   };
 
   // 6C. 2D to 3D Kernel Trick Space Lifting (Concentric Circles -> 3D Paraboloid Bowl)
@@ -4938,6 +5049,7 @@ export const NeuralSimulatorModule: React.FC = () => {
       performSvmStep();
     }
 
+    const theme = getCanvasTheme(canvasAtmosphere);
     const morph = svmLiftMorph;
     const rotX = (svm3dRotX * Math.PI) / 180;
     const rotY = ((svm3dRotY + (simMode === 'autoplay' && isSimulating ? localFrame * 0.3 : 0)) * Math.PI) / 180;
@@ -4967,7 +5079,7 @@ export const NeuralSimulatorModule: React.FC = () => {
     };
 
     // 1. Draw 3D Base Coordinate Box & Floor Grid at z = 0
-    ctx.strokeStyle = 'rgba(71, 85, 105, 0.4)';
+    ctx.strokeStyle = theme.grid;
     ctx.lineWidth = 1;
     const boxR = 1.1;
     for (let gx = -boxR; gx <= boxR; gx += 0.55) {
@@ -4985,20 +5097,20 @@ export const NeuralSimulatorModule: React.FC = () => {
     const origin = project3d(0, 0, 0);
     const axisX = project3d(1.3, 0, 0);
     const axisY = project3d(0, 1.3, 0);
-    const axisZ = project3d(0, 0, 1.3 * morph);
+    const axisZ = project3d(0, 0, 1.3 * Math.max(0.2, morph));
 
-    ctx.strokeStyle = '#ef4444';
+    ctx.strokeStyle = theme.accentRose;
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(origin.sx, origin.sy); ctx.lineTo(axisX.sx, axisX.sy); ctx.stroke();
-    ctx.fillStyle = '#ef4444'; ctx.font = 'bold 10px monospace'; ctx.fillText('X₁', axisX.sx + 4, axisX.sy);
+    ctx.fillStyle = theme.accentRose; ctx.font = 'bold 10px monospace'; ctx.fillText('X₁', axisX.sx + 4, axisX.sy);
 
-    ctx.strokeStyle = '#38bdf8';
+    ctx.strokeStyle = theme.accentCyan;
     ctx.beginPath(); ctx.moveTo(origin.sx, origin.sy); ctx.lineTo(axisY.sx, axisY.sy); ctx.stroke();
-    ctx.fillStyle = '#38bdf8'; ctx.fillText('X₂', axisY.sx + 4, axisY.sy);
+    ctx.fillStyle = theme.accentCyan; ctx.fillText('X₂', axisY.sx + 4, axisY.sy);
 
-    ctx.strokeStyle = '#c084fc';
+    ctx.strokeStyle = theme.accentPurple;
     ctx.beginPath(); ctx.moveTo(origin.sx, origin.sy); ctx.lineTo(axisZ.sx, axisZ.sy); ctx.stroke();
-    ctx.fillStyle = '#c084fc'; ctx.fillText('Z = φ(X₁, X₂)', axisZ.sx + 4, axisZ.sy - 4);
+    ctx.fillStyle = theme.accentPurple; ctx.fillText('Z = φ(X₁, X₂)', axisZ.sx + 4, axisZ.sy - 4);
 
     // 2. 3D Paraboloid Wireframe Bowl: z = morph * (x^2 + y^2)
     if (morph > 0.05) {
@@ -5031,11 +5143,11 @@ export const NeuralSimulatorModule: React.FC = () => {
       ctx.closePath();
       ctx.fill();
 
-      ctx.strokeStyle = '#34d399';
+      ctx.strokeStyle = theme.accentEmerald;
       ctx.lineWidth = 2;
       ctx.stroke();
 
-      ctx.fillStyle = '#34d399';
+      ctx.fillStyle = theme.accentEmerald;
       ctx.font = 'bold 10px monospace';
       ctx.fillText('3D Separating Hyperplane (Flat Sheet)', corner3.sx - 100, corner3.sy - 6);
     }
@@ -5043,13 +5155,13 @@ export const NeuralSimulatorModule: React.FC = () => {
     // 4. Concentric Data Points in 3D
     const concentricPts: { x: number; y: number; label: number }[] = [];
     for (let i = 0; i < 20; i++) {
-      const r = 0.12 + Math.random() * 0.22;
-      const th = Math.random() * 2 * Math.PI;
+      const r = 0.12 + ((i * 17) % 22) * 0.01;
+      const th = (i * 2 * Math.PI) / 20;
       concentricPts.push({ x: r * Math.cos(th), y: r * Math.sin(th), label: 0 });
     }
     for (let i = 0; i < 28; i++) {
-      const r = 0.70 + Math.random() * 0.28;
-      const th = Math.random() * 2 * Math.PI;
+      const r = 0.70 + ((i * 19) % 28) * 0.01;
+      const th = (i * 2 * Math.PI) / 28;
       concentricPts.push({ x: r * Math.cos(th), y: r * Math.sin(th), label: 1 });
     }
 
@@ -5072,14 +5184,14 @@ export const NeuralSimulatorModule: React.FC = () => {
         ctx.stroke();
 
         // 2D Ghost Footprint on floor
-        ctx.fillStyle = 'rgba(71, 85, 105, 0.5)';
+        ctx.fillStyle = theme.textMuted;
         ctx.beginPath();
         ctx.arc(p.floorX, p.floorY, 3, 0, 2 * Math.PI);
         ctx.fill();
       }
 
       // 3D Point
-      ctx.fillStyle = p.label === 1 ? '#38bdf8' : '#fbbf24';
+      ctx.fillStyle = p.label === 1 ? theme.accentCyan : theme.accentAmber;
       ctx.beginPath();
       ctx.arc(p.sx, p.sy, 5.5, 0, 2 * Math.PI);
       ctx.fill();
@@ -5091,7 +5203,7 @@ export const NeuralSimulatorModule: React.FC = () => {
     // 5. Projected 2D Circular Boundary on Floor
     if (morph > 0.05) {
       const circleR = Math.sqrt(Math.max(0.01, svm3dSliceZ / Math.max(0.1, morph)));
-      ctx.strokeStyle = '#c084fc';
+      ctx.strokeStyle = theme.accentPurple;
       ctx.lineWidth = 2.5;
       ctx.setLineDash([4, 4]);
       ctx.beginPath();
@@ -5105,22 +5217,20 @@ export const NeuralSimulatorModule: React.FC = () => {
     }
 
     // Interaction HUD & Orbit Details
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-    ctx.fillRect(cx - 260, 10, 520, 48);
-    ctx.strokeStyle = '#c084fc';
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(cx - 260, 10, 520, 48);
-
-    ctx.fillStyle = '#f8fafc';
+    drawDiagramCard(ctx, cx - 260, 16, 520, 52, theme);
+    ctx.fillStyle = theme.accentPurple;
     ctx.font = 'bold 12px sans-serif';
-    ctx.fillText('2D ➔ 3D KERNEL TRICK: φ(x₁, x₂) = (x₁, x₂, x₁² + x₂²)', cx - 240, 28);
-    ctx.fillStyle = '#38bdf8';
-    ctx.font = '11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('2D ➔ 3D KERNEL TRICK: φ(x₁, x₂) = (x₁, x₂, x₁² + x₂²)', cx, 36);
+
+    ctx.fillStyle = theme.textMuted;
+    ctx.font = '10px monospace';
     ctx.fillText(
-      `🖱️ Drag on canvas to Orbit 3D Box (Pitch: ${svm3dRotX.toFixed(0)}°, Yaw: ${svm3dRotY.toFixed(0)}°) | Slice Z=${svm3dSliceZ.toFixed(2)}`,
-      cx - 240,
-      47
+      `🖱️ Drag Orbit (Pitch: ${svm3dRotX.toFixed(0)}°, Yaw: ${svm3dRotY.toFixed(0)}°) | Slice Z=${svm3dSliceZ.toFixed(2)}`,
+      cx,
+      54
     );
+    ctx.textAlign = 'left';
   };
 
   // Master SVM Router
@@ -6234,146 +6344,175 @@ export const NeuralSimulatorModule: React.FC = () => {
       performGanStep();
     }
 
+    const theme = getCanvasTheme(canvasAtmosphere);
     const { ganParticles } = stateRef.current;
-    const plotW = Math.min(520, w * 0.52);
-    const plotH = Math.min(380, h - 80);
-    const plotX = cx - plotW / 2 - 130;
-    const plotY = cy - plotH / 2 + 10;
 
-    // 1. 2D Discriminator Gradient Vector Field & Manifold Canvas
-    ctx.save();
-    ctx.beginPath();
-    ctx.rect(plotX, plotY, plotW, plotH);
-    ctx.clip();
+    const marginX = 14;
+    const marginY = 14;
+    const gap = 12;
+    const totalW = Math.max(680, w - 2 * marginX);
+    const leftW = Math.floor((totalW - gap) * 0.58);
+    const rightW = totalW - gap - leftW;
+    const cardH = Math.max(480, h - 2 * marginY - 20);
+    const leftX = cx - totalW / 2;
+    const leftY = cy - cardH / 2 + 10;
+    const rightX = leftX + leftW + gap;
+    const rightY = leftY;
 
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-    ctx.fillRect(plotX, plotY, plotW, plotH);
+    // 1. Left Diagram Card: 2D Generative vs. Real Data Space & Gradient Field
+    drawDiagramCard(ctx, leftX, leftY, leftW, cardH, theme, '⚔️ 2D DATA MANIFOLD & SYNTHESIS (∇_x D(x))');
 
-    // Vector Field Arrows for Discriminator Gradient ∇_x D(x)
-    const arrowGrid = 7;
-    for (let r = 0; r < arrowGrid; r++) {
-      for (let c = 0; c < arrowGrid; c++) {
-        const gx = -1.2 + (c / (arrowGrid - 1)) * 2.4;
-        const gy = -1.2 + (r / (arrowGrid - 1)) * 2.4;
-        const px = plotX + ((gx + 1.2) / 2.4) * plotW;
-        const py = plotY + ((-gy + 1.2) / 2.4) * plotH;
+    const plotX = leftX + 10;
+    const plotY = leftY + 36;
+    const plotW = leftW - 20;
+    const plotH = cardH - 46;
 
-        // Gradient points towards real data manifold (radius 0.6 circle)
-        const dCenter = Math.hypot(gx, gy) || 1;
-        const gradX = -((dCenter - 0.6) * (gx / dCenter)) * 14;
-        const gradY = ((dCenter - 0.6) * (gy / dCenter)) * 14;
+    withPlotBoxClip(ctx, plotX, plotY, plotW, plotH, 8, () => {
+      // Vector Field Arrows for Discriminator Gradient ∇_x D(x)
+      const arrowGrid = 9;
+      for (let r = 0; r < arrowGrid; r++) {
+        for (let c = 0; c < arrowGrid; c++) {
+          const gx = -1.2 + (c / (arrowGrid - 1)) * 2.4;
+          const gy = -1.2 + (r / (arrowGrid - 1)) * 2.4;
+          const px = plotX + ((gx + 1.2) / 2.4) * plotW;
+          const py = plotY + ((-gy + 1.2) / 2.4) * plotH;
 
-        ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
-        ctx.lineWidth = 1;
-        ctx.beginPath();
-        ctx.moveTo(px, py);
-        ctx.lineTo(px + gradX, py + gradY);
-        ctx.stroke();
+          // Gradient points towards real data manifold (radius 0.6 circle)
+          const dCenter = Math.hypot(gx, gy) || 1;
+          const gradX = -((dCenter - 0.6) * (gx / dCenter)) * 14;
+          const gradY = ((dCenter - 0.6) * (gy / dCenter)) * 14;
+
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.28)';
+          ctx.lineWidth = 1.2;
+          ctx.beginPath();
+          ctx.moveTo(px, py);
+          ctx.lineTo(px + gradX, py + gradY);
+          ctx.stroke();
+
+          // Arrow tip
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.45)';
+          ctx.beginPath();
+          ctx.arc(px + gradX, py + gradY, 1.8, 0, 2 * Math.PI);
+          ctx.fill();
+        }
       }
-    }
 
-    // Target Real Data Distribution Manifold (Halo Ring)
-    const targetPxX = plotX + plotW / 2;
-    const targetPxY = plotY + plotH / 2;
-    const targetRad = 0.55 * (plotW / 2.4);
+      // Target Real Data Distribution Manifold (Halo Ring)
+      const targetPxX = plotX + plotW / 2;
+      const targetPxY = plotY + plotH / 2;
+      const targetRad = 0.55 * (Math.min(plotW, plotH) / 2.4);
 
-    ctx.strokeStyle = '#38bdf8';
-    ctx.lineWidth = 3;
-    ctx.shadowColor = '#38bdf8';
-    ctx.shadowBlur = 12;
-    ctx.setLineDash([5, 5]);
-    ctx.beginPath();
-    ctx.arc(targetPxX, targetPxY, targetRad, 0, 2 * Math.PI);
-    ctx.stroke();
-    ctx.setLineDash([]);
-    ctx.shadowBlur = 0;
-
-    // Real Data Label
-    ctx.fillStyle = '#38bdf8';
-    ctx.font = 'bold 10px monospace';
-    ctx.fillText('⭐ Target Real Manifold p_data(x)', targetPxX - 85, targetPxY - targetRad - 8);
-
-    // Generator Synthetic Particles G(z) with Drift Trails
-    ganParticles.forEach(p => {
-      const px = plotX + ((p.x + 1.2) / 2.4) * plotW;
-      const py = plotY + ((-p.y + 1.2) / 2.4) * plotH;
-
-      ctx.fillStyle = '#ec4899';
-      ctx.shadowColor = '#ec4899';
-      ctx.shadowBlur = 6;
+      // Pulsing Halo
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#38bdf8';
+      ctx.shadowBlur = 10 + Math.sin(localFrame * 0.1) * 3;
+      ctx.setLineDash([6, 4]);
       ctx.beginPath();
-      ctx.arc(px, py, 5, 0, 2 * Math.PI);
-      ctx.fill();
+      ctx.arc(targetPxX, targetPxY, targetRad, 0, 2 * Math.PI);
+      ctx.stroke();
+      ctx.setLineDash([]);
       ctx.shadowBlur = 0;
+
+      // Real Data Landmark Points on the ring
+      const numRealPoints = 16;
+      for (let i = 0; i < numRealPoints; i++) {
+        const theta = (i / numRealPoints) * 2 * Math.PI;
+        const rx = targetPxX + Math.cos(theta) * targetRad;
+        const ry = targetPxY + Math.sin(theta) * targetRad;
+        ctx.fillStyle = '#38bdf8';
+        ctx.beginPath();
+        ctx.arc(rx, ry, 3.5, 0, 2 * Math.PI);
+        ctx.fill();
+      }
+
+      // Real Data Label
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = 'bold 10px monospace';
+      ctx.fillText('⭐ Target Real Manifold p_data(x)', targetPxX - 85, targetPxY - targetRad - 8);
+
+      // Generator Synthetic Particles G(z) with Drift Trails
+      ganParticles.forEach(p => {
+        const px = plotX + ((p.x + 1.2) / 2.4) * plotW;
+        const py = plotY + ((-p.y + 1.2) / 2.4) * plotH;
+
+        ctx.fillStyle = '#ec4899';
+        ctx.shadowColor = '#ec4899';
+        ctx.shadowBlur = 6;
+        ctx.beginPath();
+        ctx.arc(px, py, 5, 0, 2 * Math.PI);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // White nucleus
+        ctx.fillStyle = '#ffffff';
+        ctx.beginPath();
+        ctx.arc(px, py, 1.5, 0, 2 * Math.PI);
+        ctx.fill();
+      });
     });
 
-    ctx.restore();
-    ctx.strokeStyle = 'rgba(51, 65, 85, 0.9)';
-    ctx.lineWidth = 1.5;
-    ctx.strokeRect(plotX, plotY, plotW, plotH);
+    // 2. Right Diagram Card: Adversarial Minimax Pipeline & Dual Loss Graph
+    drawDiagramCard(ctx, rightX, rightY, rightW, cardH, theme, '⚔️ MINIMAX ADVERSARIAL ENGINE');
 
-    // 2. Right Side Inset: Architecture Pipeline + Adversarial Minimax Loss Graph
-    const rightW = Math.min(330, w - (plotX + plotW) - 30);
-    const rightH = plotH;
-    const rightX = plotX + plotW + 16;
-    const rightY = plotY;
+    // Generator vs Discriminator Pipeline Cards
+    const pipeY = rightY + 36;
+    const pipeW = (rightW - 20) / 2;
+    const pipeH = 46;
 
-    if (rightW > 220) {
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-      ctx.strokeStyle = 'rgba(51, 65, 85, 0.9)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.roundRect(rightX, rightY, rightW, rightH, 12);
-      ctx.fill();
-      ctx.stroke();
+    // Generator Box
+    ctx.fillStyle = 'rgba(236, 72, 153, 0.16)';
+    ctx.strokeStyle = '#ec4899';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.roundRect(rightX + 6, pipeY, pipeW, pipeH, 6);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#ec4899';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('Generator G_θ(z)', rightX + 12, pipeY + 18);
+    ctx.fillStyle = theme.textMuted;
+    ctx.font = '9px monospace';
+    ctx.fillText('Noise z ~ 𝒩(0, I)', rightX + 12, pipeY + 34);
 
-      ctx.fillStyle = '#ec4899';
-      ctx.font = 'bold 11px sans-serif';
-      ctx.fillText(`⚔️ ADVERSARIAL MINIMAX ENGINE`, rightX + 12, rightY + 20);
+    // Discriminator Box
+    ctx.fillStyle = 'rgba(56, 189, 248, 0.16)';
+    ctx.strokeStyle = '#38bdf8';
+    ctx.lineWidth = 1.2;
+    ctx.beginPath();
+    ctx.roundRect(rightX + 6 + pipeW + 8, pipeY, pipeW, pipeH, 6);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('Critic D_ϕ(x)', rightX + 14 + pipeW + 8, pipeY + 18);
+    ctx.fillStyle = theme.textMuted;
+    ctx.font = '9px monospace';
+    ctx.fillText('Score P(Real) ∈ [0,1]', rightX + 14 + pipeW + 8, pipeY + 34);
 
-      // Generator vs Discriminator Pipeline Cards
-      const pipeY = rightY + 34;
-      ctx.fillStyle = 'rgba(236, 72, 153, 0.18)';
-      ctx.strokeStyle = '#ec4899';
+    // Dual Loss Trajectory Plot (L_G vs L_D)
+    const graphY = pipeY + pipeH + 12;
+    const graphH = Math.max(90, cardH - pipeH - 150);
+
+    ctx.fillStyle = theme.plotBoxBg;
+    ctx.fillRect(rightX + 6, graphY, rightW - 12, graphH);
+    ctx.strokeStyle = theme.plotBoxBorder;
+    ctx.strokeRect(rightX + 6, graphY, rightW - 12, graphH);
+
+    withPlotBoxClip(ctx, rightX + 6, graphY, rightW - 12, graphH, 6, () => {
+      // Grid lines inside loss plot
+      ctx.strokeStyle = theme.grid;
       ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.roundRect(rightX + 12, pipeY, (rightW - 32) / 2, 44, 6);
-      ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#ec4899';
-      ctx.font = 'bold 9px monospace';
-      ctx.fillText('Generator G_θ(z)', rightX + 18, pipeY + 16);
-      ctx.fillStyle = '#cbd5e1';
-      ctx.font = '8px monospace';
-      ctx.fillText('Noise z ~ 𝒩(0, I)', rightX + 18, pipeY + 32);
-
-      ctx.fillStyle = 'rgba(56, 189, 248, 0.18)';
-      ctx.strokeStyle = '#38bdf8';
-      ctx.beginPath();
-      ctx.roundRect(rightX + 12 + (rightW - 32) / 2 + 8, pipeY, (rightW - 32) / 2, 44, 6);
-      ctx.fill(); ctx.stroke();
-      ctx.fillStyle = '#38bdf8';
-      ctx.font = 'bold 9px monospace';
-      ctx.fillText('Critic D_ϕ(x)', rightX + 18 + (rightW - 32) / 2 + 8, pipeY + 16);
-      ctx.fillStyle = '#cbd5e1';
-      ctx.font = '8px monospace';
-      ctx.fillText('Score P(Real) ∈ [0,1]', rightX + 18 + (rightW - 32) / 2 + 8, pipeY + 32);
-
-      // Dual Loss Trajectory Plot (L_G vs L_D)
-      const graphY = rightY + 92;
-      const graphH = 130;
-      ctx.fillStyle = 'rgba(30, 41, 59, 0.7)';
-      ctx.fillRect(rightX + 12, graphY, rightW - 24, graphH);
-      ctx.strokeStyle = 'rgba(51, 65, 85, 0.8)';
-      ctx.strokeRect(rightX + 12, graphY, rightW - 24, graphH);
+      for (let y = graphY + 20; y < graphY + graphH; y += 25) {
+        ctx.beginPath(); ctx.moveTo(rightX + 6, y); ctx.lineTo(rightX + rightW - 6, y); ctx.stroke();
+      }
 
       // Generator Loss Line (Pink)
       ctx.strokeStyle = '#ec4899';
       ctx.lineWidth = 2;
       ctx.beginPath();
-      for (let s = 0; s < 10; s++) {
+      for (let s = 0; s < 12; s++) {
         const val = 0.65 + 0.18 * Math.sin(stateRef.current.timeT * 1.5 + s);
-        const gx = rightX + 18 + (s / 9) * (rightW - 36);
-        const gy = graphY + graphH - 15 - val * 70;
+        const gx = rightX + 12 + (s / 11) * (rightW - 24);
+        const gy = graphY + graphH - 12 - val * (graphH - 24);
         if (s === 0) ctx.moveTo(gx, gy);
         else ctx.lineTo(gx, gy);
       }
@@ -6382,43 +6521,43 @@ export const NeuralSimulatorModule: React.FC = () => {
       // Discriminator Loss Line (Cyan)
       ctx.strokeStyle = '#38bdf8';
       ctx.beginPath();
-      for (let s = 0; s < 10; s++) {
+      for (let s = 0; s < 12; s++) {
         const val = 0.50 + 0.15 * Math.cos(stateRef.current.timeT * 1.5 + s);
-        const gx = rightX + 18 + (s / 9) * (rightW - 36);
-        const gy = graphY + graphH - 15 - val * 70;
+        const gx = rightX + 12 + (s / 11) * (rightW - 24);
+        const gy = graphY + graphH - 12 - val * (graphH - 24);
         if (s === 0) ctx.moveTo(gx, gy);
         else ctx.lineTo(gx, gy);
       }
       ctx.stroke();
-
-      ctx.fillStyle = '#ec4899';
-      ctx.font = 'bold 9px monospace';
-      ctx.fillText(`ℒ_G: ${ganLossG.toFixed(3)}`, rightX + 20, graphY + 16);
-      ctx.fillStyle = '#38bdf8';
-      ctx.fillText(`ℒ_D: ${(0.693 - ganLossG * 0.4).toFixed(3)}`, rightX + 100, graphY + 16);
-
-      // Telemetry Summary Card
-      const statY = rightY + rightH - 74;
-      ctx.fillStyle = 'rgba(30, 41, 59, 0.9)';
-      ctx.beginPath();
-      ctx.roundRect(rightX + 12, statY, rightW - 24, 62, 8);
-      ctx.fill();
-      ctx.fillStyle = '#34d399';
-      ctx.font = 'bold 9px monospace';
-      ctx.fillText(`Wasserstein Distance: ${ganWassersteinDist.toFixed(3)}`, rightX + 18, statY + 18);
-      ctx.fillStyle = '#fbbf24';
-      ctx.fillText(`Epochs: ${ganEpochCount} | Mode Preset: ${ganModePreset}`, rightX + 18, statY + 34);
-      ctx.fillStyle = '#cbd5e1';
-      ctx.fillText(`Critic Steps: ${ganCriticSteps} | Gen LR: ${ganGenLR}`, rightX + 18, statY + 50);
-    }
+    });
 
     ctx.fillStyle = '#ec4899';
-    ctx.font = 'bold 12px monospace';
-    ctx.fillText(`⚔️ GENERATIVE ADVERSARIAL NETWORKS (WGAN-GP) | Epoch ${ganEpochCount} | Minimax Game: min_G max_D V(D,G)`, plotX, plotY - 12);
+    ctx.font = 'bold 9px monospace';
+    ctx.fillText(`ℒ_G: ${ganLossG.toFixed(3)}`, rightX + 12, graphY + 16);
+    ctx.fillStyle = '#38bdf8';
+    ctx.fillText(`ℒ_D: ${(0.693 - ganLossG * 0.4).toFixed(3)}`, rightX + 90, graphY + 16);
+
+    // Telemetry Summary Card at bottom
+    const statY = graphY + graphH + 10;
+    const statH = Math.max(50, rightY + cardH - statY - 8);
+    ctx.fillStyle = theme.cardBg;
+    ctx.strokeStyle = theme.plotBoxBorder;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(rightX + 6, statY, rightW - 12, statH, 6);
+    ctx.fill(); ctx.stroke();
+
+    ctx.fillStyle = '#34d399';
+    ctx.font = 'bold 9px monospace';
+    ctx.fillText(`Wasserstein Distance: ${ganWassersteinDist.toFixed(3)}`, rightX + 14, statY + 16);
+    ctx.fillStyle = '#fbbf24';
+    ctx.fillText(`Epochs: ${ganEpochCount} | Preset: ${ganModePreset}`, rightX + 14, statY + 30);
+    ctx.fillStyle = theme.textMuted;
+    ctx.fillText(`Critic Steps: ${ganCriticSteps} | Gen LR: ${ganGenLR}`, rightX + 14, statY + 44);
   };
 
   // 12. DDPM Diffusion Renderer (Multi-Timestep Filmstrip + Score-Matching Vector Field + Variance Schedule Inset)
-  const drawDdpmMarkovDiffusion = (ctx: CanvasRenderingContext2D, _w: number, _h: number, cx: number, cy: number, _scale: number, localFrame: number) => {
+  const drawDdpmMarkovDiffusion = (ctx: CanvasRenderingContext2D, w: number, h: number, cx: number, cy: number, _scale: number, localFrame: number) => {
     if (simMode === 'autoplay' && isSimulating && localFrame % Math.max(1, Math.round(10 / simSpeed)) === 0) {
       if (ddpmDirection === 'reverse') {
         if (ddpmTimestep > 0) setDdpmTimestep(t => t - 1);
@@ -6429,15 +6568,24 @@ export const NeuralSimulatorModule: React.FC = () => {
       }
     }
 
-    // 1. Multi-Timestep Filmstrip across the Top (t=0, t=12, t=25, t=37, t=50)
-    const filmstripY = cy - 170;
-    const numFrames = 5;
-    const frameSize = 82;
-    const gap = 16;
-    const totalStripW = numFrames * frameSize + (numFrames - 1) * gap;
-    const startX = cx - totalStripW / 2;
+    const theme = getCanvasTheme(canvasAtmosphere);
+    const marginX = 14;
+    const marginY = 14;
+    const totalW = Math.max(680, w - 2 * marginX);
+    const cardH = Math.max(480, h - 2 * marginY - 20);
+    const startX = cx - totalW / 2;
+    const startY = cy - cardH / 2 + 10;
 
+    // Master Container Card
+    drawDiagramCard(ctx, startX, startY, totalW, cardH, theme, '🌊 DENOISING DIFFUSION PROBABILISTIC MODELS (DDPM)');
+
+    // 1. Multi-Timestep Filmstrip across the Top
+    const filmstripY = startY + 36;
+    const numFrames = 5;
+    const frameSize = Math.min(84, Math.floor((totalW - 60) / numFrames));
+    const stripGap = Math.floor((totalW - 20 - numFrames * frameSize) / (numFrames - 1));
     const timesteps = [0, 12, 25, 37, 50];
+
     const cleanPattern = [
       [0, 1, 1, 1, 1, 1, 1, 0],
       [1, 1, 0, 0, 0, 0, 1, 1],
@@ -6450,12 +6598,12 @@ export const NeuralSimulatorModule: React.FC = () => {
     ];
 
     timesteps.forEach((tStep, idx) => {
-      const fx = startX + idx * (frameSize + gap);
+      const fx = startX + 10 + idx * (frameSize + stripGap);
       const isCurrent = Math.abs(ddpmTimestep - tStep) <= 6;
       const alphaBar = Math.max(0.02, 1 - tStep / ddpmMaxSteps);
 
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-      ctx.strokeStyle = isCurrent ? '#34d399' : 'rgba(51, 65, 85, 0.8)';
+      ctx.fillStyle = theme.plotBoxBg;
+      ctx.strokeStyle = isCurrent ? '#34d399' : theme.plotBoxBorder;
       ctx.lineWidth = isCurrent ? 2.5 : 1;
       ctx.beginPath();
       ctx.roundRect(fx, filmstripY, frameSize, frameSize, 8);
@@ -6465,26 +6613,29 @@ export const NeuralSimulatorModule: React.FC = () => {
       for (let r = 0; r < 8; r++) {
         for (let c = 0; c < 8; c++) {
           const cleanVal = cleanPattern[r][c];
-          const noiseVal = ((r * 13 + c * 17 + tStep * 7) % 100) / 100;
+          const noiseVal = stateRef.current.ddpmNoiseMap[r]?.[c] || Math.random();
           const blendedVal = Math.sqrt(alphaBar) * cleanVal + Math.sqrt(1 - alphaBar) * noiseVal;
 
-          ctx.fillStyle = `rgba(56, 189, 248, ${Math.max(0.05, Math.min(0.95, blendedVal))})`;
-          ctx.fillRect(fx + 4 + c * cellSize, filmstripY + 4 + r * cellSize, cellSize - 1, cellSize - 1);
+          ctx.fillStyle = `rgba(56, 189, 248, ${Math.max(0.06, Math.min(0.95, blendedVal))})`;
+          ctx.fillRect(fx + 4 + c * cellSize, filmstripY + 4 + r * cellSize, cellSize - 0.5, cellSize - 0.5);
         }
       }
 
-      ctx.fillStyle = isCurrent ? '#34d399' : '#94a3b8';
+      ctx.fillStyle = isCurrent ? '#34d399' : theme.textMuted;
       ctx.font = 'bold 9px monospace';
       ctx.textAlign = 'center';
       ctx.fillText(`t = ${tStep}`, fx + frameSize / 2, filmstripY + frameSize + 14);
+      ctx.textAlign = 'left';
     });
 
     // 2. Large Central Active Diffusion Canvas (t = ddpmTimestep)
-    const mainCanvasDim = 160;
-    const mainCanvasX = cx - 180;
-    const mainCanvasY = cy - 20;
+    const lowerY = filmstripY + frameSize + 28;
+    const lowerH = cardH - (lowerY - startY) - 10;
+    const mainCanvasDim = Math.min(lowerH - 10, 180);
+    const mainCanvasX = startX + Math.floor(totalW * 0.15);
+    const mainCanvasY = lowerY + Math.floor((lowerH - mainCanvasDim) / 2);
 
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+    ctx.fillStyle = theme.plotBoxBg;
     ctx.strokeStyle = ddpmDirection === 'reverse' ? '#34d399' : '#fbbf24';
     ctx.lineWidth = 2.5;
     ctx.beginPath();
@@ -6505,14 +6656,18 @@ export const NeuralSimulatorModule: React.FC = () => {
       }
     }
 
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText(`Current Step: x_${ddpmTimestep}`, mainCanvasX, mainCanvasY - 8);
+
     // 3. Right Side: Variance Schedule Curve & Math Breakdown Inset
-    const rightW = 280;
-    const rightX = cx + 20;
+    const rightW = Math.max(260, totalW - (mainCanvasX + mainCanvasDim - startX) - 40);
+    const rightX = mainCanvasX + mainCanvasDim + 30;
     const rightY = mainCanvasY;
     const rightH = mainCanvasDim;
 
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-    ctx.strokeStyle = 'rgba(51, 65, 85, 0.9)';
+    ctx.fillStyle = theme.cardBg;
+    ctx.strokeStyle = theme.plotBoxBorder;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.roundRect(rightX, rightY, rightW, rightH, 10);
@@ -6524,43 +6679,41 @@ export const NeuralSimulatorModule: React.FC = () => {
     ctx.fillText(`📈 NOISE SCHEDULE: ${ddpmBetaSchedule.toUpperCase()}`, rightX + 12, rightY + 20);
 
     // Schedule Curve Plot
-    const sGraphH = 65;
-    ctx.fillStyle = 'rgba(30, 41, 59, 0.7)';
-    ctx.fillRect(rightX + 12, rightY + 30, rightW - 24, sGraphH);
+    const sGraphH = Math.max(45, rightH - 100);
+    ctx.fillStyle = theme.plotBoxBg;
+    ctx.fillRect(rightX + 12, rightY + 28, rightW - 24, sGraphH);
 
-    ctx.strokeStyle = '#fbbf24';
-    ctx.lineWidth = 2;
-    ctx.beginPath();
-    for (let st = 0; st <= ddpmMaxSteps; st++) {
-      const alphaVal = 1 - st / ddpmMaxSteps;
-      const gx = rightX + 16 + (st / ddpmMaxSteps) * (rightW - 32);
-      const gy = rightY + 30 + sGraphH - 8 - alphaVal * (sGraphH - 16);
-      if (st === 0) ctx.moveTo(gx, gy);
-      else ctx.lineTo(gx, gy);
-    }
-    ctx.stroke();
+    withPlotBoxClip(ctx, rightX + 12, rightY + 28, rightW - 24, sGraphH, 6, () => {
+      ctx.strokeStyle = '#fbbf24';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      for (let st = 0; st <= ddpmMaxSteps; st++) {
+        const alphaVal = 1 - st / ddpmMaxSteps;
+        const gx = rightX + 16 + (st / ddpmMaxSteps) * (rightW - 32);
+        const gy = rightY + 28 + sGraphH - 6 - alphaVal * (sGraphH - 12);
+        if (st === 0) ctx.moveTo(gx, gy);
+        else ctx.lineTo(gx, gy);
+      }
+      ctx.stroke();
 
-    // Active Timestep Marker on curve
-    const markerX = rightX + 16 + (ddpmTimestep / ddpmMaxSteps) * (rightW - 32);
-    const markerAlpha = 1 - ddpmTimestep / ddpmMaxSteps;
-    const markerY = rightY + 30 + sGraphH - 8 - markerAlpha * (sGraphH - 16);
-    ctx.fillStyle = '#34d399';
-    ctx.beginPath();
-    ctx.arc(markerX, markerY, 5, 0, 2 * Math.PI);
-    ctx.fill();
+      // Active Timestep Marker on curve
+      const markerX = rightX + 16 + (ddpmTimestep / ddpmMaxSteps) * (rightW - 32);
+      const markerAlpha = 1 - ddpmTimestep / ddpmMaxSteps;
+      const markerY = rightY + 28 + sGraphH - 6 - markerAlpha * (sGraphH - 12);
+      ctx.fillStyle = '#34d399';
+      ctx.beginPath();
+      ctx.arc(markerX, markerY, 4.5, 0, 2 * Math.PI);
+      ctx.fill();
+    });
 
     // Mathematical Formula
-    ctx.fillStyle = '#cbd5e1';
-    ctx.font = '8px monospace';
-    ctx.fillText(`q(x_t|x_0) = 𝒩(x_t; √(ᾱ_t) x_0, (1 - ᾱ_t) I)`, rightX + 14, rightY + 112);
+    ctx.fillStyle = theme.textPrimary;
+    ctx.font = '9px monospace';
+    ctx.fillText(`q(x_t|x_0) = 𝒩(x_t; √(ᾱ_t) x_0, (1 - ᾱ_t) I)`, rightX + 14, rightY + rightH - 42);
     ctx.fillStyle = '#34d399';
-    ctx.fillText(`Score Reverse: x_(t-1) = 1/√(α_t) [x_t - β_t/√(1-ᾱ_t) ϵ_θ]`, rightX + 14, rightY + 126);
+    ctx.fillText(`Score Reverse: x_(t-1) = 1/√(α_t) [x_t - β_t/√(1-ᾱ_t) ϵ_θ]`, rightX + 14, rightY + rightH - 26);
     ctx.fillStyle = '#fbbf24';
-    ctx.fillText(`Current: Timestep t = ${ddpmTimestep} / ${ddpmMaxSteps} (${ddpmDirection.toUpperCase()})`, rightX + 14, rightY + 142);
-
-    ctx.fillStyle = '#34d399';
-    ctx.font = 'bold 12px monospace';
-    ctx.fillText(`🌊 DENOISING DIFFUSION PROBABILISTIC MODELS (DDPM) | Score Matching & Markov Chain`, cx - totalStripW / 2, filmstripY - 14);
+    ctx.fillText(`Direction: ${ddpmDirection.toUpperCase()} | t = ${ddpmTimestep}/${ddpmMaxSteps}`, rightX + 14, rightY + rightH - 10);
   };
 
   // 13. VAE Latent Manifold Renderer (Continuous 2D Latent Grid + Interactive Draggable Latent Probe + ELBO Decomposition Inset)
@@ -6571,21 +6724,34 @@ export const NeuralSimulatorModule: React.FC = () => {
       setVaeLatentZ2(0.85 * Math.sin(1.3 * t));
     }
 
-    const plotW = Math.min(520, w * 0.52);
-    const plotH = Math.min(360, h - 80);
-    const plotX = cx - plotW / 2 - 130;
-    const plotY = cy - plotH / 2 + 10;
+    const theme = getCanvasTheme(canvasAtmosphere);
+    const marginX = 14;
+    const marginY = 14;
+    const gap = 12;
+    const totalW = Math.max(680, w - 2 * marginX);
+    const leftW = Math.floor((totalW - gap) * 0.62);
+    const rightW = totalW - gap - leftW;
+    const cardH = Math.max(480, h - 2 * marginY - 20);
+    const leftX = cx - totalW / 2;
+    const leftY = cy - cardH / 2 + 10;
+    const rightX = leftX + leftW + gap;
+    const rightY = leftY;
 
-    // 1. Continuous 2D Latent Space Manifold (Left Side)
-    const latentDim = 200;
-    const latentX = plotX + 10;
-    const latentY = plotY + 30;
+    // 1. Left Diagram Card: Continuous Latent Space & Decoded Image
+    drawDiagramCard(ctx, leftX, leftY, leftW, cardH, theme, '🌌 VAE CONTINUOUS LATENT SPACE & DECODER');
 
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-    ctx.strokeStyle = 'rgba(192, 132, 252, 0.6)';
+    const subCardDim = Math.min(Math.floor((leftW - 40) / 2), cardH - 60);
+    const latentX = leftX + 14;
+    const latentY = leftY + 40;
+    const decX = latentX + subCardDim + 14;
+    const decY = latentY;
+
+    // Latent Box
+    ctx.fillStyle = theme.plotBoxBg;
+    ctx.strokeStyle = 'rgba(192, 132, 252, 0.7)';
     ctx.lineWidth = 1.5;
     ctx.beginPath();
-    ctx.roundRect(latentX, latentY, latentDim, latentDim, 10);
+    ctx.roundRect(latentX, latentY, subCardDim, subCardDim, 10);
     ctx.fill(); ctx.stroke();
 
     // Gaussian Prior Iso-Contours 𝒩(0, I)
@@ -6594,14 +6760,14 @@ export const NeuralSimulatorModule: React.FC = () => {
       ctx.lineWidth = 1.2;
       ctx.setLineDash([3, 3]);
       ctx.beginPath();
-      ctx.arc(latentX + latentDim / 2, latentY + latentDim / 2, sigma * 28, 0, 2 * Math.PI);
+      ctx.arc(latentX + subCardDim / 2, latentY + subCardDim / 2, sigma * (subCardDim / 7), 0, 2 * Math.PI);
       ctx.stroke();
     });
     ctx.setLineDash([]);
 
     // Draggable Latent Point z = (z1, z2)
-    const zPxX = latentX + latentDim / 2 + (vaeLatentZ1 / 1.8) * (latentDim / 2);
-    const zPxY = latentY + latentDim / 2 - (vaeLatentZ2 / 1.8) * (latentDim / 2);
+    const zPxX = latentX + subCardDim / 2 + (vaeLatentZ1 / 1.8) * (subCardDim / 2);
+    const zPxY = latentY + subCardDim / 2 - (vaeLatentZ2 / 1.8) * (subCardDim / 2);
 
     ctx.fillStyle = '#38bdf8';
     ctx.shadowColor = '#38bdf8';
@@ -6616,24 +6782,20 @@ export const NeuralSimulatorModule: React.FC = () => {
 
     ctx.fillStyle = '#c084fc';
     ctx.font = 'bold 10px monospace';
-    ctx.fillText(`🌌 Latent Space z ~ 𝒩(0, I)`, latentX, latentY - 10);
+    ctx.fillText(`🌌 Latent z ~ 𝒩(0, I)`, latentX, latentY - 6);
     ctx.fillStyle = '#38bdf8';
-    ctx.fillText(`z = [${vaeLatentZ1.toFixed(2)}, ${vaeLatentZ2.toFixed(2)}]`, latentX, latentY + latentDim + 18);
+    ctx.fillText(`z = [${vaeLatentZ1.toFixed(2)}, ${vaeLatentZ2.toFixed(2)}]`, latentX, latentY + subCardDim + 16);
 
-    // 2. Decoder Output Reconstruction Canvas p_θ(x|z)
-    const decDim = latentDim;
-    const decX = plotX + latentDim + 36;
-    const decY = latentY;
-
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
+    // Decoded Reconstruction Canvas p_θ(x|z)
+    ctx.fillStyle = theme.plotBoxBg;
     ctx.strokeStyle = '#38bdf8';
     ctx.lineWidth = 2;
     ctx.beginPath();
-    ctx.roundRect(decX, decY, decDim, decDim, 10);
+    ctx.roundRect(decX, decY, subCardDim, subCardDim, 10);
     ctx.fill(); ctx.stroke();
 
     const outGridDim = 10;
-    const outCellSize = (decDim - 12) / outGridDim;
+    const outCellSize = (subCardDim - 12) / outGridDim;
     for (let r = 0; r < outGridDim; r++) {
       for (let c = 0; c < outGridDim; c++) {
         const val = Math.sin(r * 0.35 + vaeLatentZ1 * 2) * Math.cos(c * 0.35 + vaeLatentZ2 * 2);
@@ -6644,68 +6806,53 @@ export const NeuralSimulatorModule: React.FC = () => {
 
     ctx.fillStyle = '#38bdf8';
     ctx.font = 'bold 10px monospace';
-    ctx.fillText('🖼️ Decoded Image p_θ(x|z)', decX, decY - 10);
+    ctx.fillText('🖼️ Decoded Image p_θ(x|z)', decX, decY - 6);
 
-    // 3. Right Side Inset: ELBO Loss Breakdown & Reparameterization Trick
-    const rightW = Math.min(320, w - (plotX + plotW) - 30);
-    const rightH = plotH;
-    const rightX = plotX + plotW + 16;
-    const rightY = plotY;
+    // 2. Right Diagram Card: ELBO Loss Breakdown & Reparameterization Trick
+    drawDiagramCard(ctx, rightX, rightY, rightW, cardH, theme, '🌌 EVIDENCE LOWER BOUND (ELBO)');
 
-    if (rightW > 220) {
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
-      ctx.strokeStyle = 'rgba(51, 65, 85, 0.9)';
-      ctx.lineWidth = 1.5;
-      ctx.beginPath();
-      ctx.roundRect(rightX, rightY, rightW, rightH, 12);
-      ctx.fill();
-      ctx.stroke();
+    // Reparameterization Card
+    const repY = rightY + 36;
+    const repH = 74;
+    ctx.fillStyle = theme.cardBg;
+    ctx.strokeStyle = theme.plotBoxBorder;
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.roundRect(rightX + 8, repY, rightW - 16, repH, 8);
+    ctx.fill(); ctx.stroke();
 
-      ctx.fillStyle = '#c084fc';
-      ctx.font = 'bold 11px sans-serif';
-      ctx.fillText('🌌 VAE EVIDENCE LOWER BOUND (ELBO)', rightX + 12, rightY + 20);
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('⚡ Reparameterization Trick:', rightX + 14, repY + 18);
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '9px monospace';
+    ctx.fillText('z = μ(x) + σ(x) ⊙ ϵ, ϵ ~ 𝒩(0, I)', rightX + 14, repY + 36);
+    ctx.fillStyle = '#34d399';
+    ctx.fillText('Enables backprop through stochastic nodes', rightX + 14, repY + 54);
 
-      // Reparameterization Card
-      const repY = rightY + 34;
-      ctx.fillStyle = 'rgba(30, 41, 59, 0.8)';
-      ctx.beginPath();
-      ctx.roundRect(rightX + 12, repY, rightW - 24, 70, 8);
-      ctx.fill();
+    // ELBO Decomposition Meter
+    const elboY = repY + repH + 12;
+    const elboH = Math.max(90, cardH - repH - 70);
+    ctx.fillStyle = theme.cardBg;
+    ctx.strokeStyle = theme.plotBoxBorder;
+    ctx.beginPath();
+    ctx.roundRect(rightX + 8, elboY, rightW - 16, elboH, 8);
+    ctx.fill(); ctx.stroke();
 
-      ctx.fillStyle = '#fbbf24';
-      ctx.font = 'bold 9px monospace';
-      ctx.fillText('⚡ Reparameterization Trick:', rightX + 18, repY + 18);
-      ctx.fillStyle = '#38bdf8';
-      ctx.font = '9px monospace';
-      ctx.fillText('z = μ(x) + σ(x) ⊙ ϵ, where ϵ ~ 𝒩(0, I)', rightX + 18, repY + 36);
-      ctx.fillStyle = '#34d399';
-      ctx.fillText('Enables backpropagation through stochastic nodes', rightX + 18, repY + 54);
+    ctx.fillStyle = '#cbd5e1';
+    ctx.font = 'bold 10px monospace';
+    ctx.fillText('📊 Loss Breakdown:', rightX + 14, elboY + 20);
 
-      // ELBO Decomposition Meter
-      const elboY = rightY + 118;
-      ctx.fillStyle = 'rgba(30, 41, 59, 0.8)';
-      ctx.beginPath();
-      ctx.roundRect(rightX + 12, elboY, rightW - 24, 110, 8);
-      ctx.fill();
+    const reconLoss = 0.32 + 0.12 * Math.hypot(vaeLatentZ1, vaeLatentZ2);
+    const klLoss = 0.18 * (vaeLatentZ1 * vaeLatentZ1 + vaeLatentZ2 * vaeLatentZ2);
 
-      ctx.fillStyle = '#cbd5e1';
-      ctx.font = 'bold 9px monospace';
-      ctx.fillText('ELBO = 𝔼[log p(x|z)] - β·D_KL(q(z|x) || p(z))', rightX + 18, elboY + 18);
-
-      // Recon loss bar
-      ctx.fillStyle = '#38bdf8';
-      ctx.fillText('Reconstruction Term: -0.142 nats', rightX + 18, elboY + 42);
-      ctx.fillRect(rightX + 18, elboY + 48, rightW - 50, 6);
-
-      // KL divergence bar
-      ctx.fillStyle = '#f43f5e';
-      ctx.fillText(`KL-Divergence Loss: +${(0.35 * vaeBetaKL).toFixed(3)} nats (β=${vaeBetaKL.toFixed(1)})`, rightX + 18, elboY + 74);
-      ctx.fillRect(rightX + 18, elboY + 80, (rightW - 50) * 0.45, 6);
-    }
-
+    ctx.fillStyle = '#38bdf8';
+    ctx.font = '9px monospace';
+    ctx.fillText(`Reconstruction ℒ_recon: ${reconLoss.toFixed(3)}`, rightX + 14, elboY + 40);
     ctx.fillStyle = '#c084fc';
-    ctx.font = 'bold 12px monospace';
-    ctx.fillText(`🌌 VARIATIONAL AUTOENCODER (VAE) | Continuous Latent Space Interpolation & Gaussian Prior`, plotX, plotY - 12);
+    ctx.fillText(`KL Divergence D_KL: ${klLoss.toFixed(3)}`, rightX + 14, elboY + 56);
+    ctx.fillStyle = '#34d399';
+    ctx.fillText(`Total ELBO: -${(reconLoss + klLoss).toFixed(3)}`, rightX + 14, elboY + 72);
   };
 
   // 14. Neural MLP with Visible Numeric Synaptic Weights & Biases (Expanded & Zero-Clash)
@@ -7510,26 +7657,27 @@ export const NeuralSimulatorModule: React.FC = () => {
   };
 
   // 16. Convolutional Neural Networks, Pooling & ResNet Skips Visual Engine
-  const drawConvKernelScannerAndFeatureMap = (ctx: CanvasRenderingContext2D, _w: number, _h: number, _cx: number, _cy: number, _scale: number, localFrame: number) => {
+  const drawConvKernelScannerAndFeatureMap = (ctx: CanvasRenderingContext2D, w: number, h: number, cx: number, cy: number, _scale: number, localFrame: number) => {
     if (simMode === 'autoplay' && isSimulating && localFrame % Math.max(1, Math.round(26 / simSpeed)) === 0) {
       performConvScanStep();
     }
 
+    const theme = getCanvasTheme(canvasAtmosphere);
     const marginX = 14;
     const marginY = 14;
     const gap = 12;
-    const totalW = 720 - 2 * marginX - gap;
-    const leftW = Math.floor(totalW * 0.52); // 353px
-    const rightW = totalW - leftW;          // 327px
-    const boardH = 620 - 2 * marginY;       // 592px
-    const leftX = marginX;
-    const leftY = marginY;
-    const rightX = marginX + leftW + gap;
-    const rightY = marginY;
+    const totalW = Math.max(680, w - 2 * marginX);
+    const leftW = Math.floor((totalW - gap) * 0.52);
+    const rightW = totalW - gap - leftW;
+    const boardH = Math.max(540, h - 2 * marginY - 10);
+    const leftX = cx - totalW / 2;
+    const leftY = cy - boardH / 2 + 5;
+    const rightX = leftX + leftW + gap;
+    const rightY = leftY;
 
     // Draw Left and Right Glassmorphic Boards
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.75)';
-    ctx.strokeStyle = 'rgba(51, 65, 85, 0.7)';
+    ctx.fillStyle = theme.cardBg;
+    ctx.strokeStyle = theme.cardBorder;
     ctx.lineWidth = 1.5;
 
     ctx.beginPath();
@@ -7541,7 +7689,7 @@ export const NeuralSimulatorModule: React.FC = () => {
     ctx.fill(); ctx.stroke();
 
     // Subtle Grid Background
-    ctx.strokeStyle = 'rgba(51, 65, 85, 0.15)';
+    ctx.strokeStyle = theme.gridColor;
     ctx.lineWidth = 1;
     for (let x = leftX + 16; x < leftX + leftW; x += 22) {
       ctx.beginPath(); ctx.moveTo(x, leftY); ctx.lineTo(x, leftY + boardH); ctx.stroke();
@@ -9323,26 +9471,27 @@ export const NeuralSimulatorModule: React.FC = () => {
   };
 
   // ─── 18A. Transformer Architecture & Layer Stacking Engine (Vaswani et al.) ───
-  const drawTransformerArchitectureEngine = (ctx: CanvasRenderingContext2D, _w: number, _h: number, _cx: number, _cy: number, _scale: number, localFrame: number) => {
+  const drawTransformerArchitectureEngine = (ctx: CanvasRenderingContext2D, w: number, h: number, cx: number, cy: number, _scale: number, localFrame: number) => {
     if (simMode === 'autoplay' && isSimulating && localFrame % Math.max(1, Math.round(35 / simSpeed)) === 0) {
       performTransformerStep();
     }
 
+    const theme = getCanvasTheme(canvasAtmosphere);
     const marginX = 14;
     const marginY = 14;
     const gap = 12;
-    const totalW = 720 - 2 * marginX - gap;
-    const leftW = Math.floor(totalW * 0.50); // 340px
-    const rightW = totalW - leftW;          // 340px
-    const boardH = 620 - 2 * marginY;       // 592px
-    const leftX = marginX;
-    const leftY = marginY;
-    const rightX = marginX + leftW + gap;
-    const rightY = marginY;
+    const totalW = Math.max(680, w - 2 * marginX);
+    const leftW = Math.floor((totalW - gap) * 0.50);
+    const rightW = totalW - gap - leftW;
+    const boardH = Math.max(540, h - 2 * marginY - 10);
+    const leftX = cx - totalW / 2;
+    const leftY = cy - boardH / 2 + 5;
+    const rightX = leftX + leftW + gap;
+    const rightY = leftY;
 
     // Background Panels
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
-    ctx.strokeStyle = 'rgba(51, 65, 85, 0.8)';
+    ctx.fillStyle = theme.cardBg;
+    ctx.strokeStyle = theme.cardBorder;
     ctx.lineWidth = 1.5;
 
     // Left Panel
@@ -10073,10 +10222,12 @@ export const NeuralSimulatorModule: React.FC = () => {
   };
 
   // ─── 18B. Attention Mechanisms Comprehensive Mathematical Engine ───
-  const drawAttentionMechanismsEngine = (ctx: CanvasRenderingContext2D, w: number, _h: number, cx: number, cy: number, _scale: number, localFrame: number) => {
+  const drawAttentionMechanismsEngine = (ctx: CanvasRenderingContext2D, w: number, h: number, cx: number, cy: number, _scale: number, localFrame: number) => {
     if (simMode === 'autoplay' && isSimulating && localFrame % Math.max(1, Math.round(30 / simSpeed)) === 0) {
       performAttentionStep();
     }
+
+    const theme = getCanvasTheme(canvasAtmosphere);
 
     if (attnSubMode === 'scaled_dot_product') {
       // ════════ MODE 1: SCALED DOT-PRODUCT ATTENTION MATRIX ENGINE ════════
@@ -10092,19 +10243,19 @@ export const NeuralSimulatorModule: React.FC = () => {
       ctx.fillText('📐 SCALED DOT-PRODUCT:  Attention(Q, K, V) = softmax(Q · Kᵀ / √d_k) · V', cx - 250, cy - 160);
 
       // Query \ Key Table Labels
-      ctx.fillStyle = '#94a3b8';
+      ctx.fillStyle = theme.textMuted;
       ctx.font = 'bold 11px monospace';
       ctx.fillText('Query (Q) \\ Key (K)', matX - 130, matY - 14);
 
       for (let j = 0; j < N; j++) {
-        ctx.fillStyle = '#cbd5e1';
+        ctx.fillStyle = theme.textPrimary;
         ctx.font = 'bold 11px monospace';
         ctx.fillText(tokens[j], matX + j * cellSize + 8, matY - 14);
       }
 
       for (let i = 0; i < N; i++) {
         const isSelectedRow = i === attnSelectedTokenIdx;
-        ctx.fillStyle = isSelectedRow ? '#38bdf8' : '#94a3b8';
+        ctx.fillStyle = isSelectedRow ? '#38bdf8' : theme.textMuted;
         ctx.font = 'bold 11px monospace';
         ctx.fillText(tokens[i], matX - 70, matY + i * cellSize + 24);
 
@@ -10119,12 +10270,12 @@ export const NeuralSimulatorModule: React.FC = () => {
           const normProb = Math.max(0.05, Math.min(0.95, prob));
 
           ctx.fillStyle = `rgba(56, 189, 248, ${normProb * 0.85 + 0.1})`;
-          ctx.strokeStyle = isSelectedRow ? '#38bdf8' : 'rgba(51, 65, 85, 0.8)';
+          ctx.strokeStyle = isSelectedRow ? '#38bdf8' : theme.plotBoxBorder;
           ctx.lineWidth = isSelectedRow ? 1.5 : 1;
           ctx.fillRect(x, y, cellSize - 4, cellSize - 4);
           ctx.strokeRect(x, y, cellSize - 4, cellSize - 4);
 
-          ctx.fillStyle = normProb > 0.4 ? '#ffffff' : '#94a3b8';
+          ctx.fillStyle = normProb > 0.4 ? '#ffffff' : theme.textMuted;
           ctx.font = '10px monospace';
           ctx.fillText(normProb.toFixed(2), x + 5, y + 23);
         }
@@ -11909,17 +12060,29 @@ export const NeuralSimulatorModule: React.FC = () => {
           />
 
           {/* In-Canvas Dynamic KaTeX HUD Overlay */}
-          <div className="canvas-katex-hud-overlay">
+          <div className={`canvas-katex-hud-overlay ${isHudMinimized ? 'minimized' : ''}`}>
             <div className="hud-header">
-              <span>{selectedModel.replace(/_/g, ' ')}</span>
-              <span className="hud-badge">NEURAL ARCHITECTURE</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>{selectedModel.replace(/_/g, ' ')}</span>
+                {!isHudMinimized && <span className="hud-badge">NEURAL ARCHITECTURE</span>}
+              </div>
+              <button
+                type="button"
+                className="hud-toggle-btn"
+                onClick={() => setIsHudMinimized(prev => !prev)}
+                title={isHudMinimized ? 'Expand Math Formula HUD' : 'Minimize Math Formula HUD'}
+              >
+                {isHudMinimized ? <Eye size={12} /> : <EyeOff size={12} />}
+              </button>
             </div>
-            <div
-              className="hud-latex-render"
-              dangerouslySetInnerHTML={{
-                __html: katex.renderToString(liveDynamicFormula, { throwOnError: false, displayMode: false })
-              }}
-            />
+            {!isHudMinimized && (
+              <div
+                className="hud-latex-render"
+                dangerouslySetInnerHTML={{
+                  __html: katex.renderToString(liveDynamicFormula, { throwOnError: false, displayMode: false })
+                }}
+              />
+            )}
           </div>
 
           {/* 3D Orbit Perspective Indicator Badge */}

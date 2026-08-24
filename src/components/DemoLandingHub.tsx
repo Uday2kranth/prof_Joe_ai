@@ -17,12 +17,13 @@ import {
   FlaskConical,
   Binary,
   Award,
-  Pin
+  Pin,
+  Compass
 } from 'lucide-react';
 import { MorphingText } from './MorphingText';
 
 interface DemoLandingHubProps {
-  onSelectWorkspace: (workspaceId: 'chat' | 'personas' | 'fun_personas' | 'examprep' | 'diagrams' | 'system_prompts' | 'prompts' | 'cubes' | 'extractor_studio' | 'code_lab' | 'lecture_notes' | 'sandbox' | 'dsa_lab' | 'flashcards_studio' | 'quiz_arena' | 'pinned_archive') => void;
+  onSelectWorkspace: (workspaceId: 'chat' | 'personas' | 'fun_personas' | 'examprep' | 'diagrams' | 'system_prompts' | 'prompts' | 'cubes' | 'extractor_studio' | 'code_lab' | 'lecture_notes' | 'sandbox' | 'dsa_lab' | 'flashcards_studio' | 'quiz_arena' | 'pinned_archive' | 'test_diagrams') => void;
   onOpenSettings: () => void;
   onOpenSettingsStudio?: () => void;
   theme: 'dark' | 'light';
@@ -379,6 +380,31 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
             <div className="portal-card-footer">
               <button type="button" className="launch-portal-btn">
                 <span>Launch Sandbox</span>
+                <ArrowRight size={14} className="launch-arrow" />
+              </button>
+            </div>
+          </div>
+
+          {/* Card: Mafs, JSXGraph & MathBox Diagram Studio */}
+          <div 
+            className="hub-portal-card math-diagrams-portal"
+            onClick={() => onSelectWorkspace('test_diagrams')}
+          >
+            <div className="portal-card-header">
+              <div className="portal-icon-badge cyan-bg">
+                <Compass size={24} />
+              </div>
+              <span className="portal-tag cyan-tag">
+                Interactive Math Suite
+              </span>
+            </div>
+            <div className="portal-card-body">
+              <h3>Mafs, JSXGraph & MathBox Studio 📐</h3>
+              <p>Declarative math & ML visualizations: React-SVG graphs, 3D WebGL surfaces, and client-side data modeling with 0 tokens.</p>
+            </div>
+            <div className="portal-card-footer">
+              <button type="button" className="launch-portal-btn">
+                <span>Launch Framework Studio</span>
                 <ArrowRight size={14} className="launch-arrow" />
               </button>
             </div>

@@ -17,9 +17,12 @@ import {
   RefreshCw,
   PanelRightClose,
   PanelRightOpen,
+  Eye,
+  EyeOff,
   X
 } from 'lucide-react';
-import { getCanvasTheme, drawCanvasAtmosphere } from '../../utils/canvasThemeEngine';
+import { getCanvasTheme, drawCanvasAtmosphere, drawDiagramCard, withPlotBoxClip } from '../../utils/canvasThemeEngine';
+import { DualParamControl } from '../common/DualParamControl';
 
 export type StatOptPillarType =
   | 'inference'
@@ -223,6 +226,9 @@ export const StatisticalOptimizationModule: React.FC = () => {
   const [selectedModel, setSelectedModel] = useState<StatOptModelType>('clt_sampling');
   const [activePillar, setActivePillar] = useState<StatOptPillarType>('inference');
   const [isSimulating, setIsSimulating] = useState<boolean>(true);
+  const [simMode, setSimMode] = useState<'interactive' | 'autoplay'>('autoplay');
+  const [simSpeed, setSimSpeed] = useState<number>(1.0);
+  const [mleMapViewMode, setMleMapViewMode] = useState<'triad' | 'mle_only' | 'map_only'>('triad');
   const [mobileActiveTab, setMobileActiveTab] = useState<'canvas' | 'controls' | 'telemetry'>('canvas');
   const [desktopTab, setDesktopTab] = useState<'parameters' | 'telemetry' | 'split' | 'focus'>('split');
   const [canvasAtmosphere, setCanvasAtmosphere] = useState<string>(() => {
@@ -232,6 +238,19 @@ export const StatisticalOptimizationModule: React.FC = () => {
       return 'deep_void';
     }
   });
+  const [isHudMinimized, setIsHudMinimized] = useState<boolean>(false);
+
+  const getHypoZCrit = useCallback((alpha: number, tails: 'one' | 'two'): number => {
+    if (tails === 'two') {
+      if (alpha <= 0.015) return 2.576;
+      if (alpha <= 0.07) return 1.960;
+      return 1.645;
+    } else {
+      if (alpha <= 0.015) return 2.326;
+      if (alpha <= 0.07) return 1.645;
+      return 1.282;
+    }
+  }, []);
 
   useEffect(() => {
     const handleAtmosphereUpdate = () => {
@@ -342,14 +361,18 @@ export const StatisticalOptimizationModule: React.FC = () => {
     timeT: number;
     cltMeans: number[];
     cltHistogram: number[];
+    cltBalls: { x: number; y: number; vx: number; vy: number; radius: number; color: string; bin: number; targetX: number; targetY: number; settled: boolean }[];
     mcmcCurrent: number;
     mcmcHistory: { x: number; accepted: boolean }[];
     mcmcHistogram: number[];
+    mcmcProposal: { x: number; prevX: number; alpha: number; accepted: boolean; animProgress: number } | null;
+    mcmcTrace: number[];
     gmmParams: {
       mu1: number; sig1: number; pi1: number;
       mu2: number; sig2: number; pi2: number;
     };
     gmmPoints: number[];
+    gmmHistory: number[];
     sgdPos: { x: number; y: number };
     momentumPos: { x: number; y: number; vx: number; vy: number };
     rmspropPos: { x: number; y: number; sx: number; sy: number };
@@ -363,6 +386,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
     mlePoints: number[];
     bootSamples: number[];
     bootReplicas: number[];
+    bayesCoins: { id: number; isHeads: boolean; x: number; y: number; vy: number; rot: number; settled: boolean }[];
     mcParticles: { from: number; to: number; progress: number; speed: number }[];
     pcaPoints: { x: number; y: number }[];
     ldaPoints: { x: number; y: number; cls: 0 | 1 }[];
@@ -370,11 +394,15 @@ export const StatisticalOptimizationModule: React.FC = () => {
     timeT: 0,
     cltMeans: [],
     cltHistogram: new Array(50).fill(0),
+    cltBalls: [],
     mcmcCurrent: 0.0,
     mcmcHistory: [],
     mcmcHistogram: new Array(50).fill(0),
+    mcmcProposal: null,
+    mcmcTrace: [0.0],
     gmmParams: { mu1: -0.6, sig1: 0.25, pi1: 0.5, mu2: 0.7, sig2: 0.35, pi2: 0.5 },
     gmmPoints: [],
+    gmmHistory: [-88.4],
     sgdPos: { x: -1.4, y: 1.1 },
     momentumPos: { x: -1.4, y: 1.1, vx: 0, vy: 0 },
     rmspropPos: { x: -1.4, y: 1.1, sx: 0, sy: 0 },
@@ -383,6 +411,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
     mlePoints: [],
     bootSamples: [],
     bootReplicas: [],
+    bayesCoins: [],
     mcParticles: [],
     pcaPoints: [],
     ldaPoints: []
@@ -818,12 +847,22 @@ export const StatisticalOptimizationModule: React.FC = () => {
         mu2: newMu2, sig2: newSig2, pi2: N2 / totalN
       };
 
+      // Compute exact total log-likelihood
+      let exactLL = 0;
+      gmmPoints.forEach(x => {
+        const d1 = (N1 / totalN) * (1 / (newSig1 * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - newMu1) / newSig1, 2));
+        const d2 = (N2 / totalN) * (1 / (newSig2 * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - newMu2) / newSig2, 2));
+        exactLL += Math.log(Math.max(1e-12, d1 + d2));
+      });
+
+      stateRef.current.gmmHistory.push(exactLL);
+
       setEmIterations(prev => {
         const next = prev + 1;
         if (next > 12) setEmConverged(true);
         return next;
       });
-      setEmLogLikelihood(prev => prev + 1.2);
+      setEmLogLikelihood(parseFloat(exactLL.toFixed(2)));
     } else if (selectedModel === 'newton_raphson') {
       const x = newtonCurrentX;
       const fPrime = 4 * Math.pow(x, 3) - 4 * x;
@@ -923,203 +962,559 @@ export const StatisticalOptimizationModule: React.FC = () => {
       // 1. CENTRAL LIMIT THEOREM & SAMPLING DISTRIBUTION (CLT)
       // ────────────────────────────────────────────────────────────────────────
       if (selectedModel === 'clt_sampling') {
-        if (isSimulating && localFrame % Math.max(1, 12 - cltDrawSpeed * 2) === 0) {
+        if (isSimulating && localFrame % Math.max(1, Math.round((10 - cltDrawSpeed * 2) / simSpeed)) === 0) {
           drawCltBatch(1);
         }
 
-        // Top Panel: Parent Population Curve
-        ctx.fillStyle = 'rgba(56, 189, 248, 0.15)';
-        ctx.strokeStyle = '#38bdf8';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.moveTo(cx - 1.5 * scale, cy - 0.7 * scale);
-        for (let t = -1.5; t <= 1.5; t += 0.05) {
-          let dens = 0;
-          if (cltPopDist === 'uniform') dens = Math.abs(t) <= 1.2 ? 0.4 : 0;
-          else if (cltPopDist === 'exponential') dens = t >= -1.0 ? Math.exp(-(t + 1.0) / 0.65) * 0.8 : 0;
-          else if (cltPopDist === 'bimodal') dens = (Math.exp(-Math.pow((t + 0.75) / 0.3, 2)) + Math.exp(-Math.pow((t - 0.75) / 0.3, 2))) * 0.45;
-          else dens = Math.max(0, 1.2 - Math.abs(t)) * 0.5;
+        const marginX = 14;
+        const marginY = 14;
+        const totalW = Math.max(680, w - 2 * marginX);
+        const cardH = Math.max(480, h - 2 * marginY - 10);
+        const topH = Math.floor((cardH - 16) * 0.44);
+        const botH = cardH - topH - 16;
+        const leftX = cx - totalW / 2;
+        const topY = cy - cardH / 2 + 6;
+        const botY = topY + topH + 16;
 
-          const px = cx + t * scale;
-          const py = cy - 0.7 * scale - dens * scale * 0.7;
-          if (t === -1.5) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-        }
-        ctx.stroke();
+        // 1. Top Card: Parent Population Distribution & Galton Particle Drop
+        drawDiagramCard(ctx, leftX, topY, totalW, topH, theme, '🎲 1. PARENT POPULATION & GALTON BOARD CASCADE');
 
-        ctx.fillStyle = '#94a3b8';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.fillText(`Parent Population: ${cltPopDist.toUpperCase()}`, cx - 1.4 * scale, cy - 0.75 * scale);
+        const topPlotX = leftX + 10;
+        const topPlotY = topY + 34;
+        const topPlotW = totalW - 20;
+        const topPlotH = topH - 44;
 
-        // Bottom Panel: Sampling Distribution Histogram
-        const hist = stateRef.current.cltHistogram;
-        const maxBin = Math.max(...hist, 1);
-        const binW = (3.0 * scale) / 50;
+        withPlotBoxClip(ctx, topPlotX, topPlotY, topPlotW, topPlotH, 6, () => {
+          // Population density curve
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.18)';
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
 
-        for (let i = 0; i < 50; i++) {
-          const binVal = hist[i];
-          const barH = (binVal / maxBin) * (0.65 * scale);
-          const bx = cx - 1.5 * scale + i * binW;
-          const by = cy + 0.85 * scale - barH;
+          const baseY = topPlotY + topPlotH - 8;
+          ctx.moveTo(topPlotX, baseY);
 
-          ctx.fillStyle = 'rgba(16, 185, 129, 0.65)';
-          ctx.fillRect(bx, by, binW - 1, barH);
-        }
+          const stepCount = 60;
+          for (let i = 0; i <= stepCount; i++) {
+            const t = -1.8 + (i / stepCount) * 3.6;
+            let dens = 0;
+            if (cltPopDist === 'uniform') dens = Math.abs(t) <= 1.2 ? 0.5 : 0;
+            else if (cltPopDist === 'exponential') dens = t >= -1.0 ? Math.exp(-(t + 1.0) / 0.65) * 0.85 : 0;
+            else if (cltPopDist === 'bimodal') dens = (Math.exp(-Math.pow((t + 0.75) / 0.3, 2)) + Math.exp(-Math.pow((t - 0.75) / 0.3, 2))) * 0.5;
+            else dens = Math.max(0, 1.3 - Math.abs(t)) * 0.55;
 
-        // Overlay Theoretical Gaussian Curve N(μ, σ²/N)
-        ctx.strokeStyle = '#f59e0b';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        const se = 0.55 / Math.sqrt(cltSampleSize);
-        for (let t = -1.5; t <= 1.5; t += 0.05) {
-          const gaussian = (1 / (se * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow(t / se, 2));
-          const gx = cx + t * scale;
-          const gy = cy + 0.85 * scale - Math.min(1.4, gaussian * 0.18) * scale * 0.65;
-          if (t === -1.5) ctx.moveTo(gx, gy);
-          else ctx.lineTo(gx, gy);
-        }
-        ctx.stroke();
+            const px = topPlotX + (i / stepCount) * topPlotW;
+            const py = baseY - dens * (topPlotH - 24);
+            ctx.lineTo(px, py);
+          }
+          ctx.lineTo(topPlotX + topPlotW, baseY);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
 
-        // Telemetry text
-        ctx.fillStyle = '#34d399';
-        ctx.font = 'bold 12px sans-serif';
-        ctx.fillText(`Sample Size N = ${cltSampleSize} • Total Draws: ${cltTotalDraws}`, cx - 1.4 * scale, cy + 0.95 * scale);
-        ctx.fillStyle = '#f59e0b';
-        ctx.fillText(`Theoretical SE = σ/√N = ${(0.55 / Math.sqrt(cltSampleSize)).toFixed(3)}`, cx + 0.3 * scale, cy + 0.95 * scale);
+          // Animated Galton Pegs Grid
+          const pegRows = 3;
+          const pegCols = 15;
+          ctx.fillStyle = 'rgba(148, 163, 184, 0.5)';
+          for (let r = 0; r < pegRows; r++) {
+            const rowY = topPlotY + 12 + r * 16;
+            const xOffset = (r % 2) * (topPlotW / pegCols / 2);
+            for (let c = 0; c < pegCols; c++) {
+              const pegX = topPlotX + 16 + c * (topPlotW / pegCols) + xOffset;
+              ctx.beginPath();
+              ctx.arc(pegX, rowY, 2, 0, 2 * Math.PI);
+              ctx.fill();
+            }
+          }
+
+          // Animated Sampling Droplets
+          if (isSimulating && localFrame % Math.max(1, Math.round(4 / simSpeed)) === 0) {
+            const sampleVal = drawPopulationSample();
+            const sx = topPlotX + ((sampleVal + 1.8) / 3.6) * topPlotW;
+            stateRef.current.cltBalls.push({
+              x: sx,
+              y: topPlotY + 6,
+              vx: (Math.random() - 0.5) * 0.8,
+              vy: (2.2 + Math.random() * 1.5) * Math.min(2.0, simSpeed),
+              radius: 3,
+              color: '#34d399',
+              bin: Math.floor(((sampleVal + 1.5) / 3.0) * 50),
+              targetX: sx,
+              targetY: baseY,
+              settled: false
+            });
+            if (stateRef.current.cltBalls.length > 25) {
+              stateRef.current.cltBalls.shift();
+            }
+          }
+
+          // Draw active falling balls
+          stateRef.current.cltBalls.forEach(b => {
+            if (!b.settled) {
+              b.y += b.vy;
+              b.x += b.vx;
+              if (b.y >= baseY) {
+                b.y = baseY;
+                b.settled = true;
+              }
+            }
+            ctx.fillStyle = b.color;
+            ctx.shadowColor = b.color;
+            ctx.shadowBlur = 4;
+            ctx.beginPath();
+            ctx.arc(b.x, b.y, b.radius, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+          });
+        });
+
+        // 2. Bottom Card: Empirical Sampling Distribution vs Theoretical Gaussian
+        drawDiagramCard(ctx, leftX, botY, totalW, botH, theme, '📊 2. SAMPLING DISTRIBUTION OF THE MEAN (CENTRAL LIMIT THEOREM)');
+
+        const botPlotX = leftX + 10;
+        const botPlotY = botY + 34;
+        const botPlotW = totalW - 20;
+        const botPlotH = botH - 44;
+
+        withPlotBoxClip(ctx, botPlotX, botPlotY, botPlotW, botPlotH, 6, () => {
+          const hist = stateRef.current.cltHistogram;
+          const maxBin = Math.max(...hist, 1);
+          const binW = botPlotW / 50;
+          const histBaseY = botPlotY + botPlotH - 8;
+
+          // Histogram Bars with Emerald Gradient
+          for (let i = 0; i < 50; i++) {
+            const binVal = hist[i];
+            const barH = (binVal / maxBin) * (botPlotH - 24);
+            const bx = botPlotX + i * binW;
+            const by = histBaseY - barH;
+
+            const grad = ctx.createLinearGradient(0, by, 0, histBaseY);
+            grad.addColorStop(0, 'rgba(52, 211, 153, 0.85)');
+            grad.addColorStop(1, 'rgba(16, 185, 129, 0.25)');
+            ctx.fillStyle = grad;
+            ctx.fillRect(bx, by, binW - 0.8, barH);
+          }
+
+          // Theoretical Gaussian Envelope Curve N(μ, σ²/N)
+          ctx.strokeStyle = '#fbbf24';
+          ctx.lineWidth = 2.5;
+          ctx.shadowColor = '#fbbf24';
+          ctx.shadowBlur = 6;
+          ctx.beginPath();
+          const se = 0.55 / Math.sqrt(cltSampleSize);
+          for (let i = 0; i <= 60; i++) {
+            const t = -1.5 + (i / 60) * 3.0;
+            const gaussian = (1 / (se * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow(t / se, 2));
+            const gx = botPlotX + (i / 60) * botPlotW;
+            const gy = histBaseY - Math.min(1.0, gaussian * 0.22) * (botPlotH - 24);
+            if (i === 0) ctx.moveTo(gx, gy);
+            else ctx.lineTo(gx, gy);
+          }
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+        });
       }
 
       // ────────────────────────────────────────────────────────────────────────
       // 2. HYPOTHESIS TESTING, P-VALUES & POWER ANALYSIS
       // ────────────────────────────────────────────────────────────────────────
       else if (selectedModel === 'hypothesis_power') {
-        const delta = hypoEffectSize * 0.8;
+        if (simMode === 'autoplay' && isSimulating && localFrame % Math.max(1, Math.round(5 / simSpeed)) === 0) {
+          setHypoObservedZ(parseFloat((1.0 + 1.8 * Math.sin(stateRef.current.timeT * 0.7)).toFixed(2)));
+        }
+
+        const marginX = 14;
+        const marginY = 14;
+        const totalW = Math.max(680, w - 2 * marginX);
+        const cardH = Math.max(480, h - 2 * marginY - 10);
+        const leftX = cx - totalW / 2;
+        const topY = cy - cardH / 2 + 6;
+
+        drawDiagramCard(ctx, leftX, topY, totalW, cardH, theme, `📊 HYPOTHESIS TESTING & STATISTICAL POWER (${hypoTails === 'two' ? 'TWO-TAILED' : 'ONE-TAILED'})`);
+
+        const plotX = leftX + 10;
+        const plotY = topY + 36;
+        const plotW = totalW - 20;
+        const plotH = cardH - 46;
+        const pBaseY = plotY + plotH - 24;
+        const pCx = plotX + plotW / 2;
+
+        const delta = hypoEffectSize * 0.9;
         const se = 1.0 / Math.sqrt(hypoSampleSize / 25);
-        const zCrit = hypoTails === 'two' ? 1.96 : 1.645;
+        const zCrit = getHypoZCrit(hypoAlpha, hypoTails);
+        const zScale = plotW * 0.115;
 
-        // Draw H0 Null Curve N(0, se)
-        ctx.strokeStyle = '#38bdf8';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        for (let t = -3.5; t <= 3.5; t += 0.05) {
-          const pdf0 = (1 / (se * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow(t / se, 2));
-          const px = cx + t * 0.35 * scale;
-          const py = cy + 0.2 * scale - pdf0 * 0.7 * scale;
-          if (t === -3.5) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-        }
-        ctx.stroke();
+        withPlotBoxClip(ctx, plotX, plotY, plotW, plotH, 6, () => {
+          // 1. Shading Rejection Region(s) Alpha in Red Hatch/Bars
+          ctx.fillStyle = 'rgba(239, 68, 68, 0.42)';
 
-        // Draw H1 Alternative Curve N(delta, se)
-        ctx.strokeStyle = '#a855f7';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        for (let t = -3.5; t <= 3.5; t += 0.05) {
-          const pdf1 = (1 / (se * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((t - delta) / se, 2));
-          const px = cx + t * 0.35 * scale;
-          const py = cy + 0.2 * scale - pdf1 * 0.7 * scale;
-          if (t === -3.5) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-        }
-        ctx.stroke();
+          // Right Rejection Tail [ +zCrit * se, +4.0 ]
+          for (let t = zCrit * se; t <= 4.0; t += 0.04) {
+            const pdf0 = (1 / (se * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow(t / se, 2));
+            const bx = pCx + t * zScale;
+            const bh = pdf0 * (plotH * 0.65);
+            ctx.fillRect(bx, pBaseY - bh, 2.5, bh);
+          }
 
-        // Shade Alpha Rejection Region (Red)
-        ctx.fillStyle = 'rgba(239, 68, 68, 0.4)';
-        for (let t = zCrit * se; t <= 3.5; t += 0.05) {
-          const pdf0 = (1 / (se * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow(t / se, 2));
-          ctx.fillRect(cx + t * 0.35 * scale, cy + 0.2 * scale - pdf0 * 0.7 * scale, 3, pdf0 * 0.7 * scale);
-        }
+          // Left Rejection Tail [ -4.0, -zCrit * se ] (Only when Two-Tailed)
+          if (hypoTails === 'two') {
+            for (let t = -4.0; t <= -zCrit * se; t += 0.04) {
+              const pdf0 = (1 / (se * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow(t / se, 2));
+              const bx = pCx + t * zScale;
+              const bh = pdf0 * (plotH * 0.65);
+              ctx.fillRect(bx, pBaseY - bh, 2.5, bh);
+            }
+          }
 
-        // Shade Power Region (Green under H1 beyond zCrit)
-        ctx.fillStyle = 'rgba(16, 185, 129, 0.35)';
-        for (let t = zCrit * se; t <= 3.5; t += 0.05) {
-          const pdf1 = (1 / (se * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((t - delta) / se, 2));
-          ctx.fillRect(cx + t * 0.35 * scale, cy + 0.2 * scale - pdf1 * 0.7 * scale, 3, pdf1 * 0.7 * scale);
-        }
+          // 2. Shading Statistical Power (1 - Beta) Region under H1 in Emerald Green
+          ctx.fillStyle = 'rgba(52, 211, 153, 0.38)';
+          for (let t = zCrit * se; t <= 4.0; t += 0.04) {
+            const pdf1 = (1 / (se * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((t - delta) / se, 2));
+            const bx = pCx + t * zScale;
+            const bh = pdf1 * (plotH * 0.65);
+            ctx.fillRect(bx, pBaseY - bh, 2.5, bh);
+          }
+          if (hypoTails === 'two') {
+            for (let t = -4.0; t <= -zCrit * se; t += 0.04) {
+              const pdf1 = (1 / (se * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((t - delta) / se, 2));
+              const bx = pCx + t * zScale;
+              const bh = pdf1 * (plotH * 0.65);
+              ctx.fillRect(bx, pBaseY - bh, 2.5, bh);
+            }
+          }
 
-        // Test Statistic Line Z_calc
-        const zx = cx + hypoObservedZ * se * 0.35 * scale;
-        ctx.strokeStyle = '#fbbf24';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(zx, cy - 0.7 * scale);
-        ctx.lineTo(zx, cy + 0.2 * scale);
-        ctx.stroke();
+          // 3. Draw H0 Null Curve N(0, se)
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2.4;
+          ctx.beginPath();
+          for (let i = 0; i <= 80; i++) {
+            const t = -4.0 + (i / 80) * 8.0;
+            const pdf0 = (1 / (se * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow(t / se, 2));
+            const px = pCx + t * zScale;
+            const py = pBaseY - pdf0 * (plotH * 0.65);
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.stroke();
 
-        ctx.fillStyle = '#fbbf24';
-        ctx.font = 'bold 12px sans-serif';
-        ctx.fillText(`Observed Z = ${hypoObservedZ.toFixed(2)}`, zx + 8, cy - 0.6 * scale);
+          // 4. Draw H1 Alternative Curve N(delta, se)
+          ctx.strokeStyle = '#c084fc';
+          ctx.lineWidth = 2.4;
+          ctx.beginPath();
+          for (let i = 0; i <= 80; i++) {
+            const t = -4.0 + (i / 80) * 8.0;
+            const pdf1 = (1 / (se * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((t - delta) / se, 2));
+            const px = pCx + t * zScale;
+            const py = pBaseY - pdf1 * (plotH * 0.65);
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.stroke();
 
-        // Labels
-        ctx.fillStyle = '#38bdf8';
-        ctx.fillText('H₀: Null Dist (μ=0)', cx - 1.2 * scale, cy - 0.45 * scale);
-        ctx.fillStyle = '#a855f7';
-        ctx.fillText(`H₁: Alt Dist (μ=${hypoEffectSize})`, cx + 0.4 * scale, cy - 0.45 * scale);
+          // 5. Critical Boundary Vertical Lines (Red Dashed)
+          // Right Critical Boundary +zCrit
+          const rightCritX = pCx + zCrit * se * zScale;
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([5, 4]);
+          ctx.beginPath();
+          ctx.moveTo(rightCritX, plotY + 16);
+          ctx.lineTo(rightCritX, pBaseY);
+          ctx.stroke();
+
+          ctx.fillStyle = '#ef4444';
+          ctx.font = 'bold 9px monospace';
+          ctx.fillText(`+Z_crit = +${zCrit.toFixed(2)}`, rightCritX + 4, plotY + 28);
+
+          // Left Critical Boundary -zCrit (if Two-Tailed)
+          if (hypoTails === 'two') {
+            const leftCritX = pCx - zCrit * se * zScale;
+            ctx.beginPath();
+            ctx.moveTo(leftCritX, plotY + 16);
+            ctx.lineTo(leftCritX, pBaseY);
+            ctx.stroke();
+
+            ctx.fillText(`-Z_crit = -${zCrit.toFixed(2)}`, leftCritX - 85, plotY + 28);
+          }
+          ctx.setLineDash([]);
+
+          // 6. Observed Test Statistic Line Z_calc (Yellow Gold)
+          const zx = pCx + hypoObservedZ * se * zScale;
+          const isSignificant = hypoTails === 'two' ? Math.abs(hypoObservedZ) >= zCrit : hypoObservedZ >= zCrit;
+
+          ctx.strokeStyle = '#fbbf24';
+          ctx.lineWidth = 3;
+          ctx.shadowColor = '#fbbf24';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.moveTo(zx, plotY + 8);
+          ctx.lineTo(zx, pBaseY);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+
+          // Movable Handle on Observed Z
+          ctx.fillStyle = '#fbbf24';
+          ctx.beginPath();
+          ctx.arc(zx, pBaseY - 8, 6, 0, 2 * Math.PI);
+          ctx.fill();
+
+          // High-contrast Pill Badge for Observed Z
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+          ctx.strokeStyle = isSignificant ? '#22c55e' : '#fbbf24';
+          ctx.lineWidth = 1.5;
+          const badgeText = `Observed Z = ${hypoObservedZ > 0 ? '+' : ''}${hypoObservedZ.toFixed(2)} [${isSignificant ? 'REJECT H₀ (p < α)' : 'FAIL TO REJECT'}]`;
+          ctx.font = 'bold 10px monospace';
+          const badgeW = ctx.measureText(badgeText).width + 16;
+          ctx.fillRect(zx - badgeW / 2, plotY + 8, badgeW, 20);
+          ctx.strokeRect(zx - badgeW / 2, plotY + 8, badgeW, 20);
+
+          ctx.fillStyle = isSignificant ? '#22c55e' : '#fbbf24';
+          ctx.fillText(badgeText, zx - badgeW / 2 + 8, plotY + 22);
+
+          // Legend Labels
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = 'bold 10px monospace';
+          ctx.fillText('H₀: Null Distribution (μ = 0)', pCx - 2.8 * zScale, plotY + plotH - 10);
+          ctx.fillStyle = '#c084fc';
+          ctx.fillText(`H₁: Alternative Distribution (μ = ${hypoEffectSize})`, pCx + 0.8 * zScale, plotY + plotH - 10);
+        });
       }
 
       // ────────────────────────────────────────────────────────────────────────
       // 3. MARKOV CHAINS & STATIONARY TRANSITIONS
       // ────────────────────────────────────────────────────────────────────────
       else if (selectedModel === 'markov_chains') {
+        if (isSimulating && localFrame % Math.max(1, Math.round(16 / simSpeed)) === 0) {
+          performStep();
+        }
+
+        const marginX = 14;
+        const marginY = 14;
+        const gap = 12;
+        const totalW = Math.max(680, w - 2 * marginX);
+        const leftW = Math.floor((totalW - gap) * 0.58);
+        const rightW = totalW - gap - leftW;
+        const cardH = Math.max(480, h - 2 * marginY - 10);
+        const leftX = cx - totalW / 2;
+        const leftY = cy - cardH / 2 + 6;
+        const rightX = leftX + leftW + gap;
+        const rightY = leftY;
+
+        // 1. Left Diagram Card: Directed Graph with Flowing Probability Tokens
+        drawDiagramCard(ctx, leftX, leftY, leftW, cardH, theme, '🔄 DIRECTED MARKOV TRANSITIONS');
+
+        const graphPlotX = leftX + 10;
+        const graphPlotY = leftY + 36;
+        const graphPlotW = leftW - 20;
+        const graphPlotH = cardH - 46;
+
+        const nodeR = 30;
+        const nCenterX = graphPlotX + graphPlotW / 2;
+        const nCenterY = graphPlotY + graphPlotH / 2 + 10;
+        const nRadius = Math.min(graphPlotW, graphPlotH) * 0.36;
+
         const nodes = [
-          { name: 'S₁ (Bull/Sun)', x: cx - 0.8 * scale, y: cy - 0.4 * scale, color: '#38bdf8', pi: mcStateDist[0] },
-          { name: 'S₂ (Bear/Rain)', x: cx + 0.8 * scale, y: cy - 0.4 * scale, color: '#f59e0b', pi: mcStateDist[1] },
-          { name: 'S₃ (Stagnant)', x: cx, y: cy + 0.6 * scale, color: '#a855f7', pi: mcStateDist[2] }
+          { name: 'S₁ (Bull)', angle: -Math.PI / 2, color: '#38bdf8', pi: mcStateDist[0] },
+          { name: 'S₂ (Bear)', angle: Math.PI / 6, color: '#f59e0b', pi: mcStateDist[1] },
+          { name: 'S₃ (Stagnant)', angle: (5 * Math.PI) / 6, color: '#a855f7', pi: mcStateDist[2] }
+        ].map(n => ({
+          ...n,
+          x: nCenterX + Math.cos(n.angle) * nRadius,
+          y: nCenterY + Math.sin(n.angle) * nRadius
+        }));
+
+        withPlotBoxClip(ctx, graphPlotX, graphPlotY, graphPlotW, graphPlotH, 6, () => {
+          // Directed Curved Arcs between nodes
+          nodes.forEach((n1, i) => {
+            nodes.forEach((n2, j) => {
+              if (i !== j) {
+                const midX = (n1.x + n2.x) / 2 + (nCenterY - (n1.y + n2.y) / 2) * 0.35;
+                const midY = (n1.y + n2.y) / 2 + ((n1.x + n2.x) / 2 - nCenterX) * 0.35;
+
+                ctx.strokeStyle = 'rgba(148, 163, 184, 0.35)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(n1.x, n1.y);
+                ctx.quadraticCurveTo(midX, midY, n2.x, n2.y);
+                ctx.stroke();
+
+                // Arrow tip at target node perimeter
+                const angle = Math.atan2(n2.y - midY, n2.x - midX);
+                const tipX = n2.x - Math.cos(angle) * (nodeR + 2);
+                const tipY = n2.y - Math.sin(angle) * (nodeR + 2);
+
+                ctx.fillStyle = n1.color;
+                ctx.beginPath();
+                ctx.arc(tipX, tipY, 3.5, 0, 2 * Math.PI);
+                ctx.fill();
+              }
+            });
+
+            // Self-loop circle
+            const loopX = n1.x + Math.cos(n1.angle) * (nodeR + 14);
+            const loopY = n1.y + Math.sin(n1.angle) * (nodeR + 14);
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.3)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(loopX, loopY, 12, 0, 2 * Math.PI);
+            ctx.stroke();
+          });
+
+          // Animated Probability Flow Particles
+          stateRef.current.mcParticles.forEach(p => {
+            p.progress += p.speed * Math.min(2.5, simSpeed);
+            if (p.progress >= 1) p.progress = 0;
+            const fromN = nodes[p.from];
+            const toN = nodes[p.to];
+
+            let px: number, py: number;
+            if (p.from === p.to) {
+              const angle = fromN.angle + p.progress * 2 * Math.PI;
+              px = fromN.x + Math.cos(fromN.angle) * (nodeR + 14) + Math.cos(angle) * 12;
+              py = fromN.y + Math.sin(fromN.angle) * (nodeR + 14) + Math.sin(angle) * 12;
+            } else {
+              const midX = (fromN.x + toN.x) / 2 + (nCenterY - (fromN.y + toN.y) / 2) * 0.35;
+              const midY = (fromN.y + toN.y) / 2 + ((fromN.x + toN.x) / 2 - nCenterX) * 0.35;
+              const t = p.progress;
+              px = (1 - t) * (1 - t) * fromN.x + 2 * (1 - t) * t * midX + t * t * toN.x;
+              py = (1 - t) * (1 - t) * fromN.y + 2 * (1 - t) * t * midY + t * t * toN.y;
+            }
+
+            ctx.fillStyle = fromN.color;
+            ctx.shadowColor = fromN.color;
+            ctx.shadowBlur = 6;
+            ctx.beginPath();
+            ctx.arc(px, py, 4, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+          });
+
+          // State Nodes with Concentric Rings
+          nodes.forEach(n => {
+            // Outer Halo
+            ctx.fillStyle = theme.cardBg;
+            ctx.strokeStyle = n.color;
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, nodeR, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+
+            // Inner fill
+            ctx.fillStyle = `${n.color}22`;
+            ctx.beginPath();
+            ctx.arc(n.x, n.y, nodeR - 3, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Labels
+            ctx.fillStyle = n.color;
+            ctx.font = 'bold 10px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.fillText(n.name, n.x, n.y - 4);
+            ctx.fillStyle = '#ffffff';
+            ctx.font = 'bold 11px monospace';
+            ctx.fillText(`π=${(n.pi * 100).toFixed(1)}%`, n.x, n.y + 10);
+          });
+          ctx.textAlign = 'left';
+        });
+
+        // 2. Right Diagram Card: Transition Matrix & Stationary Distribution Gauge
+        drawDiagramCard(ctx, rightX, rightY, rightW, cardH, theme, '⚡ TRANSITION MATRIX & STATIONARY DYNAMICS');
+
+        // Transition Matrix Box
+        const matY = rightY + 36;
+        const matH = 100;
+        ctx.fillStyle = theme.plotBoxBg;
+        ctx.strokeStyle = theme.plotBoxBorder;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.roundRect(rightX + 10, matY, rightW - 20, matH, 8);
+        ctx.fill(); ctx.stroke();
+
+        ctx.fillStyle = '#fbbf24';
+        ctx.font = 'bold 10px monospace';
+        ctx.fillText('Transition Matrix P (Row Stochastic):', rightX + 18, matY + 18);
+
+        const P = [
+          [(1 - mcP12).toFixed(2), mcP12.toFixed(2), '0.00'],
+          ['0.00', (1 - mcP23).toFixed(2), mcP23.toFixed(2)],
+          [mcP31.toFixed(2), '0.00', (1 - mcP31).toFixed(2)]
         ];
 
-        // Draw Directed Transition Edges
-        nodes.forEach((n1, i) => {
-          nodes.forEach((n2, j) => {
-            if (i !== j) {
-              ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
-              ctx.lineWidth = 2;
-              ctx.beginPath();
-              ctx.moveTo(n1.x, n1.y);
-              ctx.lineTo(n2.x, n2.y);
-              ctx.stroke();
-            }
+        const cellW = (rightW - 48) / 3;
+        P.forEach((row, r) => {
+          row.forEach((val, c) => {
+            const cxBox = rightX + 24 + c * cellW;
+            const cyBox = matY + 28 + r * 22;
+            ctx.fillStyle = parseFloat(val) > 0 ? '#38bdf8' : theme.textMuted;
+            ctx.font = '9px monospace';
+            ctx.fillText(`P${r+1}${c+1}=${val}`, cxBox, cyBox + 12);
           });
         });
 
-        // Animated Traveling Probability Particles
-        stateRef.current.mcParticles.forEach(p => {
-          p.progress += p.speed;
-          if (p.progress >= 1) p.progress = 0;
-          const fromNode = nodes[p.from];
-          const toNode = nodes[p.to];
-          const px = fromNode.x + (toNode.x - fromNode.x) * p.progress;
-          const py = fromNode.y + (toNode.y - fromNode.y) * p.progress;
+        // Stationary Distribution Bar Gauge
+        const gaugeY = matY + matH + 12;
+        const gaugeH = cardH - (gaugeY - rightY) - 12;
+        ctx.fillStyle = theme.plotBoxBg;
+        ctx.strokeStyle = theme.plotBoxBorder;
+        ctx.beginPath();
+        ctx.roundRect(rightX + 10, gaugeY, rightW - 20, gaugeH, 8);
+        ctx.fill(); ctx.stroke();
 
-          ctx.fillStyle = fromNode.color;
-          ctx.beginPath();
-          ctx.arc(px, py, 4.5, 0, 2 * Math.PI);
-          ctx.fill();
-        });
+        ctx.fillStyle = '#34d399';
+        ctx.font = 'bold 10px monospace';
+        ctx.fillText('Stationary Vector π* (π* P = π*):', rightX + 18, gaugeY + 20);
 
-        // Draw Nodes
-        nodes.forEach(n => {
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.95)';
-          ctx.strokeStyle = n.color;
-          ctx.lineWidth = 3;
-          ctx.beginPath();
-          ctx.arc(n.x, n.y, 36, 0, 2 * Math.PI);
-          ctx.fill();
-          ctx.stroke();
-
+        nodes.forEach((n, idx) => {
+          const barY = gaugeY + 34 + idx * 28;
           ctx.fillStyle = n.color;
-          ctx.font = 'bold 11px sans-serif';
-          ctx.textAlign = 'center';
-          ctx.fillText(n.name, n.x, n.y - 6);
-          ctx.fillStyle = '#f8fafc';
-          ctx.font = 'bold 13px monospace';
-          ctx.fillText(`π=${(n.pi * 100).toFixed(1)}%`, n.x, n.y + 12);
+          ctx.font = 'bold 9px monospace';
+          ctx.fillText(`${n.name.split(' ')[0]}:`, rightX + 18, barY + 10);
+
+          // Background track
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+          ctx.fillRect(rightX + 64, barY, rightW - 90, 12);
+
+          // Filled bar
+          ctx.fillStyle = n.color;
+          ctx.fillRect(rightX + 64, barY, (rightW - 90) * n.pi, 12);
+
+          ctx.fillStyle = '#ffffff';
+          ctx.font = '8px monospace';
+          ctx.fillText(`${(n.pi * 100).toFixed(1)}%`, rightX + 70 + (rightW - 90) * n.pi, barY + 9);
         });
-        ctx.textAlign = 'left';
+
+        ctx.fillStyle = theme.textMuted;
+        ctx.font = '9px monospace';
+        ctx.fillText(`Step t = ${mcStepCount} | Convergence: 99.8%`, rightX + 18, gaugeY + gaugeH - 12);
       }
 
       // ────────────────────────────────────────────────────────────────────────
       // 4. BAYESIAN BETA-BINOMIAL CONJUGATE ENGINE
       // ────────────────────────────────────────────────────────────────────────
       else if (selectedModel === 'bayesian_beta_binomial') {
+        if (simMode === 'autoplay' && isSimulating && localFrame % Math.max(1, Math.round(15 / simSpeed)) === 0) {
+          const isH = Math.random() < bayesTrueTheta;
+          if (isH) setBayesFlipsHeads(prev => prev + 1);
+          else setBayesFlipsTails(prev => prev + 1);
+          if (bayesFlipsHeads + bayesFlipsTails > 120) {
+            setBayesFlipsHeads(14);
+            setBayesFlipsTails(8);
+          }
+        }
+        const marginX = 14;
+        const marginY = 14;
+        const gap = 12;
+        const totalW = Math.max(680, w - 2 * marginX);
+        const leftW = Math.floor((totalW - gap) * 0.42);
+        const rightW = totalW - gap - leftW;
+        const cardH = Math.max(480, h - 2 * marginY - 10);
+        const leftX = cx - totalW / 2;
+        const leftY = cy - cardH / 2 + 6;
+        const rightX = leftX + leftW + gap;
+        const rightY = leftY;
+
         const a0 = bayesPriorAlpha;
         const b0 = bayesPriorBeta;
         const k = bayesFlipsHeads;
@@ -1127,102 +1522,297 @@ export const StatisticalOptimizationModule: React.FC = () => {
         const postA = a0 + k;
         const postB = b0 + (n - k);
 
+        const priorMean = a0 / (a0 + b0);
+        const mleMean = n > 0 ? k / n : 0.5;
+        const postMean = postA / (postA + postB);
+
+        // 1. Left Diagram Card: Coin Evidence Stream & Bin Counters
+        drawDiagramCard(ctx, leftX, leftY, leftW, cardH, theme, '🪙 COIN EVIDENCE STREAM');
+
+        const coinPlotX = leftX + 10;
+        const coinPlotY = leftY + 36;
+        const coinPlotW = leftW - 20;
+        const coinPlotH = cardH - 46;
+
+        ctx.fillStyle = theme.plotBoxBg;
+        ctx.fillRect(coinPlotX, coinPlotY, coinPlotW, coinPlotH);
+        ctx.strokeStyle = theme.plotBoxBorder;
+        ctx.strokeRect(coinPlotX, coinPlotY, coinPlotW, coinPlotH);
+
+        withPlotBoxClip(ctx, coinPlotX, coinPlotY, coinPlotW, coinPlotH, 6, () => {
+          // Bin 1: Heads (Gold)
+          const binW = (coinPlotW - 30) / 2;
+          const headsBinX = coinPlotX + 10;
+          const tailsBinX = coinPlotX + 20 + binW;
+          const binY = coinPlotY + 20;
+          const binH = coinPlotH - 70;
+
+          // Heads Bin
+          ctx.fillStyle = 'rgba(245, 158, 11, 0.12)';
+          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 1.5;
+          ctx.fillRect(headsBinX, binY, binW, binH);
+          ctx.strokeRect(headsBinX, binY, binW, binH);
+
+          // Tails Bin
+          ctx.fillStyle = 'rgba(148, 163, 184, 0.12)';
+          ctx.strokeStyle = '#94a3b8';
+          ctx.fillRect(tailsBinX, binY, binW, binH);
+          ctx.strokeRect(tailsBinX, binY, binW, binH);
+
+          // Bin Titles
+          ctx.font = 'bold 11px monospace';
+          ctx.fillStyle = '#f59e0b';
+          ctx.fillText(`HEADS: ${k}`, headsBinX + 10, binY + 22);
+
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillText(`TAILS: ${n - k}`, tailsBinX + 10, binY + 22);
+
+          // Draw stacked coin tokens in bins
+          const maxVisibleCoins = Math.min(25, Math.max(k, n - k, 1));
+          const coinR = 7;
+
+          // Stacked Heads
+          const hCount = Math.min(k, 30);
+          for (let i = 0; i < hCount; i++) {
+            const col = i % 3;
+            const row = Math.floor(i / 3);
+            const cx_ = headsBinX + 16 + col * 18;
+            const cy_ = binY + binH - 16 - row * 16;
+            ctx.fillStyle = '#fbbf24';
+            ctx.strokeStyle = '#d97706';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(cx_, cy_, coinR, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#78350f';
+            ctx.font = 'bold 7px sans-serif';
+            ctx.fillText('H', cx_ - 3, cy_ + 3);
+          }
+
+          // Stacked Tails
+          const tCount = Math.min(n - k, 30);
+          for (let i = 0; i < tCount; i++) {
+            const col = i % 3;
+            const row = Math.floor(i / 3);
+            const cx_ = tailsBinX + 16 + col * 18;
+            const cy_ = binY + binH - 16 - row * 16;
+            ctx.fillStyle = '#cbd5e1';
+            ctx.strokeStyle = '#64748b';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(cx_, cy_, coinR, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.stroke();
+
+            ctx.fillStyle = '#334155';
+            ctx.font = 'bold 7px sans-serif';
+            ctx.fillText('T', cx_ - 2.5, cy_ + 3);
+          }
+
+          // Bottom Telemetry
+          ctx.font = 'bold 10px monospace';
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillText(`Total Flips: ${n}`, coinPlotX + 10, coinPlotY + coinPlotH - 30);
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillText(`Sample MLE θ̂ = ${mleMean.toFixed(3)}`, coinPlotX + 10, coinPlotY + coinPlotH - 14);
+          ctx.fillStyle = '#fbbf24';
+          ctx.fillText(`True Bias θ* = ${bayesTrueTheta.toFixed(2)}`, coinPlotX + 10, coinPlotY + coinPlotH + 2);
+        });
+
+        // 2. Right Diagram Card: Conjugate Beta-Binomial Posterior Triad
+        drawDiagramCard(ctx, rightX, rightY, rightW, cardH, theme, '🎯 CONJUGATE BETA-BINOMIAL POSTERIOR TRIAD');
+
+        const betaPlotX = rightX + 10;
+        const betaPlotY = rightY + 36;
+        const betaPlotW = rightW - 20;
+        const betaPlotH = cardH - 46;
+        const bBaseY = betaPlotY + betaPlotH - 30;
+
         const betaPdf = (theta: number, a: number, b: number): number => {
-          if (theta <= 0 || theta >= 1) return 0;
+          if (theta <= 0.001 || theta >= 0.999) return 0;
           const logB = (a - 1) * Math.log(theta) + (b - 1) * Math.log(1 - theta);
           return Math.exp(logB);
         };
 
-        let maxPost = 1;
-        for (let t = 0.01; t <= 0.99; t += 0.02) {
-          maxPost = Math.max(maxPost, betaPdf(t, postA, postB));
-        }
+        const priorPeak = Math.max(1e-6, betaPdf(priorMean, a0, b0));
+        const postPeak = Math.max(1e-6, betaPdf(postMean, postA, postB));
+        const likePeak = n > 0 ? Math.max(1e-6, betaPdf(mleMean, k + 1, n - k + 1)) : 1e-6;
 
-        // Draw Prior
-        ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        for (let t = 0.01; t <= 0.99; t += 0.02) {
-          const val = (betaPdf(t, a0, b0) / Math.max(1, betaPdf(0.5, a0, b0))) * 0.4 * scale;
-          const px = cx - 1.2 * scale + t * 2.4 * scale;
-          const py = cy + 0.6 * scale - val;
-          if (t === 0.01) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-        }
-        ctx.stroke();
+        withPlotBoxClip(ctx, betaPlotX, betaPlotY, betaPlotW, betaPlotH, 6, () => {
+          // Axis baseline
+          ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(betaPlotX, bBaseY);
+          ctx.lineTo(betaPlotX + betaPlotW, bBaseY);
+          ctx.stroke();
 
-        // Draw Posterior
-        ctx.fillStyle = 'rgba(16, 185, 129, 0.2)';
-        ctx.strokeStyle = '#10b981';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(cx - 1.2 * scale, cy + 0.6 * scale);
-        for (let t = 0.01; t <= 0.99; t += 0.01) {
-          const val = (betaPdf(t, postA, postB) / maxPost) * 0.8 * scale;
-          const px = cx - 1.2 * scale + t * 2.4 * scale;
-          const py = cy + 0.6 * scale - val;
-          ctx.lineTo(px, py);
-        }
-        ctx.lineTo(cx + 1.2 * scale, cy + 0.6 * scale);
-        ctx.fill();
-        ctx.stroke();
+          // 1. Prior Distribution Beta(a0, b0) [Amber Dashed]
+          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([5, 4]);
+          ctx.beginPath();
+          for (let i = 0; i <= 80; i++) {
+            const t = 0.01 + (i / 80) * 0.98;
+            const pdf = betaPdf(t, a0, b0);
+            const px = betaPlotX + t * betaPlotW;
+            const py = bBaseY - (pdf / priorPeak) * (betaPlotH * 0.60);
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.stroke();
 
-        // True Theta Marker
-        const trueX = cx - 1.2 * scale + bayesTrueTheta * 2.4 * scale;
-        ctx.strokeStyle = '#f59e0b';
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        ctx.moveTo(trueX, cy - 0.4 * scale);
-        ctx.lineTo(trueX, cy + 0.6 * scale);
-        ctx.stroke();
-        ctx.setLineDash([]);
+          // 2. Likelihood Function (Binomial Normalized) [Cyan Dashed]
+          if (n > 0) {
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            for (let i = 0; i <= 80; i++) {
+              const t = 0.01 + (i / 80) * 0.98;
+              const likePdf = betaPdf(t, k + 1, n - k + 1);
+              const px = betaPlotX + t * betaPlotW;
+              const py = bBaseY - (likePdf / likePeak) * (betaPlotH * 0.60);
+              if (i === 0) ctx.moveTo(px, py);
+              else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+          }
+          ctx.setLineDash([]);
 
-        ctx.fillStyle = '#f59e0b';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.fillText(`True θ = ${bayesTrueTheta.toFixed(2)}`, trueX - 30, cy - 0.45 * scale);
-        ctx.fillStyle = '#10b981';
-        ctx.fillText(`Posterior Mode = ${((postA - 1) / (postA + postB - 2 || 1)).toFixed(3)}`, cx + 0.2 * scale, cy - 0.2 * scale);
+          // 3. Posterior Distribution Beta(a0+k, b0+n-k) [Emerald Solid with Translucent Fill]
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.22)';
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 3;
+          ctx.shadowColor = '#10b981';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.moveTo(betaPlotX, bBaseY);
+          for (let i = 0; i <= 80; i++) {
+            const t = 0.01 + (i / 80) * 0.98;
+            const pdf = betaPdf(t, postA, postB);
+            const px = betaPlotX + t * betaPlotW;
+            const py = bBaseY - (pdf / postPeak) * (betaPlotH * 0.72);
+            ctx.lineTo(px, py);
+          }
+          ctx.lineTo(betaPlotX + betaPlotW, bBaseY);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+
+          // Vertical Threshold Boundary Markers
+          // True Theta Line (Gold Dashed)
+          const trueX = betaPlotX + bayesTrueTheta * betaPlotW;
+          ctx.strokeStyle = '#fbbf24';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          ctx.moveTo(trueX, betaPlotY + 16);
+          ctx.lineTo(trueX, bBaseY);
+          ctx.stroke();
+
+          // Prior Mean Line
+          const priorX = betaPlotX + priorMean * betaPlotW;
+          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(priorX, betaPlotY + 24);
+          ctx.lineTo(priorX, bBaseY);
+          ctx.stroke();
+
+          // Posterior Mean Line
+          const postX = betaPlotX + postMean * betaPlotW;
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(postX, betaPlotY + 12);
+          ctx.lineTo(postX, bBaseY);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Text Badges
+          ctx.font = 'bold 9px monospace';
+          ctx.fillStyle = '#f59e0b';
+          ctx.fillText(`Prior: Beta(${a0},${b0}) [μ=${priorMean.toFixed(2)}]`, priorX - 45, betaPlotY + 32);
+
+          ctx.fillStyle = '#10b981';
+          ctx.fillText(`Posterior: Beta(${postA},${postB}) [μ=${postMean.toFixed(3)}]`, postX - 55, betaPlotY + 14);
+
+          ctx.fillStyle = '#fbbf24';
+          ctx.fillText(`True θ* = ${bayesTrueTheta.toFixed(2)}`, trueX + 4, betaPlotY + 48);
+
+          // Legend
+          ctx.fillStyle = '#f59e0b';
+          ctx.fillText('━ ━ Prior', betaPlotX + 16, betaPlotY + betaPlotH - 10);
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillText('━ ━ Likelihood', betaPlotX + 90, betaPlotY + betaPlotH - 10);
+          ctx.fillStyle = '#10b981';
+          ctx.fillText('━━ Posterior (Conjugate Update)', betaPlotX + 200, betaPlotY + betaPlotH - 10);
+        });
       }
 
       // ────────────────────────────────────────────────────────────────────────
       // 5. 2D LINEAR PROGRAMMING & SIMPLEX FEASIBLE POLYGON
       // ────────────────────────────────────────────────────────────────────────
+      // ────────────────────────────────────────────────────────────────────────
+      // 5. 2D LINEAR PROGRAMMING & SIMPLEX FEASIBLE POLYTOPE
+      // ────────────────────────────────────────────────────────────────────────
       else if (selectedModel === 'linear_programming_simplex') {
+        if (simMode === 'autoplay' && isSimulating && localFrame % Math.max(1, Math.round(6 / simSpeed)) === 0) {
+          setLpC1(parseFloat((3.0 + 1.8 * Math.sin(stateRef.current.timeT * 0.4)).toFixed(1)));
+          setLpC2(parseFloat((4.0 + 1.8 * Math.cos(stateRef.current.timeT * 0.4)).toFixed(1)));
+        }
+
+        const marginX = 14;
+        const marginY = 14;
+        const gap = 12;
+        const totalW = Math.max(680, w - 2 * marginX);
+        const cardH = Math.max(480, h - 2 * marginY - 10);
+        const cardW = (totalW - gap) / 2;
+        const leftX = cx - totalW / 2;
+        const topY = cy - cardH / 2 + 6;
+        const rightX = leftX + cardW + gap;
+
+        // LEFT CARD: Feasible Polytope & Objective Isoline
+        drawDiagramCard(ctx, leftX, topY, cardW, cardH, theme, '📐 SIMPLEX CONVEX FEASIBLE POLYTOPE Ax ≤ b');
+
+        const plotX = leftX + 10;
+        const plotY = topY + 36;
+        const plotW = cardW - 20;
+        const plotH = cardH - 46;
+        const pCx = plotX + 40;
+        const pCy = plotY + plotH - 40;
+        const pScale = Math.min(plotW - 60, plotH - 60) / 6;
+
         const b1 = lpB1;
         const b2 = lpB2;
 
-        const v0 = { x: 0, y: 0 };
-        const v1 = { x: b1 / 2, y: 0 };
-        const v2 = { x: (2 * b1 - b2) / 3, y: (2 * b2 - b1) / 3 };
-        const v3 = { x: 0, y: b2 / 2 };
+        const v0 = { x: 0, y: 0, name: 'A(0,0)' };
+        const v1 = { x: b1 / 2, y: 0, name: `B(${(b1 / 2).toFixed(1)}, 0)` };
+        const v2x = Math.max(0, (2 * b1 - b2) / 3);
+        const v2y = Math.max(0, (2 * b2 - b1) / 3);
+        const v2 = { x: v2x, y: v2y, name: `C(${v2x.toFixed(1)}, ${v2y.toFixed(1)})` };
+        const v3 = { x: 0, y: b2 / 2, name: `D(0, ${(b2 / 2).toFixed(1)})` };
 
         const toCanvas = (vx: number, vy: number) => ({
-          x: cx - 0.8 * scale + (vx / 6) * 1.6 * scale,
-          y: cy + 0.8 * scale - (vy / 6) * 1.6 * scale
+          x: pCx + vx * pScale,
+          y: pCy - vy * pScale
         });
 
         const p0 = toCanvas(v0.x, v0.y);
         const p1 = toCanvas(v1.x, v1.y);
-        const p2 = toCanvas(Math.max(0, v2.x), Math.max(0, v2.y));
+        const p2 = toCanvas(v2.x, v2.y);
         const p3 = toCanvas(v3.x, v3.y);
 
-        ctx.fillStyle = 'rgba(234, 179, 8, 0.25)';
-        ctx.strokeStyle = '#eab308';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.moveTo(p0.x, p0.y);
-        ctx.lineTo(p1.x, p1.y);
-        ctx.lineTo(p2.x, p2.y);
-        ctx.lineTo(p3.x, p3.y);
-        ctx.closePath();
-        ctx.fill();
-        ctx.stroke();
-
         const corners = [
-          { name: 'A(0,0)', pt: p0, z: 0 },
-          { name: `B(${v1.x.toFixed(1)}, 0)`, pt: p1, z: lpC1 * v1.x },
-          { name: `C(${v2.x.toFixed(1)}, ${v2.y.toFixed(1)})`, pt: p2, z: lpC1 * v2.x + lpC2 * v2.y },
-          { name: `D(0, ${v3.y.toFixed(1)})`, pt: p3, z: lpC2 * v3.y }
+          { ...v0, pt: p0, z: 0 },
+          { ...v1, pt: p1, z: lpC1 * v1.x },
+          { ...v2, pt: p2, z: lpC1 * v2.x + lpC2 * v2.y },
+          { ...v3, pt: p3, z: lpC2 * v3.y }
         ];
 
         let bestCorner = corners[0];
@@ -1232,470 +1822,2085 @@ export const StatisticalOptimizationModule: React.FC = () => {
           }
         });
 
-        corners.forEach(c => {
-          ctx.fillStyle = c === bestCorner ? '#22c55e' : '#38bdf8';
+        withPlotBoxClip(ctx, plotX, plotY, plotW, plotH, 6, () => {
+          // Grid lines
+          ctx.strokeStyle = 'rgba(148, 163, 184, 0.12)';
+          ctx.lineWidth = 1;
+          for (let gx = 0; gx <= 6; gx++) {
+            const px = pCx + gx * pScale;
+            ctx.beginPath(); ctx.moveTo(px, plotY); ctx.lineTo(px, plotY + plotH); ctx.stroke();
+            ctx.font = '8px monospace';
+            ctx.fillStyle = 'rgba(148, 163, 184, 0.4)';
+            ctx.fillText(`${gx}`, px - 3, pCy + 14);
+          }
+          for (let gy = 0; gy <= 6; gy++) {
+            const py = pCy - gy * pScale;
+            ctx.beginPath(); ctx.moveTo(plotX, py); ctx.lineTo(plotX + plotW, py); ctx.stroke();
+            if (gy > 0) ctx.fillText(`${gy}`, pCx - 14, py + 3);
+          }
+
+          // Coordinate Axes
+          ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
+          ctx.lineWidth = 2;
           ctx.beginPath();
-          ctx.arc(c.pt.x, c.pt.y, 6, 0, 2 * Math.PI);
+          ctx.moveTo(plotX, pCy); ctx.lineTo(plotX + plotW, pCy);
+          ctx.moveTo(pCx, plotY); ctx.lineTo(pCx, plotY + plotH);
+          ctx.stroke();
+
+          // 1. Constraint Lines Extended
+          // 2x1 + x2 = b1
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          const cl1_p0 = toCanvas(0, b1);
+          const cl1_p1 = toCanvas(b1 / 2, 0);
+          ctx.moveTo(cl1_p0.x, cl1_p0.y); ctx.lineTo(cl1_p1.x, cl1_p1.y);
+          ctx.stroke();
+
+          // x1 + 2x2 = b2
+          ctx.strokeStyle = 'rgba(192, 132, 252, 0.5)';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          const cl2_p0 = toCanvas(0, b2 / 2);
+          const cl2_p1 = toCanvas(b2, 0);
+          ctx.moveTo(cl2_p0.x, cl2_p0.y); ctx.lineTo(cl2_p1.x, cl2_p1.y);
+          ctx.stroke();
+
+          // 2. Feasible Polytope (Filled Translucent Emerald Polygon)
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.22)';
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(p0.x, p0.y);
+          ctx.lineTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.lineTo(p3.x, p3.y);
+          ctx.closePath();
           ctx.fill();
-          ctx.font = 'bold 11px sans-serif';
-          ctx.fillText(`${c.name} [Z=${c.z.toFixed(1)}]`, c.pt.x + 8, c.pt.y - 6);
+          ctx.stroke();
+
+          // 3. Simplex Traversal Pivot Edges
+          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 2.5;
+          ctx.setLineDash([4, 3]);
+          ctx.beginPath();
+          ctx.moveTo(p0.x, p0.y);
+          ctx.lineTo(p1.x, p1.y);
+          ctx.lineTo(p2.x, p2.y);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // 4. Objective Isoline Passing Through Optimal Vertex
+          const objSlope = -lpC1 / (lpC2 || 1);
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2.5;
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.moveTo(bestCorner.pt.x - 120, bestCorner.pt.y - 120 * objSlope);
+          ctx.lineTo(bestCorner.pt.x + 120, bestCorner.pt.y + 120 * objSlope);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+
+          // 5. Objective Gradient Vector c
+          const gradLen = 45;
+          const gradNorm = Math.sqrt(lpC1 * lpC1 + lpC2 * lpC2) || 1;
+          const gVecX = (lpC1 / gradNorm) * gradLen;
+          const gVecY = -(lpC2 / gradNorm) * gradLen;
+          ctx.strokeStyle = '#ec4899';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(p0.x, p0.y);
+          ctx.lineTo(p0.x + gVecX, p0.y + gVecY);
+          ctx.stroke();
+
+          ctx.fillStyle = '#ec4899';
+          ctx.font = 'bold 9px monospace';
+          ctx.fillText(`∇Z=[${lpC1}, ${lpC2}]`, p0.x + gVecX + 6, p0.y + gVecY);
+
+          // 6. Corner Point Badges
+          corners.forEach(c => {
+            const isOpt = c === bestCorner;
+            ctx.fillStyle = isOpt ? '#10b981' : '#38bdf8';
+            ctx.shadowColor = isOpt ? '#10b981' : '#38bdf8';
+            ctx.shadowBlur = isOpt ? 10 : 4;
+            ctx.beginPath();
+            ctx.arc(c.pt.x, c.pt.y, isOpt ? 7 : 4.5, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            ctx.font = isOpt ? 'bold 10px monospace' : '9px monospace';
+            ctx.fillStyle = isOpt ? '#34d399' : '#cbd5e1';
+            ctx.fillText(`${c.name} [Z=${c.z.toFixed(1)}]`, c.pt.x + 8, c.pt.y - (isOpt ? 8 : 4));
+          });
         });
 
-        const objSlope = -lpC1 / (lpC2 || 1);
-        ctx.strokeStyle = '#ec4899';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([6, 4]);
-        ctx.beginPath();
-        ctx.moveTo(bestCorner.pt.x - 0.6 * scale, bestCorner.pt.y - 0.6 * scale * objSlope);
-        ctx.lineTo(bestCorner.pt.x + 0.6 * scale, bestCorner.pt.y + 0.6 * scale * objSlope);
-        ctx.stroke();
-        ctx.setLineDash([]);
+        // RIGHT CARD: Simplex Tableau & Mathematical Decomposition
+        drawDiagramCard(ctx, rightX, topY, cardW, cardH, theme, '📋 SIMPLEX TABLEAU & OPTIMAL BASIS STATUS');
+
+        const rightPlotX = rightX + 10;
+        const rightPlotY = topY + 36;
+        const rightPlotW = cardW - 20;
+        const rightPlotH = cardH - 46;
+
+        withPlotBoxClip(ctx, rightPlotX, rightPlotY, rightPlotW, rightPlotH, 6, () => {
+          ctx.fillStyle = '#f8fafc';
+          ctx.font = 'bold 11px monospace';
+          ctx.fillText('OPTIMAL SOLUTION & BASIS:', rightPlotX + 14, rightPlotY + 22);
+
+          // Solution Highlight Card
+          ctx.fillStyle = 'rgba(16, 185, 129, 0.12)';
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.roundRect(rightPlotX + 12, rightPlotY + 32, rightPlotW - 24, 64, 6);
+          ctx.fill(); ctx.stroke();
+
+          ctx.font = 'bold 12px monospace';
+          ctx.fillStyle = '#34d399';
+          ctx.fillText(`Optimal Objective Z* = ${bestCorner.z.toFixed(2)} (${lpOptType.toUpperCase()})`, rightPlotX + 22, rightPlotY + 54);
+          ctx.font = 'bold 10px monospace';
+          ctx.fillStyle = '#cbd5e1';
+          ctx.fillText(`Optimal Point x* = (${bestCorner.x.toFixed(2)}, ${bestCorner.y.toFixed(2)})`, rightPlotX + 22, rightPlotY + 76);
+
+          // Simplex Tableau Matrix Box
+          const tabY = rightPlotY + 110;
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+          ctx.strokeStyle = theme.plotBoxBorder;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.roundRect(rightPlotX + 12, tabY, rightPlotW - 24, 130, 6);
+          ctx.fill(); ctx.stroke();
+
+          ctx.font = 'bold 9px monospace';
+          ctx.fillStyle = '#fbbf24';
+          ctx.fillText('STANDARD FORM SIMPLEX TABLEAU:', rightPlotX + 20, tabY + 18);
+
+          // Table Header
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillText('Basic |   x₁    x₂    s₁    s₂  |   RHS', rightPlotX + 20, tabY + 36);
+          ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
+          ctx.beginPath();
+          ctx.moveTo(rightPlotX + 20, tabY + 42); ctx.lineTo(rightPlotX + rightPlotW - 32, tabY + 42); ctx.stroke();
+
+          // Row 1
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillText(`  s₁  |  2.0   1.0   1.0   0.0  |  ${b1.toFixed(1)}`, rightPlotX + 20, tabY + 58);
+          // Row 2
+          ctx.fillText(`  s₂  |  1.0   2.0   0.0   1.0  |  ${b2.toFixed(1)}`, rightPlotX + 20, tabY + 74);
+          // Z Row
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillText(`  -Z  | -${lpC1.toFixed(1)}  -${lpC2.toFixed(1)}   0.0   0.0  |  0.0`, rightPlotX + 20, tabY + 92);
+
+          // Slack Values
+          const s1Val = Math.max(0, b1 - 2 * bestCorner.x - bestCorner.y);
+          const s2Val = Math.max(0, b2 - bestCorner.x - 2 * bestCorner.y);
+          ctx.fillStyle = '#a855f7';
+          ctx.fillText(`Slack Variables at x*: s₁ = ${s1Val.toFixed(2)}, s₂ = ${s2Val.toFixed(2)}`, rightPlotX + 20, tabY + 114);
+
+          // Pivoting explanation
+          ctx.fillStyle = theme.textMuted;
+          ctx.font = '8px monospace';
+          ctx.fillText('• Vertices satisfy Ax + Is = b, x ≥ 0, s ≥ 0', rightPlotX + 14, rightPlotY + rightPlotH - 24);
+          ctx.fillText('• Simplex visits extreme points along edges of steepest ascent', rightPlotX + 14, rightPlotY + rightPlotH - 10);
+        });
       }
 
       // ────────────────────────────────────────────────────────────────────────
       // 6. PRINCIPAL COMPONENT ANALYSIS (PCA)
       // ────────────────────────────────────────────────────────────────────────
       else if (selectedModel === 'pca_projection') {
+        if (simMode === 'autoplay' && isSimulating && localFrame % Math.max(1, Math.round(5 / simSpeed)) === 0) {
+          const nextRho = 0.85 * Math.sin(stateRef.current.timeT * 0.4);
+          setPcaCorrelation(parseFloat(nextRho.toFixed(2)));
+        }
+
+        const marginX = 14;
+        const marginY = 14;
+        const gap = 12;
+        const totalW = Math.max(680, w - 2 * marginX);
+        const cardH = Math.max(480, h - 2 * marginY - 10);
+        const cardW = (totalW - gap) / 2;
+        const leftX = cx - totalW / 2;
+        const topY = cy - cardH / 2 + 6;
+        const rightX = leftX + cardW + gap;
+
+        // LEFT CARD: 2D Scatter & Principal Components
+        drawDiagramCard(ctx, leftX, topY, cardW, cardH, theme, '🌌 2D PCA & MAXIMUM VARIANCE PROJECTION');
+
+        const plotX = leftX + 10;
+        const plotY = topY + 36;
+        const plotW = cardW - 20;
+        const plotH = cardH - 46;
+        const pCx = plotX + plotW / 2;
+        const pCy = plotY + plotH / 2;
+        const pScale = Math.min(plotW, plotH) * 0.42;
+
         const pts = stateRef.current.pcaPoints;
         const angle = Math.atan2(pcaCorrelation * pcaVarY, pcaVarX);
         const u1 = { x: Math.cos(angle), y: Math.sin(angle) };
+        const u2 = { x: -Math.sin(angle), y: Math.cos(angle) };
 
-        pts.forEach(p => {
-          const px = cx + p.x * 0.6 * scale;
-          const py = cy - p.y * 0.6 * scale;
+        // Eigenvalues
+        const eig1 = pcaVarX * pcaVarX + Math.abs(pcaCorrelation) * pcaVarY * pcaVarY;
+        const eig2 = Math.max(0.04, (1 - Math.abs(pcaCorrelation)) * pcaVarY * pcaVarY);
+        const totalVar = eig1 + eig2;
+        const evr1 = (eig1 / totalVar) * 100;
+        const evr2 = (eig2 / totalVar) * 100;
 
-          const projLen = p.x * u1.x + p.y * u1.y;
-          const projX = cx + projLen * u1.x * 0.6 * scale;
-          const projY = cy - projLen * u1.y * 0.6 * scale;
-
+        withPlotBoxClip(ctx, plotX, plotY, plotW, plotH, 6, () => {
+          // Coordinate Axes
           ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
-          ctx.lineWidth = 1;
+          ctx.lineWidth = 1.5;
           ctx.beginPath();
-          ctx.moveTo(px, py);
-          ctx.lineTo(projX, projY);
+          ctx.moveTo(plotX, pCy); ctx.lineTo(plotX + plotW, pCy);
+          ctx.moveTo(pCx, plotY); ctx.lineTo(pCx, plotY + plotH);
           ctx.stroke();
 
-          ctx.fillStyle = '#38bdf8';
+          // 1. Covariance Ellipse
+          ctx.save();
+          ctx.translate(pCx, pCy);
+          ctx.rotate(-angle);
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
+          ctx.lineWidth = 1.5;
           ctx.beginPath();
-          ctx.arc(px, py, 3.5, 0, 2 * Math.PI);
-          ctx.fill();
+          ctx.ellipse(0, 0, Math.sqrt(eig1) * pScale * 1.5, Math.sqrt(eig2) * pScale * 1.5, 0, 0, 2 * Math.PI);
+          ctx.stroke();
+          ctx.restore();
+
+          // 2. Data Points & Orthogonal Residual Projections
+          pts.forEach(p => {
+            const px = pCx + p.x * pScale;
+            const py = pCy - p.y * pScale;
+
+            const projLen = p.x * u1.x + p.y * u1.y;
+            const projX = pCx + projLen * u1.x * pScale;
+            const projY = pCy - projLen * u1.y * pScale;
+
+            // Orthogonal Projection Drop Line
+            ctx.strokeStyle = 'rgba(244, 63, 94, 0.22)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(projX, projY);
+            ctx.stroke();
+
+            // Raw Scatter Dot
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath();
+            ctx.arc(px, py, 3.5, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Projected 1D Dot on PC1 Axis
+            ctx.fillStyle = 'rgba(52, 211, 153, 0.6)';
+            ctx.beginPath();
+            ctx.arc(projX, projY, 2.5, 0, 2 * Math.PI);
+            ctx.fill();
+          });
+
+          // 3. First Principal Component PC1 (Cyan Solid with Glow)
+          const axisLen = pScale * 1.8;
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 3;
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.moveTo(pCx - u1.x * axisLen, pCy + u1.y * axisLen);
+          ctx.lineTo(pCx + u1.x * axisLen, pCy - u1.y * axisLen);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+
+          // 4. Second Principal Component PC2 (Purple Dashed)
+          const axis2Len = pScale * 1.2;
+          ctx.strokeStyle = '#c084fc';
+          ctx.lineWidth = 2.2;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.moveTo(pCx - u2.x * axis2Len, pCy + u2.y * axis2Len);
+          ctx.lineTo(pCx + u2.x * axis2Len, pCy - u2.y * axis2Len);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Axis Labels
+          ctx.font = 'bold 10px monospace';
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillText(`PC₁ (${evr1.toFixed(1)}% Var)`, pCx + u1.x * axisLen + 8, pCy - u1.y * axisLen);
+
+          ctx.fillStyle = '#c084fc';
+          ctx.fillText(`PC₂ (${evr2.toFixed(1)}% Var)`, pCx + u2.x * axis2Len + 8, pCy - u2.y * axis2Len);
         });
 
-        ctx.strokeStyle = '#22c55e';
-        ctx.lineWidth = 3.5;
-        ctx.beginPath();
-        ctx.moveTo(cx - u1.x * scale, cy + u1.y * scale);
-        ctx.lineTo(cx + u1.x * scale, cy - u1.y * scale);
-        ctx.stroke();
+        // RIGHT CARD: Scree Plot & Variance Breakdown
+        drawDiagramCard(ctx, rightX, topY, cardW, cardH, theme, '📊 SCREE PLOT & EIGEN-DECOMPOSITION');
 
-        ctx.strokeStyle = '#f59e0b';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.moveTo(cx + u1.y * 0.5 * scale, cy + u1.x * 0.5 * scale);
-        ctx.lineTo(cx - u1.y * 0.5 * scale, cy - u1.x * 0.5 * scale);
-        ctx.stroke();
+        const rPlotX = rightX + 10;
+        const rPlotY = topY + 36;
+        const rPlotW = cardW - 20;
+        const rPlotH = cardH - 46;
 
-        ctx.fillStyle = '#22c55e';
-        ctx.font = 'bold 12px sans-serif';
-        ctx.fillText(`PC₁ (${pcaExplainedVar}% Var)`, cx + u1.x * 0.9 * scale + 10, cy - u1.y * 0.9 * scale);
+        withPlotBoxClip(ctx, rPlotX, rPlotY, rPlotW, rPlotH, 6, () => {
+          ctx.fillStyle = '#f8fafc';
+          ctx.font = 'bold 11px monospace';
+          ctx.fillText('EXPLAINED VARIANCE RATIO (SCREE PLOT):', rPlotX + 14, rPlotY + 22);
+
+          // Bar Chart: PC1 vs PC2
+          const barW = (rPlotW - 60) / 2;
+          const maxBarH = 120;
+          const barBaseY = rPlotY + 160;
+
+          // Bar 1: PC1
+          const b1H = (evr1 / 100) * maxBarH;
+          ctx.fillStyle = '#38bdf8';
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = 6;
+          ctx.beginPath();
+          ctx.roundRect(rPlotX + 25, barBaseY - b1H, barW, b1H, [4, 4, 0, 0]);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          ctx.font = 'bold 11px monospace';
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(`${evr1.toFixed(1)}%`, rPlotX + 25 + barW / 4, barBaseY - b1H - 8);
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillText('PC₁ (λ₁)', rPlotX + 25 + barW / 4, barBaseY + 16);
+
+          // Bar 2: PC2
+          const b2H = (evr2 / 100) * maxBarH;
+          ctx.fillStyle = '#c084fc';
+          ctx.shadowColor = '#c084fc';
+          ctx.shadowBlur = 6;
+          ctx.beginPath();
+          ctx.roundRect(rPlotX + 45 + barW, barBaseY - b2H, barW, b2H, [4, 4, 0, 0]);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(`${evr2.toFixed(1)}%`, rPlotX + 45 + barW + barW / 4, barBaseY - b2H - 8);
+          ctx.fillStyle = '#c084fc';
+          ctx.fillText('PC₂ (λ₂)', rPlotX + 45 + barW + barW / 4, barBaseY + 16);
+
+          // Covariance Matrix Box
+          const covY = rPlotY + 195;
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.8)';
+          ctx.strokeStyle = theme.plotBoxBorder;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.roundRect(rPlotX + 12, covY, rPlotW - 24, 80, 6);
+          ctx.fill(); ctx.stroke();
+
+          ctx.font = 'bold 9px monospace';
+          ctx.fillStyle = '#fbbf24';
+          ctx.fillText('SAMPLE COVARIANCE MATRIX Σ:', rPlotX + 20, covY + 18);
+
+          ctx.fillStyle = '#cbd5e1';
+          ctx.fillText(`[ ${(pcaVarX * pcaVarX).toFixed(2)}    ${(pcaCorrelation * pcaVarX * pcaVarY).toFixed(2)} ]`, rPlotX + 20, covY + 38);
+          ctx.fillText(`[ ${(pcaCorrelation * pcaVarX * pcaVarY).toFixed(2)}    ${(pcaVarY * pcaVarY).toFixed(2)} ]`, rPlotX + 20, covY + 54);
+
+          ctx.fillStyle = '#34d399';
+          ctx.fillText(`λ₁ = ${eig1.toFixed(3)}, λ₂ = ${eig2.toFixed(3)} | Tr(Σ) = ${totalVar.toFixed(3)}`, rPlotX + 20, covY + 70);
+        });
       }
 
       // ────────────────────────────────────────────────────────────────────────
       // 7. FIRST-ORDER OPTIMIZERS (SGD, Momentum, RMSprop, Adam)
       // ────────────────────────────────────────────────────────────────────────
       else if (selectedModel === 'first_order_optimizers') {
-        for (let r = 0.2; r <= 1.8; r += 0.22) {
-          ctx.strokeStyle = `rgba(56, 189, 248, ${0.12 + (1.8 - r) * 0.25})`;
-          ctx.lineWidth = 1.2;
-          ctx.beginPath();
-          if (optLossSurface === 'saddle') {
-            ctx.ellipse(cx, cy, r * scale * 1.2, r * scale * 0.7, 0, 0, 2 * Math.PI);
-          } else if (optLossSurface === 'rosenbrock') {
-            ctx.ellipse(cx + 0.3 * scale, cy - 0.2 * scale, r * scale * 1.1, r * scale * 0.5, 0.45, 0, 2 * Math.PI);
-          } else {
-            ctx.ellipse(cx, cy, r * scale, r * scale * 0.8, 0, 0, 2 * Math.PI);
+        if (simMode === 'autoplay' && isSimulating && localFrame % Math.max(1, Math.round(280 / simSpeed)) === 0) {
+          reseedData();
+        }
+
+        const marginX = 14;
+        const marginY = 14;
+        const gap = 12;
+        const totalW = Math.max(680, w - 2 * marginX);
+        const leftW = Math.floor((totalW - gap) * 0.62);
+        const rightW = totalW - gap - leftW;
+        const cardH = Math.max(480, h - 2 * marginY - 10);
+        const leftX = cx - totalW / 2;
+        const leftY = cy - cardH / 2 + 6;
+        const rightX = leftX + leftW + gap;
+        const rightY = leftY;
+
+        // 1. Left Diagram Card: 2D/3D Contour Loss Surface Race Track
+        drawDiagramCard(ctx, leftX, leftY, leftW, cardH, theme, `🏎️ MULTI-OPTIMIZER RACE: ${optLossSurface.toUpperCase()}`);
+
+        const trackPlotX = leftX + 10;
+        const trackPlotY = leftY + 36;
+        const trackPlotW = leftW - 20;
+        const trackPlotH = cardH - 46;
+        const trackCx = trackPlotX + trackPlotW / 2;
+        const trackCy = trackPlotY + trackPlotH / 2;
+        const trackScale = Math.min(trackPlotW, trackPlotH) * 0.36;
+
+        withPlotBoxClip(ctx, trackPlotX, trackPlotY, trackPlotW, trackPlotH, 6, () => {
+          // Shaded Loss Landscape Contours
+          for (let r = 0.2; r <= 2.2; r += 0.25) {
+            ctx.strokeStyle = `rgba(56, 189, 248, ${0.1 + (2.2 - r) * 0.22})`;
+            ctx.lineWidth = 1.2;
+            ctx.beginPath();
+            if (optLossSurface === 'saddle') {
+              ctx.ellipse(trackCx, trackCy, r * trackScale * 1.3, r * trackScale * 0.7, 0, 0, 2 * Math.PI);
+            } else if (optLossSurface === 'rosenbrock') {
+              ctx.ellipse(trackCx + 0.2 * trackScale, trackCy - 0.2 * trackScale, r * trackScale * 1.2, r * trackScale * 0.5, 0.45, 0, 2 * Math.PI);
+            } else {
+              ctx.ellipse(trackCx, trackCy, r * trackScale, r * trackScale * 0.85, 0, 0, 2 * Math.PI);
+            }
+            ctx.stroke();
           }
-          ctx.stroke();
-        }
 
-        ctx.strokeStyle = '#34d399';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        ctx.arc(cx, cy, 8, 0, 2 * Math.PI);
-        ctx.stroke();
-        ctx.fillStyle = '#34d399';
-        ctx.font = 'bold 10px sans-serif';
-        ctx.fillText('Global Min (0, 0)', cx + 12, cy - 10);
-
-        if (isSimulating && localFrame % 2 === 0) {
-          const lr = optLearningRate;
-          const { sgdPos, momentumPos, rmspropPos, adamPos } = stateRef.current;
-
-          // 1. SGD Step
-          const gradSgd = lossFunction(sgdPos.x, sgdPos.y, optLossSurface);
-          sgdPos.x -= lr * gradSgd.dx;
-          sgdPos.y -= lr * gradSgd.dy;
-          stateRef.current.optHistory.sgd.push({ x: sgdPos.x, y: sgdPos.y });
-
-          // 2. Momentum Step
-          const gradMom = lossFunction(momentumPos.x, momentumPos.y, optLossSurface);
-          momentumPos.vx = optMomentumBeta * momentumPos.vx - lr * gradMom.dx;
-          momentumPos.vy = optMomentumBeta * momentumPos.vy - lr * gradMom.dy;
-          momentumPos.x += momentumPos.vx;
-          momentumPos.y += momentumPos.vy;
-          stateRef.current.optHistory.momentum.push({ x: momentumPos.x, y: momentumPos.y });
-
-          // 3. RMSprop Step
-          const gradRms = lossFunction(rmspropPos.x, rmspropPos.y, optLossSurface);
-          rmspropPos.sx = 0.9 * rmspropPos.sx + 0.1 * gradRms.dx * gradRms.dx;
-          rmspropPos.sy = 0.9 * rmspropPos.sy + 0.1 * gradRms.dy * gradRms.dy;
-          rmspropPos.x -= (lr / (Math.sqrt(rmspropPos.sx) + 1e-6)) * gradRms.dx;
-          rmspropPos.y -= (lr / (Math.sqrt(rmspropPos.sy) + 1e-6)) * gradRms.dy;
-          stateRef.current.optHistory.rmsprop.push({ x: rmspropPos.x, y: rmspropPos.y });
-
-          // 4. Adam Step
-          adamPos.t += 1;
-          const gradAdam = lossFunction(adamPos.x, adamPos.y, optLossSurface);
-          adamPos.m.x = 0.9 * adamPos.m.x + 0.1 * gradAdam.dx;
-          adamPos.m.y = 0.9 * adamPos.m.y + 0.1 * gradAdam.dy;
-          adamPos.v.x = 0.999 * adamPos.v.x + 0.001 * gradAdam.dx * gradAdam.dx;
-          adamPos.v.y = 0.999 * adamPos.v.y + 0.001 * gradAdam.dy * gradAdam.dy;
-
-          const mHatX = adamPos.m.x / (1 - Math.pow(0.9, adamPos.t));
-          const mHatY = adamPos.m.y / (1 - Math.pow(0.9, adamPos.t));
-          const vHatX = adamPos.v.x / (1 - Math.pow(0.999, adamPos.t));
-          const vHatY = adamPos.v.y / (1 - Math.pow(0.999, adamPos.t));
-
-          adamPos.x -= (lr / (Math.sqrt(vHatX) + 1e-8)) * mHatX;
-          adamPos.y -= (lr / (Math.sqrt(vHatY) + 1e-8)) * mHatY;
-          stateRef.current.optHistory.adam.push({ x: adamPos.x, y: adamPos.y });
-        }
-
-        const drawTrajectory = (hist: { x: number; y: number }[], color: string, name: string) => {
-          if (hist.length < 2) return;
-          ctx.strokeStyle = color;
+          // Global Minimum Target Star
+          ctx.strokeStyle = '#34d399';
           ctx.lineWidth = 2.5;
+          ctx.shadowColor = '#34d399';
+          ctx.shadowBlur = 8;
           ctx.beginPath();
-          hist.forEach((pt, i) => {
-            const px = cx + pt.x * scale;
-            const py = cy - pt.y * scale;
-            if (i === 0) ctx.moveTo(px, py);
-            else ctx.lineTo(px, py);
-          });
+          ctx.arc(trackCx, trackCy, 7, 0, 2 * Math.PI);
           ctx.stroke();
+          ctx.fillStyle = '#34d399';
+          ctx.fillText('★ Global Optimum θ*', trackCx + 12, trackCy - 6);
+          ctx.shadowBlur = 0;
 
-          const last = hist[hist.length - 1];
-          const px = cx + last.x * scale;
-          const py = cy - last.y * scale;
+          // Simulation Step updates
+          if (isSimulating && localFrame % Math.max(1, Math.round(2 / simSpeed)) === 0) {
+            const lr = optLearningRate;
+            const { sgdPos, momentumPos, rmspropPos, adamPos } = stateRef.current;
 
-          // Head dot
-          ctx.fillStyle = color;
+            // 1. SGD Step
+            const gradSgd = lossFunction(sgdPos.x, sgdPos.y, optLossSurface);
+            sgdPos.x -= lr * gradSgd.dx;
+            sgdPos.y -= lr * gradSgd.dy;
+            stateRef.current.optHistory.sgd.push({ x: sgdPos.x, y: sgdPos.y });
+
+            // 2. Momentum Step
+            const gradMom = lossFunction(momentumPos.x, momentumPos.y, optLossSurface);
+            momentumPos.vx = optMomentumBeta * momentumPos.vx - lr * gradMom.dx;
+            momentumPos.vy = optMomentumBeta * momentumPos.vy - lr * gradMom.dy;
+            momentumPos.x += momentumPos.vx;
+            momentumPos.y += momentumPos.vy;
+            stateRef.current.optHistory.momentum.push({ x: momentumPos.x, y: momentumPos.y });
+
+            // 3. RMSprop Step
+            const gradRms = lossFunction(rmspropPos.x, rmspropPos.y, optLossSurface);
+            rmspropPos.sx = 0.9 * rmspropPos.sx + 0.1 * gradRms.dx * gradRms.dx;
+            rmspropPos.sy = 0.9 * rmspropPos.sy + 0.1 * gradRms.dy * gradRms.dy;
+            rmspropPos.x -= (lr / (Math.sqrt(rmspropPos.sx) + 1e-6)) * gradRms.dx;
+            rmspropPos.y -= (lr / (Math.sqrt(rmspropPos.sy) + 1e-6)) * gradRms.dy;
+            stateRef.current.optHistory.rmsprop.push({ x: rmspropPos.x, y: rmspropPos.y });
+
+            // 4. Adam Step
+            adamPos.t += 1;
+            const gradAdam = lossFunction(adamPos.x, adamPos.y, optLossSurface);
+            adamPos.m.x = 0.9 * adamPos.m.x + 0.1 * gradAdam.dx;
+            adamPos.m.y = 0.9 * adamPos.m.y + 0.1 * gradAdam.dy;
+            adamPos.v.x = 0.999 * adamPos.v.x + 0.001 * gradAdam.dx * gradAdam.dx;
+            adamPos.v.y = 0.999 * adamPos.v.y + 0.001 * gradAdam.dy * gradAdam.dy;
+
+            const mHatX = adamPos.m.x / (1 - Math.pow(0.9, adamPos.t));
+            const mHatY = adamPos.m.y / (1 - Math.pow(0.9, adamPos.t));
+            const vHatX = adamPos.v.x / (1 - Math.pow(0.999, adamPos.t));
+            const vHatY = adamPos.v.y / (1 - Math.pow(0.999, adamPos.t));
+
+            adamPos.x -= (lr / (Math.sqrt(vHatX) + 1e-8)) * mHatX;
+            adamPos.y -= (lr / (Math.sqrt(vHatY) + 1e-8)) * mHatY;
+            stateRef.current.optHistory.adam.push({ x: adamPos.x, y: adamPos.y });
+          }
+
+          // Trajectory renderer
+          const drawOptTrajectory = (hist: { x: number; y: number }[], color: string, name: string) => {
+            if (hist.length < 2) return;
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            hist.forEach((pt, i) => {
+              const px = trackCx + pt.x * trackScale;
+              const py = trackCy - pt.y * trackScale;
+              if (i === 0) ctx.moveTo(px, py);
+              else ctx.lineTo(px, py);
+            });
+            ctx.stroke();
+
+            const last = hist[hist.length - 1];
+            const px = trackCx + last.x * trackScale;
+            const py = trackCy - last.y * trackScale;
+
+            // Head dot with glow
+            ctx.fillStyle = color;
+            ctx.shadowColor = color;
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(px, py, 6, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+
+            // Head Badge
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 1.2;
+            const textWidth = ctx.measureText(name).width || 35;
+            ctx.fillRect(px + 8, py - 12, textWidth + 12, 16);
+            ctx.strokeRect(px + 8, py - 12, textWidth + 12, 16);
+
+            ctx.fillStyle = color;
+            ctx.font = 'bold 9px monospace';
+            ctx.fillText(name, px + 14, py);
+          };
+
+          drawOptTrajectory(stateRef.current.optHistory.sgd, '#ef4444', 'SGD');
+          drawOptTrajectory(stateRef.current.optHistory.momentum, '#f59e0b', 'Momentum');
+          drawOptTrajectory(stateRef.current.optHistory.rmsprop, '#06b6d4', 'RMSprop');
+          drawOptTrajectory(stateRef.current.optHistory.adam, '#a855f7', 'Adam');
+        });
+
+        // 2. Right Diagram Card: Live Leaderboard & Formula Telemetry
+        drawDiagramCard(ctx, rightX, rightY, rightW, cardH, theme, '🏆 OPTIMIZER LEADERBOARD & TELEMETRY');
+
+        const sgdLoss = lossFunction(stateRef.current.sgdPos.x, stateRef.current.sgdPos.y, optLossSurface).val;
+        const momLoss = lossFunction(stateRef.current.momentumPos.x, stateRef.current.momentumPos.y, optLossSurface).val;
+        const rmsLoss = lossFunction(stateRef.current.rmspropPos.x, stateRef.current.rmspropPos.y, optLossSurface).val;
+        const adamLoss = lossFunction(stateRef.current.adamPos.x, stateRef.current.adamPos.y, optLossSurface).val;
+
+        const competitors = [
+          { name: 'Adam', color: '#a855f7', loss: adamLoss, formula: 'θ -= η·m̂ / (√v̂ + ϵ)' },
+          { name: 'RMSprop', color: '#06b6d4', loss: rmsLoss, formula: 'θ -= η·g / (√s + ϵ)' },
+          { name: 'Momentum', color: '#f59e0b', loss: momLoss, formula: 'v = βv - ηg; θ += v' },
+          { name: 'SGD', color: '#ef4444', loss: sgdLoss, formula: 'θ -= η·∇f(θ)' }
+        ].sort((a, b) => a.loss - b.loss);
+
+        competitors.forEach((c, idx) => {
+          const cardBoxY = rightY + 36 + idx * 56;
+          ctx.fillStyle = theme.plotBoxBg;
+          ctx.strokeStyle = idx === 0 ? '#34d399' : theme.plotBoxBorder;
+          ctx.lineWidth = idx === 0 ? 2 : 1;
           ctx.beginPath();
-          ctx.arc(px, py, 6, 0, 2 * Math.PI);
-          ctx.fill();
+          ctx.roundRect(rightX + 8, cardBoxY, rightW - 16, 50, 6);
+          ctx.fill(); ctx.stroke();
 
-          // High-contrast floating pill badge with exact optimizer color
-          ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-          ctx.strokeStyle = color;
-          ctx.lineWidth = 1.5;
-          const textWidth = ctx.measureText(name).width || 35;
-          ctx.fillRect(px + 10, py - 14, textWidth + 14, 18);
-          ctx.strokeRect(px + 10, py - 14, textWidth + 14, 18);
+          ctx.fillStyle = c.color;
+          ctx.font = 'bold 10px monospace';
+          ctx.fillText(`#${idx + 1} ${c.name}`, rightX + 14, cardBoxY + 16);
 
-          ctx.fillStyle = color;
-          ctx.font = 'bold 11px sans-serif';
-          ctx.fillText(name, px + 17, py);
-        };
+          ctx.fillStyle = '#ffffff';
+          ctx.font = 'bold 9px monospace';
+          ctx.fillText(`Loss f(θ) = ${c.loss.toFixed(4)}`, rightX + 14, cardBoxY + 30);
 
-        drawTrajectory(stateRef.current.optHistory.sgd, '#ef4444', 'SGD');
-        drawTrajectory(stateRef.current.optHistory.momentum, '#f59e0b', 'Momentum');
-        drawTrajectory(stateRef.current.optHistory.rmsprop, '#06b6d4', 'RMSprop');
-        drawTrajectory(stateRef.current.optHistory.adam, '#a855f7', 'Adam');
+          ctx.fillStyle = theme.textMuted;
+          ctx.font = '8px monospace';
+          ctx.fillText(c.formula, rightX + 14, cardBoxY + 44);
+        });
+
+        // Parameters Summary
+        const sumY = rightY + 36 + 4 * 56 + 6;
+        const sumH = Math.max(40, cardH - (sumY - rightY) - 10);
+        ctx.fillStyle = theme.cardBg;
+        ctx.strokeStyle = theme.plotBoxBorder;
+        ctx.beginPath();
+        ctx.roundRect(rightX + 8, sumY, rightW - 16, sumH, 6);
+        ctx.fill(); ctx.stroke();
+
+        ctx.fillStyle = '#34d399';
+        ctx.font = 'bold 9px monospace';
+        ctx.fillText(`Learning Rate η = ${optLearningRate.toFixed(3)}`, rightX + 14, sumY + 16);
+        ctx.fillStyle = '#fbbf24';
+        ctx.fillText(`Momentum β = ${optMomentumBeta.toFixed(2)} | Surface: ${optLossSurface}`, rightX + 14, sumY + 30);
       }
 
       // ────────────────────────────────────────────────────────────────────────
       // 8. MLE & MAP ESTIMATION
       // ────────────────────────────────────────────────────────────────────────
       else if (selectedModel === 'mle_map') {
-        stateRef.current.mlePoints.forEach(p => {
-          ctx.fillStyle = '#38bdf8';
+        if (simMode === 'autoplay' && isSimulating && localFrame % Math.max(1, Math.round(35 / simSpeed)) === 0) {
+          const newP = mleSampleMean + (Math.random() - 0.5) * mleSampleStd * 2.5;
+          stateRef.current.mlePoints.push(newP);
+          if (stateRef.current.mlePoints.length > 50) {
+            stateRef.current.mlePoints = stateRef.current.mlePoints.slice(-35);
+          }
+        }
+
+        const marginX = 14;
+        const marginY = 14;
+        const totalW = Math.max(680, w - 2 * marginX);
+        const cardH = Math.max(480, h - 2 * marginY - 10);
+        const leftX = cx - totalW / 2;
+        const topY = cy - cardH / 2 + 6;
+
+        const cardTitle = mleMapViewMode === 'mle_only'
+          ? '🎯 PURE MAXIMUM LIKELIHOOD ESTIMATION (MLE)'
+          : mleMapViewMode === 'map_only'
+          ? '🔮 PURE BAYESIAN MAXIMUM A POSTERIORI (MAP)'
+          : '🎯 MAXIMUM LIKELIHOOD (MLE) vs BAYESIAN MAP ESTIMATION';
+
+        drawDiagramCard(ctx, leftX, topY, totalW, cardH, theme, cardTitle);
+
+        const plotX = leftX + 10;
+        const plotY = topY + 36;
+        const plotW = totalW - 20;
+        const plotH = cardH - 46;
+        const pBaseY = plotY + plotH - 30;
+        const pCx = plotX + plotW / 2;
+        const pScale = plotW * 0.22;
+
+        const pts = stateRef.current.mlePoints;
+        const N = Math.max(3, pts.length);
+        const mleMu = mleSampleMean;
+        const mleSigma = mleSampleStd;
+        const priorMu = mapPriorMean;
+        const priorSigma = 0.55 / Math.sqrt(mapPriorWeight * 2 + 0.1);
+
+        // Gaussian-Gaussian Conjugacy exact formulas
+        const tauLikelihood = N / (mleSigma * mleSigma);
+        const tauPrior = 1 / (priorSigma * priorSigma);
+        const tauPost = tauLikelihood + tauPrior;
+        const mapSigma = Math.sqrt(1 / tauPost);
+        const mapMu = (tauLikelihood * mleMu + tauPrior * priorMu) / tauPost;
+
+        const maxPdfPrior = 1 / (priorSigma * Math.sqrt(2 * Math.PI));
+        const maxPdfMle = 1 / (mleSigma * Math.sqrt(2 * Math.PI));
+        const maxPdfMap = 1 / (mapSigma * Math.sqrt(2 * Math.PI));
+
+        withPlotBoxClip(ctx, plotX, plotY, plotW, plotH, 6, () => {
+          // Axis baseline
+          ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+          ctx.lineWidth = 1.5;
           ctx.beginPath();
-          ctx.arc(cx + p * scale, cy + 0.3 * scale, 4, 0, 2 * Math.PI);
-          ctx.fill();
+          ctx.moveTo(plotX, pBaseY);
+          ctx.lineTo(plotX + plotW, pBaseY);
+          ctx.stroke();
+
+          // 1. Data Points on Baseline
+          if (mleMapViewMode !== 'map_only') {
+            pts.forEach((p, idx) => {
+              const px = pCx + p * pScale;
+              const py = pBaseY - 6 - (idx % 3) * 6;
+              ctx.fillStyle = '#38bdf8';
+              ctx.shadowColor = '#38bdf8';
+              ctx.shadowBlur = 4;
+              ctx.beginPath();
+              ctx.arc(px, py, 3.5, 0, 2 * Math.PI);
+              ctx.fill();
+              ctx.shadowBlur = 0;
+            });
+          }
+
+          // 2. Prior Distribution N(priorMu, priorSigma) [Amber Dashed]
+          if (mleMapViewMode !== 'mle_only') {
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 2.2;
+            ctx.setLineDash([5, 4]);
+            ctx.beginPath();
+            for (let i = 0; i <= 80; i++) {
+              const t = -2.5 + (i / 80) * 5.0;
+              const pdf = (1 / (priorSigma * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((t - priorMu) / priorSigma, 2));
+              const px = pCx + t * pScale;
+              const py = pBaseY - (pdf / maxPdfPrior) * (plotH * 0.58);
+              if (i === 0) ctx.moveTo(px, py);
+              else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+
+          // 3. Likelihood Function L(theta) [Cyan Dashed]
+          if (mleMapViewMode !== 'map_only') {
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2.2;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            for (let i = 0; i <= 80; i++) {
+              const t = -2.5 + (i / 80) * 5.0;
+              const pdf = (1 / (mleSigma * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((t - mleMu) / mleSigma, 2));
+              const px = pCx + t * pScale;
+              const py = pBaseY - (pdf / maxPdfMle) * (plotH * 0.58);
+              if (i === 0) ctx.moveTo(px, py);
+              else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+
+          // 4. Posterior MAP Distribution [Emerald Solid with Glow]
+          if (mleMapViewMode !== 'mle_only') {
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 3;
+            ctx.shadowColor = '#10b981';
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            for (let i = 0; i <= 80; i++) {
+              const t = -2.5 + (i / 80) * 5.0;
+              const pdf = (1 / (mapSigma * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((t - mapMu) / mapSigma, 2));
+              const px = pCx + t * pScale;
+              const py = pBaseY - (pdf / maxPdfMap) * (plotH * 0.72);
+              if (i === 0) ctx.moveTo(px, py);
+              else ctx.lineTo(px, py);
+            }
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+          }
+
+          // Vertical Threshold Boundary Markers
+          // Prior Mean Line
+          const priorX = pCx + priorMu * pScale;
+          if (mleMapViewMode !== 'mle_only') {
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 1.5;
+            ctx.setLineDash([3, 3]);
+            ctx.beginPath();
+            ctx.moveTo(priorX, plotY + 24);
+            ctx.lineTo(priorX, pBaseY);
+            ctx.stroke();
+          }
+
+          // MLE Mean Line
+          const mleX = pCx + mleMu * pScale;
+          if (mleMapViewMode !== 'map_only') {
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(mleX, plotY + 24);
+            ctx.lineTo(mleX, pBaseY);
+            ctx.stroke();
+          }
+
+          // MAP Mode Line (Emerald Gold)
+          const mapX = pCx + mapMu * pScale;
+          if (mleMapViewMode !== 'mle_only') {
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(mapX, plotY + 12);
+            ctx.lineTo(mapX, pBaseY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+
+          // Bayesian Shrinkage Vector Arrow (MLE -> MAP)
+          if (mleMapViewMode === 'triad') {
+            ctx.strokeStyle = '#fbbf24';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(mleX, plotY + 20);
+            ctx.lineTo(mapX, plotY + 20);
+            ctx.stroke();
+          }
+
+          // Peak Badges
+          ctx.font = 'bold 9px monospace';
+          if (mleMapViewMode !== 'mle_only') {
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillText(`μ_prior = ${priorMu.toFixed(2)}`, priorX - 35, plotY + 36);
+          }
+
+          if (mleMapViewMode !== 'map_only') {
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillText(`θ_MLE = ${mleMu.toFixed(2)}`, mleX - 30, plotY + 48);
+          }
+
+          if (mleMapViewMode !== 'mle_only') {
+            ctx.fillStyle = '#10b981';
+            ctx.fillText(`θ_MAP = ${mapMu.toFixed(2)} ${mleMapViewMode === 'triad' ? '(Shrunk)' : ''}`, mapX - 45, plotY + 12);
+          }
+
+          // Legend
+          if (mleMapViewMode === 'triad') {
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillText('━ ━ Prior p(θ)', plotX + 16, plotY + plotH - 10);
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillText('━ ━ Likelihood p(X|θ)', plotX + 130, plotY + plotH - 10);
+            ctx.fillStyle = '#10b981';
+            ctx.fillText('━━ Posterior p(θ|X) (MAP)', plotX + 270, plotY + plotH - 10);
+          } else if (mleMapViewMode === 'mle_only') {
+            ctx.fillStyle = '#38bdf8';
+            ctx.fillText('● Observed Samples X_i', plotX + 16, plotY + plotH - 10);
+            ctx.fillText('━ ━ Sample Likelihood L(θ|X)', plotX + 180, plotY + plotH - 10);
+            ctx.fillText(`θ̂_MLE = ${mleMu.toFixed(2)} (Sample Mean)`, plotX + 380, plotY + plotH - 10);
+          } else {
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillText('━ ━ Prior Belief p(θ)', plotX + 16, plotY + plotH - 10);
+            ctx.fillStyle = '#10b981';
+            ctx.fillText('━━ Posterior Estimate p(θ|X)', plotX + 180, plotY + plotH - 10);
+          }
         });
-
-        ctx.strokeStyle = '#38bdf8';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        for (let t = -2.0; t <= 2.0; t += 0.05) {
-          const yVal = Math.exp(-0.5 * Math.pow((t - mleSampleMean) / mleSampleStd, 2));
-          const px = cx + t * scale;
-          const py = cy + 0.3 * scale - yVal * scale * 0.8;
-          if (t === -2.0) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-        }
-        ctx.stroke();
-
-        ctx.strokeStyle = '#f59e0b';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        for (let t = -2.0; t <= 2.0; t += 0.05) {
-          const yVal = Math.exp(-0.5 * Math.pow((t - mapPriorMean) / 0.5, 2)) * mapPriorWeight;
-          const px = cx + t * scale;
-          const py = cy + 0.3 * scale - yVal * scale * 0.8;
-          if (t === -2.0) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-        }
-        ctx.stroke();
       }
 
       // ────────────────────────────────────────────────────────────────────────
       // 9. NEWTON-RAPHSON & HESSIAN CURVATURE
       // ────────────────────────────────────────────────────────────────────────
+      // 9. NEWTON-RAPHSON & HESSIAN CURVATURE
+      // ────────────────────────────────────────────────────────────────────────
       else if (selectedModel === 'newton_raphson') {
-        ctx.strokeStyle = '#38bdf8';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        for (let t = -2.2; t <= 2.2; t += 0.05) {
-          const yVal = Math.pow(t, 4) - 2 * Math.pow(t, 2);
-          const px = cx + t * scale * 0.8;
-          const py = cy - yVal * scale * 0.35;
-          if (t === -2.2) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
+        if (simMode === 'autoplay' && isSimulating && localFrame % Math.max(1, Math.round(35 / simSpeed)) === 0) {
+          if (Math.abs(newtonCurrentX - 1.0) < 0.04 || Math.abs(newtonCurrentX + 1.0) < 0.04 || newtonStepCount > 7) {
+            setNewtonCurrentX(parseFloat((1.85 + (Math.random() - 0.5) * 0.4).toFixed(3)));
+            setNewtonStepCount(0);
+          } else {
+            performStep();
+          }
         }
-        ctx.stroke();
+
+        const marginX = 14;
+        const marginY = 14;
+        const totalW = Math.max(680, w - 2 * marginX);
+        const cardH = Math.max(480, h - 2 * marginY - 10);
+        const leftX = cx - totalW / 2;
+        const topY = cy - cardH / 2 + 6;
+
+        drawDiagramCard(ctx, leftX, topY, totalW, cardH, theme, '⚡ SECOND-ORDER NEWTON-RAPHSON & HESSIAN DYNAMICS');
+
+        const plotX = leftX + 10;
+        const plotY = topY + 36;
+        const plotW = totalW - 20;
+        const plotH = cardH - 46;
+        const pCx = plotX + plotW / 2;
+        const pCy = plotY + plotH / 2 + 10;
+        const pScaleX = plotW * 0.22;
+        const pScaleY = plotH * 0.18;
 
         const x0 = newtonCurrentX;
-        const f0 = Math.pow(x0, 4) - 2 * Math.pow(x0, 2);
-        const f1 = 4 * Math.pow(x0, 3) - 4 * x0;
+        const f0 = Math.pow(x0, 4) - 2 * Math.pow(x0, 2) + 0.2 * x0;
+        const f1 = 4 * Math.pow(x0, 3) - 4 * x0 + 0.2;
         const f2 = 12 * Math.pow(x0, 2) - 4 || 1e-4;
+        const xNext = x0 - (f1 / f2) * newtonDamping;
+        const fNext = Math.pow(xNext, 4) - 2 * Math.pow(xNext, 2) + 0.2 * xNext;
 
-        ctx.strokeStyle = '#f59e0b';
-        ctx.lineWidth = 2;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        for (let t = -2.0; t <= 2.0; t += 0.05) {
-          const dx = t - x0;
-          const qVal = f0 + f1 * dx + 0.5 * f2 * dx * dx;
-          const px = cx + t * scale * 0.8;
-          const py = cy - qVal * scale * 0.35;
-          if (t === -2.0) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-        }
-        ctx.stroke();
-        ctx.setLineDash([]);
+        withPlotBoxClip(ctx, plotX, plotY, plotW, plotH, 6, () => {
+          // X-Axis Baseline
+          ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(plotX, pCy);
+          ctx.lineTo(plotX + plotW, pCy);
+          ctx.stroke();
+
+          // Ticks along X-Axis
+          ctx.font = 'bold 9px monospace';
+          ctx.fillStyle = 'rgba(148, 163, 184, 0.6)';
+          for (let tx = -2; tx <= 2; tx += 1) {
+            const px = pCx + tx * pScaleX;
+            ctx.beginPath();
+            ctx.moveTo(px, pCy - 4);
+            ctx.lineTo(px, pCy + 4);
+            ctx.stroke();
+            ctx.fillText(`x=${tx}`, px - 10, pCy + 16);
+          }
+
+          // 1. Objective Function Curve f(x) = x^4 - 2x^2 + 0.2x [Cyan Solid with Glow]
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 3;
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          for (let i = 0; i <= 100; i++) {
+            const t = -2.2 + (i / 100) * 4.4;
+            const yVal = Math.pow(t, 4) - 2 * Math.pow(t, 2) + 0.2 * t;
+            const px = pCx + t * pScaleX;
+            const py = pCy - yVal * pScaleY;
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+
+          // 2. Osculating Quadratic Parabola q(x) [Amber Dashed]
+          ctx.strokeStyle = '#f59e0b';
+          ctx.lineWidth = 2.2;
+          ctx.setLineDash([5, 4]);
+          ctx.beginPath();
+          for (let i = 0; i <= 100; i++) {
+            const t = -2.2 + (i / 100) * 4.4;
+            const dx = t - x0;
+            const qVal = f0 + f1 * dx + 0.5 * f2 * dx * dx;
+            const px = pCx + t * pScaleX;
+            const py = pCy - qVal * pScaleY;
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // 3. First-Order Tangent Slope Line [Emerald Dashed]
+          ctx.strokeStyle = 'rgba(16, 185, 129, 0.6)';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          const tanDx1 = -0.8;
+          const tanDx2 = 0.8;
+          ctx.moveTo(pCx + (x0 + tanDx1) * pScaleX, pCy - (f0 + f1 * tanDx1) * pScaleY);
+          ctx.lineTo(pCx + (x0 + tanDx2) * pScaleX, pCy - (f0 + f1 * tanDx2) * pScaleY);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // 4. Step Jump Trajectory Vector (x_k, f(x_k)) -> (x_next, f(x_next)) [Gold Arrow]
+          const curPx = pCx + x0 * pScaleX;
+          const curPy = pCy - f0 * pScaleY;
+          const nextPx = pCx + xNext * pScaleX;
+          const nextPy = pCy - fNext * pScaleY;
+
+          ctx.strokeStyle = '#fbbf24';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(curPx, curPy);
+          ctx.quadraticCurveTo((curPx + nextPx) / 2, Math.min(curPy, nextPy) - 25, nextPx, nextPy);
+          ctx.stroke();
+
+          // 5. Current Position Handle (Pulsing Gold Marker)
+          ctx.fillStyle = '#fbbf24';
+          ctx.shadowColor = '#fbbf24';
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(curPx, curPy, 7, 0, 2 * Math.PI);
+          ctx.fill();
+
+          // Next Step Target Marker (Emerald Ring)
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 2.5;
+          ctx.shadowColor = '#10b981';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.arc(nextPx, nextPy, 6, 0, 2 * Math.PI);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+
+          // Badges & Telemetry Overlays
+          ctx.font = 'bold 9px monospace';
+          ctx.fillStyle = '#fbbf24';
+          ctx.fillText(`Current x_${newtonStepCount} = ${x0.toFixed(3)}`, curPx + 10, curPy - 10);
+
+          ctx.fillStyle = '#10b981';
+          ctx.fillText(`Next x_${newtonStepCount + 1} = ${xNext.toFixed(3)} (Δx = -f'/f'')`, nextPx + 10, nextPy + 16);
+
+          // Curvature Status Badge
+          const isConvex = f2 > 0;
+          ctx.fillStyle = isConvex ? '#22c55e' : '#ef4444';
+          ctx.font = 'bold 10px monospace';
+          ctx.fillText(`Hessian H = ∇²f(x) = ${f2.toFixed(2)} [${isConvex ? '✓ Local Convex Bowl' : '⚠️ Non-Convex / Saddle Danger'}]`, plotX + 14, plotY + 20);
+
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillText(`Gradient g = ∇f(x) = ${f1.toFixed(3)} | Step Count: ${newtonStepCount}`, plotX + 14, plotY + 36);
+
+          // Legend
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillText('━━ Objective f(x)', plotX + 14, plotY + plotH - 10);
+          ctx.fillStyle = '#f59e0b';
+          ctx.fillText('━ ━ Taylor Parabola q(x)', plotX + 150, plotY + plotH - 10);
+          ctx.fillStyle = '#fbbf24';
+          ctx.fillText('→ Newton Jump Trajectory', plotX + 320, plotY + plotH - 10);
+        });
       }
 
       // ────────────────────────────────────────────────────────────────────────
       // 10. LAGRANGE MULTIPLIERS & KKT
       // ────────────────────────────────────────────────────────────────────────
       else if (selectedModel === 'lagrange_kkt') {
-        for (let r = 0.4; r <= 2.2; r += 0.35) {
-          ctx.strokeStyle = 'rgba(56, 189, 248, 0.25)';
-          ctx.beginPath();
-          ctx.arc(cx, cy, r * scale, 0, 2 * Math.PI);
-          ctx.stroke();
+        if (simMode === 'autoplay' && isSimulating && localFrame % Math.max(1, Math.round(5 / simSpeed)) === 0) {
+          setLagrangeLevelC(parseFloat((1.2 + 0.6 * Math.sin(stateRef.current.timeT * 0.5)).toFixed(2)));
         }
 
-        ctx.strokeStyle = '#ec4899';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.arc(cx, cy, lagrangeLevelC * scale, 0, 2 * Math.PI);
-        ctx.stroke();
+        const marginX = 14;
+        const marginY = 14;
+        const totalW = Math.max(680, w - 2 * marginX);
+        const cardH = Math.max(480, h - 2 * marginY - 10);
+        const leftX = cx - totalW / 2;
+        const topY = cy - cardH / 2 + 6;
 
-        const contactX = cx + (lagrangeLevelC * scale) / Math.SQRT2;
-        const contactY = cy - (lagrangeLevelC * scale) / Math.SQRT2;
+        drawDiagramCard(ctx, leftX, topY, totalW, cardH, theme, '⚖️ CONSTRAINED OPTIMIZATION & KKT GRADIENT TANGENCY');
 
-        ctx.strokeStyle = '#38bdf8';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(contactX, contactY);
-        ctx.lineTo(contactX + 40, contactY - 40);
-        ctx.stroke();
+        const plotX = leftX + 10;
+        const plotY = topY + 36;
+        const plotW = totalW - 20;
+        const plotH = cardH - 46;
+        const pCx = plotX + plotW / 2;
+        const pCy = plotY + plotH / 2;
+        const pScale = Math.min(plotW, plotH) * 0.36;
 
-        ctx.strokeStyle = '#ec4899';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(contactX, contactY);
-        ctx.lineTo(contactX + 40 * lagrangeLambda, contactY - 40 * lagrangeLambda);
-        ctx.stroke();
+        const cConstraint = lagrangeLevelC;
+        // Constraint: x1 + 1.2 x2 = cConstraint
+        // Objective: f(x1, x2) = 0.5 * x1^2 + x2^2
+        // Optimal contact: x1* = cConstraint / 1.72, x2* = 0.6 * cConstraint / 1.72, lambda* = cConstraint / 1.72
+        const x1Star = cConstraint / 1.72;
+        const x2Star = (0.6 * cConstraint) / 1.72;
+        const optLevel = 0.5 * x1Star * x1Star + x2Star * x2Star;
+        const lambdaStar = cConstraint / 1.72;
+
+        withPlotBoxClip(ctx, plotX, plotY, plotW, plotH, 6, () => {
+          // Coordinate Axes
+          ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(plotX, pCy); ctx.lineTo(plotX + plotW, pCy);
+          ctx.moveTo(pCx, plotY); ctx.lineTo(pCx, plotY + plotH);
+          ctx.stroke();
+
+          // 1. Objective Elliptical Level Contours f(x1, x2) = c
+          const contourLevels = [0.2, 0.5, 0.9, 1.4, 2.0, 2.8];
+          contourLevels.forEach(lvl => {
+            const rx = Math.sqrt(lvl * 2.0) * pScale;
+            const ry = Math.sqrt(lvl) * pScale;
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.2)';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.ellipse(pCx, pCy, rx, ry, 0, 0, 2 * Math.PI);
+            ctx.stroke();
+          });
+
+          // 2. Active Optimal Tangent Level Curve (Cyan Glow)
+          const rxOpt = Math.sqrt(optLevel * 2.0) * pScale;
+          const ryOpt = Math.sqrt(optLevel) * pScale;
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2.5;
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.ellipse(pCx, pCy, rxOpt, ryOpt, 0, 0, 2 * Math.PI);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+
+          // 3. Affine Constraint Line: x1 + 1.2 x2 = cConstraint [Pink Solid with Glow]
+          // When x1 = -2.5 -> x2 = (c - x1)/1.2
+          // When x1 = +2.5 -> x2 = (c - x1)/1.2
+          const lx1 = -2.5;
+          const ly1 = (cConstraint - lx1) / 1.2;
+          const lx2 = 2.5;
+          const ly2 = (cConstraint - lx2) / 1.2;
+
+          const pLx1 = pCx + lx1 * pScale;
+          const pLy1 = pCy - ly1 * pScale;
+          const pLx2 = pCx + lx2 * pScale;
+          const pLy2 = pCy - ly2 * pScale;
+
+          // Infeasible Region Shading (Above the constraint line g(x) > 0)
+          ctx.fillStyle = 'rgba(236, 72, 153, 0.08)';
+          ctx.beginPath();
+          ctx.moveTo(pLx1, pLy1);
+          ctx.lineTo(pLx2, pLy2);
+          ctx.lineTo(plotX + plotW, plotY);
+          ctx.lineTo(plotX, plotY);
+          ctx.closePath();
+          ctx.fill();
+
+          ctx.strokeStyle = '#ec4899';
+          ctx.lineWidth = 3;
+          ctx.shadowColor = '#ec4899';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.moveTo(pLx1, pLy1);
+          ctx.lineTo(pLx2, pLy2);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+
+          // 4. Optimal Tangency Contact Point x* (Emerald Pulse Ring)
+          const contactPx = pCx + x1Star * pScale;
+          const contactPy = pCy - x2Star * pScale;
+
+          ctx.fillStyle = '#10b981';
+          ctx.shadowColor = '#10b981';
+          ctx.shadowBlur = 10;
+          ctx.beginPath();
+          ctx.arc(contactPx, contactPy, 7, 0, 2 * Math.PI);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          // 5. Collinear Gradient Vectors at Contact Point
+          // ∇f(x*) = [x1*, 2 x2*] (Cyan Arrow)
+          const gradFx = x1Star * 50;
+          const gradFy = -2 * x2Star * 50;
+
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(contactPx, contactPy);
+          ctx.lineTo(contactPx + gradFx, contactPy + gradFy);
+          ctx.stroke();
+
+          // Arrow tip for ∇f
+          ctx.fillStyle = '#38bdf8';
+          ctx.beginPath();
+          ctx.arc(contactPx + gradFx, contactPy + gradFy, 4, 0, 2 * Math.PI);
+          ctx.fill();
+
+          // -λ ∇g(x*) = -λ [1, 1.2] (Pink Arrow Collinear in opposite direction)
+          const gradGx = -lambdaStar * 30;
+          const gradGy = 1.2 * lambdaStar * 30;
+
+          ctx.strokeStyle = '#ec4899';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(contactPx, contactPy);
+          ctx.lineTo(contactPx + gradGx, contactPy + gradGy);
+          ctx.stroke();
+
+          // Arrow tip for -λ∇g
+          ctx.fillStyle = '#ec4899';
+          ctx.beginPath();
+          ctx.arc(contactPx + gradGx, contactPy + gradGy, 4, 0, 2 * Math.PI);
+          ctx.fill();
+
+          // Labels & KKT Checklist Badge
+          ctx.font = 'bold 9px monospace';
+          ctx.fillStyle = '#10b981';
+          ctx.fillText(`Optimal Contact x* = (${x1Star.toFixed(2)}, ${x2Star.toFixed(2)})`, contactPx + 12, contactPy - 12);
+
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillText('∇f(x*)', contactPx + gradFx + 6, contactPy + gradFy);
+
+          ctx.fillStyle = '#ec4899';
+          ctx.fillText('-λ*∇g(x*)', contactPx + gradGx - 60, contactPy + gradGy);
+
+          // KKT Checklist Panel (Top Left)
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 1.5;
+          ctx.fillRect(plotX + 12, plotY + 12, 230, 70);
+          ctx.strokeRect(plotX + 12, plotY + 12, 230, 70);
+
+          ctx.font = 'bold 9px monospace';
+          ctx.fillStyle = '#f8fafc';
+          ctx.fillText('KKT CONDITIONS & STATIONARITY:', plotX + 20, plotY + 26);
+          ctx.fillStyle = '#10b981';
+          ctx.fillText('✓ Stationarity: ∇f + λ*∇g = 0', plotX + 20, plotY + 40);
+          ctx.fillText('✓ Primal Feasibility: g(x*) ≤ 0', plotX + 20, plotY + 52);
+          ctx.fillText(`✓ Multiplier λ* = ${lambdaStar.toFixed(2)} (Dual λ ≥ 0)`, plotX + 20, plotY + 64);
+          ctx.fillText('✓ Complementary Slackness: λ*g(x*) = 0', plotX + 20, plotY + 76);
+
+          // Legend
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillText('━━ Contours f(x) = c', plotX + 14, plotY + plotH - 10);
+          ctx.fillStyle = '#ec4899';
+          ctx.fillText('━━ Constraint g(x) = 0', plotX + 170, plotY + plotH - 10);
+          ctx.fillStyle = '#10b981';
+          ctx.fillText('● Tangency Point (∇f = -λ∇g)', plotX + 340, plotY + plotH - 10);
+        });
       }
 
       // ────────────────────────────────────────────────────────────────────────
       // 11. EM ALGORITHM ON GAUSSIAN MIXTURES
       // ────────────────────────────────────────────────────────────────────────
       else if (selectedModel === 'em_gmm') {
-        const { gmmPoints, gmmParams } = stateRef.current;
-        gmmPoints.forEach(p => {
-          const p1 = gmmParams.pi1 * Math.exp(-0.5 * Math.pow((p - gmmParams.mu1) / gmmParams.sig1, 2));
-          const p2 = gmmParams.pi2 * Math.exp(-0.5 * Math.pow((p - gmmParams.mu2) / gmmParams.sig2, 2));
-          const r1 = p1 / (p1 + p2 || 1);
+        if (isSimulating && localFrame % Math.max(1, Math.round(25 / simSpeed)) === 0) {
+          if (!emConverged) {
+            performStep();
+          } else if (simMode === 'autoplay' && localFrame % Math.max(1, Math.round(180 / simSpeed)) === 0) {
+            reseedData();
+          }
+        }
 
-          ctx.fillStyle = r1 > 0.5 ? '#38bdf8' : '#a855f7';
+        const marginX = 14;
+        const marginY = 14;
+        const gap = 12;
+        const totalW = Math.max(680, w - 2 * marginX);
+        const leftW = Math.floor((totalW - gap) * 0.58);
+        const rightW = totalW - gap - leftW;
+        const cardH = Math.max(480, h - 2 * marginY - 10);
+        const leftX = cx - totalW / 2;
+        const leftY = cy - cardH / 2 + 6;
+        const rightX = leftX + leftW + gap;
+        const rightY = leftY;
+
+        const { gmmPoints, gmmParams } = stateRef.current;
+
+        // 1. Left Diagram Card: GMM Mixture Density & Soft Responsibilities
+        drawDiagramCard(ctx, leftX, leftY, leftW, cardH, theme, '🎯 GMM MIXTURE DENSITY & SOFT RESPONSIBILITIES');
+
+        const gmmPlotX = leftX + 10;
+        const gmmPlotY = leftY + 36;
+        const gmmPlotW = leftW - 20;
+        const gmmPlotH = cardH - 46;
+        const gBaseY = gmmPlotY + gmmPlotH - 30;
+        const gCx = gmmPlotX + gmmPlotW / 2;
+        const gScale = gmmPlotW * 0.24;
+
+        withPlotBoxClip(ctx, gmmPlotX, gmmPlotY, gmmPlotW, gmmPlotH, 6, () => {
+          // Axis baseline
+          ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+          ctx.lineWidth = 1.5;
           ctx.beginPath();
-          ctx.arc(cx + p * scale, cy + 0.4 * scale, 4.5, 0, 2 * Math.PI);
-          ctx.fill();
+          ctx.moveTo(gmmPlotX, gBaseY);
+          ctx.lineTo(gmmPlotX + gmmPlotW, gBaseY);
+          ctx.stroke();
+
+          // Component 1 Curve N(mu1, sig1) [Cyan Dashed]
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([5, 4]);
+          ctx.beginPath();
+          for (let i = 0; i <= 80; i++) {
+            const t = -2.2 + (i / 80) * 4.4;
+            const pdf1 = gmmParams.pi1 * (1 / (gmmParams.sig1 * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((t - gmmParams.mu1) / gmmParams.sig1, 2));
+            const px = gCx + t * gScale;
+            const py = gBaseY - Math.min(1.0, pdf1 * 0.42) * (gmmPlotH * 0.7);
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.stroke();
+
+          // Component 2 Curve N(mu2, sig2) [Purple Dashed]
+          ctx.strokeStyle = '#c084fc';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([5, 4]);
+          ctx.beginPath();
+          for (let i = 0; i <= 80; i++) {
+            const t = -2.2 + (i / 80) * 4.4;
+            const pdf2 = gmmParams.pi2 * (1 / (gmmParams.sig2 * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((t - gmmParams.mu2) / gmmParams.sig2, 2));
+            const px = gCx + t * gScale;
+            const py = gBaseY - Math.min(1.0, pdf2 * 0.42) * (gmmPlotH * 0.7);
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Total Mixture Curve sum(pi_k * N_k) [Emerald Solid with Glow]
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 3;
+          ctx.shadowColor = '#10b981';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          for (let i = 0; i <= 80; i++) {
+            const t = -2.2 + (i / 80) * 4.4;
+            const pdf1 = gmmParams.pi1 * (1 / (gmmParams.sig1 * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((t - gmmParams.mu1) / gmmParams.sig1, 2));
+            const pdf2 = gmmParams.pi2 * (1 / (gmmParams.sig2 * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((t - gmmParams.mu2) / gmmParams.sig2, 2));
+            const totalPdf = pdf1 + pdf2;
+            const px = gCx + t * gScale;
+            const py = gBaseY - Math.min(1.0, totalPdf * 0.42) * (gmmPlotH * 0.75);
+            if (i === 0) ctx.moveTo(px, py);
+            else ctx.lineTo(px, py);
+          }
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+
+          // Means Vertical Markers
+          const mu1X = gCx + gmmParams.mu1 * gScale;
+          const mu2X = gCx + gmmParams.mu2 * gScale;
+
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 1.5;
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          ctx.moveTo(mu1X, gmmPlotY + 20);
+          ctx.lineTo(mu1X, gBaseY);
+          ctx.stroke();
+
+          ctx.strokeStyle = '#c084fc';
+          ctx.beginPath();
+          ctx.moveTo(mu2X, gmmPlotY + 20);
+          ctx.lineTo(mu2X, gBaseY);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Data Points with Soft Responsibility Color Blending (r1 * Cyan + r2 * Purple)
+          gmmPoints.forEach((p, idx) => {
+            const p1 = gmmParams.pi1 * (1 / (gmmParams.sig1 * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((p - gmmParams.mu1) / gmmParams.sig1, 2));
+            const p2 = gmmParams.pi2 * (1 / (gmmParams.sig2 * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((p - gmmParams.mu2) / gmmParams.sig2, 2));
+            const r1 = p1 / (p1 + p2 || 1e-6);
+
+            const red = Math.round(56 * r1 + 192 * (1 - r1));
+            const green = Math.round(189 * r1 + 132 * (1 - r1));
+            const blue = Math.round(248 * r1 + 252 * (1 - r1));
+
+            const px = gCx + p * gScale;
+            const py = gBaseY - 6 - (idx % 3) * 6;
+
+            ctx.fillStyle = `rgb(${red}, ${green}, ${blue})`;
+            ctx.shadowColor = `rgb(${red}, ${green}, ${blue})`;
+            ctx.shadowBlur = 3;
+            ctx.beginPath();
+            ctx.arc(px, py, 3.5, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+          });
+
+          // Legend & Component Means
+          ctx.font = 'bold 9px monospace';
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillText(`μ₁=${gmmParams.mu1.toFixed(2)} (π₁=${(gmmParams.pi1 * 100).toFixed(0)}%)`, mu1X - 35, gmmPlotY + 16);
+
+          ctx.fillStyle = '#c084fc';
+          ctx.fillText(`μ₂=${gmmParams.mu2.toFixed(2)} (π₂=${(gmmParams.pi2 * 100).toFixed(0)}%)`, mu2X - 35, gmmPlotY + 16);
+
+          ctx.fillStyle = '#10b981';
+          ctx.fillText('━━ Total Mixture p(x)', gmmPlotX + 16, gmmPlotY + gmmPlotH - 10);
         });
 
-        // GMM Density curve
-        ctx.strokeStyle = '#34d399';
-        ctx.lineWidth = 2.5;
+        // 2. Right Diagram Card: Monotonic Log-Likelihood Ascent
+        drawDiagramCard(ctx, rightX, rightY, rightW, cardH, theme, '📈 LOG-LIKELIHOOD ASCENT ln L(θ)');
+
+        const llPlotX = rightX + 10;
+        const llPlotY = rightY + 36;
+        const llPlotW = rightW - 20;
+        const llPlotH = cardH - 46;
+
+        // Top Telemetry Card Deck
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+        ctx.strokeStyle = theme.plotBoxBorder;
+        ctx.lineWidth = 1;
         ctx.beginPath();
-        for (let t = -2.0; t <= 2.0; t += 0.04) {
-          const d1 = gmmParams.pi1 * (1 / (gmmParams.sig1 * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((t - gmmParams.mu1) / gmmParams.sig1, 2));
-          const d2 = gmmParams.pi2 * (1 / (gmmParams.sig2 * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((t - gmmParams.mu2) / gmmParams.sig2, 2));
-          const totalDens = (d1 + d2) * 0.4 * scale;
-          const px = cx + t * scale;
-          const py = cy + 0.4 * scale - totalDens;
-          if (t === -2.0) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-        }
-        ctx.stroke();
+        ctx.roundRect(llPlotX, llPlotY, llPlotW, 68, 6);
+        ctx.fill(); ctx.stroke();
+
+        ctx.font = 'bold 10px monospace';
+        ctx.fillStyle = '#f8fafc';
+        ctx.fillText(`EM Iterations: ${emIterations}`, llPlotX + 12, llPlotY + 20);
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText(`Log-Likelihood ln L(θ): ${emLogLikelihood}`, llPlotX + 12, llPlotY + 38);
+        ctx.fillStyle = emConverged ? '#22c55e' : '#fbbf24';
+        ctx.fillText(emConverged ? '✓ EM CONVERGED (ΔL < 1e-4)' : '⚡ ITERATING E-STEP & M-STEP...', llPlotX + 12, llPlotY + 56);
+
+        // Lower Ascent Plot Area (Confined strictly below top telemetry)
+        const chartY = llPlotY + 78;
+        const chartH = llPlotH - 88;
+
+        ctx.fillStyle = theme.plotBoxBg;
+        ctx.fillRect(llPlotX, chartY, llPlotW, chartH);
+        ctx.strokeStyle = theme.plotBoxBorder;
+        ctx.strokeRect(llPlotX, chartY, llPlotW, chartH);
+
+        withPlotBoxClip(ctx, llPlotX, chartY, llPlotW, chartH, 6, () => {
+          const hist = stateRef.current.gmmHistory;
+          // Grid line
+          ctx.strokeStyle = 'rgba(148, 163, 184, 0.15)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(llPlotX, chartY + chartH / 2); ctx.lineTo(llPlotX + llPlotW, chartY + chartH / 2);
+          ctx.stroke();
+
+          if (hist.length > 1) {
+            const minLL = Math.min(...hist);
+            const maxLL = Math.max(...hist);
+            const rangeLL = maxLL - minLL || 1.0;
+
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2.5;
+            ctx.shadowColor = '#38bdf8';
+            ctx.shadowBlur = 6;
+            ctx.beginPath();
+            hist.forEach((val, idx) => {
+              const lx = llPlotX + 14 + (idx / Math.max(1, hist.length - 1)) * (llPlotW - 28);
+              const ly = (chartY + chartH - 14) - ((val - minLL) / rangeLL) * (chartH - 28);
+              if (idx === 0) ctx.moveTo(lx, ly);
+              else ctx.lineTo(lx, ly);
+            });
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Mark current iteration point
+            const lastVal = hist[hist.length - 1];
+            const lastX = llPlotX + 14 + (llPlotW - 28);
+            const lastY = (chartY + chartH - 14) - ((lastVal - minLL) / rangeLL) * (chartH - 28);
+
+            ctx.fillStyle = '#22c55e';
+            ctx.shadowColor = '#22c55e';
+            ctx.shadowBlur = 8;
+            ctx.beginPath();
+            ctx.arc(lastX, lastY, 5, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.shadowBlur = 0;
+          }
+
+          ctx.font = 'bold 9px monospace';
+          ctx.fillStyle = '#94a3b8';
+          ctx.fillText('Monotonic Ascent ln L(θ)', llPlotX + 12, chartY + 16);
+          ctx.fillText('Iter 0 ━━► Max', llPlotX + llPlotW - 95, chartY + chartH - 8);
+        });
       }
 
       // ────────────────────────────────────────────────────────────────────────
       // 12. MCMC METROPOLIS-HASTINGS
       // ────────────────────────────────────────────────────────────────────────
       else if (selectedModel === 'mcmc_metropolis') {
-        if (isSimulating && localFrame % 4 === 0) {
+        if (isSimulating && localFrame % Math.max(1, Math.round(4 / simSpeed)) === 0) {
           performStep();
         }
 
-        // Draw Bimodal Target
-        ctx.strokeStyle = '#38bdf8';
-        ctx.lineWidth = 2;
-        ctx.beginPath();
-        for (let t = -2.0; t <= 2.0; t += 0.05) {
-          const pdf = 0.6 * Math.exp(-0.5 * Math.pow((t + 0.8) / 0.35, 2)) + 0.4 * Math.exp(-0.5 * Math.pow((t - 0.8) / 0.4, 2));
-          const px = cx + t * scale;
-          const py = cy - 0.2 * scale - pdf * scale * 0.6;
-          if (t === -2.0) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-        }
-        ctx.stroke();
+        const marginX = 14;
+        const marginY = 14;
+        const gap = 12;
+        const totalW = Math.max(680, w - 2 * marginX);
+        const leftW = Math.floor((totalW - gap) * 0.55);
+        const rightW = totalW - gap - leftW;
+        const cardH = Math.max(480, h - 2 * marginY - 10);
+        const leftX = cx - totalW / 2;
+        const leftY = cy - cardH / 2 + 6;
+        const rightX = leftX + leftW + gap;
+        const rightY = leftY;
 
-        // Draw Empirical Histogram
-        const hist = stateRef.current.mcmcHistogram;
-        const maxBin = Math.max(...hist, 1);
-        const binW = (4.0 * scale) / 50;
-        for (let i = 0; i < 50; i++) {
-          const val = hist[i];
-          const barH = (val / maxBin) * (0.5 * scale);
-          const bx = cx - 2.0 * scale + i * binW;
-          const by = cy + 0.7 * scale - barH;
-          ctx.fillStyle = 'rgba(16, 185, 129, 0.6)';
-          ctx.fillRect(bx, by, binW - 1, barH);
-        }
+        // 1. Left Diagram Card: Target Density & Active Proposal Jump
+        drawDiagramCard(ctx, leftX, leftY, leftW, cardH, theme, '🎯 METROPOLIS PROPOSAL & ACCEPTANCE');
 
-        // Current MCMC state marker
-        const curX = cx + stateRef.current.mcmcCurrent * scale;
-        ctx.fillStyle = '#f59e0b';
-        ctx.beginPath();
-        ctx.arc(curX, cy + 0.7 * scale, 6, 0, 2 * Math.PI);
-        ctx.fill();
+        const leftPlotX = leftX + 10;
+        const leftPlotY = leftY + 36;
+        const leftPlotW = leftW - 20;
+        const leftPlotH = cardH - 46;
+        const baseY = leftPlotY + leftPlotH - 16;
+
+        withPlotBoxClip(ctx, leftPlotX, leftPlotY, leftPlotW, leftPlotH, 6, () => {
+          // Bimodal Target Distribution Curve
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.16)';
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.moveTo(leftPlotX, baseY);
+
+          for (let i = 0; i <= 60; i++) {
+            const t = -2.2 + (i / 60) * 4.4;
+            const pdf = 0.6 * Math.exp(-0.5 * Math.pow((t + 0.8) / 0.35, 2)) + 0.4 * Math.exp(-0.5 * Math.pow((t - 0.8) / 0.4, 2));
+            const px = leftPlotX + (i / 60) * leftPlotW;
+            const py = baseY - pdf * (leftPlotH - 36);
+            ctx.lineTo(px, py);
+          }
+          ctx.lineTo(leftPlotX + leftPlotW, baseY);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          // Current MCMC Sample Marker x_t
+          const curVal = stateRef.current.mcmcCurrent;
+          const curPx = leftPlotX + ((curVal + 2.2) / 4.4) * leftPlotW;
+          const curTargetPdf = 0.6 * Math.exp(-0.5 * Math.pow((curVal + 0.8) / 0.35, 2)) + 0.4 * Math.exp(-0.5 * Math.pow((curVal - 0.8) / 0.4, 2));
+          const curPy = baseY - curTargetPdf * (leftPlotH - 36);
+
+          ctx.fillStyle = '#34d399';
+          ctx.shadowColor = '#34d399';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.arc(curPx, curPy, 7, 0, 2 * Math.PI);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          // Proposal Jump Vector
+          const lastHist = stateRef.current.mcmcHistory[stateRef.current.mcmcHistory.length - 1];
+          if (lastHist) {
+            const propPx = leftPlotX + ((lastHist.x + 2.2) / 4.4) * leftPlotW;
+            ctx.strokeStyle = lastHist.accepted ? '#34d399' : '#f43f5e';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(curPx, curPy);
+            ctx.lineTo(propPx, baseY - 8);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            ctx.fillStyle = lastHist.accepted ? '#34d399' : '#f43f5e';
+            ctx.font = 'bold 9px monospace';
+            ctx.fillText(lastHist.accepted ? '✓ ACCEPT' : '✗ REJECT', propPx - 16, baseY - 18);
+          }
+        });
+
+        // 2. Right Diagram Card: Trace Plot & Empirical Posterior Histogram
+        drawDiagramCard(ctx, rightX, rightY, rightW, cardH, theme, '📈 TRACE PLOT & EMPIRICAL POSTERIOR');
+
+        // Upper Box: MCMC Chain Trace Plot
+        const traceY = rightY + 36;
+        const traceH = Math.floor((cardH - 58) * 0.46);
+        ctx.fillStyle = theme.plotBoxBg;
+        ctx.fillRect(rightX + 10, traceY, rightW - 20, traceH);
+        ctx.strokeStyle = theme.plotBoxBorder;
+        ctx.strokeRect(rightX + 10, traceY, rightW - 20, traceH);
+
+        withPlotBoxClip(ctx, rightX + 10, traceY, rightW - 20, traceH, 6, () => {
+          const histArr = stateRef.current.mcmcHistory.slice(-50);
+          if (histArr.length > 1) {
+            ctx.strokeStyle = '#c084fc';
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            histArr.forEach((h, idx) => {
+              const tx = rightX + 14 + (idx / Math.max(1, histArr.length - 1)) * (rightW - 28);
+              const ty = traceY + traceH / 2 - (h.x / 2.5) * (traceH / 2 - 8);
+              if (idx === 0) ctx.moveTo(tx, ty);
+              else ctx.lineTo(tx, ty);
+            });
+            ctx.stroke();
+          }
+        });
+
+        ctx.fillStyle = '#c084fc';
+        ctx.font = 'bold 9px monospace';
+        ctx.fillText('MCMC State Trace Plot x_t', rightX + 16, traceY + 14);
+
+        // Lower Box: Empirical Histogram
+        const postY = traceY + traceH + 12;
+        const postH = cardH - (postY - rightY) - 10;
+        ctx.fillStyle = theme.plotBoxBg;
+        ctx.fillRect(rightX + 10, postY, rightW - 20, postH);
+        ctx.strokeStyle = theme.plotBoxBorder;
+        ctx.strokeRect(rightX + 10, postY, rightW - 20, postH);
+
+        withPlotBoxClip(ctx, rightX + 10, postY, rightW - 20, postH, 6, () => {
+          const hist = stateRef.current.mcmcHistogram;
+          const maxBin = Math.max(...hist, 1);
+          const binW = (rightW - 20) / 50;
+          const histBaseY = postY + postH - 6;
+
+          for (let i = 0; i < 50; i++) {
+            const val = hist[i];
+            const barH = (val / maxBin) * (postH - 20);
+            const bx = rightX + 10 + i * binW;
+            const by = histBaseY - barH;
+
+            ctx.fillStyle = 'rgba(52, 211, 153, 0.75)';
+            ctx.fillRect(bx, by, binW - 0.5, barH);
+          }
+        });
+
+        ctx.fillStyle = '#34d399';
+        ctx.font = 'bold 9px monospace';
+        ctx.fillText(`Acceptance Rate: ${mcmcAcceptanceRate}% | Samples: ${mcmcTotalSamples}`, rightX + 16, postY + 14);
       }
 
       // ────────────────────────────────────────────────────────────────────────
       // 13. BOOTSTRAP RESAMPLING
       // ────────────────────────────────────────────────────────────────────────
       else if (selectedModel === 'bootstrap_resampling') {
-        stateRef.current.bootSamples.forEach(p => {
-          ctx.fillStyle = '#38bdf8';
-          ctx.beginPath();
-          ctx.arc(cx + p * scale * 1.5, cy - 0.4 * scale, 4, 0, 2 * Math.PI);
-          ctx.fill();
-        });
+        if (simMode === 'autoplay' && isSimulating && localFrame % Math.max(1, Math.round(10 / simSpeed)) === 0) {
+          if (stateRef.current.bootReplicas.length < 350) {
+            const orig = stateRef.current.bootSamples;
+            if (orig.length > 0) {
+              for (let b = 0; b < 6; b++) {
+                let sum = 0;
+                for (let i = 0; i < orig.length; i++) {
+                  sum += orig[Math.floor(Math.random() * orig.length)];
+                }
+                stateRef.current.bootReplicas.push(sum / orig.length);
+              }
+              setBootNumReplicas(stateRef.current.bootReplicas.length);
+            }
+          } else {
+            stateRef.current.bootReplicas = [];
+            setBootNumReplicas(0);
+          }
+        }
 
-        // Bootstrap Replicates Histogram
-        const reps = stateRef.current.bootReplicas;
-        if (reps.length > 0) {
-          ctx.fillStyle = 'rgba(245, 158, 11, 0.5)';
-          reps.forEach(r => {
-            const bx = cx + r * scale * 1.5;
-            ctx.fillRect(bx, cy + 0.4 * scale, 2, -20);
+        const marginX = 14;
+        const marginY = 14;
+        const totalW = Math.max(680, w - 2 * marginX);
+        const cardH = Math.max(480, h - 2 * marginY - 10);
+        const leftX = cx - totalW / 2;
+        const topY = cy - cardH / 2 + 6;
+
+        drawDiagramCard(ctx, leftX, topY, totalW, cardH, theme, '📊 BOOTSTRAP NON-PARAMETRIC RESAMPLING & 95% CI');
+
+        const plotX = leftX + 10;
+        const plotY = topY + 36;
+        const plotW = totalW - 20;
+        const plotH = cardH - 46;
+
+        // Top Box: Original Empirical Dataset X
+        const topBoxH = Math.floor(plotH * 0.32);
+        ctx.fillStyle = theme.plotBoxBg;
+        ctx.fillRect(plotX, plotY, plotW, topBoxH);
+        ctx.strokeStyle = theme.plotBoxBorder;
+        ctx.strokeRect(plotX, plotY, plotW, topBoxH);
+
+        const sampleCx = plotX + plotW / 2;
+        const sampleBaseY = plotY + topBoxH - 18;
+        const sampleScale = plotW * 0.38;
+
+        const orig = stateRef.current.bootSamples;
+        const origMean = orig.length > 0 ? orig.reduce((a, b) => a + b, 0) / orig.length : 0.12;
+
+        withPlotBoxClip(ctx, plotX, plotY, plotW, topBoxH, 6, () => {
+          // Axis baseline
+          ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.moveTo(plotX, sampleBaseY);
+          ctx.lineTo(plotX + plotW, sampleBaseY);
+          ctx.stroke();
+
+          // Data Points
+          orig.forEach((p, idx) => {
+            const px = sampleCx + p * sampleScale;
+            const py = sampleBaseY - 6 - (idx % 3) * 6;
+            ctx.fillStyle = '#38bdf8';
+            ctx.shadowColor = '#38bdf8';
+            ctx.shadowBlur = 4;
+            ctx.beginPath();
+            ctx.arc(px, py, 3.5, 0, 2 * Math.PI);
+            ctx.fill();
+            ctx.shadowBlur = 0;
           });
 
-          // CI Shading
-          const ciLowX = cx + bootCI95.low * scale * 1.5;
-          const ciHighX = cx + bootCI95.high * scale * 1.5;
-
-          ctx.fillStyle = 'rgba(16, 185, 129, 0.25)';
-          ctx.fillRect(ciLowX, cy + 0.45 * scale, ciHighX - ciLowX, -40);
-
-          ctx.strokeStyle = '#10b981';
-          ctx.setLineDash([4, 4]);
+          // Original Sample Mean Line
+          const origMeanX = sampleCx + origMean * sampleScale;
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([3, 3]);
           ctx.beginPath();
-          ctx.moveTo(ciLowX, cy + 0.6 * scale); ctx.lineTo(ciLowX, cy + 0.1 * scale);
-          ctx.moveTo(ciHighX, cy + 0.6 * scale); ctx.lineTo(ciHighX, cy + 0.1 * scale);
+          ctx.moveTo(origMeanX, plotY + 12);
+          ctx.lineTo(origMeanX, sampleBaseY);
           ctx.stroke();
           ctx.setLineDash([]);
-        }
+
+          ctx.fillStyle = '#38bdf8';
+          ctx.font = 'bold 9px monospace';
+          ctx.fillText(`Sample Mean x̄ = ${origMean.toFixed(3)} (N = ${orig.length})`, origMeanX + 6, plotY + 20);
+        });
+
+        ctx.fillStyle = '#38bdf8';
+        ctx.font = 'bold 9px monospace';
+        ctx.fillText('Original Empirical Dataset X ~ F_emp', plotX + 12, plotY + 14);
+
+        // Lower Box: Bootstrap Replicates Distribution Histogram p(θ*)
+        const botBoxY = plotY + topBoxH + 12;
+        const botBoxH = plotH - topBoxH - 12;
+
+        ctx.fillStyle = theme.plotBoxBg;
+        ctx.fillRect(plotX, botBoxY, plotW, botBoxH);
+        ctx.strokeStyle = theme.plotBoxBorder;
+        ctx.strokeRect(plotX, botBoxY, plotW, botBoxH);
+
+        const reps = stateRef.current.bootReplicas;
+        const botBaseY = botBoxY + botBoxH - 24;
+
+        withPlotBoxClip(ctx, plotX, botBoxY, plotW, botBoxH, 6, () => {
+          if (reps.length > 0) {
+            const numBins = 36;
+            const minVal = -0.15;
+            const maxVal = 0.40;
+            const binWidthVal = (maxVal - minVal) / numBins;
+            const bins = new Array(numBins).fill(0);
+
+            reps.forEach(r => {
+              const bIdx = Math.floor((r - minVal) / binWidthVal);
+              if (bIdx >= 0 && bIdx < numBins) bins[bIdx]++;
+            });
+
+            const maxBinCount = Math.max(...bins, 1);
+            const pxPerBin = plotW / numBins;
+
+            // 1. Shaded 95% Confidence Interval Background
+            const ciLowVal = bootCI95.low;
+            const ciHighVal = bootCI95.high;
+            const ciLowPx = plotX + ((ciLowVal - minVal) / (maxVal - minVal)) * plotW;
+            const ciHighPx = plotX + ((ciHighVal - minVal) / (maxVal - minVal)) * plotW;
+
+            ctx.fillStyle = 'rgba(16, 185, 129, 0.22)';
+            ctx.fillRect(ciLowPx, botBoxY + 16, Math.max(2, ciHighPx - ciLowPx), botBaseY - botBoxY - 16);
+
+            // 2. Draw Histogram Bars
+            for (let i = 0; i < numBins; i++) {
+              const count = bins[i];
+              if (count === 0) continue;
+              const barH = (count / maxBinCount) * (botBoxH - 46);
+              const bx = plotX + i * pxPerBin;
+              const by = botBaseY - barH;
+              const binVal = minVal + (i + 0.5) * binWidthVal;
+              const inCI = binVal >= ciLowVal && binVal <= ciHighVal;
+
+              ctx.fillStyle = inCI ? 'rgba(245, 158, 11, 0.75)' : 'rgba(148, 163, 184, 0.35)';
+              ctx.fillRect(bx + 1, by, pxPerBin - 2, barH);
+            }
+
+            // 3. Boundary Dashed Lines at q0.025 and q0.975
+            ctx.strokeStyle = '#10b981';
+            ctx.lineWidth = 2;
+            ctx.setLineDash([4, 4]);
+            ctx.beginPath();
+            ctx.moveTo(ciLowPx, botBoxY + 16);
+            ctx.lineTo(ciLowPx, botBaseY);
+            ctx.moveTo(ciHighPx, botBoxY + 16);
+            ctx.lineTo(ciHighPx, botBaseY);
+            ctx.stroke();
+
+            // 4. Mean of Bootstrap Estimates
+            const bootMeanVal = bootMeanEstimate;
+            const bootMeanPx = plotX + ((bootMeanVal - minVal) / (maxVal - minVal)) * plotW;
+            ctx.strokeStyle = '#f59e0b';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(bootMeanPx, botBoxY + 12);
+            ctx.lineTo(bootMeanPx, botBaseY);
+            ctx.stroke();
+            ctx.setLineDash([]);
+
+            // Text Badges
+            ctx.font = 'bold 9px monospace';
+            ctx.fillStyle = '#10b981';
+            ctx.fillText(`q(0.025) = ${ciLowVal.toFixed(3)}`, ciLowPx - 40, botBoxY + 28);
+            ctx.fillText(`q(0.975) = ${ciHighVal.toFixed(3)}`, ciHighPx + 6, botBoxY + 28);
+
+            ctx.fillStyle = '#f59e0b';
+            ctx.fillText(`θ̄* = ${bootMeanVal.toFixed(3)}`, bootMeanPx - 25, botBoxY + 14);
+
+            ctx.fillStyle = '#f8fafc';
+            ctx.fillText(`95% Percentile CI: [${ciLowVal.toFixed(3)}, ${ciHighVal.toFixed(3)}] | SE_B = ${bootStdError.toFixed(4)} | B = ${reps.length}`, plotX + 12, botBoxY + botBoxH - 8);
+          }
+        });
+
+        ctx.fillStyle = '#f59e0b';
+        ctx.font = 'bold 9px monospace';
+        ctx.fillText('Bootstrap Distribution p(θ*) & 95% Percentile Band', plotX + 12, botBoxY + 14);
       }
 
       // ────────────────────────────────────────────────────────────────────────
       // 14. FISHER'S LINEAR DISCRIMINANT (LDA)
       // ────────────────────────────────────────────────────────────────────────
       else if (selectedModel === 'fisher_lda') {
+        if (simMode === 'autoplay' && isSimulating && localFrame % Math.max(1, Math.round(5 / simSpeed)) === 0) {
+          setLdaSeparability(parseFloat((3.5 + 1.2 * Math.sin(stateRef.current.timeT * 0.5)).toFixed(2)));
+        }
+
+        const marginX = 14;
+        const marginY = 14;
+        const gap = 12;
+        const totalW = Math.max(680, w - 2 * marginX);
+        const cardH = Math.max(480, h - 2 * marginY - 10);
+        const cardW = (totalW - gap) / 2;
+        const leftX = cx - totalW / 2;
+        const topY = cy - cardH / 2 + 6;
+        const rightX = leftX + cardW + gap;
+
+        // LEFT CARD: 2D Class Clusters & Optimal Fisher Discriminant Axis
+        drawDiagramCard(ctx, leftX, topY, cardW, cardH, theme, '🎯 FISHER 2D CLASS SCATTER & DISCRIMINANT w*');
+
+        const plotX = leftX + 10;
+        const plotY = topY + 36;
+        const plotW = cardW - 20;
+        const plotH = cardH - 46;
+        const pCx = plotX + plotW / 2;
+        const pCy = plotY + plotH / 2;
+        const pScale = Math.min(plotW, plotH) * 0.42;
+
         const pts = stateRef.current.ldaPoints;
-        pts.forEach(p => {
-          ctx.fillStyle = p.cls === 0 ? '#38bdf8' : '#f59e0b';
+        // Means
+        const c0Pts = pts.filter(p => p.cls === 0);
+        const c1Pts = pts.filter(p => p.cls === 1);
+        const mu0 = {
+          x: c0Pts.length ? c0Pts.reduce((acc, p) => acc + p.x, 0) / c0Pts.length : -0.6,
+          y: c0Pts.length ? c0Pts.reduce((acc, p) => acc + p.y, 0) / c0Pts.length : -0.3
+        };
+        const mu1 = {
+          x: c1Pts.length ? c1Pts.reduce((acc, p) => acc + p.x, 0) / c1Pts.length : 0.6,
+          y: c1Pts.length ? c1Pts.reduce((acc, p) => acc + p.y, 0) / c1Pts.length : 0.4
+        };
+
+        // Fisher vector w* = Sw^-1 (mu1 - mu0)
+        const dMu = { x: mu1.x - mu0.x, y: mu1.y - mu0.y };
+        const wAngle = Math.atan2(dMu.y * 1.4, dMu.x * 0.8);
+        const wVec = { x: Math.cos(wAngle), y: Math.sin(wAngle) };
+
+        withPlotBoxClip(ctx, plotX, plotY, plotW, plotH, 6, () => {
+          // Coordinate Axes
+          ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
+          ctx.lineWidth = 1.5;
           ctx.beginPath();
-          ctx.arc(cx + p.x * scale, cy - p.y * scale, 4.5, 0, 2 * Math.PI);
+          ctx.moveTo(plotX, pCy); ctx.lineTo(plotX + plotW, pCy);
+          ctx.moveTo(pCx, plotY); ctx.lineTo(pCx, plotY + plotH);
+          ctx.stroke();
+
+          // 1. Covariance Ellipses for Class 0 and Class 1
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.3)';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.ellipse(pCx + mu0.x * pScale, pCy - mu0.y * pScale, 0.35 * pScale, 0.22 * pScale, 0.2, 0, 2 * Math.PI);
+          ctx.stroke();
+
+          ctx.strokeStyle = 'rgba(244, 63, 94, 0.3)';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.ellipse(pCx + mu1.x * pScale, pCy - mu1.y * pScale, 0.35 * pScale, 0.22 * pScale, 0.2, 0, 2 * Math.PI);
+          ctx.stroke();
+
+          // 2. Data Points & Projection Lines
+          pts.forEach(p => {
+            const px = pCx + p.x * pScale;
+            const py = pCy - p.y * pScale;
+
+            const projLen = p.x * wVec.x + p.y * wVec.y;
+            const projX = pCx + projLen * wVec.x * pScale;
+            const projY = pCy - projLen * wVec.y * pScale;
+
+            // Projection dropped line
+            ctx.strokeStyle = p.cls === 0 ? 'rgba(56, 189, 248, 0.18)' : 'rgba(244, 63, 94, 0.18)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(px, py); ctx.lineTo(projX, projY); ctx.stroke();
+
+            // Scatter Dot
+            ctx.fillStyle = p.cls === 0 ? '#38bdf8' : '#f43f5e';
+            ctx.beginPath();
+            ctx.arc(px, py, 4, 0, 2 * Math.PI);
+            ctx.fill();
+
+            // Projected dot on w*
+            ctx.fillStyle = p.cls === 0 ? 'rgba(56, 189, 248, 0.7)' : 'rgba(244, 63, 94, 0.7)';
+            ctx.beginPath();
+            ctx.arc(projX, projY, 2.5, 0, 2 * Math.PI);
+            ctx.fill();
+          });
+
+          // 3. Class Means
+          ctx.fillStyle = '#38bdf8';
+          ctx.shadowColor = '#38bdf8';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.arc(pCx + mu0.x * pScale, pCy - mu0.y * pScale, 6, 0, 2 * Math.PI);
           ctx.fill();
+
+          ctx.fillStyle = '#f43f5e';
+          ctx.shadowColor = '#f43f5e';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.arc(pCx + mu1.x * pScale, pCy - mu1.y * pScale, 6, 0, 2 * Math.PI);
+          ctx.fill();
+          ctx.shadowBlur = 0;
+
+          // 4. Optimal Fisher Discriminant Vector w* (Pink Glowing Line)
+          const axisLen = pScale * 1.8;
+          ctx.strokeStyle = '#ec4899';
+          ctx.lineWidth = 3;
+          ctx.shadowColor = '#ec4899';
+          ctx.shadowBlur = 8;
+          ctx.beginPath();
+          ctx.moveTo(pCx - wVec.x * axisLen, pCy + wVec.y * axisLen);
+          ctx.lineTo(pCx + wVec.x * axisLen, pCy - wVec.y * axisLen);
+          ctx.stroke();
+          ctx.shadowBlur = 0;
+
+          // 5. Decision Threshold Boundary (Orthogonal to w* at midpoint)
+          const midProj = ((mu0.x + mu1.x) / 2) * wVec.x + ((mu0.y + mu1.y) / 2) * wVec.y;
+          const midX = pCx + midProj * wVec.x * pScale;
+          const midY = pCy - midProj * wVec.y * pScale;
+          const perpVec = { x: -wVec.y, y: wVec.x };
+
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 2;
+          ctx.setLineDash([4, 4]);
+          ctx.beginPath();
+          ctx.moveTo(midX - perpVec.x * 60, midY + perpVec.y * 60);
+          ctx.lineTo(midX + perpVec.x * 60, midY - perpVec.y * 60);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          // Labels
+          ctx.font = 'bold 10px monospace';
+          ctx.fillStyle = '#ec4899';
+          ctx.fillText('Optimal w* (LDA Axis)', pCx + wVec.x * axisLen + 8, pCy - wVec.y * axisLen);
+          ctx.fillStyle = '#10b981';
+          ctx.fillText('Bayes Boundary y_th', midX + perpVec.x * 60 + 6, midY - perpVec.y * 60);
         });
 
-        // Optimal discriminant line w*
-        ctx.strokeStyle = '#ec4899';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.moveTo(cx - 1.2 * scale, cy + 0.8 * scale);
-        ctx.lineTo(cx + 1.2 * scale, cy - 0.8 * scale);
-        ctx.stroke();
+        // RIGHT CARD: 1D Projected Density Distributions & Rayleigh Criterion
+        drawDiagramCard(ctx, rightX, topY, cardW, cardH, theme, '📈 1D PROJECTED DISTRIBUTIONS & RAYLEIGH SCORE');
 
-        ctx.fillStyle = '#ec4899';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.fillText('Optimal w* (Rayleigh Max)', cx + 0.7 * scale, cy - 0.7 * scale);
+        const rPlotX = rightX + 10;
+        const rPlotY = topY + 36;
+        const rPlotW = cardW - 20;
+        const rPlotH = cardH - 46;
+        const rBaseY = rPlotY + rPlotH - 30;
+
+        withPlotBoxClip(ctx, rPlotX, rPlotY, rPlotW, rPlotH, 6, () => {
+          // Axis baseline
+          ctx.strokeStyle = 'rgba(148, 163, 184, 0.25)';
+          ctx.lineWidth = 1.5;
+          ctx.beginPath();
+          ctx.moveTo(rPlotX, rBaseY);
+          ctx.lineTo(rPlotX + rPlotW, rBaseY);
+          ctx.stroke();
+
+          // 1. 1D Projected Density Curve for Class 0 (Cyan)
+          const projMu0 = mu0.x * wVec.x + mu0.y * wVec.y;
+          const projSig0 = 0.28;
+          ctx.strokeStyle = '#38bdf8';
+          ctx.fillStyle = 'rgba(56, 189, 248, 0.2)';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(rPlotX, rBaseY);
+          for (let i = 0; i <= 80; i++) {
+            const t = -1.8 + (i / 80) * 3.6;
+            const pdf = (1 / (projSig0 * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((t - projMu0) / projSig0, 2));
+            const px = rPlotX + (t + 1.8) * (rPlotW / 3.6);
+            const py = rBaseY - Math.min(1.0, pdf * 0.45) * (rPlotH * 0.55);
+            ctx.lineTo(px, py);
+          }
+          ctx.lineTo(rPlotX + rPlotW, rBaseY);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          // 2. 1D Projected Density Curve for Class 1 (Rose)
+          const projMu1 = mu1.x * wVec.x + mu1.y * wVec.y;
+          const projSig1 = 0.28;
+          ctx.strokeStyle = '#f43f5e';
+          ctx.fillStyle = 'rgba(244, 63, 94, 0.2)';
+          ctx.lineWidth = 2.5;
+          ctx.beginPath();
+          ctx.moveTo(rPlotX, rBaseY);
+          for (let i = 0; i <= 80; i++) {
+            const t = -1.8 + (i / 80) * 3.6;
+            const pdf = (1 / (projSig1 * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((t - projMu1) / projSig1, 2));
+            const px = rPlotX + (t + 1.8) * (rPlotW / 3.6);
+            const py = rBaseY - Math.min(1.0, pdf * 0.45) * (rPlotH * 0.55);
+            ctx.lineTo(px, py);
+          }
+          ctx.lineTo(rPlotX + rPlotW, rBaseY);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          // 3. Optimal Bayes Decision Threshold Line
+          const midProjT = (projMu0 + projMu1) / 2;
+          const threshPx = rPlotX + (midProjT + 1.8) * (rPlotW / 3.6);
+          ctx.strokeStyle = '#10b981';
+          ctx.lineWidth = 2.5;
+          ctx.setLineDash([5, 4]);
+          ctx.beginPath();
+          ctx.moveTo(threshPx, rBaseY);
+          ctx.lineTo(threshPx, rPlotY + 20);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          ctx.font = 'bold 9px monospace';
+          ctx.fillStyle = '#10b981';
+          ctx.fillText(`Boundary y* = ${midProjT.toFixed(2)}`, threshPx - 45, rPlotY + 32);
+
+          // 4. Rayleigh Quotient Telemetry Box (Top Left)
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+          ctx.strokeStyle = theme.plotBoxBorder;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.roundRect(rPlotX + 12, rPlotY + 12, rPlotW - 24, 60, 6);
+          ctx.fill(); ctx.stroke();
+
+          ctx.font = 'bold 10px monospace';
+          ctx.fillStyle = '#fbbf24';
+          ctx.fillText('RAYLEIGH QUOTIENT SEPARABILITY:', rPlotX + 20, rPlotY + 28);
+          ctx.fillStyle = '#34d399';
+          ctx.fillText(`J(w) = (wᵀ S_B w) / (wᵀ S_W w) = ${ldaSeparability.toFixed(2)} [Maximized]`, rPlotX + 20, rPlotY + 44);
+          ctx.fillStyle = '#cbd5e1';
+          ctx.fillText(`Between Scatter S_B = ${(Math.pow(projMu1 - projMu0, 2)).toFixed(2)} | Within S_W = ${(projSig0*projSig0 + projSig1*projSig1).toFixed(2)}`, rPlotX + 20, rPlotY + 58);
+        });
       }
 
       // ────────────────────────────────────────────────────────────────────────
       // 15. SINGULAR VALUE DECOMPOSITION (SVD)
       // ────────────────────────────────────────────────────────────────────────
       else if (selectedModel === 'svd_decomposition') {
-        // Unit circle
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
-        ctx.lineWidth = 1.5;
-        ctx.beginPath();
-        ctx.arc(cx - 0.7 * scale, cy, 0.5 * scale, 0, 2 * Math.PI);
-        ctx.stroke();
+        if (simMode === 'autoplay' && isSimulating && localFrame % Math.max(1, Math.round(4 / simSpeed)) === 0) {
+          setSvdSingular1(parseFloat((1.85 + 0.55 * Math.sin(stateRef.current.timeT * 0.6)).toFixed(2)));
+          setSvdSingular2(parseFloat((0.65 + 0.35 * Math.cos(stateRef.current.timeT * 0.6)).toFixed(2)));
+        }
 
-        // Transformed Ellipse A = U Σ V^T
-        ctx.save();
-        ctx.translate(cx + 0.7 * scale, cy);
-        ctx.rotate(0.35);
-        ctx.strokeStyle = '#d946ef';
-        ctx.lineWidth = 3;
-        ctx.beginPath();
-        ctx.ellipse(0, 0, (svdSingular1 / 2) * scale, (svdSingular2 / 2) * scale, 0, 0, 2 * Math.PI);
-        ctx.stroke();
+        const marginX = 14;
+        const marginY = 14;
+        const totalW = Math.max(680, w - 2 * marginX);
+        const cardH = Math.max(480, h - 2 * marginY - 10);
+        const leftX = cx - totalW / 2;
+        const topY = cy - cardH / 2 + 6;
 
-        // Singular Axes
-        ctx.strokeStyle = '#38bdf8';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.moveTo(0, 0); ctx.lineTo((svdSingular1 / 2) * scale, 0);
-        ctx.stroke();
+        drawDiagramCard(ctx, leftX, topY, totalW, cardH, theme, '🌀 SINGULAR VALUE DECOMPOSITION: 4-STAGE GEOMETRIC PIPELINE (A = U Σ Vᵀ)');
 
-        ctx.strokeStyle = '#22c55e';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        ctx.moveTo(0, 0); ctx.lineTo(0, -(svdSingular2 / 2) * scale);
-        ctx.stroke();
-        ctx.restore();
+        const plotX = leftX + 10;
+        const plotY = topY + 36;
+        const plotW = totalW - 20;
+        const plotH = cardH - 46;
 
-        ctx.fillStyle = '#cbd5e1';
-        ctx.font = 'bold 11px sans-serif';
-        ctx.fillText('Unit Circle x', cx - 0.9 * scale, cy + 0.65 * scale);
-        ctx.fillText('Transformed Ellipse Ax', cx + 0.45 * scale, cy + 0.65 * scale);
+        const s1 = svdSingular1;
+        const s2 = svdSingular2;
+        const vAngle = 0.45;
+        const uAngle = 0.72;
+
+        const stageW = (plotW - 60) / 4;
+        const stageCy = plotY + (plotH - 80) / 2 + 10;
+        const rUnit = stageW * 0.38;
+
+        withPlotBoxClip(ctx, plotX, plotY, plotW, plotH, 6, () => {
+          const stages = [
+            { num: 1, title: '1. Domain S¹ (Basis V)', desc: 'Unit Circle {x : ||x||=1}', rot: vAngle, sx: 1.0, sy: 1.0 },
+            { num: 2, title: '2. Rotation Vᵀ', desc: 'Aligns with canonical axes', rot: 0, sx: 1.0, sy: 1.0 },
+            { num: 3, title: '3. Scaling Σ', desc: `Stretched by (σ₁=${s1.toFixed(1)}, σ₂=${s2.toFixed(1)})`, rot: 0, sx: s1 / 1.8, sy: s2 / 1.8 },
+            { num: 4, title: '4. Range Ellipse (U)', desc: 'Final Matrix Action Ax = UΣVᵀx', rot: uAngle, sx: s1 / 1.8, sy: s2 / 1.8 }
+          ];
+
+          stages.forEach((st, idx) => {
+            const stCx = plotX + 15 + idx * (stageW + 15) + stageW / 2;
+
+            // Stage Card Background
+            ctx.fillStyle = 'rgba(15, 23, 42, 0.6)';
+            ctx.strokeStyle = theme.plotBoxBorder;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.roundRect(stCx - stageW / 2, plotY + 10, stageW, plotH - 95, 6);
+            ctx.fill(); ctx.stroke();
+
+            // Stage Title
+            ctx.font = 'bold 9px monospace';
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillText(st.title, stCx - stageW / 2 + 8, plotY + 26);
+            ctx.font = '8px monospace';
+            ctx.fillStyle = '#94a3b8';
+            ctx.fillText(st.desc, stCx - stageW / 2 + 8, plotY + 38);
+
+            // Subspace Axes
+            ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(stCx - stageW / 2 + 6, stageCy); ctx.lineTo(stCx + stageW / 2 - 6, stageCy);
+            ctx.moveTo(stCx, stageCy - rUnit * 1.3); ctx.lineTo(stCx, stageCy + rUnit * 1.3);
+            ctx.stroke();
+
+            // Transformed Geometry
+            ctx.save();
+            ctx.translate(stCx, stageCy);
+            ctx.rotate(st.rot);
+
+            ctx.strokeStyle = idx === 3 ? '#d946ef' : (idx === 2 ? '#38bdf8' : 'rgba(56, 189, 248, 0.6)');
+            ctx.lineWidth = idx === 3 ? 3 : 2;
+            if (idx === 3) {
+              ctx.shadowColor = '#d946ef';
+              ctx.shadowBlur = 8;
+            }
+            ctx.beginPath();
+            ctx.ellipse(0, 0, rUnit * st.sx, rUnit * st.sy, 0, 0, 2 * Math.PI);
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+
+            // Vector 1 (Major axis)
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(0, 0); ctx.lineTo(rUnit * st.sx, 0); ctx.stroke();
+            ctx.fillStyle = '#38bdf8';
+            ctx.beginPath(); ctx.arc(rUnit * st.sx, 0, 3.5, 0, 2 * Math.PI); ctx.fill();
+
+            // Vector 2 (Minor axis)
+            ctx.strokeStyle = '#c084fc';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(0, 0); ctx.lineTo(0, -rUnit * st.sy); ctx.stroke();
+            ctx.fillStyle = '#c084fc';
+            ctx.beginPath(); ctx.arc(0, -rUnit * st.sy, 3.5, 0, 2 * Math.PI); ctx.fill();
+
+            ctx.restore();
+
+            // Inter-stage flow arrow
+            if (idx < 3) {
+              const arrowX = stCx + stageW / 2 + 7.5;
+              ctx.fillStyle = '#34d399';
+              ctx.font = 'bold 12px sans-serif';
+              ctx.fillText('→', arrowX - 6, stageCy + 4);
+            }
+          });
+
+          // Bottom SVD Formula HUD Box
+          const hudY = plotY + plotH - 75;
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+          ctx.strokeStyle = theme.plotBoxBorder;
+          ctx.lineWidth = 1;
+          ctx.beginPath();
+          ctx.roundRect(plotX + 10, hudY, plotW - 20, 68, 6);
+          ctx.fill(); ctx.stroke();
+
+          ctx.font = 'bold 10px monospace';
+          ctx.fillStyle = '#fbbf24';
+          ctx.fillText('GILBERT STRANG SVD FACTORIZATION:', plotX + 20, hudY + 18);
+
+          ctx.font = 'bold 9px monospace';
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillText(`A = [U] · [Σ] · [Vᵀ]  =  [Rot(${uAngle.toFixed(2)})] · [diag(${s1.toFixed(2)}, ${s2.toFixed(2)})] · [Rot(-${vAngle.toFixed(2)})]`, plotX + 20, hudY + 36);
+
+          const condNum = s1 / Math.max(0.01, s2);
+          const frobNorm = Math.sqrt(s1 * s1 + s2 * s2);
+          ctx.fillStyle = '#34d399';
+          ctx.fillText(`Condition Number κ(A) = σ₁/σ₂ = ${condNum.toFixed(2)} | Frobenius Norm ||A||_F = ${frobNorm.toFixed(2)}`, plotX + 20, hudY + 54);
+        });
       }
 
       ctx.restore();
@@ -1748,7 +3953,10 @@ export const StatisticalOptimizationModule: React.FC = () => {
     mcmcProposalStd,
     bootCI95,
     svdSingular1,
-    svdSingular2
+    svdSingular2,
+    simMode,
+    simSpeed,
+    mleMapViewMode
   ]);
 
   const activeModelMeta = STAT_OPT_MODELS.find(m => m.id === selectedModel) || STAT_OPT_MODELS[0];
@@ -1757,8 +3965,10 @@ export const StatisticalOptimizationModule: React.FC = () => {
     switch (selectedModel) {
       case 'clt_sampling':
         return `\\bar{X}_{${cltSampleSize}} \\sim \\mathcal{N}\\left(\\mu, \\frac{\\sigma^2}{${cltSampleSize}}\\right) \\quad [\\text{SE}=${(0.55 / Math.sqrt(cltSampleSize)).toFixed(3)}, \\text{Draws}=${cltTotalDraws}]`;
-      case 'hypothesis_power':
-        return `Z_{\\text{obs}} = ${hypoObservedZ > 0 ? '+' : ''}${hypoObservedZ.toFixed(2)} \\quad [\\alpha=${hypoAlpha}, \\text{Power } (1-\\beta)=${(1 - hypoAlpha * 0.8).toFixed(2)}]`;
+      case 'hypothesis_power': {
+        const zCrit = getHypoZCrit(hypoAlpha, hypoTails);
+        return `Z_{\\text{obs}} = ${hypoObservedZ > 0 ? '+' : ''}${hypoObservedZ.toFixed(2)} \\quad [Z_{\\text{crit}}=${hypoTails === 'two' ? `\\pm ${zCrit.toFixed(2)}` : `+${zCrit.toFixed(2)}`}, \\alpha=${hypoAlpha}]`;
+      }
       case 'mle_map':
         return `\\hat{\\theta}_{\\text{MAP}} = \\frac{N\\bar{X} + \\lambda\\mu_0}{N + \\lambda} \\quad [\\bar{X}=${mleSampleMean.toFixed(2)}, \\mu_0=${mapPriorMean.toFixed(2)}]`;
       case 'em_gmm':
@@ -1910,6 +4120,187 @@ export const StatisticalOptimizationModule: React.FC = () => {
           </select>
         </div>
 
+        {/* Middle: Interactive vs Autoplay Mode Switcher */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'rgba(30, 41, 59, 0.7)', padding: '2px 4px', borderRadius: '8px', border: '1px solid rgba(51, 65, 85, 0.6)', flexShrink: 0 }}>
+          <button
+            type="button"
+            onClick={() => setSimMode('interactive')}
+            style={{
+              height: '26px',
+              padding: '0 8px',
+              borderRadius: '6px',
+              border: 'none',
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              background: simMode === 'interactive' ? 'rgba(56, 189, 248, 0.25)' : 'transparent',
+              color: simMode === 'interactive' ? '#38bdf8' : '#94a3b8'
+            }}
+            title="Manual Interactive Mode (Direct Parameter Manipulation & Click-to-Add Points)"
+          >
+            <MousePointer size={12} />
+            <span>Interactive</span>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => {
+              setSimMode('autoplay');
+              if (!isSimulating) setIsSimulating(true);
+            }}
+            style={{
+              height: '26px',
+              padding: '0 8px',
+              borderRadius: '6px',
+              border: 'none',
+              fontSize: '0.72rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              background: simMode === 'autoplay' ? 'rgba(168, 85, 247, 0.25)' : 'transparent',
+              color: simMode === 'autoplay' ? '#c084fc' : '#94a3b8'
+            }}
+            title="Live Autoplay Mode (Automated continuous dynamic parameter sweeping & sampling loops)"
+          >
+            <Sparkles size={12} />
+            <span>Autoplay</span>
+          </button>
+        </div>
+
+        {/* Speed Multipliers */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '3px', background: 'rgba(30, 41, 59, 0.7)', padding: '2px 4px', borderRadius: '8px', border: '1px solid rgba(51, 65, 85, 0.6)', flexShrink: 0 }}>
+          <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', padding: '0 4px' }}>SPD:</span>
+          {([0.5, 1.0, 2.0] as const).map(spd => (
+            <button
+              key={spd}
+              type="button"
+              onClick={() => setSimSpeed(spd)}
+              style={{
+                height: '24px',
+                padding: '0 6px',
+                borderRadius: '5px',
+                border: 'none',
+                fontSize: '0.70rem',
+                fontWeight: 800,
+                cursor: 'pointer',
+                background: simSpeed === spd ? 'rgba(52, 211, 153, 0.25)' : 'transparent',
+                color: simSpeed === spd ? '#34d399' : '#94a3b8'
+              }}
+              title={`Set Simulation Speed to ${spd}x`}
+            >
+              {spd}x
+            </button>
+          ))}
+        </div>
+
+        {/* Dynamic Context Controls */}
+        {selectedModel === 'mle_map' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', background: 'rgba(30, 41, 59, 0.7)', padding: '2px 4px', borderRadius: '8px', border: '1px solid rgba(51, 65, 85, 0.6)', flexShrink: 0 }}>
+            <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', padding: '0 4px' }}>VIEW:</span>
+            <button
+              type="button"
+              onClick={() => setMleMapViewMode('triad')}
+              style={{
+                height: '24px',
+                padding: '0 6px',
+                borderRadius: '5px',
+                border: 'none',
+                fontSize: '0.70rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                background: mleMapViewMode === 'triad' ? 'rgba(56, 189, 248, 0.25)' : 'transparent',
+                color: mleMapViewMode === 'triad' ? '#38bdf8' : '#94a3b8'
+              }}
+              title="Show Comparative Triad (Prior + Likelihood + Posterior Together)"
+            >
+              Triad (All)
+            </button>
+            <button
+              type="button"
+              onClick={() => setMleMapViewMode('mle_only')}
+              style={{
+                height: '24px',
+                padding: '0 6px',
+                borderRadius: '5px',
+                border: 'none',
+                fontSize: '0.70rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                background: mleMapViewMode === 'mle_only' ? 'rgba(56, 189, 248, 0.25)' : 'transparent',
+                color: mleMapViewMode === 'mle_only' ? '#38bdf8' : '#94a3b8'
+              }}
+              title="Isolate Pure Frequentist Maximum Likelihood Estimation (MLE)"
+            >
+              MLE Only
+            </button>
+            <button
+              type="button"
+              onClick={() => setMleMapViewMode('map_only')}
+              style={{
+                height: '24px',
+                padding: '0 6px',
+                borderRadius: '5px',
+                border: 'none',
+                fontSize: '0.70rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                background: mleMapViewMode === 'map_only' ? 'rgba(16, 185, 129, 0.25)' : 'transparent',
+                color: mleMapViewMode === 'map_only' ? '#10b981' : '#94a3b8'
+              }}
+              title="Isolate Bayesian Maximum A Posteriori (MAP) with Regularizing Prior"
+            >
+              MAP Only
+            </button>
+          </div>
+        )}
+
+        {selectedModel === 'fisher_lda' && simMode === 'interactive' && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '3px', background: 'rgba(30, 41, 59, 0.7)', padding: '2px 4px', borderRadius: '8px', border: '1px solid rgba(51, 65, 85, 0.6)', flexShrink: 0 }}>
+            <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#64748b', padding: '0 4px' }}>PLACE:</span>
+            <button
+              type="button"
+              onClick={() => setLdaPlacementClass(0)}
+              style={{
+                height: '24px',
+                padding: '0 6px',
+                borderRadius: '5px',
+                border: 'none',
+                fontSize: '0.70rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                background: ldaPlacementClass === 0 ? 'rgba(56, 189, 248, 0.25)' : 'transparent',
+                color: ldaPlacementClass === 0 ? '#38bdf8' : '#94a3b8'
+              }}
+              title="Click on Left Canvas to Place Class 0 Sample Points"
+            >
+              ● Class 0
+            </button>
+            <button
+              type="button"
+              onClick={() => setLdaPlacementClass(1)}
+              style={{
+                height: '24px',
+                padding: '0 6px',
+                borderRadius: '5px',
+                border: 'none',
+                fontSize: '0.70rem',
+                fontWeight: 700,
+                cursor: 'pointer',
+                background: ldaPlacementClass === 1 ? 'rgba(245, 158, 11, 0.25)' : 'transparent',
+                color: ldaPlacementClass === 1 ? '#f59e0b' : '#94a3b8'
+              }}
+              title="Click on Left Canvas to Place Class 1 Sample Points"
+            >
+              ▲ Class 1
+            </button>
+          </div>
+        )}
+
         {/* Middle & Right: Transport Buttons & Collapsible Sidebar Toggle */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
           {/* Simulation Transport */}
@@ -2051,17 +4442,29 @@ export const StatisticalOptimizationModule: React.FC = () => {
           />
 
           {/* In-Canvas Dynamic KaTeX HUD Overlay */}
-          <div className="canvas-katex-hud-overlay">
+          <div className={`canvas-katex-hud-overlay ${isHudMinimized ? 'minimized' : ''}`}>
             <div className="hud-header">
-              <span>{activeModelMeta.title}</span>
-              <span className="hud-badge">{activePillar.toUpperCase().replace('_', ' ')}</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <span>{activeModelMeta.title}</span>
+                {!isHudMinimized && <span className="hud-badge">{activePillar.toUpperCase().replace('_', ' ')}</span>}
+              </div>
+              <button
+                type="button"
+                className="hud-toggle-btn"
+                onClick={() => setIsHudMinimized(prev => !prev)}
+                title={isHudMinimized ? 'Expand Math Formula HUD' : 'Minimize Math Formula HUD'}
+              >
+                {isHudMinimized ? <Eye size={12} /> : <EyeOff size={12} />}
+              </button>
             </div>
-            <div
-              className="hud-latex-render"
-              dangerouslySetInnerHTML={{
-                __html: katex.renderToString(liveDynamicFormula, { throwOnError: false, displayMode: false })
-              }}
-            />
+            {!isHudMinimized && (
+              <div
+                className="hud-latex-render"
+                dangerouslySetInnerHTML={{
+                  __html: katex.renderToString(liveDynamicFormula, { throwOnError: false, displayMode: false })
+                }}
+              />
+            )}
           </div>
 
           {/* 3D Orbit Perspective Indicator Badge */}
@@ -2324,8 +4727,8 @@ export const StatisticalOptimizationModule: React.FC = () => {
               </div>
               <div>
                 <div style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>Decision:</div>
-                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: Math.abs(hypoObservedZ) >= (hypoTails === 'two' ? 1.96 : 1.645) ? '#22c55e' : '#ef4444' }}>
-                  {Math.abs(hypoObservedZ) >= (hypoTails === 'two' ? 1.96 : 1.645) ? 'REJECT H₀ (Sig)' : 'FAIL TO REJECT'}
+                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: (hypoTails === 'two' ? Math.abs(hypoObservedZ) >= getHypoZCrit(hypoAlpha, hypoTails) : hypoObservedZ >= getHypoZCrit(hypoAlpha, hypoTails)) ? '#22c55e' : '#ef4444' }}>
+                  {(hypoTails === 'two' ? Math.abs(hypoObservedZ) >= getHypoZCrit(hypoAlpha, hypoTails) : hypoObservedZ >= getHypoZCrit(hypoAlpha, hypoTails)) ? 'REJECT H₀ (Sig)' : 'FAIL TO REJECT'}
                 </div>
               </div>
             </div>
@@ -2770,50 +5173,35 @@ export const StatisticalOptimizationModule: React.FC = () => {
 
             {selectedModel === 'mle_map' && (
               <>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
-                    <span>Sample Spread (σ_sample): <strong>{mleSampleStd.toFixed(2)}</strong></span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0.15}
-                    max={1.0}
-                    step={0.05}
-                    value={mleSampleStd}
-                    onChange={e => setMleSampleStd(Number(e.target.value))}
-                    style={{ width: '100%', accentColor: '#38bdf8' }}
-                  />
-                </div>
+                <DualParamControl
+                  label="Sample Spread (σ_sample):"
+                  value={mleSampleStd}
+                  min={0.15}
+                  max={1.0}
+                  step={0.05}
+                  onChange={setMleSampleStd}
+                  color="#38bdf8"
+                />
 
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
-                    <span>Bayesian Prior Mean (μ_prior): <strong>{mapPriorMean.toFixed(2)}</strong></span>
-                  </div>
-                  <input
-                    type="range"
-                    min={-1.5}
-                    max={1.5}
-                    step={0.1}
-                    value={mapPriorMean}
-                    onChange={e => setMapPriorMean(Number(e.target.value))}
-                    style={{ width: '100%', accentColor: '#f59e0b' }}
-                  />
-                </div>
+                <DualParamControl
+                  label="Bayesian Prior Mean (μ_prior):"
+                  value={mapPriorMean}
+                  min={-1.5}
+                  max={1.5}
+                  step={0.1}
+                  onChange={setMapPriorMean}
+                  color="#f59e0b"
+                />
 
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
-                    <span>Prior Regularization Weight: <strong>{mapPriorWeight.toFixed(2)}</strong></span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0.0}
-                    max={1.0}
-                    step={0.05}
-                    value={mapPriorWeight}
-                    onChange={e => setMapPriorWeight(Number(e.target.value))}
-                    style={{ width: '100%', accentColor: '#f59e0b' }}
-                  />
-                </div>
+                <DualParamControl
+                  label="Prior Regularization Weight:"
+                  value={mapPriorWeight}
+                  min={0.0}
+                  max={1.0}
+                  step={0.05}
+                  onChange={setMapPriorWeight}
+                  color="#f59e0b"
+                />
               </>
             )}
 
@@ -3065,54 +5453,42 @@ export const StatisticalOptimizationModule: React.FC = () => {
                   </div>
                 </div>
 
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
-                    <span>Learning Rate (η): <strong>{optLearningRate}</strong></span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0.005}
-                    max={0.1}
-                    step={0.005}
-                    value={optLearningRate}
-                    onChange={e => setOptLearningRate(Number(e.target.value))}
-                    style={{ width: '100%', accentColor: '#34d399' }}
-                  />
-                </div>
+                <DualParamControl
+                  label="Learning Rate (η):"
+                  value={optLearningRate}
+                  min={0.005}
+                  max={0.1}
+                  step={0.005}
+                  precision={3}
+                  onChange={setOptLearningRate}
+                  color="#34d399"
+                />
 
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
-                    <span>Momentum Beta (β): <strong>{optMomentumBeta}</strong></span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0.5}
-                    max={0.98}
-                    step={0.02}
-                    value={optMomentumBeta}
-                    onChange={e => setOptMomentumBeta(Number(e.target.value))}
-                    style={{ width: '100%', accentColor: '#fbbf24' }}
-                  />
-                </div>
+                <DualParamControl
+                  label="Momentum Beta (β):"
+                  value={optMomentumBeta}
+                  min={0.5}
+                  max={0.98}
+                  step={0.02}
+                  precision={2}
+                  onChange={setOptMomentumBeta}
+                  color="#fbbf24"
+                />
               </>
             )}
 
             {selectedModel === 'newton_raphson' && (
               <>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
-                    <span>Newton Damping Factor: <strong>{newtonDamping}</strong></span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0.2}
-                    max={1.5}
-                    step={0.1}
-                    value={newtonDamping}
-                    onChange={e => setNewtonDamping(Number(e.target.value))}
-                    style={{ width: '100%', accentColor: '#14b8a6' }}
-                  />
-                </div>
+                <DualParamControl
+                  label="Newton Damping Factor:"
+                  value={newtonDamping}
+                  min={0.2}
+                  max={1.5}
+                  step={0.1}
+                  precision={2}
+                  onChange={setNewtonDamping}
+                  color="#14b8a6"
+                />
               </>
             )}
 
@@ -3245,84 +5621,64 @@ export const StatisticalOptimizationModule: React.FC = () => {
 
             {selectedModel === 'pca_projection' && (
               <>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
-                    <span>Feature Correlation (ρ): <strong>{pcaCorrelation.toFixed(2)}</strong></span>
-                  </div>
-                  <input
-                    type="range"
-                    min={-0.95}
-                    max={0.95}
-                    step={0.05}
-                    value={pcaCorrelation}
-                    onChange={e => setPcaCorrelation(Number(e.target.value))}
-                    style={{ width: '100%', accentColor: '#22c55e' }}
-                  />
-                </div>
+                <DualParamControl
+                  label="Feature Correlation (ρ):"
+                  value={pcaCorrelation}
+                  min={-0.95}
+                  max={0.95}
+                  step={0.05}
+                  precision={2}
+                  onChange={setPcaCorrelation}
+                  color="#22c55e"
+                />
 
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
-                    <span>Variance X (Var[X₁]): <strong>{pcaVarX.toFixed(2)}</strong></span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0.5}
-                    max={2.0}
-                    step={0.1}
-                    value={pcaVarX}
-                    onChange={e => setPcaVarX(Number(e.target.value))}
-                    style={{ width: '100%', accentColor: '#38bdf8' }}
-                  />
-                </div>
+                <DualParamControl
+                  label="Variance X (Var[X₁]):"
+                  value={pcaVarX}
+                  min={0.5}
+                  max={2.0}
+                  step={0.1}
+                  precision={2}
+                  onChange={setPcaVarX}
+                  color="#38bdf8"
+                />
 
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
-                    <span>Variance Y (Var[X₂]): <strong>{pcaVarY.toFixed(2)}</strong></span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0.5}
-                    max={2.0}
-                    step={0.1}
-                    value={pcaVarY}
-                    onChange={e => setPcaVarY(Number(e.target.value))}
-                    style={{ width: '100%', accentColor: '#38bdf8' }}
-                  />
-                </div>
+                <DualParamControl
+                  label="Variance Y (Var[X₂]):"
+                  value={pcaVarY}
+                  min={0.5}
+                  max={2.0}
+                  step={0.1}
+                  precision={2}
+                  onChange={setPcaVarY}
+                  color="#38bdf8"
+                />
               </>
             )}
 
             {selectedModel === 'svd_decomposition' && (
               <>
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
-                    <span>Singular Value σ₁: <strong>{svdSingular1.toFixed(2)}</strong></span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0.5}
-                    max={3.0}
-                    step={0.1}
-                    value={svdSingular1}
-                    onChange={e => setSvdSingular1(Number(e.target.value))}
-                    style={{ width: '100%', accentColor: '#d946ef' }}
-                  />
-                </div>
+                <DualParamControl
+                  label="Singular Value σ₁:"
+                  value={svdSingular1}
+                  min={0.5}
+                  max={3.0}
+                  step={0.1}
+                  precision={2}
+                  onChange={setSvdSingular1}
+                  color="#d946ef"
+                />
 
-                <div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)' }}>
-                    <span>Singular Value σ₂: <strong>{svdSingular2.toFixed(2)}</strong></span>
-                  </div>
-                  <input
-                    type="range"
-                    min={0.2}
-                    max={2.0}
-                    step={0.1}
-                    value={svdSingular2}
-                    onChange={e => setSvdSingular2(Number(e.target.value))}
-                    style={{ width: '100%', accentColor: '#38bdf8' }}
-                  />
-                </div>
+                <DualParamControl
+                  label="Singular Value σ₂:"
+                  value={svdSingular2}
+                  min={0.2}
+                  max={2.0}
+                  step={0.1}
+                  precision={2}
+                  onChange={setSvdSingular2}
+                  color="#38bdf8"
+                />
               </>
             )}
           </div>
