@@ -68,6 +68,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setCodeStyle(next);
     localStorage.setItem('chatterbot_code_style', JSON.stringify(next));
     window.dispatchEvent(new Event('chatterbot_code_style_updated'));
+    if (patch.canvasAtmosphere) {
+      document.documentElement.setAttribute('data-canvas-atmosphere', patch.canvasAtmosphere);
+      localStorage.setItem('chatterbot_canvas_atmosphere', patch.canvasAtmosphere);
+      window.dispatchEvent(new Event('chatterbot_canvas_atmosphere_updated'));
+    }
   };
 
   const updateIdeConfig = (patch: Partial<IdeConfig>) => {

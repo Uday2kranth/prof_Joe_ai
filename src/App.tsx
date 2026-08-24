@@ -1456,22 +1456,38 @@ export const App: React.FC = () => {
     return 'cyan_glass';
   });
 
+  const [canvasAtmosphere, setCanvasAtmosphere] = useState<string>(() => {
+    try {
+      const codeStyleSaved = localStorage.getItem('chatterbot_code_style');
+      if (codeStyleSaved) {
+        const parsed = JSON.parse(codeStyleSaved);
+        if (parsed.canvasAtmosphere) return parsed.canvasAtmosphere;
+      }
+      const saved = localStorage.getItem('chatterbot_canvas_atmosphere');
+      if (saved) return saved;
+    } catch {}
+    return 'deep_void';
+  });
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.setAttribute('data-atmosphere', atmosphere);
     document.documentElement.setAttribute('data-bubble-style', bubbleStyle);
-  }, [theme, atmosphere, bubbleStyle]);
+    document.documentElement.setAttribute('data-canvas-atmosphere', canvasAtmosphere);
+  }, [theme, atmosphere, bubbleStyle, canvasAtmosphere]);
 
   useEffect(() => {
     const handleAtmosphereUpdate = () => {
       try {
         let atmoToSet = '';
         let bubbleToSet = '';
+        let canvasAtmoToSet = '';
         const codeStyleSaved = localStorage.getItem('chatterbot_code_style');
         if (codeStyleSaved) {
           const parsed = JSON.parse(codeStyleSaved);
           if (parsed.atmosphere) atmoToSet = parsed.atmosphere;
           if (parsed.bubbleStyle) bubbleToSet = parsed.bubbleStyle;
+          if (parsed.canvasAtmosphere) canvasAtmoToSet = parsed.canvasAtmosphere;
         }
         if (!atmoToSet) {
           atmoToSet = localStorage.getItem('chatterbot_atmosphere') || '';
@@ -1496,14 +1512,23 @@ export const App: React.FC = () => {
           setBubbleStyle(bubbleToSet);
           document.documentElement.setAttribute('data-bubble-style', bubbleToSet);
         }
+        if (!canvasAtmoToSet) {
+          canvasAtmoToSet = localStorage.getItem('chatterbot_canvas_atmosphere') || '';
+        }
+        if (canvasAtmoToSet) {
+          setCanvasAtmosphere(canvasAtmoToSet);
+          document.documentElement.setAttribute('data-canvas-atmosphere', canvasAtmoToSet);
+        }
       } catch {}
     };
     window.addEventListener('chatterbot_code_style_updated', handleAtmosphereUpdate);
     window.addEventListener('chatterbot_atmosphere_updated', handleAtmosphereUpdate);
+    window.addEventListener('chatterbot_canvas_atmosphere_updated', handleAtmosphereUpdate);
     window.addEventListener('storage', handleAtmosphereUpdate);
     return () => {
       window.removeEventListener('chatterbot_code_style_updated', handleAtmosphereUpdate);
       window.removeEventListener('chatterbot_atmosphere_updated', handleAtmosphereUpdate);
+      window.removeEventListener('chatterbot_canvas_atmosphere_updated', handleAtmosphereUpdate);
       window.removeEventListener('storage', handleAtmosphereUpdate);
     };
   }, []);

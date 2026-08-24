@@ -160,10 +160,13 @@ export type WorkspaceAtmosphere = 'cyber_osmania' | 'midnight_academy' | 'emeral
 
 export type ChatBubbleStyle = 'cyan_glass' | 'velvet_indigo' | 'scholar_emerald' | 'obsidian_minimal' | 'clean_card';
 
+export type CanvasAtmosphere = 'deep_void' | 'blueprint_matrix' | 'academic_parchment' | 'oxford_daylight' | 'oled_black';
+
 export interface CodeStyleConfig {
   codeTheme: SupportedCodeTheme;
   bubbleStyle?: ChatBubbleStyle;
   atmosphere?: WorkspaceAtmosphere;
+  canvasAtmosphere?: CanvasAtmosphere;
   katexScale: 'compact' | 'standard' | 'large';
   equationCopyMode: 'latex' | 'unicode';
 }
@@ -172,6 +175,7 @@ export const DEFAULT_CODE_STYLE: CodeStyleConfig = {
   codeTheme: 'onedark',
   bubbleStyle: 'cyan_glass',
   atmosphere: 'cyber_osmania',
+  canvasAtmosphere: 'deep_void',
   katexScale: 'standard',
   equationCopyMode: 'latex'
 };

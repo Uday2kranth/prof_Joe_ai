@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import katex from 'katex';
 import {
   Play,
   Pause,
@@ -8,8 +9,17 @@ import {
   Sliders,
   Sparkles,
   Activity,
-  BarChart2
+  BarChart2,
+  Maximize2,
+  Layout,
+  Zap,
+  Compass,
+  RefreshCw,
+  PanelRightClose,
+  PanelRightOpen,
+  X
 } from 'lucide-react';
+import { getCanvasTheme, drawCanvasAtmosphere } from '../../utils/canvasThemeEngine';
 
 export type StatOptPillarType =
   | 'inference'
@@ -214,6 +224,27 @@ export const StatisticalOptimizationModule: React.FC = () => {
   const [activePillar, setActivePillar] = useState<StatOptPillarType>('inference');
   const [isSimulating, setIsSimulating] = useState<boolean>(true);
   const [mobileActiveTab, setMobileActiveTab] = useState<'canvas' | 'controls' | 'telemetry'>('canvas');
+  const [desktopTab, setDesktopTab] = useState<'parameters' | 'telemetry' | 'split' | 'focus'>('split');
+  const [canvasAtmosphere, setCanvasAtmosphere] = useState<string>(() => {
+    try {
+      return localStorage.getItem('chatterbot_canvas_atmosphere') || 'deep_void';
+    } catch {
+      return 'deep_void';
+    }
+  });
+
+  useEffect(() => {
+    const handleAtmosphereUpdate = () => {
+      try {
+        const atmo = localStorage.getItem('chatterbot_canvas_atmosphere') || 'deep_void';
+        setCanvasAtmosphere(atmo);
+      } catch {}
+    };
+    window.addEventListener('chatterbot_canvas_atmosphere_updated', handleAtmosphereUpdate);
+    return () => {
+      window.removeEventListener('chatterbot_canvas_atmosphere_updated', handleAtmosphereUpdate);
+    };
+  }, []);
 
   // ─── Pillar 1: CLT State ───
   const [cltPopDist, setCltPopDist] = useState<'uniform' | 'exponential' | 'bimodal' | 'triangular'>('exponential');
@@ -296,12 +327,15 @@ export const StatisticalOptimizationModule: React.FC = () => {
   const [ldaSeparability, setLdaSeparability] = useState<number>(3.84);
   const [ldaPlacementClass, setLdaPlacementClass] = useState<0 | 1>(0);
 
-  // ─── Pillar 4: SVD State ───
   const [svdSingular1, setSvdSingular1] = useState<number>(1.85);
   const [svdSingular2, setSvdSingular2] = useState<number>(0.65);
 
-  const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  // ─── 3D Perspective & Orbit Controls ───
+  const [rotX, setRotX] = useState<number>(32); // degrees pitch
+  const [rotY, setRotY] = useState<number>(45); // degrees yaw
   const isDraggingRef = useRef<boolean>(false);
+  const lastMousePosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
+  const canvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Master Simulation Ref State
   const stateRef = useRef<{
@@ -522,23 +556,74 @@ export const StatisticalOptimizationModule: React.FC = () => {
     setBayesFlipsTails(prev => prev + (count - heads));
   };
 
-  // Canvas Mouse Coordinates
+  // 3D Perspective Projection Engine (Euler Angle Yaw & Pitch)
+  const project3D = (
+    x: number,
+    y: number,
+    z: number,
+    cx: number,
+    cy: number,
+    scale: number,
+    pitchDeg: number,
+    yawDeg: number
+  ) => {
+    const radX = (pitchDeg * Math.PI) / 180;
+    const radY = (yawDeg * Math.PI) / 180;
+
+    // 1. Yaw Rotation around Y-axis
+    const x1 = x * Math.cos(radY) - y * Math.sin(radY);
+    const y1 = x * Math.sin(radY) + y * Math.cos(radY);
+    const z1 = z;
+
+    // 2. Pitch Rotation around X-axis
+    const x2 = x1;
+    const y2 = y1 * Math.cos(radX) - z1 * Math.sin(radX);
+    const z2 = y1 * Math.sin(radX) + z1 * Math.cos(radX);
+
+    // 3. Perspective Depth Scaling
+    const distance = 4.2;
+    const fov = distance / (distance + z2 * 0.45);
+
+    return {
+      px: cx + x2 * scale * fov,
+      py: cy - y2 * scale * fov,
+      depth: z2,
+      fov
+    };
+  };
+
+  // Canvas Mouse & Touch Coordinates in Logical CSS Pixels
   const getCanvasCoords = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
-    const w = canvas.width;
-    const h = canvas.height;
-    const cx = w / 2;
-    const cy = h / 2;
-    const scale = Math.min(w, h) * 0.38;
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+    const scale = Math.min(rect.width, rect.height) * 0.38;
 
-    const mouseX = ((e.clientX - rect.left) / rect.width) * w;
-    const mouseY = ((e.clientY - rect.top) / rect.height) * h;
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
 
     return {
-      x: (mouseX - cx) / scale,
-      y: (cy - mouseY) / scale
+      x: (mouseX - cx) / (scale || 1),
+      y: (cy - mouseY) / (scale || 1)
+    };
+  };
+
+  const getCanvasCoordsFromTouch = (touch: React.Touch) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+    const scale = Math.min(rect.width, rect.height) * 0.38;
+
+    const mouseX = touch.clientX - rect.left;
+    const mouseY = touch.clientY - rect.top;
+
+    return {
+      x: (mouseX - cx) / (scale || 1),
+      y: (cy - mouseY) / (scale || 1)
     };
   };
 
@@ -629,21 +714,63 @@ export const StatisticalOptimizationModule: React.FC = () => {
     }
   };
 
+  const is3DModel = ['first_order_optimizers', 'newton_raphson', 'lagrange_kkt', 'svd_decomposition'].includes(selectedModel);
+
   const handleMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
     isDraggingRef.current = true;
+    lastMousePosRef.current = { x: e.clientX, y: e.clientY };
     const { x, y } = getCanvasCoords(e);
     handleCanvasInteraction(x, y);
   };
 
   const handleMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
     if (!isDraggingRef.current) return;
+    if (is3DModel && (e.buttons === 1 || e.buttons === 2)) {
+      const dx = e.clientX - lastMousePosRef.current.x;
+      const dy = e.clientY - lastMousePosRef.current.y;
+      lastMousePosRef.current = { x: e.clientX, y: e.clientY };
+      setRotY(prev => (prev + dx * 0.65) % 360);
+      setRotX(prev => Math.max(8, Math.min(82, prev + dy * 0.65)));
+      return;
+    }
     const { x, y } = getCanvasCoords(e);
-    if (['hypothesis_power', 'first_order_optimizers', 'newton_raphson', 'lagrange_kkt', 'svd_decomposition', 'bayesian_beta_binomial'].includes(selectedModel)) {
+    if (['hypothesis_power', 'bayesian_beta_binomial'].includes(selectedModel)) {
       handleCanvasInteraction(x, y);
     }
   };
 
   const handleMouseUp = () => {
+    isDraggingRef.current = false;
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      isDraggingRef.current = true;
+      lastMousePosRef.current = { x: touch.clientX, y: touch.clientY };
+      const { x, y } = getCanvasCoordsFromTouch(touch);
+      handleCanvasInteraction(x, y);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (!isDraggingRef.current || e.touches.length !== 1) return;
+    const touch = e.touches[0];
+    if (is3DModel) {
+      const dx = touch.clientX - lastMousePosRef.current.x;
+      const dy = touch.clientY - lastMousePosRef.current.y;
+      lastMousePosRef.current = { x: touch.clientX, y: touch.clientY };
+      setRotY(prev => (prev + dx * 0.8) % 360);
+      setRotX(prev => Math.max(8, Math.min(82, prev + dy * 0.8)));
+      return;
+    }
+    const { x, y } = getCanvasCoordsFromTouch(touch);
+    if (['hypothesis_power', 'bayesian_beta_binomial'].includes(selectedModel)) {
+      handleCanvasInteraction(x, y);
+    }
+  };
+
+  const handleTouchEnd = () => {
     isDraggingRef.current = false;
   };
 
@@ -761,28 +888,28 @@ export const StatisticalOptimizationModule: React.FC = () => {
     let localFrame = 0;
 
     const renderLoop = () => {
-      const w = canvas.width;
-      const h = canvas.height;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+      const rect = canvas.getBoundingClientRect();
+      const targetW = Math.max(320, Math.floor((rect.width || 900) * dpr));
+      const targetH = Math.max(320, Math.floor((rect.height || 660) * dpr));
+      if (canvas.width !== targetW || canvas.height !== targetH) {
+        canvas.width = targetW;
+        canvas.height = targetH;
+      }
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
       const cx = w / 2;
       const cy = h / 2;
       const scale = Math.min(w, h) * 0.38;
 
-      ctx.clearRect(0, 0, w, h);
-
-      // Cyber Grid Background
-      ctx.strokeStyle = 'rgba(51, 65, 85, 0.25)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      for (let x = 0; x <= w; x += 40) {
-        ctx.moveTo(x, 0); ctx.lineTo(x, h);
-      }
-      for (let y = 0; y <= h; y += 40) {
-        ctx.moveTo(0, y); ctx.lineTo(w, y);
-      }
-      ctx.stroke();
+      // Unified Atmosphere Palette & Background Grid
+      const theme = getCanvasTheme(canvasAtmosphere);
+      drawCanvasAtmosphere(ctx, w, h, theme, 40);
 
       // Axis lines
-      ctx.strokeStyle = 'rgba(100, 116, 139, 0.6)';
+      ctx.strokeStyle = theme.axis;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(cx, 0); ctx.lineTo(cx, h);
@@ -1571,6 +1698,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
         ctx.fillText('Transformed Ellipse Ax', cx + 0.45 * scale, cy + 0.65 * scale);
       }
 
+      ctx.restore();
       animId = requestAnimationFrame(renderLoop);
     };
 
@@ -1579,6 +1707,9 @@ export const StatisticalOptimizationModule: React.FC = () => {
   }, [
     selectedModel,
     isSimulating,
+    canvasAtmosphere,
+    rotX,
+    rotY,
     cltPopDist,
     cltSampleSize,
     cltDrawSpeed,
@@ -1622,6 +1753,71 @@ export const StatisticalOptimizationModule: React.FC = () => {
 
   const activeModelMeta = STAT_OPT_MODELS.find(m => m.id === selectedModel) || STAT_OPT_MODELS[0];
 
+  const liveDynamicFormula = useMemo(() => {
+    switch (selectedModel) {
+      case 'clt_sampling':
+        return `\\bar{X}_{${cltSampleSize}} \\sim \\mathcal{N}\\left(\\mu, \\frac{\\sigma^2}{${cltSampleSize}}\\right) \\quad [\\text{SE}=${(0.55 / Math.sqrt(cltSampleSize)).toFixed(3)}, \\text{Draws}=${cltTotalDraws}]`;
+      case 'hypothesis_power':
+        return `Z_{\\text{obs}} = ${hypoObservedZ > 0 ? '+' : ''}${hypoObservedZ.toFixed(2)} \\quad [\\alpha=${hypoAlpha}, \\text{Power } (1-\\beta)=${(1 - hypoAlpha * 0.8).toFixed(2)}]`;
+      case 'mle_map':
+        return `\\hat{\\theta}_{\\text{MAP}} = \\frac{N\\bar{X} + \\lambda\\mu_0}{N + \\lambda} \\quad [\\bar{X}=${mleSampleMean.toFixed(2)}, \\mu_0=${mapPriorMean.toFixed(2)}]`;
+      case 'em_gmm':
+        return `\\gamma_{ik} = \\frac{\\pi_k \\mathcal{N}(x_i \\mid \\mu_k, \\sigma_k^2)}{\\sum_j \\pi_j \\mathcal{N}(x_i \\mid \\mu_j, \\sigma_j^2)} \\quad [\\text{Iter}=${emIterations}]`;
+      case 'mcmc_metropolis':
+        return `\\alpha(x_t, x^*) = \\min\\left(1, \\frac{\\pi(x^*)}{\\pi(x_t)}\\right) \\quad [\\text{Accept}=${mcmcTotalSamples > 0 ? ((stateRef.current.mcmcHistory.filter(h => h.accepted).length / mcmcTotalSamples) * 100).toFixed(1) : 0}\\%]`;
+      case 'bootstrap_resampling':
+        return `\\hat{\\theta}^*_b = g(X^{*b}) \\quad [B=${bootNumReplicas}, \\text{CI}_{95\\%} = [q_{0.025}, q_{0.975}]]`;
+      case 'markov_chains':
+        return `\\pi P = \\pi \\implies \\pi = [${mcStateDist.map(v => v.toFixed(2)).join(', ')}] \\quad [\\text{Steps}=${mcStepCount}]`;
+      case 'bayesian_beta_binomial':
+        return `\\text{Beta}(\\alpha + k, \\beta + n - k) \\quad [\\alpha=${bayesPriorAlpha + bayesFlipsHeads}, \\beta=${bayesPriorBeta + bayesFlipsTails}]`;
+      case 'first_order_optimizers':
+        return `\\theta_{t+1} = \\theta_t - \\eta \\cdot \\frac{\\hat{m}_t}{\\sqrt{\\hat{v}_t} + \\epsilon} \\quad [\\eta=${optLearningRate}, \\text{Surface}=\\text{${optLossSurface.toUpperCase()}}]`;
+      case 'newton_raphson':
+        return `x_{t+1} = x_t - \\left[\\nabla^2 f(x_t)\\right]^{-1} \\nabla f(x_t) \\quad [x=${newtonCurrentX.toFixed(3)}]`;
+      case 'lagrange_kkt':
+        return `\\nabla f(x^*) + \\lambda \\nabla g(x^*) = 0 \\quad [\\lambda^*=${(lagrangeLevelC * 0.85).toFixed(2)}]`;
+      case 'linear_programming_simplex':
+        return `\\max \\; c^T x \\;\\text{s.t.}\\; Ax \\le b \\quad [Z^*=${(lpC1 * 1.8 + lpC2 * 1.5).toFixed(1)}]`;
+      case 'pca_projection':
+        return `\\Sigma u_1 = \\lambda_1 u_1 \\quad [\\text{Explained Var}=${pcaExplainedVar}\\%]`;
+      case 'fisher_lda':
+        return `w^* = S_W^{-1} (\\mu_1 - \\mu_2) \\quad [J(w)=${ldaSeparability.toFixed(2)}]`;
+      case 'svd_decomposition':
+        return `A = U \\mathbf{\\Sigma} V^T \\quad [\\sigma_1=${svdSingular1.toFixed(2)}, \\sigma_2=${svdSingular2.toFixed(2)}]`;
+      default:
+        return activeModelMeta?.formula || '\\hat{\\theta} = f(X)';
+    }
+  }, [
+    selectedModel,
+    cltSampleSize,
+    cltTotalDraws,
+    hypoObservedZ,
+    hypoAlpha,
+    mleSampleMean,
+    mapPriorMean,
+    emIterations,
+    mcmcTotalSamples,
+    bootNumReplicas,
+    mcStateDist,
+    mcStepCount,
+    bayesPriorAlpha,
+    bayesPriorBeta,
+    bayesFlipsHeads,
+    bayesFlipsTails,
+    optLearningRate,
+    optLossSurface,
+    newtonCurrentX,
+    lagrangeLevelC,
+    lpC1,
+    lpC2,
+    pcaExplainedVar,
+    ldaSeparability,
+    svdSingular1,
+    svdSingular2,
+    activeModelMeta.formula
+  ]);
+
   return (
     <div
       style={{
@@ -1639,26 +1835,27 @@ export const StatisticalOptimizationModule: React.FC = () => {
       {/* ─── Top Category / Pillar Bar ─── */}
       {/* ─── Top Control Bar: Pillar Selector + Model Dropdown + Global Actions ─── */}
       <div
-        className="dsa-header-card"
+        className="dsa-header-card stat-opt-top-command-bar"
         style={{
           display: 'flex',
-          flexWrap: 'wrap',
+          flexWrap: 'nowrap',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '8px',
-          padding: '8px 12px',
-          background: 'var(--card-bg, rgba(15, 23, 42, 0.85))',
-          borderRadius: '12px',
+          gap: '10px',
+          padding: '5px 12px',
+          background: 'var(--card-bg, rgba(15, 23, 42, 0.88))',
+          borderRadius: '10px',
           border: '1px solid var(--card-border, rgba(51, 65, 85, 0.7))',
           backdropFilter: 'blur(10px)',
           minWidth: 0,
           maxWidth: '100%',
-          flexShrink: 0
+          flexShrink: 0,
+          overflowX: 'auto'
         }}
       >
-        {/* Mobile & Compact View: Grouped Model Selector Dropdown */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flex: '1 1 260px', minWidth: 0, maxWidth: '100%' }}>
-          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-secondary, #94a3b8)', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
+        {/* Left: Compact Model Selector */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary, #94a3b8)', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
             MODEL:
           </span>
           <select
@@ -1671,92 +1868,129 @@ export const StatisticalOptimizationModule: React.FC = () => {
             }}
             className="dsa-select-control"
             style={{
-              minHeight: '36px',
-              padding: '6px 12px',
-              borderRadius: '8px',
+              minHeight: '32px',
+              padding: '3px 8px',
+              borderRadius: '7px',
               background: 'var(--dropdown-bg, rgba(30, 41, 59, 0.95))',
               border: '1.5px solid var(--accent-cyan, #38bdf8)',
               color: 'var(--text-primary, #f8fafc)',
-              fontSize: '0.82rem',
+              fontSize: '0.78rem',
               fontWeight: 800,
               cursor: 'pointer',
               outline: 'none',
-              boxShadow: '0 0 10px rgba(56, 189, 248, 0.25)',
-              minWidth: 0,
-              width: '100%'
+              boxShadow: '0 0 8px rgba(56, 189, 248, 0.25)',
+              width: '260px',
+              maxWidth: '320px',
+              textOverflow: 'ellipsis'
             }}
           >
             <optgroup label="1. 📊 Statistical Inference & Sampling">
-              <option value="clt_simulation">Central Limit Theorem (Sampling Distributions)</option>
-              <option value="hypothesis_testing">Hypothesis Testing (Z-Test, T-Test, Type I/II)</option>
-              <option value="confidence_intervals">Confidence Intervals (Frequentist Coverage)</option>
-              <option value="mle_estimator">Maximum Likelihood Estimation (Likelihood Surfaces)</option>
-              <option value="bayesian_inference">Bayesian Inference (Beta-Binomial Conjugate)</option>
+              <option value="clt_sampling">Central Limit Theorem (Sampling Distributions)</option>
+              <option value="hypothesis_power">Hypothesis Testing & Power (Z-Test, T-Test, Type I/II)</option>
+              <option value="mle_map">Maximum Likelihood vs MAP Estimation</option>
+              <option value="em_gmm">Expectation-Maximization (Gaussian Mixture Models)</option>
+              <option value="mcmc_metropolis">MCMC Metropolis-Hastings Sampling</option>
               <option value="bootstrap_resampling">Bootstrap Resampling (Empirical Confidence)</option>
             </optgroup>
             <optgroup label="2. 🎲 Stochastic Processes & Bayesian Probability">
-              <option value="mcmc_metropolis">MCMC Metropolis-Hastings (Target Sampler)</option>
-              <option value="em_algorithm">Expectation-Maximization (Gaussian Mixture)</option>
+              <option value="markov_chains">Markov Chains (State Transitions & Stationary π)</option>
+              <option value="bayesian_beta_binomial">Bayesian Beta-Binomial Conjugate Updating</option>
             </optgroup>
             <optgroup label="3. ⚡ Continuous & Numerical Optimization">
-              <option value="gradient_descent_variants">Gradient Descent Variants (SGD, Momentum, Adam)</option>
+              <option value="first_order_optimizers">Gradient Descent Variants (SGD, Momentum, Adam)</option>
               <option value="newton_raphson">Newton-Raphson Optimization (Quadratic Fit)</option>
-              <option value="lagrange_multipliers">Lagrange Multipliers (Constrained Contours)</option>
+              <option value="lagrange_kkt">Lagrange Multipliers (Constrained Contours)</option>
             </optgroup>
             <optgroup label="4. 📐 Operations Research & Matrix Decompositions">
-              <option value="simplex_lp">Simplex Linear Programming (Feasible Polytope)</option>
-              <option value="pca_svd">PCA & SVD (Variance Ellipsoids)</option>
-              <option value="lda_analysis">Linear Discriminant Analysis (Fisher Criterion)</option>
-              <option value="kalman_filter">Kalman Filter (Dynamic State Estimation)</option>
+              <option value="linear_programming_simplex">Simplex Linear Programming (Feasible Polytope)</option>
+              <option value="pca_projection">PCA Variance Projection (Principal Components)</option>
+              <option value="fisher_lda">Linear Discriminant Analysis (Fisher Criterion)</option>
+              <option value="svd_decomposition">Singular Value Decomposition (A = U Σ Vᵀ)</option>
             </optgroup>
           </select>
         </div>
 
-        {/* Global Controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
-          <button
-            type="button"
-            onClick={() => setIsSimulating(!isSimulating)}
-            className="dsa-action-btn"
-            style={{
-              background: isSimulating ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)',
-              color: isSimulating ? '#f87171' : '#34d399',
-              border: isSimulating ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(16, 185, 129, 0.4)'
-            }}
-            title={isSimulating ? 'Pause Loop' : 'Run Live'}
-          >
-            {isSimulating ? <Pause size={15} /> : <Play size={15} />}
-            <span className="dsa-btn-label">{isSimulating ? 'Pause' : 'Run'}</span>
-          </button>
+        {/* Middle & Right: Transport Buttons & Collapsible Sidebar Toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          {/* Simulation Transport */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+            <button
+              type="button"
+              onClick={() => setIsSimulating(!isSimulating)}
+              className="dsa-action-btn"
+              style={{
+                height: '30px',
+                padding: '0 10px',
+                background: isSimulating ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)',
+                color: isSimulating ? '#f87171' : '#34d399',
+                border: isSimulating ? '1px solid rgba(239, 68, 68, 0.4)' : '1px solid rgba(16, 185, 129, 0.4)'
+              }}
+              title={isSimulating ? 'Pause Loop' : 'Run Live'}
+            >
+              {isSimulating ? <Pause size={13} /> : <Play size={13} />}
+              <span className="dsa-btn-label">{isSimulating ? 'Pause' : 'Run'}</span>
+            </button>
 
-          <button
-            type="button"
-            onClick={performStep}
-            className="dsa-action-btn"
-            style={{
-              background: 'rgba(56, 189, 248, 0.15)',
-              color: '#38bdf8',
-              border: '1px solid rgba(56, 189, 248, 0.4)'
-            }}
-            title="Step Simulation Forward (+1)"
-          >
-            <ChevronRight size={15} />
-            <span className="dsa-btn-label">Step +1</span>
-          </button>
+            <button
+              type="button"
+              onClick={performStep}
+              className="dsa-action-btn"
+              style={{
+                height: '30px',
+                padding: '0 10px',
+                background: 'rgba(56, 189, 248, 0.15)',
+                color: 'var(--accent-cyan, #38bdf8)',
+                border: '1px solid var(--accent-cyan, rgba(56, 189, 248, 0.4))'
+              }}
+              title="Step Simulation Forward (+1)"
+            >
+              <ChevronRight size={13} />
+              <span className="dsa-btn-label">Step +1</span>
+            </button>
 
+            <button
+              type="button"
+              onClick={reseedData}
+              className="dsa-action-btn"
+              style={{
+                height: '30px',
+                padding: '0 10px',
+                background: 'var(--bg-tertiary, rgba(51, 65, 85, 0.5))',
+                color: 'var(--text-secondary, #cbd5e1)',
+                border: '1px solid var(--border-color, rgba(100, 116, 139, 0.4))'
+              }}
+              title="Reset Simulation & Reseed"
+            >
+              <RotateCcw size={13} />
+              <span className="dsa-btn-label">Reset</span>
+            </button>
+          </div>
+
+          <div style={{ width: '1px', height: '18px', background: 'var(--border-color, rgba(51, 65, 85, 0.6))', margin: '0 2px' }} />
+
+          {/* Collapsible Sidebar Toggle Pill */}
           <button
             type="button"
-            onClick={reseedData}
-            className="dsa-action-btn"
+            onClick={() => setDesktopTab(desktopTab === 'focus' ? 'split' : 'focus')}
             style={{
-              background: 'rgba(51, 65, 85, 0.5)',
-              color: '#cbd5e1',
-              border: '1px solid rgba(100, 116, 139, 0.4)'
+              height: '30px',
+              padding: '0 10px',
+              borderRadius: '7px',
+              fontSize: '0.74rem',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              cursor: 'pointer',
+              border: desktopTab !== 'focus' ? '1px solid var(--accent-cyan, #38bdf8)' : '1px solid var(--border-color, rgba(51, 65, 85, 0.8))',
+              background: desktopTab !== 'focus' ? 'var(--pill-active-bg, rgba(56, 189, 248, 0.22))' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))',
+              color: desktopTab !== 'focus' ? 'var(--accent-cyan, #38bdf8)' : 'var(--text-secondary, #94a3b8)',
+              transition: 'all 0.15s ease'
             }}
-            title="Reset Simulation & Reseed"
+            title={desktopTab === 'focus' ? 'Expand Controls & Telemetry Panel' : 'Collapse Sidebar to Full-Bleed Canvas'}
           >
-            <RotateCcw size={15} />
-            <span className="dsa-btn-label">Reset</span>
+            {desktopTab === 'focus' ? <PanelRightOpen size={14} /> : <PanelRightClose size={14} />}
+            <span>{desktopTab === 'focus' ? 'Expand Controls' : 'Hide Sidebar'}</span>
           </button>
         </div>
       </div>
@@ -1790,7 +2024,12 @@ export const StatisticalOptimizationModule: React.FC = () => {
       </div>
 
       {/* ─── Main 2-Column Lab Grid ─── */}
-      <div className="stat-opt-workbench-grid">
+      <div
+        className={`stat-opt-workbench-grid ${desktopTab === 'focus' ? 'desktop-focus-canvas' : ''}`}
+        style={{
+          gridTemplateColumns: desktopTab === 'focus' ? '1fr' : desktopTab === 'split' ? 'minmax(0, 1fr) 360px' : 'minmax(0, 1fr) 320px'
+        }}
+      >
         {/* Left Interactive Canvas Viewport */}
         <div className={`stat-opt-canvas-panel ${mobileActiveTab === 'canvas' ? 'mobile-active' : 'mobile-hidden'}`}>
           <canvas
@@ -1800,19 +2039,55 @@ export const StatisticalOptimizationModule: React.FC = () => {
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
             style={{
               width: '100%',
               height: '100%',
               objectFit: 'contain',
-              cursor: 'crosshair'
+              cursor: is3DModel ? 'grab' : 'crosshair'
             }}
           />
+
+          {/* In-Canvas Dynamic KaTeX HUD Overlay */}
+          <div className="canvas-katex-hud-overlay">
+            <div className="hud-header">
+              <span>{activeModelMeta.title}</span>
+              <span className="hud-badge">{activePillar.toUpperCase().replace('_', ' ')}</span>
+            </div>
+            <div
+              className="hud-latex-render"
+              dangerouslySetInnerHTML={{
+                __html: katex.renderToString(liveDynamicFormula, { throwOnError: false, displayMode: false })
+              }}
+            />
+          </div>
+
+          {/* 3D Orbit Perspective Indicator Badge */}
+          {is3DModel && (
+            <div className="canvas-3d-orbit-hint">
+              <Compass size={14} color="#38bdf8" />
+              <span>3D Orbit: {Math.round(rotY)}° Yaw / {Math.round(rotX)}° Pitch</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setRotX(32);
+                  setRotY(45);
+                }}
+                title="Reset 3D Perspective"
+              >
+                <RefreshCw size={10} style={{ display: 'inline', marginRight: '3px' }} />
+                Reset
+              </button>
+            </div>
+          )}
 
           {/* Floating Instructions Banner */}
           <div
             style={{
               position: 'absolute',
-              top: '12px',
+              bottom: is3DModel ? '44px' : '12px',
               left: '12px',
               padding: '6px 12px',
               background: 'var(--card-bg, rgba(15, 23, 42, 0.9))',
@@ -1823,7 +2098,9 @@ export const StatisticalOptimizationModule: React.FC = () => {
               color: 'var(--text-secondary, #94a3b8)',
               display: 'flex',
               alignItems: 'center',
-              gap: '6px'
+              gap: '6px',
+              maxWidth: 'calc(100% - 24px)',
+              zIndex: 5
             }}
           >
             <MousePointer size={13} color="#38bdf8" />
@@ -1834,15 +2111,15 @@ export const StatisticalOptimizationModule: React.FC = () => {
               {selectedModel === 'bayesian_beta_binomial' && '💡 Flip coins or run bursts • Watch Beta curve shift'}
               {selectedModel === 'linear_programming_simplex' && '💡 Feasible polygon corner points & sweeping line'}
               {selectedModel === 'pca_projection' && '💡 Click to add data points • PC₁ maximizes variance'}
-              {selectedModel === 'first_order_optimizers' && '💡 Click canvas to reposition all 4 racing optimizers'}
-              {selectedModel === 'newton_raphson' && '💡 Click to set initial x₀ • Hessian quadratic Taylor jump'}
-              {selectedModel === 'lagrange_kkt' && '💡 Tangency contact point: ∇f is collinear to λ∇g'}
+              {selectedModel === 'first_order_optimizers' && '💡 Drag to orbit 3D loss surface • Watch all 4 optimizers race'}
+              {selectedModel === 'newton_raphson' && '💡 Drag to orbit 3D surface • Hessian quadratic Taylor jump'}
+              {selectedModel === 'lagrange_kkt' && '💡 Drag to orbit • Tangency point: ∇f is collinear to λ∇g'}
               {selectedModel === 'mle_map' && '💡 Click canvas to add sample points • Bayesian Shrinkage'}
               {selectedModel === 'em_gmm' && '💡 E-Step (responsibilities) & M-Step (parameters)'}
               {selectedModel === 'mcmc_metropolis' && '💡 Green = Accepted jumps • Red = Rejected proposals'}
               {selectedModel === 'bootstrap_resampling' && '💡 95% Percentile Confidence Band [q0.025, q0.975]'}
               {selectedModel === 'fisher_lda' && '💡 Maximizing between-class over within-class scatter'}
-              {selectedModel === 'svd_decomposition' && '💡 Drag axes: Unit Circle to Ellipse transformation A = U Σ Vᵀ'}
+              {selectedModel === 'svd_decomposition' && '💡 Drag to orbit 3D transformation A = U Σ Vᵀ'}
             </span>
           </div>
 
@@ -1851,7 +2128,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
             <div
               style={{
                 position: 'absolute',
-                top: '12px',
+                top: '54px',
                 right: '12px',
                 display: 'flex',
                 alignItems: 'center',
@@ -1859,7 +2136,8 @@ export const StatisticalOptimizationModule: React.FC = () => {
                 padding: '4px 6px',
                 background: 'var(--card-bg, rgba(15, 23, 42, 0.9))',
                 borderRadius: '8px',
-                border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))'
+                border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))',
+                zIndex: 10
               }}
             >
               <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary, #94a3b8)', fontWeight: 600 }}>Add:</span>
@@ -1900,20 +2178,115 @@ export const StatisticalOptimizationModule: React.FC = () => {
         </div>
 
         {/* Right Telemetry, Controls & Exam Notes Panel */}
-        <div className={`stat-opt-controls-panel ${mobileActiveTab !== 'canvas' ? 'mobile-active' : 'mobile-hidden'}`}>
-          {/* Header */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', borderBottom: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))', paddingBottom: '10px' }}>
-            <Activity size={16} color="#38bdf8" />
-            <div>
-              <h4 style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--text-primary, #f8fafc)', margin: 0, textTransform: 'uppercase' }}>
-                {activeModelMeta.name}
-              </h4>
-              <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)' }}>{activeModelMeta.pillarTitle}</span>
-            </div>
-          </div>
+        {desktopTab !== 'focus' && (
+          <div className={`stat-opt-controls-panel ${mobileActiveTab !== 'canvas' ? 'mobile-active' : 'mobile-hidden'}`}>
+            {/* Header with Segmented View Switcher & Close Button */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))', paddingBottom: '8px', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                <Activity size={15} color="var(--accent-cyan, #38bdf8)" style={{ flexShrink: 0 }} />
+                <div style={{ minWidth: 0 }}>
+                  <h4 style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-primary, #f8fafc)', margin: 0, textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {activeModelMeta.name}
+                  </h4>
+                  <span style={{ fontSize: '0.66rem', color: 'var(--text-secondary, #94a3b8)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{activeModelMeta.pillarTitle}</span>
+                </div>
+              </div>
 
-          {/* TELEMETRY CARDS */}
-          <div className={`stat-opt-card-telemetry ${mobileActiveTab === 'telemetry' ? 'mobile-card-visible' : 'mobile-card-hidden'}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              {/* Segmented Mode Selector + Close Button */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                <div style={{ display: 'flex', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.7))', padding: '2px', borderRadius: '7px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
+                  <button
+                    type="button"
+                    onClick={() => setDesktopTab('parameters')}
+                    style={{
+                      padding: '3px 7px',
+                      borderRadius: '5px',
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      border: desktopTab === 'parameters' ? '1px solid var(--accent-cyan, #38bdf8)' : '1px solid transparent',
+                      background: desktopTab === 'parameters' ? 'var(--pill-active-bg, rgba(56, 189, 248, 0.25))' : 'transparent',
+                      color: desktopTab === 'parameters' ? 'var(--accent-cyan, #38bdf8)' : 'var(--text-secondary, #94a3b8)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '3px'
+                    }}
+                    title="Show Parameters only"
+                  >
+                    <Sliders size={11} />
+                    <span>Controls</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setDesktopTab('telemetry')}
+                    style={{
+                      padding: '3px 7px',
+                      borderRadius: '5px',
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      border: desktopTab === 'telemetry' ? '1px solid var(--accent-cyan, #38bdf8)' : '1px solid transparent',
+                      background: desktopTab === 'telemetry' ? 'var(--pill-active-bg, rgba(56, 189, 248, 0.25))' : 'transparent',
+                      color: desktopTab === 'telemetry' ? 'var(--accent-cyan, #38bdf8)' : 'var(--text-secondary, #94a3b8)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '3px'
+                    }}
+                    title="Show Telemetry & Proofs only"
+                  >
+                    <Activity size={11} />
+                    <span>Telemetry</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setDesktopTab('split')}
+                    style={{
+                      padding: '3px 7px',
+                      borderRadius: '5px',
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      border: desktopTab === 'split' ? '1px solid var(--accent-cyan, #38bdf8)' : '1px solid transparent',
+                      background: desktopTab === 'split' ? 'var(--pill-active-bg, rgba(56, 189, 248, 0.25))' : 'transparent',
+                      color: desktopTab === 'split' ? 'var(--accent-cyan, #38bdf8)' : 'var(--text-secondary, #94a3b8)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '3px'
+                    }}
+                    title="Show Both Controls & Telemetry"
+                  >
+                    <Layout size={11} />
+                    <span>Both</span>
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setDesktopTab('focus')}
+                  style={{
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '6px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))',
+                    border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))',
+                    color: 'var(--text-secondary, #94a3b8)',
+                    cursor: 'pointer'
+                  }}
+                  title="Collapse Sidebar"
+                >
+                  <X size={13} />
+                </button>
+              </div>
+            </div>
+
+            {/* TELEMETRY CARDS */}
+            {(desktopTab === 'telemetry' || desktopTab === 'split') && (
+              <div className={`stat-opt-card-telemetry ${mobileActiveTab === 'telemetry' ? 'mobile-card-visible' : 'mobile-card-hidden'}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
           {selectedModel === 'clt_sampling' && (
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px', padding: '10px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))', borderRadius: '10px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
               <div>
@@ -2188,13 +2561,15 @@ export const StatisticalOptimizationModule: React.FC = () => {
             </div>
           )}
           </div>
+          )}
 
           {/* DYNAMIC CONTROLS SECTION */}
-          <div className={`stat-opt-card-params ${mobileActiveTab === 'controls' ? 'mobile-card-visible' : 'mobile-card-hidden'}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 700, color: '#cbd5e1' }}>
-              <Sliders size={13} color="#38bdf8" />
-              <span>Interactive Controls</span>
-            </div>
+          {(desktopTab === 'parameters' || desktopTab === 'split') && (
+            <div className={`stat-opt-card-params ${mobileActiveTab === 'controls' ? 'mobile-card-visible' : 'mobile-card-hidden'}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-primary, #cbd5e1)' }}>
+                <Sliders size={13} color="var(--accent-cyan, #38bdf8)" />
+                <span>Interactive Controls</span>
+              </div>
 
             {selectedModel === 'clt_sampling' && (
               <>
@@ -2951,44 +3326,48 @@ export const StatisticalOptimizationModule: React.FC = () => {
               </>
             )}
           </div>
+          )}
 
           {/* Academic & University Exam Takeaway Box */}
-          <div
-            className={`stat-opt-card-theory ${mobileActiveTab === 'telemetry' ? 'mobile-card-visible' : 'mobile-card-hidden'}`}
-            style={{
-              marginTop: 'auto',
-              padding: '12px',
-              borderRadius: '10px',
-              background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.5))',
-              border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '6px'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 700, color: '#38bdf8' }}>
-              <Sparkles size={13} />
-              <span>Exam & Mathematical Intuition</span>
-            </div>
-            <p style={{ fontSize: '0.72rem', color: '#cbd5e1', lineHeight: '1.4', margin: 0 }}>
-              {activeModelMeta.description}
-            </p>
+          {(desktopTab === 'telemetry' || desktopTab === 'split') && (
             <div
+              className={`stat-opt-card-theory ${mobileActiveTab === 'telemetry' ? 'mobile-card-visible' : 'mobile-card-hidden'}`}
               style={{
-                fontFamily: 'monospace',
-                fontSize: '0.75rem',
-                color: '#34d399',
-                background: 'var(--card-bg, rgba(15, 23, 42, 0.8))',
-                padding: '4px 8px',
-                borderRadius: '6px',
-                border: '1px solid var(--border-color, rgba(51, 65, 85, 0.5))',
-                marginTop: '4px'
+                marginTop: 'auto',
+                padding: '12px',
+                borderRadius: '10px',
+                background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.5))',
+                border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px'
               }}
             >
-              {activeModelMeta.formula}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.75rem', fontWeight: 700, color: 'var(--accent-cyan, #38bdf8)' }}>
+                <Sparkles size={13} />
+                <span>Exam & Mathematical Intuition</span>
+              </div>
+              <p style={{ fontSize: '0.72rem', color: 'var(--text-secondary, #cbd5e1)', lineHeight: '1.4', margin: 0 }}>
+                {activeModelMeta.description}
+              </p>
+              <div
+                style={{
+                  fontFamily: 'monospace',
+                  fontSize: '0.75rem',
+                  color: '#34d399',
+                  background: 'var(--card-bg, rgba(15, 23, 42, 0.8))',
+                  padding: '4px 8px',
+                  borderRadius: '6px',
+                  border: '1px solid var(--border-color, rgba(51, 65, 85, 0.5))',
+                  marginTop: '4px'
+                }}
+              >
+                {activeModelMeta.formula}
+              </div>
             </div>
-          </div>
+          )}
         </div>
+        )}
       </div>
     </div>
   );

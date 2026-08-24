@@ -16985,3 +16985,167 @@ body {
   color: #0f172a !important;
 }
 
+/* ─── Statistical Optimization Desktop Pill Deck & Focus ─── */
+.stat-opt-desktop-pill-deck {
+  display: flex;
+}
+
+@media (max-width: 900px) {
+  .stat-opt-desktop-pill-deck {
+    display: none !important;
+  }
+}
+
+.desktop-focus-canvas .stat-opt-canvas-panel,
+.desktop-focus-canvas .neural-canvas-panel {
+  width: 100% !important;
+  grid-column: 1 / -1 !important;
+}
+
+/* ─── Dedicated Canvas Atmosphere Presets (Phase 3) ─── */
+:root,
+[data-canvas-atmosphere="deep_void"] {
+  --canvas-bg: #020617;
+  --canvas-grid: rgba(56, 189, 248, 0.22);
+  --canvas-axis: rgba(100, 116, 139, 0.65);
+  --canvas-ink: #f8fafc;
+  --canvas-text-muted: #94a3b8;
+  --canvas-border: rgba(56, 189, 248, 0.3);
+}
+
+[data-canvas-atmosphere="blueprint_matrix"] {
+  --canvas-bg: #071927;
+  --canvas-grid: rgba(6, 182, 212, 0.28);
+  --canvas-axis: rgba(6, 182, 212, 0.7);
+  --canvas-ink: #e0f2fe;
+  --canvas-text-muted: #38bdf8;
+  --canvas-border: rgba(6, 182, 212, 0.45);
+}
+
+[data-canvas-atmosphere="academic_parchment"] {
+  --canvas-bg: #fdfaf3;
+  --canvas-grid: rgba(217, 119, 6, 0.18);
+  --canvas-axis: rgba(120, 53, 15, 0.45);
+  --canvas-ink: #3e2723;
+  --canvas-text-muted: #78350f;
+  --canvas-border: rgba(217, 119, 6, 0.35);
+}
+
+[data-canvas-atmosphere="oxford_daylight"] {
+  --canvas-bg: #ffffff;
+  --canvas-grid: rgba(148, 163, 184, 0.25);
+  --canvas-axis: rgba(71, 85, 105, 0.6);
+  --canvas-ink: #0f172a;
+  --canvas-text-muted: #475569;
+  --canvas-border: rgba(30, 58, 138, 0.3);
+}
+
+[data-canvas-atmosphere="oled_black"] {
+  --canvas-bg: #000000;
+  --canvas-grid: rgba(30, 41, 59, 0.45);
+  --canvas-axis: rgba(56, 189, 248, 0.55);
+  --canvas-ink: #ffffff;
+  --canvas-text-muted: #94a3b8;
+  --canvas-border: rgba(56, 189, 248, 0.4);
+}
+
+.stat-opt-canvas-panel,
+.neural-canvas-panel {
+  background: var(--canvas-bg, #020617) !important;
+  border: 1px solid var(--canvas-border, rgba(56, 189, 248, 0.25)) !important;
+  position: relative !important;
+  overflow: hidden !important;
+}
+
+.stat-opt-canvas-panel canvas,
+.neural-canvas-panel canvas {
+  touch-action: none;
+}
+
+/* ─── In-Canvas Dynamic KaTeX HUD Overlay ─── */
+.canvas-katex-hud-overlay {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  padding: 8px 14px;
+  background: var(--card-bg, rgba(15, 23, 42, 0.88));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-radius: 10px;
+  border: 1px solid var(--border-color, rgba(56, 189, 248, 0.35));
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+  max-width: calc(100% - 24px);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  z-index: 10;
+  pointer-events: auto;
+  transition: all 0.2s ease;
+}
+
+.canvas-katex-hud-overlay .hud-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 0.68rem;
+  font-weight: 700;
+  color: var(--text-muted, #94a3b8);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.canvas-katex-hud-overlay .hud-badge {
+  padding: 1px 6px;
+  border-radius: 4px;
+  background: rgba(56, 189, 248, 0.15);
+  color: var(--accent-cyan, #38bdf8);
+  font-size: 0.62rem;
+  font-weight: 700;
+  border: 1px solid rgba(56, 189, 248, 0.3);
+}
+
+.canvas-katex-hud-overlay .hud-latex-render {
+  font-size: 0.88rem;
+  color: var(--text-primary, #f8fafc);
+  overflow-x: auto;
+  white-space: nowrap;
+  padding: 2px 0;
+}
+
+/* ─── 3D Orbit Perspective Indicator Badge ─── */
+.canvas-3d-orbit-hint {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  padding: 6px 12px;
+  background: var(--card-bg, rgba(15, 23, 42, 0.85));
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border-radius: 8px;
+  border: 1px solid var(--border-color, rgba(51, 65, 85, 0.8));
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.72rem;
+  color: var(--text-secondary, #94a3b8);
+  z-index: 10;
+}
+
+.canvas-3d-orbit-hint button {
+  background: rgba(56, 189, 248, 0.15);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  color: var(--accent-cyan, #38bdf8);
+  border-radius: 4px;
+  padding: 2px 6px;
+  font-size: 0.68rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.canvas-3d-orbit-hint button:hover {
+  background: rgba(56, 189, 248, 0.3);
+}
+
+

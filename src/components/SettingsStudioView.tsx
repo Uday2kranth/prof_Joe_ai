@@ -34,7 +34,8 @@ import {
   Volume2,
   Award,
   CheckCircle2,
-  Flame
+  Flame,
+  Activity
 } from 'lucide-react';
 import { 
   getPrintCustomConfig, 
@@ -189,6 +190,11 @@ export const SettingsStudioView: React.FC<SettingsStudioViewProps> = ({
     if (patch.bubbleStyle) {
       document.documentElement.setAttribute('data-bubble-style', patch.bubbleStyle);
       localStorage.setItem('chatterbot_bubble_style', patch.bubbleStyle);
+    }
+    if (patch.canvasAtmosphere) {
+      document.documentElement.setAttribute('data-canvas-atmosphere', patch.canvasAtmosphere);
+      localStorage.setItem('chatterbot_canvas_atmosphere', patch.canvasAtmosphere);
+      window.dispatchEvent(new Event('chatterbot_canvas_atmosphere_updated'));
     }
     setSaveFeedback('Atmosphere & Styling preferences applied!');
     setTimeout(() => setSaveFeedback(null), 2500);
@@ -2629,7 +2635,133 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                 </div>
               </div>
 
-              {/* Card 2: 👁️ INTERACTIVE MULTI-VIEW ATMOSPHERE PREVIEW DECK */}
+              {/* Card 2: 🧪 Data Visualization & Sandbox Canvas Atmosphere (5 Presets) */}
+              <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(56, 189, 248, 0.15)', border: '1px solid rgba(56, 189, 248, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#38bdf8' }}>
+                      <Activity size={20} />
+                    </div>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700 }}>Data Visualization & Sandbox Canvas Atmosphere</h3>
+                      <p style={{ margin: '2px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                        Dedicated backdrops for Statistical & Neural Simulators. Frame and controls preserve your global app theme.
+                      </p>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.72rem', padding: '4px 10px', borderRadius: '20px', background: 'rgba(56, 189, 248, 0.15)', color: '#38bdf8', fontWeight: 700, border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                    Active Canvas: {(codeStyle.canvasAtmosphere || 'deep_void').replace('_', ' ').toUpperCase()}
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 250px), 1fr))', gap: '14px', marginTop: '6px' }}>
+                  {[
+                    {
+                      id: 'deep_void',
+                      name: 'Deep Void Slate',
+                      desc: 'Deep cosmic slate with electric cyan coordinate grid',
+                      bgColor: '#020617',
+                      accentColor: '#38bdf8',
+                      gridColor: 'rgba(56, 189, 248, 0.25)',
+                      inkColor: '#f8fafc'
+                    },
+                    {
+                      id: 'blueprint_matrix',
+                      name: 'Blueprint Matrix',
+                      desc: 'Engineering cyan grid with technical architectural drafting',
+                      bgColor: '#071927',
+                      accentColor: '#06b6d4',
+                      gridColor: 'rgba(6, 182, 212, 0.35)',
+                      inkColor: '#e0f2fe'
+                    },
+                    {
+                      id: 'academic_parchment',
+                      name: 'Warm Academic Parchment',
+                      desc: 'Vintage lecture parchment with rich sepia mathematical ink',
+                      bgColor: '#fdfaf3',
+                      accentColor: '#d97706',
+                      gridColor: 'rgba(217, 119, 6, 0.2)',
+                      inkColor: '#3e2723'
+                    },
+                    {
+                      id: 'oxford_daylight',
+                      name: 'Oxford Daylight Crisp',
+                      desc: 'High-key classroom whiteboard with crisp navy axes',
+                      bgColor: '#ffffff',
+                      accentColor: '#1e3a8a',
+                      gridColor: 'rgba(148, 163, 184, 0.3)',
+                      inkColor: '#0f172a'
+                    },
+                    {
+                      id: 'oled_black',
+                      name: 'OLED Pure Black',
+                      desc: 'Pure #000000 AMOLED contrast with maximum battery savings',
+                      bgColor: '#000000',
+                      accentColor: '#38bdf8',
+                      gridColor: 'rgba(51, 65, 85, 0.4)',
+                      inkColor: '#ffffff'
+                    }
+                  ].map(canvasAtmo => {
+                    const isSelected = (codeStyle.canvasAtmosphere || 'deep_void') === canvasAtmo.id;
+                    return (
+                      <button
+                        key={canvasAtmo.id}
+                        type="button"
+                        onClick={() => updateCodeStyle({ canvasAtmosphere: canvasAtmo.id as any })}
+                        style={{
+                          padding: '16px',
+                          borderRadius: '12px',
+                          border: isSelected ? '2px solid #38bdf8' : '1px solid var(--border-color)',
+                          background: isSelected ? 'rgba(56, 189, 248, 0.12)' : 'var(--bg-primary)',
+                          color: 'var(--text-primary)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '12px',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          boxShadow: isSelected ? '0 0 16px rgba(56, 189, 248, 0.25)' : 'none',
+                          transition: 'all 0.15s ease'
+                        }}
+                      >
+                        {/* Mini Canvas Swatch */}
+                        <div
+                          style={{
+                            width: '44px',
+                            height: '44px',
+                            borderRadius: '10px',
+                            background: canvasAtmo.bgColor,
+                            border: `2px solid ${canvasAtmo.accentColor}`,
+                            position: 'relative',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0,
+                            overflow: 'hidden'
+                          }}
+                        >
+                          {/* Mini Grid Lines */}
+                          <div style={{ position: 'absolute', inset: 0, backgroundImage: `linear-gradient(to right, ${canvasAtmo.gridColor} 1px, transparent 1px), linear-gradient(to bottom, ${canvasAtmo.gridColor} 1px, transparent 1px)`, backgroundSize: '8px 8px' }} />
+                          <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: canvasAtmo.accentColor, zIndex: 1 }} />
+                        </div>
+
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                            <div style={{ fontWeight: 700, fontSize: '0.9rem', color: isSelected ? '#38bdf8' : 'var(--text-primary)' }}>
+                              {canvasAtmo.name}
+                            </div>
+                            {isSelected && <Check size={16} style={{ color: '#38bdf8' }} />}
+                          </div>
+                          <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '2px', lineHeight: 1.3 }}>
+                            {canvasAtmo.desc}
+                          </div>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+
+              {/* Card 3: 👁️ INTERACTIVE MULTI-VIEW ATMOSPHERE PREVIEW DECK */}
               <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '18px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '12px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

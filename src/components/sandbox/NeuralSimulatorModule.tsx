@@ -1,4 +1,5 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react';
+import katex from 'katex';
 import {
   Play,
   Pause,
@@ -9,8 +10,17 @@ import {
   Gauge,
   Activity,
   BarChart2,
-  Eye
+  Eye,
+  Maximize2,
+  Layout,
+  Compass,
+  RefreshCw,
+  MousePointer,
+  PanelRightClose,
+  PanelRightOpen,
+  X
 } from 'lucide-react';
+import { getCanvasTheme, drawCanvasAtmosphere, drawDiagramCard, withPlotBoxClip } from '../../utils/canvasThemeEngine';
 
 export type MLModelType =
   | 'kmeans_clustering'
@@ -59,6 +69,27 @@ export const NeuralSimulatorModule: React.FC = () => {
   const [simSpeed, setSimSpeed] = useState<number>(1.0); // 0.1x to 3.0x
   const [activePlacementClass, setActivePlacementClass] = useState<number>(0);
   const [mobileActiveTab, setMobileActiveTab] = useState<'canvas' | 'controls' | 'telemetry'>('canvas');
+  const [desktopTab, setDesktopTab] = useState<'parameters' | 'telemetry' | 'split' | 'focus'>('split');
+  const [canvasAtmosphere, setCanvasAtmosphere] = useState<string>(() => {
+    try {
+      return localStorage.getItem('chatterbot_canvas_atmosphere') || 'deep_void';
+    } catch {
+      return 'deep_void';
+    }
+  });
+
+  useEffect(() => {
+    const handleAtmosphereUpdate = () => {
+      try {
+        const atmo = localStorage.getItem('chatterbot_canvas_atmosphere') || 'deep_void';
+        setCanvasAtmosphere(atmo);
+      } catch {}
+    };
+    window.addEventListener('chatterbot_canvas_atmosphere_updated', handleAtmosphereUpdate);
+    return () => {
+      window.removeEventListener('chatterbot_canvas_atmosphere_updated', handleAtmosphereUpdate);
+    };
+  }, []);
 
   // ─── 1. K-Means Clustering State ───
   const [numClusters, setNumClusters] = useState<number>(3);
@@ -272,6 +303,11 @@ export const NeuralSimulatorModule: React.FC = () => {
   const [rlMapPreset, setRlMapPreset] = useState<'classic' | 'cliff' | 'maze' | 'dual_goal'>('classic');
   const [rlRewardGoal] = useState<number>(100);
   const [rlRewardTrap] = useState<number>(-50);
+
+  // ─── 3D Perspective & Orbit Controls ───
+  const [rotX, setRotX] = useState<number>(32); // degrees pitch
+  const [rotY, setRotY] = useState<number>(45); // degrees yaw
+  const lastMousePosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
 
   // ─── Dynamic Canvas & Animation References ───
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -560,23 +596,74 @@ export const NeuralSimulatorModule: React.FC = () => {
     setKmeansIterations(0);
   }, [kmeansInitMode, numClusters]);
 
-  // Mouse Interaction
+  // 3D Perspective Projection Engine (Euler Angle Yaw & Pitch)
+  const project3D = (
+    x: number,
+    y: number,
+    z: number,
+    cx: number,
+    cy: number,
+    scale: number,
+    pitchDeg: number,
+    yawDeg: number
+  ) => {
+    const radX = (pitchDeg * Math.PI) / 180;
+    const radY = (yawDeg * Math.PI) / 180;
+
+    // 1. Yaw Rotation around Y-axis
+    const x1 = x * Math.cos(radY) - y * Math.sin(radY);
+    const y1 = x * Math.sin(radY) + y * Math.cos(radY);
+    const z1 = z;
+
+    // 2. Pitch Rotation around X-axis
+    const x2 = x1;
+    const y2 = y1 * Math.cos(radX) - z1 * Math.sin(radX);
+    const z2 = y1 * Math.sin(radX) + z1 * Math.cos(radX);
+
+    // 3. Perspective Depth Scaling
+    const distance = 4.2;
+    const fov = distance / (distance + z2 * 0.45);
+
+    return {
+      px: cx + x2 * scale * fov,
+      py: cy - y2 * scale * fov,
+      depth: z2,
+      fov
+    };
+  };
+
+  // Mouse & Touch Interaction in Logical CSS Pixels
   const getCanvasCoords = (e: React.MouseEvent<HTMLCanvasElement>) => {
     const canvas = canvasRef.current;
     if (!canvas) return { x: 0, y: 0 };
     const rect = canvas.getBoundingClientRect();
-    const w = canvas.width;
-    const h = canvas.height;
-    const cx = w / 2;
-    const cy = h / 2;
-    const scale = Math.min(w, h) * 0.42;
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+    const scale = Math.min(rect.width, rect.height) * 0.42;
 
-    const mouseX = ((e.clientX - rect.left) / rect.width) * w;
-    const mouseY = ((e.clientY - rect.top) / rect.height) * h;
+    const mouseX = e.clientX - rect.left;
+    const mouseY = e.clientY - rect.top;
 
     return {
-      x: (mouseX - cx) / scale,
-      y: (cy - mouseY) / scale
+      x: (mouseX - cx) / (scale || 1),
+      y: (cy - mouseY) / (scale || 1)
+    };
+  };
+
+  const getCanvasCoordsFromTouch = (touch: React.Touch) => {
+    const canvas = canvasRef.current;
+    if (!canvas) return { x: 0, y: 0 };
+    const rect = canvas.getBoundingClientRect();
+    const cx = rect.width / 2;
+    const cy = rect.height / 2;
+    const scale = Math.min(rect.width, rect.height) * 0.42;
+
+    const mouseX = touch.clientX - rect.left;
+    const mouseY = touch.clientY - rect.top;
+
+    return {
+      x: (mouseX - cx) / (scale || 1),
+      y: (cy - mouseY) / (scale || 1)
     };
   };
 
@@ -1185,6 +1272,39 @@ export const NeuralSimulatorModule: React.FC = () => {
 
   const handleMouseUp = () => {
     isDraggingRef.current = { type: null, index: -1 };
+  };
+
+  const handleTouchStart = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      lastMousePosRef.current = { x: touch.clientX, y: touch.clientY };
+      handleMouseDown({
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+        buttons: 1
+      } as any);
+    }
+  };
+
+  const handleTouchMove = (e: React.TouchEvent<HTMLCanvasElement>) => {
+    if (e.touches.length === 1) {
+      const touch = e.touches[0];
+      const dx = touch.clientX - lastMousePosRef.current.x;
+      const dy = touch.clientY - lastMousePosRef.current.y;
+      lastMousePosRef.current = { x: touch.clientX, y: touch.clientY };
+
+      handleMouseMove({
+        clientX: touch.clientX,
+        clientY: touch.clientY,
+        movementX: dx,
+        movementY: dy,
+        buttons: 1
+      } as any);
+    }
+  };
+
+  const handleTouchEnd = () => {
+    handleMouseUp();
   };
 
   // Step Actions
@@ -2070,20 +2190,16 @@ export const NeuralSimulatorModule: React.FC = () => {
     const leftY = marginY;
     const rightY = marginY;
 
+    const theme = getCanvasTheme(canvasAtmosphere);
+
     // ────────────────────────────────────────────────────────────────────────
     // LEFT BOARD: 2D FEATURE SPACE OR 3D-TO-2D PRINCIPAL PLANE
     // ────────────────────────────────────────────────────────────────────────
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-    ctx.strokeStyle = 'rgba(51, 65, 85, 0.9)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.roundRect(leftX, leftY, leftW, leftH, 12);
-    ctx.fill();
-    ctx.stroke();
+    drawDiagramCard(ctx, leftX, leftY, leftW, leftH, theme);
 
     if (pcaViewMode === '3d_to_2d_plane') {
       // 3D Orbital Projection Mode
-      ctx.fillStyle = '#38bdf8';
+      ctx.fillStyle = theme.accentCyan;
       ctx.font = 'bold 12px sans-serif';
       ctx.textAlign = 'left';
       ctx.fillText('🌌 3D TO 2D PRINCIPAL SUBSPACE PROJECTION', leftX + 14, leftY + 22);
@@ -2116,7 +2232,7 @@ export const NeuralSimulatorModule: React.FC = () => {
         project3D(-1.4, 1.0, 0)
       ];
       ctx.fillStyle = 'rgba(56, 189, 248, 0.12)';
-      ctx.strokeStyle = '#38bdf8';
+      ctx.strokeStyle = theme.accentCyan;
       ctx.lineWidth = 1.8;
       ctx.beginPath();
       ctx.moveTo(planeCorners[0].px, planeCorners[0].py);
@@ -2142,20 +2258,20 @@ export const NeuralSimulatorModule: React.FC = () => {
         ctx.setLineDash([]);
 
         // Plane projected bead
-        ctx.fillStyle = '#38bdf8';
+        ctx.fillStyle = theme.accentCyan;
         ctx.beginPath();
         ctx.arc(pPlane.px, pPlane.py, 3, 0, 2 * Math.PI);
         ctx.fill();
 
         // 3D point
-        ctx.fillStyle = '#fbbf24';
+        ctx.fillStyle = theme.accentAmber;
         ctx.beginPath();
         ctx.arc(pOrig.px, pOrig.py, 4.5, 0, 2 * Math.PI);
         ctx.fill();
       });
 
       // Drag Hint
-      ctx.fillStyle = '#94a3b8';
+      ctx.fillStyle = theme.textMuted;
       ctx.font = '10px monospace';
       ctx.textAlign = 'center';
       ctx.fillText('🖱️ Drag to orbit 3D camera | Principal plane retains ' + evr1.toFixed(1) + '% + ' + evr2.toFixed(1) + '% variance', cx3d, leftY + leftH - 14);
@@ -2163,7 +2279,7 @@ export const NeuralSimulatorModule: React.FC = () => {
 
     } else {
       // Standard 2D Interactive Variance Maximization
-      ctx.fillStyle = '#38bdf8';
+      ctx.fillStyle = theme.accentCyan;
       ctx.font = 'bold 12px sans-serif';
       ctx.textAlign = 'left';
       ctx.fillText('🧭 2D PCA & VARIANCE MAXIMIZATION', leftX + 14, leftY + 22);
@@ -2177,169 +2293,175 @@ export const NeuralSimulatorModule: React.FC = () => {
       const pScale = Math.min(plotW, plotH) * 0.44;
 
       // Plot Box Background
-      ctx.fillStyle = 'rgba(10, 15, 30, 0.7)';
-      ctx.strokeStyle = 'rgba(51, 65, 85, 0.8)';
+      ctx.fillStyle = theme.plotBoxBg;
+      ctx.strokeStyle = theme.plotBoxBorder;
       ctx.lineWidth = 1.2;
       ctx.beginPath();
       ctx.roundRect(plotX, plotY, plotW, plotH, 8);
       ctx.fill();
       ctx.stroke();
 
-      // Axes inside plot box
-      ctx.strokeStyle = 'rgba(71, 85, 105, 0.45)';
-      ctx.lineWidth = 1;
-      ctx.beginPath();
-      ctx.moveTo(pcx, plotY + 8); ctx.lineTo(pcx, plotY + plotH - 8);
-      ctx.moveTo(plotX + 8, pcy); ctx.lineTo(plotX + plotW - 8, pcy);
-      ctx.stroke();
+      // STRICT PLOT BOX CLIPPING: Prevents ray or data points from overflowing the card bounds
+      withPlotBoxClip(ctx, plotX, plotY, plotW, plotH, 8, () => {
+        // Axes inside plot box
+        ctx.strokeStyle = theme.axis;
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(pcx, plotY + 8); ctx.lineTo(pcx, plotY + plotH - 8);
+        ctx.moveTo(plotX + 8, pcy); ctx.lineTo(plotX + plotW - 8, pcy);
+        ctx.stroke();
 
-      // Draw Theoretical Covariance Ellipse
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
-      ctx.lineWidth = 1.8;
-      ctx.beginPath();
-      ctx.ellipse(
-        pcx + meanX * pScale,
-        pcy - meanY * pScale,
-        Math.sqrt(lambda1) * pScale * 1.8,
-        Math.sqrt(lambda2) * pScale * 1.8,
-        -optimalAngleRad,
-        0,
-        2 * Math.PI
-      );
-      ctx.stroke();
+        // Draw Theoretical Covariance Ellipse
+        ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+        ctx.lineWidth = 1.8;
+        ctx.beginPath();
+        ctx.ellipse(
+          pcx + meanX * pScale,
+          pcy - meanY * pScale,
+          Math.sqrt(lambda1) * pScale * 1.8,
+          Math.sqrt(lambda2) * pScale * 1.8,
+          -optimalAngleRad,
+          0,
+          2 * Math.PI
+        );
+        ctx.stroke();
 
-      // Draw True Optimal Eigenvector Guide Line (Dotted Amber)
-      const optVx = Math.cos(optimalAngleRad);
-      const optVy = Math.sin(optimalAngleRad);
-      ctx.strokeStyle = 'rgba(245, 158, 11, 0.45)';
-      ctx.lineWidth = 1.5;
-      ctx.setLineDash([4, 4]);
-      ctx.beginPath();
-      ctx.moveTo(pcx - optVx * pScale * 1.6, pcy + optVy * pScale * 1.6);
-      ctx.lineTo(pcx + optVx * pScale * 1.6, pcy - optVy * pScale * 1.6);
-      ctx.stroke();
-      ctx.setLineDash([]);
+        // Draw True Optimal Eigenvector Guide Line (Dotted Amber)
+        const optVx = Math.cos(optimalAngleRad);
+        const optVy = Math.sin(optimalAngleRad);
+        ctx.strokeStyle = 'rgba(245, 158, 11, 0.45)';
+        ctx.lineWidth = 1.5;
+        ctx.setLineDash([4, 4]);
+        ctx.beginPath();
+        ctx.moveTo(pcx - optVx * pScale * 2.0, pcy + optVy * pScale * 2.0);
+        ctx.lineTo(pcx + optVx * pScale * 2.0, pcy - optVy * pScale * 2.0);
+        ctx.stroke();
+        ctx.setLineDash([]);
 
-      // Data Points & Orthogonal Residual Lines
-      points.forEach(p => {
-        const px = pcx + p.x * pScale;
-        const py = pcy - p.y * pScale;
+        // Data Points & Orthogonal Residual Lines
+        points.forEach(p => {
+          const px = pcx + p.x * pScale;
+          const py = pcy - p.y * pScale;
 
-        const dx = p.x - meanX;
-        const dy = p.y - meanY;
-        const projDot = dx * u1x + dy * u1y;
-        const projX = meanX + projDot * u1x;
-        const projY = meanY + projDot * u1y;
-        const ppx = pcx + projX * pScale;
-        const ppy = pcy - projY * pScale;
+          const dx = p.x - meanX;
+          const dy = p.y - meanY;
+          const projDot = dx * u1x + dy * u1y;
+          const projX = meanX + projDot * u1x;
+          const projY = meanY + projDot * u1y;
+          const ppx = pcx + projX * pScale;
+          const ppy = pcy - projY * pScale;
 
-        if (pcaShowResiduals) {
-          ctx.strokeStyle = 'rgba(244, 63, 94, 0.45)';
-          ctx.lineWidth = 1;
-          ctx.setLineDash([2, 2]);
+          if (pcaShowResiduals) {
+            ctx.strokeStyle = 'rgba(244, 63, 94, 0.45)';
+            ctx.lineWidth = 1;
+            ctx.setLineDash([2, 2]);
+            ctx.beginPath();
+            ctx.moveTo(px, py);
+            ctx.lineTo(ppx, ppy);
+            ctx.stroke();
+            ctx.setLineDash([]);
+          }
+
+          // Projected bead on vector u
+          ctx.fillStyle = theme.accentCyan;
           ctx.beginPath();
-          ctx.moveTo(px, py);
-          ctx.lineTo(ppx, ppy);
+          ctx.arc(ppx, ppy, 2.8, 0, 2 * Math.PI);
+          ctx.fill();
+
+          // 2D Point
+          ctx.fillStyle = theme.accentAmber;
+          ctx.beginPath();
+          ctx.arc(px, py, 4.2, 0, 2 * Math.PI);
+          ctx.fill();
+        });
+
+        // Draw Rotating Unit Vector u(θ) (Primary Axis) - Safely clipped!
+        ctx.strokeStyle = theme.accentCyan;
+        ctx.lineWidth = 3.5;
+        ctx.shadowColor = theme.accentCyan;
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.moveTo(pcx - u1x * pScale * 2.5, pcy + u1y * pScale * 2.5);
+        ctx.lineTo(pcx + u1x * pScale * 2.5, pcy - u1y * pScale * 2.5);
+        ctx.stroke();
+        ctx.shadowBlur = 0;
+
+        // Draw Arrow Head for u(θ)
+        const headX = pcx + u1x * pScale * 1.5;
+        const headY = pcy - u1y * pScale * 1.5;
+        ctx.fillStyle = theme.accentCyan;
+        ctx.beginPath();
+        ctx.arc(headX, headY, 5.5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        ctx.fillStyle = theme.accentCyan;
+        ctx.font = 'bold 11px monospace';
+        ctx.fillText(`u(θ=${currentAngleDeg.toFixed(0)}°)`, headX + 8, headY - 4);
+
+        // Orthogonal Component u_perp if components count is 2
+        if (pcaComponentsCount === 2) {
+          ctx.strokeStyle = theme.accentPurple;
+          ctx.lineWidth = 2.2;
+          ctx.beginPath();
+          ctx.moveTo(pcx - u2x * pScale * 1.0, pcy + u2y * pScale * 1.0);
+          ctx.lineTo(pcx + u2x * pScale * 1.0, pcy - u2y * pScale * 1.0);
           ctx.stroke();
-          ctx.setLineDash([]);
+          ctx.fillStyle = theme.accentPurple;
+          ctx.font = 'bold 10px monospace';
+          ctx.fillText('u⊥', pcx + u2x * pScale * 1.0 + 6, pcy - u2y * pScale * 1.0 - 4);
         }
 
-        // Projected bead on vector u
-        ctx.fillStyle = '#38bdf8';
+        // Mean Centroid Marker
+        ctx.fillStyle = '#ffffff';
         ctx.beginPath();
-        ctx.arc(ppx, ppy, 2.8, 0, 2 * Math.PI);
+        ctx.arc(pcx + meanX * pScale, pcy - meanY * pScale, 4, 0, 2 * Math.PI);
         ctx.fill();
-
-        // 2D Point
-        ctx.fillStyle = '#fbbf24';
-        ctx.beginPath();
-        ctx.arc(px, py, 4.2, 0, 2 * Math.PI);
-        ctx.fill();
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 10px sans-serif';
+        ctx.fillText('μ', pcx + meanX * pScale + 6, pcy - meanY * pScale - 6);
       });
-
-      // Draw Rotating Unit Vector u(θ) (Primary Axis)
-      ctx.strokeStyle = '#38bdf8';
-      ctx.lineWidth = 3.5;
-      ctx.shadowColor = '#38bdf8';
-      ctx.shadowBlur = 8;
-      ctx.beginPath();
-      ctx.moveTo(pcx - u1x * pScale * 1.5, pcy + u1y * pScale * 1.5);
-      ctx.lineTo(pcx + u1x * pScale * 1.5, pcy - u1y * pScale * 1.5);
-      ctx.stroke();
-      ctx.shadowBlur = 0;
-
-      // Draw Arrow Head for u(θ)
-      const headX = pcx + u1x * pScale * 1.5;
-      const headY = pcy - u1y * pScale * 1.5;
-      ctx.fillStyle = '#38bdf8';
-      ctx.beginPath();
-      ctx.arc(headX, headY, 5.5, 0, 2 * Math.PI);
-      ctx.fill();
-
-      ctx.fillStyle = '#38bdf8';
-      ctx.font = 'bold 11px monospace';
-      ctx.fillText(`u(θ=${currentAngleDeg.toFixed(0)}°)`, headX + 8, headY - 4);
-
-      // Orthogonal Component u_perp if components count is 2
-      if (pcaComponentsCount === 2) {
-        ctx.strokeStyle = '#c084fc';
-        ctx.lineWidth = 2.2;
-        ctx.beginPath();
-        ctx.moveTo(pcx - u2x * pScale * 1.0, pcy + u2y * pScale * 1.0);
-        ctx.lineTo(pcx + u2x * pScale * 1.0, pcy - u2y * pScale * 1.0);
-        ctx.stroke();
-        ctx.fillStyle = '#c084fc';
-        ctx.font = 'bold 10px monospace';
-        ctx.fillText('u⊥', pcx + u2x * pScale * 1.0 + 6, pcy - u2y * pScale * 1.0 - 4);
-      }
-
-      // Mean Centroid Marker
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath();
-      ctx.arc(pcx + meanX * pScale, pcy - meanY * pScale, 4, 0, 2 * Math.PI);
-      ctx.fill();
-      ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 10px sans-serif';
-      ctx.fillText('μ', pcx + meanX * pScale + 6, pcy - meanY * pScale - 6);
 
       // Bottom Conservation of Variance Meter
       const meterY = plotY + plotH + 12;
       const meterW = plotW;
       const meterH = 34;
 
-      ctx.fillStyle = 'rgba(30, 41, 59, 0.8)';
+      ctx.fillStyle = theme.plotBoxBg;
+      ctx.strokeStyle = theme.plotBoxBorder;
+      ctx.lineWidth = 1;
       ctx.beginPath();
       ctx.roundRect(plotX, meterY, meterW, meterH, 6);
       ctx.fill();
+      ctx.stroke();
 
       const projFrac = Math.max(0, Math.min(1, varProjected / (totalVar || 1)));
       const projBarW = Math.round((meterW - 12) * projFrac);
       const resBarW = (meterW - 12) - projBarW;
 
       // Projected variance bar (Cyan)
-      ctx.fillStyle = '#0284c7';
+      ctx.fillStyle = theme.accentCyan;
       ctx.beginPath();
       ctx.roundRect(plotX + 6, meterY + 6, projBarW, 10, 3);
       ctx.fill();
 
       // Residual MSE bar (Rose)
-      ctx.fillStyle = '#e11d48';
+      ctx.fillStyle = theme.accentRose;
       ctx.beginPath();
       ctx.roundRect(plotX + 6 + projBarW, meterY + 6, resBarW, 10, 3);
       ctx.fill();
 
-      ctx.fillStyle = '#38bdf8';
+      ctx.fillStyle = theme.accentCyan;
       ctx.font = 'bold 9px monospace';
       ctx.textAlign = 'left';
       ctx.fillText(`σ_proj² = ${varProjected.toFixed(3)} (${(projFrac * 100).toFixed(1)}%)`, plotX + 8, meterY + 28);
 
-      ctx.fillStyle = '#f43f5e';
+      ctx.fillStyle = theme.accentRose;
       ctx.textAlign = 'right';
       ctx.fillText(`MSE = ${varResidual.toFixed(3)} (${((1 - projFrac) * 100).toFixed(1)}%)`, plotX + meterW - 8, meterY + 28);
       ctx.textAlign = 'left';
 
       // Drag Hint
-      ctx.fillStyle = '#94a3b8';
+      ctx.fillStyle = theme.textMuted;
       ctx.font = '9px monospace';
       ctx.fillText('🖱️ Drag on plot to rotate projection axis u(θ)', plotX + 4, meterY + meterH + 18);
     }
@@ -2347,15 +2469,9 @@ export const NeuralSimulatorModule: React.FC = () => {
     // ────────────────────────────────────────────────────────────────────────
     // RIGHT BOARD: 1D SUBSPACE, SCREE PLOT & COVARIANCE DECOMPOSITION
     // ────────────────────────────────────────────────────────────────────────
-    ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
-    ctx.strokeStyle = 'rgba(51, 65, 85, 0.9)';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    ctx.roundRect(rightX, rightY, rightW, rightH, 12);
-    ctx.fill();
-    ctx.stroke();
+    drawDiagramCard(ctx, rightX, rightY, rightW, rightH, theme);
 
-    ctx.fillStyle = '#fbbf24';
+    ctx.fillStyle = theme.accentAmber;
     ctx.font = 'bold 12px sans-serif';
     ctx.textAlign = 'left';
     ctx.fillText('📊 1D SUBSPACE & SCREE DECOMPOSITION', rightX + 14, rightY + 22);
@@ -2366,20 +2482,20 @@ export const NeuralSimulatorModule: React.FC = () => {
     const subX = rightX + 14;
     const subY = rightY + 36;
 
-    ctx.fillStyle = 'rgba(10, 15, 30, 0.7)';
-    ctx.strokeStyle = 'rgba(51, 65, 85, 0.8)';
+    ctx.fillStyle = theme.plotBoxBg;
+    ctx.strokeStyle = theme.plotBoxBorder;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.roundRect(subX, subY, subW, subH, 8);
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = '#38bdf8';
+    ctx.fillStyle = theme.accentCyan;
     ctx.font = 'bold 10px monospace';
     ctx.fillText('1. Projected 1D Subspace: z₁ = (x - μ) · u(θ)', subX + 8, subY + 16);
 
     const axis1dY = subY + 54;
-    ctx.strokeStyle = '#64748b';
+    ctx.strokeStyle = theme.axis;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.moveTo(subX + 16, axis1dY);
@@ -2392,14 +2508,14 @@ export const NeuralSimulatorModule: React.FC = () => {
 
     projectedCoords1D.forEach(z => {
       const zx = Math.max(subX + 18, Math.min(subX + subW - 18, subMidX + z * axisScale));
-      ctx.fillStyle = 'rgba(56, 189, 248, 0.75)';
+      ctx.fillStyle = theme.accentCyan;
       ctx.beginPath();
       ctx.arc(zx, axis1dY, 3, 0, 2 * Math.PI);
       ctx.fill();
     });
 
     // 1D Gaussian Density Envelope
-    ctx.strokeStyle = '#38bdf8';
+    ctx.strokeStyle = theme.accentCyan;
     ctx.lineWidth = 1.8;
     ctx.beginPath();
     let envStarted = false;
@@ -2413,7 +2529,7 @@ export const NeuralSimulatorModule: React.FC = () => {
     }
     ctx.stroke();
 
-    ctx.fillStyle = '#94a3b8';
+    ctx.fillStyle = theme.textMuted;
     ctx.font = '9px monospace';
     ctx.fillText(`1D Spread: σ = ${stdProj.toFixed(3)} | Var = ${varProjected.toFixed(3)}`, subX + 10, subY + subH - 10);
 
@@ -2421,15 +2537,15 @@ export const NeuralSimulatorModule: React.FC = () => {
     const screeY = subY + subH + 12;
     const screeH = 150;
 
-    ctx.fillStyle = 'rgba(10, 15, 30, 0.7)';
-    ctx.strokeStyle = 'rgba(51, 65, 85, 0.8)';
+    ctx.fillStyle = theme.plotBoxBg;
+    ctx.strokeStyle = theme.plotBoxBorder;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.roundRect(subX, screeY, subW, screeH, 8);
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = '#c084fc';
+    ctx.fillStyle = theme.accentPurple;
     ctx.font = 'bold 10px monospace';
     ctx.fillText('2. Scree Plot: Explained Variance Ratio (EVR)', subX + 8, screeY + 16);
 
@@ -2440,14 +2556,14 @@ export const NeuralSimulatorModule: React.FC = () => {
     // Bar 1: PC1 (Cyan)
     const h1 = Math.round((evr1 / 100) * barMaxH);
     const b1x = subX + 28;
-    ctx.fillStyle = '#0284c7';
-    ctx.strokeStyle = '#38bdf8';
+    ctx.fillStyle = theme.accentCyan;
+    ctx.strokeStyle = theme.accentCyan;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.roundRect(b1x, baseBarY - h1, barW, h1, [4, 4, 0, 0]);
     ctx.fill(); ctx.stroke();
 
-    ctx.fillStyle = '#38bdf8';
+    ctx.fillStyle = theme.textPrimary;
     ctx.font = 'bold 11px monospace';
     ctx.textAlign = 'center';
     ctx.fillText(`${evr1.toFixed(1)}%`, b1x + barW / 2, baseBarY - h1 - 6);
@@ -2456,14 +2572,14 @@ export const NeuralSimulatorModule: React.FC = () => {
     // Bar 2: PC2 (Purple)
     const h2 = Math.round((evr2 / 100) * barMaxH);
     const b2x = subX + 38 + barW;
-    ctx.fillStyle = '#7e22ce';
-    ctx.strokeStyle = '#c084fc';
+    ctx.fillStyle = theme.accentPurple;
+    ctx.strokeStyle = theme.accentPurple;
     ctx.lineWidth = 1.5;
     ctx.beginPath();
     ctx.roundRect(b2x, baseBarY - h2, barW, h2, [4, 4, 0, 0]);
     ctx.fill(); ctx.stroke();
 
-    ctx.fillStyle = '#c084fc';
+    ctx.fillStyle = theme.textPrimary;
     ctx.font = 'bold 11px monospace';
     ctx.fillText(`${evr2.toFixed(1)}%`, b2x + barW / 2, baseBarY - h2 - 6);
     ctx.fillText('PC2 (λ₂)', b2x + barW / 2, baseBarY + 16);
@@ -2473,34 +2589,34 @@ export const NeuralSimulatorModule: React.FC = () => {
     const matY = screeY + screeH + 12;
     const matH = rightH - (matY - rightY) - 14;
 
-    ctx.fillStyle = 'rgba(10, 15, 30, 0.7)';
-    ctx.strokeStyle = 'rgba(51, 65, 85, 0.8)';
+    ctx.fillStyle = theme.plotBoxBg;
+    ctx.strokeStyle = theme.plotBoxBorder;
     ctx.lineWidth = 1;
     ctx.beginPath();
     ctx.roundRect(subX, matY, subW, matH, 8);
     ctx.fill();
     ctx.stroke();
 
-    ctx.fillStyle = '#34d399';
+    ctx.fillStyle = theme.accentEmerald;
     ctx.font = 'bold 10px monospace';
     ctx.fillText('3. Covariance Matrix Σ & Eigen-Decomposition', subX + 8, matY + 16);
 
     // 2x2 Matrix Grid
     const mboxX = subX + 12;
     const mboxY = matY + 28;
-    ctx.fillStyle = 'rgba(30, 41, 59, 0.9)';
-    ctx.strokeStyle = 'rgba(71, 85, 105, 0.8)';
+    ctx.fillStyle = theme.cardBg;
+    ctx.strokeStyle = theme.cardBorder;
     ctx.lineWidth = 1;
     ctx.strokeRect(mboxX, mboxY, 130, 46);
 
-    ctx.fillStyle = '#38bdf8';
+    ctx.fillStyle = theme.accentCyan;
     ctx.font = '10px monospace';
     ctx.fillText(`[${varX.toFixed(2)}  ${covXY >= 0 ? '+' : ''}${covXY.toFixed(2)}]`, mboxX + 8, mboxY + 18);
     ctx.fillText(`[${covXY >= 0 ? '+' : ''}${covXY.toFixed(2)}  ${varY.toFixed(2)}]`, mboxX + 8, mboxY + 36);
 
     // Eigenvalues & Angle
     const infoX = mboxX + 140;
-    ctx.fillStyle = '#94a3b8';
+    ctx.fillStyle = theme.textMuted;
     ctx.font = '10px monospace';
     ctx.fillText(`λ₁ = ${lambda1.toFixed(3)}`, infoX, mboxY + 14);
     ctx.fillText(`λ₂ = ${lambda2.toFixed(3)}`, infoX, mboxY + 28);
@@ -2514,7 +2630,7 @@ export const NeuralSimulatorModule: React.FC = () => {
     const alignmentPct = Math.max(0, Math.round(100 - (angleDiff / 90) * 100));
 
     const alignY = mboxY + 54;
-    ctx.fillStyle = alignmentPct > 90 ? '#34d399' : alignmentPct > 60 ? '#fbbf24' : '#f43f5e';
+    ctx.fillStyle = alignmentPct > 90 ? theme.accentEmerald : alignmentPct > 60 ? theme.accentAmber : theme.accentRose;
     ctx.font = 'bold 10px monospace';
     ctx.fillText(`Eigenvector Alignment: ${alignmentPct}% ${alignmentPct > 90 ? '⭐ (Max Variance!)' : ''}`, subX + 12, alignY + 16);
 
@@ -11255,28 +11371,28 @@ export const NeuralSimulatorModule: React.FC = () => {
         return;
       }
 
-      const w = canvas.width;
-      const h = canvas.height;
+      const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+      const rect = canvas.getBoundingClientRect();
+      const targetW = Math.max(320, Math.floor((rect.width || 720) * dpr));
+      const targetH = Math.max(320, Math.floor((rect.height || 620) * dpr));
+      if (canvas.width !== targetW || canvas.height !== targetH) {
+        canvas.width = targetW;
+        canvas.height = targetH;
+      }
+      ctx.save();
+      ctx.scale(dpr, dpr);
+      const w = canvas.width / dpr;
+      const h = canvas.height / dpr;
       const cx = w / 2;
       const cy = h / 2;
       const scale = Math.min(w, h) * 0.42;
 
-      ctx.fillStyle = '#0a0f1d';
-      ctx.fillRect(0, 0, w, h);
-
-      // Background Grid
-      ctx.strokeStyle = 'rgba(30, 41, 59, 0.45)';
-      ctx.lineWidth = 1;
-      const gridStep = 40;
-      for (let x = 0; x < w; x += gridStep) {
-        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
-      }
-      for (let y = 0; y < h; y += gridStep) {
-        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
-      }
+      // Unified Atmosphere Palette & Background Grid
+      const theme = getCanvasTheme(canvasAtmosphere);
+      drawCanvasAtmosphere(ctx, w, h, theme, 40);
 
       // Orthogonal Axes
-      ctx.strokeStyle = 'rgba(71, 85, 105, 0.6)';
+      ctx.strokeStyle = theme.axis;
       ctx.lineWidth = 1.5;
       ctx.beginPath();
       ctx.moveTo(cx, 0); ctx.lineTo(cx, h);
@@ -11309,6 +11425,7 @@ export const NeuralSimulatorModule: React.FC = () => {
         case 'q_learning_rl': drawQLearningGridWorldWedges(ctx, w, h, cx, cy, scale, localFrame); break;
       }
 
+      ctx.restore();
       animFrameRef.current = requestAnimationFrame(renderLoop);
     };
 
@@ -11318,7 +11435,7 @@ export const NeuralSimulatorModule: React.FC = () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
   }, [
-    selectedModel, isSimulating, simMode, simSpeed, numClusters, kParam, treeDepth,
+    selectedModel, isSimulating, simMode, simSpeed, canvasAtmosphere, rotX, rotY, numClusters, kParam, treeDepth,
     kmeansConverged, kmeansWCSS, kmeansDistance,
     linearViewMode, linearSlopeW1, linearSlopeW2, linearInterceptB, linearRidgeLambda, linearRegMode, linearPolyDegree, linear3dRotX, linear3dRotY, linearShowResiduals, linearShowProjectionRays,
     logregViewMode, logregBoundaryType, logregThreshold, logregW1, logregW2, logregBiasB, logreg3dRotX, logreg3dRotY, logregTemperature,
@@ -11341,6 +11458,81 @@ export const NeuralSimulatorModule: React.FC = () => {
     knnDistance, knnWeighting, knnShowBoundary, performKmeansStep
   ]);
 
+  const liveDynamicFormula = useMemo(() => {
+    switch (selectedModel) {
+      case 'kmeans_clustering':
+        return `J = \\sum_{i=1}^k \\sum_{x \\in S_i} \\|x - \\mu_i\\|^2 \\quad [k=${numClusters}, \\text{WCSS}=${kmeansWCSS.toFixed(3)}]`;
+      case 'knn_classifier':
+        return `\\hat{y} = \\text{mode}(\\{y_i : i \\in N_k(x)\\}) \\quad [k=${kParam}, \\text{metric}=\\text{${knnDistance.toUpperCase()}}]`;
+      case 'pca_reduction':
+        return `\\Sigma v_1 = \\lambda_1 v_1 \\quad [\\text{Var}=${(pcaEVR1 * 100).toFixed(1)}\\%, \\text{angle}=${pcaRotationAngle}^\\circ]`;
+      case 'linear_regression':
+        return `\\hat{y} = ${linearSlopeW1.toFixed(2)}x_1 + ${linearSlopeW2.toFixed(2)}x_2 + ${linearInterceptB.toFixed(2)} \\quad [R^2=${r2Score.toFixed(3)}]`;
+      case 'logistic_regression':
+        return `P(y=1\\mid x) = \\sigma(w^T x + b) = \\frac{1}{1 + e^{-(${logregW1.toFixed(2)}x_1 + ${logregW2.toFixed(2)}x_2 + ${logregBiasB.toFixed(2)})}}`;
+      case 'svm_classifier':
+        return `\\min_{w,b} \\frac{1}{2}\\|w\\|^2 + C\\sum \\xi_i \\quad [C=${svmC}, \\text{Kernel}=\\text{${svmKernel.toUpperCase()}}]`;
+      case 'decision_tree_split':
+        return `\\text{Gini} = 1 - \\sum_{i=1}^C p_i^2 \\quad [\\text{depth}=${treeDepth}, \\text{criterion}=\\text{${treeCriterion.toUpperCase()}}]`;
+      case 'naive_bayes':
+        return `P(y \\mid x) \\propto P(y) \\prod_{j=1}^d \\mathcal{N}(x_j \\mid \\mu_{yj}, \\sigma_{yj}^2)`;
+      case 'random_forest':
+        return `\\hat{y}_{\\text{ensemble}} = \\frac{1}{B} \\sum_{b=1}^B T_b(x) \\quad [\\text{Trees}=${forestNumTrees}]`;
+      case 'gradient_boosting':
+        return `F_m(x) = F_{m-1}(x) + \\eta \\sum \\gamma_{jm} I(x \\in R_{jm}) \\quad [\\text{stages}=${boostStages}, \\eta=${boostLearningRate}]`;
+      case 'loss_surface_optimization':
+        return `w_{t+1} = w_t - \\eta \\nabla L(w_t) \\quad [\\text{loss}=${optLoss.toFixed(3)}, \\|\\nabla L\\|=${optGradNorm.toFixed(3)}]`;
+      case 'neural_mlp':
+        return `a^{[l]} = g\\left(W^{[l]} a^{[l-1]} + b^{[l]}\\right) \\quad [\\text{act}=\\text{${mlpActivation.toUpperCase()}}, \\text{layers}=${mlpLayers.length}]`;
+      case 'backprop_autodiff':
+        return `\\frac{\\partial L}{\\partial w} = \\frac{\\partial L}{\\partial a} \\cdot \\frac{\\partial a}{\\partial z} \\cdot \\frac{\\partial z}{\\partial w} \\quad [\\text{epoch}=${autodiffStepCount}]`;
+      case 'conv_operations':
+        return `(I * K)(i,j) = \\sum_m \\sum_n I(i-m, j-n) K(m,n) \\quad [\\text{filter}=\\text{${convFilterType.toUpperCase()}}]`;
+      case 'seq_recurrent_gating':
+        return `f_t = \\sigma(W_f x_t + U_f h_{t-1} + b_f), \\quad c_t = f_t \\odot c_{t-1} + i_t \\odot \\tilde{c}_t`;
+      case 'attention_mechanisms':
+        return `\\text{Attention}(Q, K, V) = \\text{softmax}\\left(\\frac{QK^T}{\\sqrt{d_k}}\\right) V`;
+      case 'transformer_architecture':
+        return `\\text{EncoderBlock}(x) = \\text{LayerNorm}(x + \\text{MHA}(x))`;
+      case 'moe_architecture':
+        return `y = \\sum_{i=1}^E G(x)_i E_i(x) \\quad [\\text{Top-K Gate}]`;
+      case 'q_learning_rl':
+        return `Q(s,a) \\leftarrow Q(s,a) + \\alpha \\left[r + \\gamma \\max_{a'} Q(s',a') - Q(s,a)\\right]`;
+      default:
+        return `\\hat{y} = f(x; \\theta)`;
+    }
+  }, [
+    selectedModel,
+    numClusters,
+    kmeansWCSS,
+    kParam,
+    knnDistance,
+    pcaEVR1,
+    pcaRotationAngle,
+    linearSlopeW1,
+    linearSlopeW2,
+    linearInterceptB,
+    r2Score,
+    logregW1,
+    logregW2,
+    logregBiasB,
+    svmC,
+    svmKernel,
+    treeDepth,
+    treeCriterion,
+    forestNumTrees,
+    boostStages,
+    boostLearningRate,
+    optLoss,
+    optGradNorm,
+    mlpActivation,
+    mlpLayers,
+    autodiffStepCount,
+    convFilterType
+  ]);
+
+  const isNeural3D = ['loss_surface_optimization', 'linear_regression', 'logistic_regression', 'svm_classifier', 'pca_reduction'].includes(selectedModel);
+
   return (
     <div
       style={{
@@ -11353,28 +11545,29 @@ export const NeuralSimulatorModule: React.FC = () => {
         flex: 1
       }}
     >
-      {/* ─── Top Control Bar: Model Preset + Operational Mode + Speed Control ─── */}
+      {/* ─── Top Control Bar: Model Preset + Operational Mode + Speed Control + Collapsible Sidebar Toggle ─── */}
       <div
-        className="dsa-header-card"
+        className="dsa-header-card neural-top-command-bar"
         style={{
           display: 'flex',
-          flexWrap: 'wrap',
+          flexWrap: 'nowrap',
           alignItems: 'center',
           justifyContent: 'space-between',
-          gap: '8px',
-          padding: '8px 14px',
-          background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
-          borderRadius: '12px',
-          border: '1px solid var(--card-border, rgba(51, 65, 85, 0.8))',
-          boxShadow: 'var(--card-shadow, 0 4px 20px rgba(0, 0, 0, 0.3))',
+          gap: '10px',
+          padding: '5px 12px',
+          background: 'var(--card-bg, rgba(15, 23, 42, 0.88))',
+          borderRadius: '10px',
+          border: '1px solid var(--card-border, rgba(51, 65, 85, 0.7))',
+          boxShadow: 'var(--card-shadow, 0 4px 16px rgba(0, 0, 0, 0.25))',
           minWidth: 0,
           maxWidth: '100%',
-          flexShrink: 0
+          flexShrink: 0,
+          overflowX: 'auto'
         }}
       >
         {/* Left: Model Preset Selector */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap', flex: '1 1 280px', minWidth: 0, maxWidth: '100%' }}>
-          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-secondary, #94a3b8)', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
+          <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--text-secondary, #94a3b8)', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
             MODEL:
           </span>
           <select
@@ -11386,19 +11579,20 @@ export const NeuralSimulatorModule: React.FC = () => {
             }}
             className="dsa-select-control"
             style={{
-              minHeight: '36px',
-              padding: '6px 12px',
-              borderRadius: '8px',
-              background: 'rgba(30, 41, 59, 0.95)',
+              minHeight: '32px',
+              padding: '3px 8px',
+              borderRadius: '7px',
+              background: 'var(--dropdown-bg, rgba(30, 41, 59, 0.95))',
               border: '1.5px solid #a855f7',
               color: 'var(--text-primary, #f8fafc)',
-              fontSize: '0.82rem',
+              fontSize: '0.78rem',
               fontWeight: 800,
               cursor: 'pointer',
               outline: 'none',
-              boxShadow: '0 0 10px rgba(168, 85, 247, 0.3)',
-              minWidth: 0,
-              width: '100%'
+              boxShadow: '0 0 8px rgba(168, 85, 247, 0.25)',
+              width: '260px',
+              maxWidth: '300px',
+              textOverflow: 'ellipsis'
             }}
           >
             <optgroup label="🧭 Dimensionality Reduction & Clustering">
@@ -11436,20 +11630,23 @@ export const NeuralSimulatorModule: React.FC = () => {
               <option value="q_learning_rl">🎮 Reinforcement Learning (Q-Learning GridWorld)</option>
             </optgroup>
           </select>
+        </div>
 
+        {/* Middle & Right: Mode, Speed, Step, Simulate, and Sidebar Toggle */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
           {/* Operational Mode Toggle */}
-          <div style={{ display: 'flex', background: 'rgba(30, 41, 59, 0.85)', padding: '3px', borderRadius: '8px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))', marginLeft: '6px' }}>
+          <div style={{ display: 'flex', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.85))', padding: '2px', borderRadius: '7px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))' }}>
             <button
               type="button"
               onClick={() => setSimMode('autoplay')}
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '5px',
-                minHeight: '32px',
-                padding: '4px 12px',
-                borderRadius: '6px',
-                fontSize: '0.78rem',
+                gap: '4px',
+                height: '28px',
+                padding: '0 10px',
+                borderRadius: '5px',
+                fontSize: '0.74rem',
                 fontWeight: 700,
                 background: simMode === 'autoplay' ? '#0284c7' : 'transparent',
                 color: simMode === 'autoplay' ? '#ffffff' : '#94a3b8',
@@ -11457,7 +11654,7 @@ export const NeuralSimulatorModule: React.FC = () => {
                 cursor: 'pointer'
               }}
             >
-              <Eye size={14} />
+              <Eye size={13} />
               <span>Autoplay</span>
             </button>
             <button
@@ -11466,11 +11663,11 @@ export const NeuralSimulatorModule: React.FC = () => {
               style={{
                 display: 'flex',
                 alignItems: 'center',
-                gap: '5px',
-                minHeight: '32px',
-                padding: '4px 12px',
-                borderRadius: '6px',
-                fontSize: '0.78rem',
+                gap: '4px',
+                height: '28px',
+                padding: '0 10px',
+                borderRadius: '5px',
+                fontSize: '0.74rem',
                 fontWeight: 700,
                 background: simMode === 'interactive' ? '#0284c7' : 'transparent',
                 color: simMode === 'interactive' ? '#ffffff' : '#94a3b8',
@@ -11478,24 +11675,24 @@ export const NeuralSimulatorModule: React.FC = () => {
                 cursor: 'pointer'
               }}
             >
-              <Sliders size={14} />
+              <Sliders size={13} />
               <span>Interactive</span>
             </button>
           </div>
 
           {/* Interactive Class Placement */}
           {simMode === 'interactive' && ['logistic_regression', 'svm_classifier', 'decision_tree_split', 'naive_bayes', 'random_forest', 'gradient_boosting', 'neural_mlp', 'knn_classifier'].includes(selectedModel) && (
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(30, 41, 59, 0.85)', padding: '3px 8px', borderRadius: '8px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))', marginLeft: '4px' }}>
-              <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary, #94a3b8)', fontWeight: 700 }}>Click adds:</span>
-              <button type="button" onClick={() => setActivePlacementClass(0)} style={{ minHeight: '28px', padding: '3px 8px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700, background: activePlacementClass === 0 ? 'rgba(56, 189, 248, 0.3)' : 'transparent', color: '#38bdf8', border: activePlacementClass === 0 ? '1px solid #38bdf8' : 'none', cursor: 'pointer' }}>Class 0</button>
-              <button type="button" onClick={() => setActivePlacementClass(1)} style={{ minHeight: '28px', padding: '3px 8px', borderRadius: '6px', fontSize: '0.72rem', fontWeight: 700, background: activePlacementClass === 1 ? 'rgba(245, 158, 11, 0.3)' : 'transparent', color: '#fbbf24', border: activePlacementClass === 1 ? '1px solid #f59e0b' : 'none', cursor: 'pointer' }}>Class 1</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.85))', padding: '2px 6px', borderRadius: '7px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))' }}>
+              <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary, #94a3b8)', fontWeight: 700 }}>Add:</span>
+              <button type="button" onClick={() => setActivePlacementClass(0)} style={{ height: '24px', padding: '0 6px', borderRadius: '5px', fontSize: '0.68rem', fontWeight: 700, background: activePlacementClass === 0 ? 'rgba(56, 189, 248, 0.3)' : 'transparent', color: '#38bdf8', border: activePlacementClass === 0 ? '1px solid #38bdf8' : 'none', cursor: 'pointer' }}>C0</button>
+              <button type="button" onClick={() => setActivePlacementClass(1)} style={{ height: '24px', padding: '0 6px', borderRadius: '5px', fontSize: '0.68rem', fontWeight: 700, background: activePlacementClass === 1 ? 'rgba(245, 158, 11, 0.3)' : 'transparent', color: '#fbbf24', border: activePlacementClass === 1 ? '1px solid #f59e0b' : 'none', cursor: 'pointer' }}>C1</button>
             </div>
           )}
 
           {/* Speed Controller */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px', background: 'rgba(30, 41, 59, 0.85)', padding: '4px 10px', borderRadius: '8px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))', marginLeft: '4px' }}>
-            <Gauge size={14} color="#fbbf24" />
-            <span style={{ fontSize: '0.74rem', color: '#fbbf24', fontWeight: 800 }}>{simSpeed.toFixed(2)}x</span>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.85))', padding: '2px 8px', borderRadius: '7px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))' }}>
+            <Gauge size={13} color="#fbbf24" />
+            <span style={{ fontSize: '0.72rem', color: '#fbbf24', fontWeight: 800 }}>{simSpeed.toFixed(1)}x</span>
             <input
               type="range"
               min="0.1"
@@ -11503,166 +11700,9 @@ export const NeuralSimulatorModule: React.FC = () => {
               step="0.05"
               value={simSpeed}
               onChange={(e) => setSimSpeed(parseFloat(e.target.value))}
-              style={{ width: '70px', accentColor: '#fbbf24', cursor: 'pointer' }}
+              style={{ width: '55px', accentColor: '#fbbf24', cursor: 'pointer' }}
             />
           </div>
-        </div>
-
-        {/* Right: Step Action Buttons & Primary Simulation Play/Pause */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          {selectedModel === 'pca_reduction' && (
-            <button
-              type="button"
-              onClick={() => setPcaRotationAngle(prev => (prev + 15) % 360)}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
-            >
-              <StepForward size={14} />
-              <span>Rotate PC1 Axis ⏭️</span>
-            </button>
-          )}
-
-          {selectedModel === 'kmeans_clustering' && (
-            <button
-              type="button"
-              onClick={performKmeansStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
-            >
-              <StepForward size={14} />
-              <span>Step K-Means ⏭️</span>
-            </button>
-          )}
-
-          {selectedModel === 'knn_classifier' && (
-            <button
-              type="button"
-              onClick={performKnnQueryStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
-            >
-              <StepForward size={14} />
-              <span>Sample Query Probe ⏭️</span>
-            </button>
-          )}
-
-          {selectedModel === 'linear_regression' && (
-            <button
-              type="button"
-              onClick={performLinearRegressionStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
-            >
-              <StepForward size={14} />
-              <span>Fit Gradient Step ⏭️</span>
-            </button>
-          )}
-
-          {selectedModel === 'logistic_regression' && (
-            <button
-              type="button"
-              onClick={performLogisticRegressionStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(52, 211, 153, 0.2)', border: '1px solid #34d399', color: '#34d399', cursor: 'pointer' }}
-            >
-              <StepForward size={14} />
-              <span>Step Sigmoid Boundary ⏭️</span>
-            </button>
-          )}
-
-          {selectedModel === 'svm_classifier' && (
-            <button
-              type="button"
-              onClick={performSvmStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(192, 132, 252, 0.2)', border: '1px solid #c084fc', color: '#c084fc', cursor: 'pointer' }}
-            >
-              <StepForward size={14} />
-              <span>Solve Dual Step ⏭️</span>
-            </button>
-          )}
-
-          {selectedModel === 'decision_tree_split' && (
-            <button
-              type="button"
-              onClick={performDecisionTreeStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(52, 211, 153, 0.2)', border: '1px solid #34d399', color: '#34d399', cursor: 'pointer' }}
-            >
-              <StepForward size={14} />
-              <span>Step Split Plane ⏭️</span>
-            </button>
-          )}
-
-          {selectedModel === 'naive_bayes' && (
-            <button
-              type="button"
-              onClick={performNaiveBayesStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
-            >
-              <StepForward size={14} />
-              <span>Fit Likelihoods ⏭️</span>
-            </button>
-          )}
-
-          {selectedModel === 'random_forest' && (
-            <button
-              type="button"
-              onClick={performRandomForestStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
-            >
-              <StepForward size={14} />
-              <span>Bootstrap & Grow Tree ⏭️</span>
-            </button>
-          )}
-
-          {selectedModel === 'gradient_boosting' && (
-            <button
-              type="button"
-              onClick={performGradientBoostingStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(245, 158, 11, 0.2)', border: '1px solid #f59e0b', color: '#fbbf24', cursor: 'pointer' }}
-            >
-              <StepForward size={14} />
-              <span>Fit Next Residual ⏭️</span>
-            </button>
-          )}
-
-          {selectedModel === 'gan_minimax' && (
-            <button
-              type="button"
-              onClick={performGanStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(236, 72, 153, 0.2)', border: '1px solid #ec4899', color: '#f472b6', cursor: 'pointer' }}
-            >
-              <StepForward size={14} />
-              <span>Train 1 Epoch ⏭️</span>
-            </button>
-          )}
-
-          {selectedModel === 'ddpm_diffusion' && (
-            <button
-              type="button"
-              onClick={performDenoiseStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(52, 211, 153, 0.2)', border: '1px solid #34d399', color: '#34d399', cursor: 'pointer' }}
-            >
-              <StepForward size={14} />
-              <span>{ddpmDirection === 'reverse' ? 'Reverse Denoise Step ⏭️' : 'Forward Noise Step ⏭️'}</span>
-            </button>
-          )}
-
-          {selectedModel === 'vae_generative' && (
-            <button
-              type="button"
-              onClick={performVaeSampleStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(192, 132, 252, 0.2)', border: '1px solid #c084fc', color: '#c084fc', cursor: 'pointer' }}
-            >
-              <StepForward size={14} />
-              <span>Sample Latent (z~𝒩) ⏭️</span>
-            </button>
-          )}
-
-          {selectedModel === 'neural_mlp' && (
-            <button
-              type="button"
-              onClick={performMlpPulseStep}
-              style={{ display: 'flex', alignItems: 'center', gap: '6px', minHeight: '36px', padding: '6px 14px', borderRadius: '8px', fontSize: '0.8rem', fontWeight: 700, background: 'rgba(56, 189, 248, 0.2)', border: '1px solid #38bdf8', color: '#38bdf8', cursor: 'pointer' }}
-            >
-              <StepForward size={14} />
-              <span>Trigger Pulse Wave ⏭️</span>
-            </button>
-          )}
 
           {selectedModel === 'backprop_autodiff' && (
             <button
@@ -11774,7 +11814,7 @@ export const NeuralSimulatorModule: React.FC = () => {
             onClick={handleResetModel}
             className="dsa-action-btn"
             style={{
-              background: 'rgba(30, 41, 59, 0.85)',
+              background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.85))',
               border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))',
               color: 'var(--text-secondary, #94a3b8)'
             }}
@@ -11782,6 +11822,33 @@ export const NeuralSimulatorModule: React.FC = () => {
           >
             <RotateCcw size={15} />
             <span className="dsa-btn-label">Reset</span>
+          </button>
+
+          <div style={{ width: '1px', height: '18px', background: 'var(--border-color, rgba(51, 65, 85, 0.6))', margin: '0 2px' }} />
+
+          {/* Collapsible Sidebar Toggle Pill */}
+          <button
+            type="button"
+            onClick={() => setDesktopTab(desktopTab === 'focus' ? 'split' : 'focus')}
+            style={{
+              height: '30px',
+              padding: '0 10px',
+              borderRadius: '7px',
+              fontSize: '0.74rem',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              cursor: 'pointer',
+              border: desktopTab !== 'focus' ? '1px solid var(--accent-cyan, #38bdf8)' : '1px solid var(--border-color, rgba(51, 65, 85, 0.8))',
+              background: desktopTab !== 'focus' ? 'var(--pill-active-bg, rgba(56, 189, 248, 0.22))' : 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))',
+              color: desktopTab !== 'focus' ? 'var(--accent-cyan, #38bdf8)' : 'var(--text-secondary, #94a3b8)',
+              transition: 'all 0.15s ease'
+            }}
+            title={desktopTab === 'focus' ? 'Expand Controls & Telemetry Panel' : 'Collapse Sidebar to Full-Bleed Canvas'}
+          >
+            {desktopTab === 'focus' ? <PanelRightOpen size={14} /> : <PanelRightClose size={14} />}
+            <span>{desktopTab === 'focus' ? 'Expand Controls' : 'Hide Sidebar'}</span>
           </button>
         </div>
       </div>
@@ -11815,7 +11882,12 @@ export const NeuralSimulatorModule: React.FC = () => {
       </div>
 
       {/* ─── Main Content: Canvas Viewport + Control Deck ─── */}
-      <div className="neural-workbench-grid">
+      <div
+        className={`neural-workbench-grid ${desktopTab === 'focus' ? 'desktop-focus-canvas' : ''}`}
+        style={{
+          gridTemplateColumns: desktopTab === 'focus' ? '1fr' : desktopTab === 'split' ? 'minmax(0, 1fr) 380px' : 'minmax(0, 1fr) 340px'
+        }}
+      >
         {/* Left: 2D Interactive Canvas */}
         <div className={`neural-canvas-panel ${mobileActiveTab === 'canvas' ? 'mobile-active' : 'mobile-hidden'}`}>
           <canvas
@@ -11825,16 +11897,171 @@ export const NeuralSimulatorModule: React.FC = () => {
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
-            style={{ width: '100%', height: '100%', display: 'block', cursor: 'crosshair' }}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
+            style={{
+              width: '100%',
+              height: '100%',
+              display: 'block',
+              cursor: isNeural3D ? 'grab' : 'crosshair'
+            }}
           />
+
+          {/* In-Canvas Dynamic KaTeX HUD Overlay */}
+          <div className="canvas-katex-hud-overlay">
+            <div className="hud-header">
+              <span>{selectedModel.replace(/_/g, ' ')}</span>
+              <span className="hud-badge">NEURAL ARCHITECTURE</span>
+            </div>
+            <div
+              className="hud-latex-render"
+              dangerouslySetInnerHTML={{
+                __html: katex.renderToString(liveDynamicFormula, { throwOnError: false, displayMode: false })
+              }}
+            />
+          </div>
+
+          {/* 3D Orbit Perspective Indicator Badge */}
+          {isNeural3D && (
+            <div className="canvas-3d-orbit-hint">
+              <Compass size={14} color="#38bdf8" />
+              <span>3D Orbit: {Math.round(rotY)}° Yaw / {Math.round(rotX)}° Pitch</span>
+              <button
+                type="button"
+                onClick={() => {
+                  setRotX(32);
+                  setRotY(45);
+                  setLinear3dRotX(32);
+                  setLinear3dRotY(45);
+                  setLogreg3dRotX(32);
+                  setLogreg3dRotY(45);
+                  setSvm3dRotX(32);
+                  setSvm3dRotY(45);
+                  setPca3dRotX(32);
+                  setPca3dRotY(45);
+                }}
+                title="Reset 3D Perspective"
+              >
+                <RefreshCw size={10} style={{ display: 'inline', marginRight: '3px' }} />
+                Reset
+              </button>
+            </div>
+          )}
         </div>
 
         {/* Right: Telemetry & Hyperparameter Deck */}
-        <div className={`neural-controls-panel ${mobileActiveTab !== 'canvas' ? 'mobile-active' : 'mobile-hidden'}`}>
-          {/* Telemetry Card */}
-          <div
-            className={`neural-card-telemetry ${mobileActiveTab === 'telemetry' ? 'mobile-card-visible' : 'mobile-card-hidden'}`}
-            style={{
+        {desktopTab !== 'focus' && (
+          <div className={`neural-controls-panel ${mobileActiveTab !== 'canvas' ? 'mobile-active' : 'mobile-hidden'}`}>
+            {/* Header with Segmented View Switcher & Close Button */}
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))', paddingBottom: '8px', gap: '8px', marginBottom: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0 }}>
+                <Activity size={15} color="#c084fc" style={{ flexShrink: 0 }} />
+                <div style={{ minWidth: 0 }}>
+                  <h4 style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-primary, #f8fafc)', margin: 0, textTransform: 'uppercase', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {selectedModel.replace(/_/g, ' ')}
+                  </h4>
+                  <span style={{ fontSize: '0.66rem', color: 'var(--text-secondary, #94a3b8)', display: 'block', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>NEURAL & ML DECK</span>
+                </div>
+              </div>
+
+              {/* Segmented Mode Selector + Close Button */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+                <div style={{ display: 'flex', background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.7))', padding: '2px', borderRadius: '7px', border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))' }}>
+                  <button
+                    type="button"
+                    onClick={() => setDesktopTab('parameters')}
+                    style={{
+                      padding: '3px 7px',
+                      borderRadius: '5px',
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      border: desktopTab === 'parameters' ? '1px solid var(--accent-cyan, #38bdf8)' : '1px solid transparent',
+                      background: desktopTab === 'parameters' ? 'var(--pill-active-bg, rgba(56, 189, 248, 0.25))' : 'transparent',
+                      color: desktopTab === 'parameters' ? 'var(--accent-cyan, #38bdf8)' : 'var(--text-secondary, #94a3b8)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '3px'
+                    }}
+                    title="Show Parameters only"
+                  >
+                    <Sliders size={11} />
+                    <span>Controls</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setDesktopTab('telemetry')}
+                    style={{
+                      padding: '3px 7px',
+                      borderRadius: '5px',
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      border: desktopTab === 'telemetry' ? '1px solid var(--accent-cyan, #38bdf8)' : '1px solid transparent',
+                      background: desktopTab === 'telemetry' ? 'var(--pill-active-bg, rgba(56, 189, 248, 0.25))' : 'transparent',
+                      color: desktopTab === 'telemetry' ? 'var(--accent-cyan, #38bdf8)' : 'var(--text-secondary, #94a3b8)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '3px'
+                    }}
+                    title="Show Telemetry & Proofs only"
+                  >
+                    <Activity size={11} />
+                    <span>Telemetry</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setDesktopTab('split')}
+                    style={{
+                      padding: '3px 7px',
+                      borderRadius: '5px',
+                      fontSize: '0.68rem',
+                      fontWeight: 700,
+                      border: desktopTab === 'split' ? '1px solid var(--accent-cyan, #38bdf8)' : '1px solid transparent',
+                      background: desktopTab === 'split' ? 'var(--pill-active-bg, rgba(56, 189, 248, 0.25))' : 'transparent',
+                      color: desktopTab === 'split' ? 'var(--accent-cyan, #38bdf8)' : 'var(--text-secondary, #94a3b8)',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '3px'
+                    }}
+                    title="Show Both Controls & Telemetry"
+                  >
+                    <Layout size={11} />
+                    <span>Both</span>
+                  </button>
+                </div>
+
+                <button
+                  type="button"
+                  onClick={() => setDesktopTab('focus')}
+                  style={{
+                    width: '26px',
+                    height: '26px',
+                    borderRadius: '6px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))',
+                    border: '1px solid var(--border-color, rgba(51, 65, 85, 0.6))',
+                    color: 'var(--text-secondary, #94a3b8)',
+                    cursor: 'pointer'
+                  }}
+                  title="Collapse Sidebar"
+                >
+                  <X size={13} />
+                </button>
+              </div>
+            </div>
+
+            {/* Telemetry Card */}
+            {(desktopTab === 'telemetry' || desktopTab === 'split') && (
+              <div
+                className={`neural-card-telemetry ${mobileActiveTab === 'telemetry' ? 'mobile-card-visible' : 'mobile-card-hidden'}`}
+                style={{
               background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
               borderRadius: '16px',
               border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))',
@@ -11844,12 +12071,6 @@ export const NeuralSimulatorModule: React.FC = () => {
               gap: '10px'
             }}
           >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Activity size={16} color="#c084fc" />
-              <h4 style={{ margin: 0, fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-primary, #f8fafc)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                {selectedModel.replace(/_/g, ' ')} TELEMETRY
-              </h4>
-            </div>
 
             {/* 1. PCA Telemetry */}
             {selectedModel === 'pca_reduction' && (
@@ -12372,26 +12593,28 @@ export const NeuralSimulatorModule: React.FC = () => {
               </div>
             )}
           </div>
+          )}
 
           {/* Contextual Hyperparameters & Controls Card */}
-          <div
-            className={`neural-card-hyperparams ${mobileActiveTab === 'controls' ? 'mobile-card-visible' : 'mobile-card-hidden'}`}
-            style={{
-              background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
-              borderRadius: '16px',
-              border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))',
-              padding: '16px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '12px'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Sliders size={16} color="#38bdf8" />
-              <h4 style={{ margin: 0, fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-primary, #f8fafc)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-                HYPERPARAMETERS & DEDICATED CONTROLS
-              </h4>
-            </div>
+          {(desktopTab === 'parameters' || desktopTab === 'split') && (
+            <div
+              className={`neural-card-hyperparams ${mobileActiveTab === 'controls' ? 'mobile-card-visible' : 'mobile-card-hidden'}`}
+              style={{
+                background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
+                borderRadius: '16px',
+                border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))',
+                padding: '16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '12px'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Sliders size={16} color="var(--accent-cyan, #38bdf8)" />
+                <h4 style={{ margin: 0, fontSize: '0.82rem', fontWeight: 800, color: 'var(--text-primary, #f8fafc)', letterSpacing: '0.04em', textTransform: 'uppercase' }}>
+                  HYPERPARAMETERS & DEDICATED CONTROLS
+                </h4>
+              </div>
 
             {/* PCA Controls */}
             {selectedModel === 'pca_reduction' && (
@@ -14648,90 +14871,94 @@ export const NeuralSimulatorModule: React.FC = () => {
               </>
             )}
           </div>
+          )}
 
           {/* Mathematical Card */}
-          <div
-            className={`neural-card-theory ${mobileActiveTab === 'telemetry' ? 'mobile-card-visible' : 'mobile-card-hidden'}`}
-            style={{
-              background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
-              borderRadius: '16px',
-              border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))',
-              padding: '14px 16px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '6px'
-            }}
-          >
-            <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Sparkles size={14} color="#fbbf24" />
-              <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-primary, #f8fafc)', textTransform: 'uppercase' }}>
-                MATHEMATICAL FORMULATION:
-              </span>
+          {(desktopTab === 'telemetry' || desktopTab === 'split') && (
+            <div
+              className={`neural-card-theory ${mobileActiveTab === 'telemetry' ? 'mobile-card-visible' : 'mobile-card-hidden'}`}
+              style={{
+                background: 'var(--card-bg, rgba(15, 23, 42, 0.95))',
+                borderRadius: '16px',
+                border: '1px solid var(--border-color, rgba(51, 65, 85, 0.8))',
+                padding: '14px 16px',
+                display: 'flex',
+                flexDirection: 'column',
+                gap: '6px'
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Sparkles size={14} color="#fbbf24" />
+                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--text-primary, #f8fafc)', textTransform: 'uppercase' }}>
+                  MATHEMATICAL FORMULATION:
+                </span>
+              </div>
+              <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary, #94a3b8)', fontFamily: 'monospace', lineHeight: 1.4 }}>
+                {selectedModel === 'pca_reduction' && 'S_v = (1/N) Σ (x_i - μ)(x_i - μ)^T, Av_k = λ_k v_k'}
+                {selectedModel === 'kmeans_clustering' && 'arg min_S Σ_{i=1}^k Σ_{x ∈ S_i} ‖x - μ_i‖²'}
+                {selectedModel === 'knn_classifier' && 'y_hat = mode({y_i : x_i ∈ N_k(x)})'}
+                {selectedModel === 'linear_regression' && (
+                  linearViewMode === '3d_regression_plane'
+                    ? '3D Hyperplane: ŷ = w₁x₁ + w₂x₂ + b, Residual: e_i = y_i - ŷ_i, Normal Equation: w* = (X^T X)^{-1} X^T y'
+                    : linearViewMode === 'polynomial_curves'
+                      ? `Polynomial (deg ${linearPolyDegree}): ŷ = Σ_{k=0}^d w_k x^k, L_ridge = ‖y - Φ(x)w‖² + λ‖w‖_2²`
+                      : linearViewMode === 'residuals_analysis'
+                        ? 'Residuals & QQ: e_i = y_i - ŷ_i, R² = 1 - SS_res / SS_tot = 1 - (Σ(y_i - ŷ_i)² / Σ(y_i - ȳ)²)'
+                        : '1D OLS: ŷ = w₁x + b, L_ols = (1/2N) Σ(y_i - (w₁x_i + b))², w₁* = Cov(X,Y)/Var(X)'
+                )}
+                {selectedModel === 'logistic_regression' && (
+                  logregViewMode === '3d_sigmoid_surface'
+                    ? '3D Surface: P(Y=1|x) = σ(w₁x₁ + w₂x₂ + b) = 1 / (1 + e^{-(w₁x₁ + w₂x₂ + b)}), Slicing Plane: Z = T'
+                    : logregViewMode === '1d_sigmoid_curve'
+                      ? '1D Curve: P(y=1|x) = 1 / (1 + e^{-(wx + b)}), Decision Boundary: x* = (logit(T) - b) / w'
+                      : logregViewMode === '2d_heatmap_boundary'
+                        ? (logregBoundaryType === 'polynomial'
+                            ? 'Polynomial: P = σ(w₁x₁ + w₂x₂ - 1.8‖x‖² + b) = T, Closed Non-Linear Loop'
+                            : 'Linear: w₁x₁ + w₂x₂ + b = ln(T / (1 - T)), ∇_w L = (1/N) X^T (σ(Xw) - y)')
+                        : 'Multinomial Softmax: P(y=k|x) = e^{(w_k^T x + b_k)/τ} / Σ e^{(w_j^T x + b_j)/τ}'
+                )}
+                {selectedModel === 'svm_classifier' && (
+                  svmViewMode === '1d_parabola'
+                    ? 'φ(x) = (x, x²), Hyperplane: w₁·x + w₂·x² + b = 0'
+                    : svmViewMode === '3d_kernel_trick'
+                      ? 'φ(x₁,x₂) = (x₁, x₂, x₁²+x₂²), 3D Sheet: w₁x₁ + w₂x₂ + w₃(x₁²+x₂²) + b = 0'
+                      : svmKernel === 'poly'
+                        ? 'Polynomial: K(x,x\') = (γ x^T x\' + r)^d, f(x) = Σ α_i y_i (γ x_i^T x + r)^d + b'
+                        : svmKernel === 'rbf'
+                          ? 'Gaussian RBF: K(x,x\') = exp(-γ ‖x - x\'‖²), f(x) = Σ α_i y_i exp(-γ ‖x_i - x‖²) + b'
+                          : svmKernel === 'sigmoid'
+                            ? 'Sigmoid: K(x,x\') = tanh(γ x^T x\' + r), f(x) = Σ α_i y_i tanh(γ x_i^T x + r) + b'
+                            : 'Linear: min (1/2)‖w‖² + C Σ ξ_i s.t. y_i(w^T x_i + b) ≥ 1 - ξ_i'
+                )}
+                {selectedModel === 'decision_tree_split' && 'Gini(D) = 1 - Σ_{i=1}^C p_i², InfoGain = H(D) - H(D|A)'}
+                {selectedModel === 'naive_bayes' && 'P(C_k|x) ∝ P(C_k) Π_{j=1}^D (1/√(2πσ_{kj}²)) e^{-(x_j-μ_{kj})²/(2σ_{kj}²)}'}
+                {selectedModel === 'random_forest' && 'F(x) = (1/B) Σ_{b=1}^B T_b(x; Θ_b)'}
+                {selectedModel === 'gradient_boosting' && 'F_m(x) = F_{m-1}(x) + η Σ γ_{jm} I(x ∈ R_{jm})'}
+                {selectedModel === 'gan_minimax' && 'min_G max_D V(D,G) = E_{x~p_{data}}[log D(x)] + E_{z~p_z}[log(1 - D(G(z)))]'}
+                {selectedModel === 'ddpm_diffusion' && 'q(x_t|x_0) = N(x_t; √(ᾱ_t) x_0, (1 - ᾱ_t) I)'}
+                {selectedModel === 'vae_generative' && 'L(θ,φ; x) = E_{q_φ(z|x)}[log p_θ(x|z)] - β D_{KL}(q_φ(z|x) ‖ p(z))'}
+                {selectedModel === 'neural_mlp' && 'a^{(l)} = σ(W^{(l)} a^{(l-1)} + b^{(l)}), L(y, a^{(L)}) = -(1/N) Σ y log a + (1-y) log(1-a)'}
+                {selectedModel === 'backprop_autodiff' && '∂L/∂w_{ij}^{(l)} = (∂L/∂z_j^{(l)}) (∂z_j^{(l)}/∂w_{ij}^{(l)}) = δ_j^{(l)} a_i^{(l-1)}'}
+                {selectedModel === 'conv_operations' && (
+                  convMode === 'kernel_convolution'
+                    ? 'Conv: S(i,j) = ∑_m ∑_n I(i·s + m·d, j·s + n·d) K(m,n) + b, Dim: O = ⌊(W - K + 2P)/S⌋ + 1'
+                    : convMode === 'relu_and_pooling'
+                      ? 'ReLU: f(z) = max(0, z), Spatial Pooling: y(i,j) = max_{(m,n) ∈ W} x(i·s+m, j·s+n)'
+                      : convMode === 'deep_cnn_pipeline'
+                        ? 'Pipeline: Conv ➔ ReLU ➔ MaxPool ➔ Dense FC ➔ Softmax: P(y=c|x) = e^{z_c} / ∑ e^{z_j}'
+                        : 'ResNet: y = ReLU(F(x, {W_i}) + x), Backprop Gradient Highway: ∂ℒ/∂x = (∂ℒ/∂y) · (∂F/∂x + 1)'
+                )}
+                {selectedModel === 'seq_recurrent_gating' && 'f_t = σ(W_f x_t + U_f h_{t-1} + b_f), C_t = f_t ⊙ C_{t-1} + i_t ⊙ C̃_t'}
+                {selectedModel === 'transformer_architecture' && 'Encoder: x^{(l)} = LN(x^{(l-1)} + MHA(x^{(l-1)})), Decoder: y^{(l)} = LN(y^{(l-1)} + MaskedMHA + CrossAttn(y, x_{enc}))'}
+                {selectedModel === 'attention_mechanisms' && 'Attention(Q,K,V) = softmax(Q K^T / (√d_k · τ)) V, MultiHead(Q,K,V) = Concat(head_1, ..., head_h) W^O'}
+                {selectedModel === 'moe_architecture' && 'y = Σ_{i ∈ Top-k} Softmax(H(x))_i · E_i(x) + x,  H(x) = x · W_g + ε · Softplus(x · W_{noise})'}
+                {selectedModel === 'loss_surface_optimization' && 'w_{t+1} = w_t - η · m̂_t / (√v̂_t + ε), ∇L(w) = [∂L/∂w₁, ∂L/∂w₂]^T'}
+                {selectedModel === 'q_learning_rl' && 'Q(s,a) ← Q(s,a) + α [r + γ max_{a\'} Q(s\',a\') - Q(s,a)]'}
+              </div>
             </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary, #94a3b8)', fontFamily: 'monospace', lineHeight: 1.4 }}>
-              {selectedModel === 'pca_reduction' && 'S_v = (1/N) Σ (x_i - μ)(x_i - μ)^T, Av_k = λ_k v_k'}
-              {selectedModel === 'kmeans_clustering' && 'arg min_S Σ_{i=1}^k Σ_{x ∈ S_i} ‖x - μ_i‖²'}
-              {selectedModel === 'knn_classifier' && 'y_hat = mode({y_i : x_i ∈ N_k(x)})'}
-              {selectedModel === 'linear_regression' && (
-                linearViewMode === '3d_regression_plane'
-                  ? '3D Hyperplane: ŷ = w₁x₁ + w₂x₂ + b, Residual: e_i = y_i - ŷ_i, Normal Equation: w* = (X^T X)^{-1} X^T y'
-                  : linearViewMode === 'polynomial_curves'
-                    ? `Polynomial (deg ${linearPolyDegree}): ŷ = Σ_{k=0}^d w_k x^k, L_ridge = ‖y - Φ(x)w‖² + λ‖w‖_2²`
-                    : linearViewMode === 'residuals_analysis'
-                      ? 'Residuals & QQ: e_i = y_i - ŷ_i, R² = 1 - SS_res / SS_tot = 1 - (Σ(y_i - ŷ_i)² / Σ(y_i - ȳ)²)'
-                      : '1D OLS: ŷ = w₁x + b, L_ols = (1/2N) Σ(y_i - (w₁x_i + b))², w₁* = Cov(X,Y)/Var(X)'
-              )}
-              {selectedModel === 'logistic_regression' && (
-                logregViewMode === '3d_sigmoid_surface'
-                  ? '3D Surface: P(Y=1|x) = σ(w₁x₁ + w₂x₂ + b) = 1 / (1 + e^{-(w₁x₁ + w₂x₂ + b)}), Slicing Plane: Z = T'
-                  : logregViewMode === '1d_sigmoid_curve'
-                    ? '1D Curve: P(y=1|x) = 1 / (1 + e^{-(wx + b)}), Decision Boundary: x* = (logit(T) - b) / w'
-                    : logregViewMode === '2d_heatmap_boundary'
-                      ? (logregBoundaryType === 'polynomial'
-                          ? 'Polynomial: P = σ(w₁x₁ + w₂x₂ - 1.8‖x‖² + b) = T, Closed Non-Linear Loop'
-                          : 'Linear: w₁x₁ + w₂x₂ + b = ln(T / (1 - T)), ∇_w L = (1/N) X^T (σ(Xw) - y)')
-                      : 'Multinomial Softmax: P(y=k|x) = e^{(w_k^T x + b_k)/τ} / Σ e^{(w_j^T x + b_j)/τ}'
-              )}
-              {selectedModel === 'svm_classifier' && (
-                svmViewMode === '1d_parabola'
-                  ? 'φ(x) = (x, x²), Hyperplane: w₁·x + w₂·x² + b = 0'
-                  : svmViewMode === '3d_kernel_trick'
-                    ? 'φ(x₁,x₂) = (x₁, x₂, x₁²+x₂²), 3D Sheet: w₁x₁ + w₂x₂ + w₃(x₁²+x₂²) + b = 0'
-                    : svmKernel === 'poly'
-                      ? 'Polynomial: K(x,x\') = (γ x^T x\' + r)^d, f(x) = Σ α_i y_i (γ x_i^T x + r)^d + b'
-                      : svmKernel === 'rbf'
-                        ? 'Gaussian RBF: K(x,x\') = exp(-γ ‖x - x\'‖²), f(x) = Σ α_i y_i exp(-γ ‖x_i - x‖²) + b'
-                        : svmKernel === 'sigmoid'
-                          ? 'Sigmoid: K(x,x\') = tanh(γ x^T x\' + r), f(x) = Σ α_i y_i tanh(γ x_i^T x + r) + b'
-                          : 'Linear: min (1/2)‖w‖² + C Σ ξ_i s.t. y_i(w^T x_i + b) ≥ 1 - ξ_i'
-              )}
-              {selectedModel === 'decision_tree_split' && 'Gini(D) = 1 - Σ_{i=1}^C p_i², InfoGain = H(D) - H(D|A)'}
-              {selectedModel === 'naive_bayes' && 'P(C_k|x) ∝ P(C_k) Π_{j=1}^D (1/√(2πσ_{kj}²)) e^{-(x_j-μ_{kj})²/(2σ_{kj}²)}'}
-              {selectedModel === 'random_forest' && 'F(x) = (1/B) Σ_{b=1}^B T_b(x; Θ_b)'}
-              {selectedModel === 'gradient_boosting' && 'F_m(x) = F_{m-1}(x) + η Σ γ_{jm} I(x ∈ R_{jm})'}
-              {selectedModel === 'gan_minimax' && 'min_G max_D V(D,G) = E_{x~p_{data}}[log D(x)] + E_{z~p_z}[log(1 - D(G(z)))]'}
-              {selectedModel === 'ddpm_diffusion' && 'q(x_t|x_0) = N(x_t; √(ᾱ_t) x_0, (1 - ᾱ_t) I)'}
-              {selectedModel === 'vae_generative' && 'L(θ,φ; x) = E_{q_φ(z|x)}[log p_θ(x|z)] - β D_{KL}(q_φ(z|x) ‖ p(z))'}
-              {selectedModel === 'neural_mlp' && 'a^{(l)} = σ(W^{(l)} a^{(l-1)} + b^{(l)}), L(y, a^{(L)}) = -(1/N) Σ y log a + (1-y) log(1-a)'}
-              {selectedModel === 'backprop_autodiff' && '∂L/∂w_{ij}^{(l)} = (∂L/∂z_j^{(l)}) (∂z_j^{(l)}/∂w_{ij}^{(l)}) = δ_j^{(l)} a_i^{(l-1)}'}
-              {selectedModel === 'conv_operations' && (
-                convMode === 'kernel_convolution'
-                  ? 'Conv: S(i,j) = ∑_m ∑_n I(i·s + m·d, j·s + n·d) K(m,n) + b, Dim: O = ⌊(W - K + 2P)/S⌋ + 1'
-                  : convMode === 'relu_and_pooling'
-                    ? 'ReLU: f(z) = max(0, z), Spatial Pooling: y(i,j) = max_{(m,n) ∈ W} x(i·s+m, j·s+n)'
-                    : convMode === 'deep_cnn_pipeline'
-                      ? 'Pipeline: Conv ➔ ReLU ➔ MaxPool ➔ Dense FC ➔ Softmax: P(y=c|x) = e^{z_c} / ∑ e^{z_j}'
-                      : 'ResNet: y = ReLU(F(x, {W_i}) + x), Backprop Gradient Highway: ∂ℒ/∂x = (∂ℒ/∂y) · (∂F/∂x + 1)'
-              )}
-              {selectedModel === 'seq_recurrent_gating' && 'f_t = σ(W_f x_t + U_f h_{t-1} + b_f), C_t = f_t ⊙ C_{t-1} + i_t ⊙ C̃_t'}
-              {selectedModel === 'transformer_architecture' && 'Encoder: x^{(l)} = LN(x^{(l-1)} + MHA(x^{(l-1)})), Decoder: y^{(l)} = LN(y^{(l-1)} + MaskedMHA + CrossAttn(y, x_{enc}))'}
-              {selectedModel === 'attention_mechanisms' && 'Attention(Q,K,V) = softmax(Q K^T / (√d_k · τ)) V, MultiHead(Q,K,V) = Concat(head_1, ..., head_h) W^O'}
-              {selectedModel === 'moe_architecture' && 'y = Σ_{i ∈ Top-k} Softmax(H(x))_i · E_i(x) + x,  H(x) = x · W_g + ε · Softplus(x · W_{noise})'}
-              {selectedModel === 'loss_surface_optimization' && 'w_{t+1} = w_t - η · m̂_t / (√v̂_t + ε), ∇L(w) = [∂L/∂w₁, ∂L/∂w₂]^T'}
-              {selectedModel === 'q_learning_rl' && 'Q(s,a) ← Q(s,a) + α [r + γ max_{a\'} Q(s\',a\') - Q(s,a)]'}
-            </div>
-          </div>
+          )}
         </div>
+        )}
       </div>
     </div>
   );
