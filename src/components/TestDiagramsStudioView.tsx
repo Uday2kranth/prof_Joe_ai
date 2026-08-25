@@ -1492,6 +1492,7 @@ export const TestDiagramsStudioView: React.FC = () => {
   const [sliceHeightZ, setSliceHeightZ] = useState<number>(0.0);
   const [rotX, setRotX] = useState<number>(26);
   const [rotY, setRotY] = useState<number>(42);
+  const [zoom3D, setZoom3D] = useState<number>(1.0);
   const [shadingMode, setShadingMode] = useState<'solid' | 'wireframe' | 'both'>('solid');
   const [surfaceColormap, setSurfaceColormap] = useState<'cyberpunk' | 'plasma' | 'emerald' | 'sunset'>('cyberpunk');
   const [show3dAxes, setShow3dAxes] = useState<boolean>(true);
@@ -1569,17 +1570,17 @@ export const TestDiagramsStudioView: React.FC = () => {
     if (type === 'saddle') {
       const x = u;
       const y = v;
-      const baseZ = 0.55 * (u * u - v * v);
+      const baseZ = 0.42 * (u * u - v * v);
       const z = hasWave
-        ? baseZ * Math.cos(waveT * 1.2) + 0.16 * Math.sin(2.2 * u + waveT * 2.0) * Math.cos(2.2 * v)
+        ? baseZ * Math.cos(waveT * 1.2) + 0.14 * Math.sin(2.2 * u + waveT * 2.0) * Math.cos(2.2 * v)
         : baseZ;
       return { x, y, z };
     } else if (type === 'monkey') {
       const x = u;
       const y = v;
-      const baseZ = 0.32 * (Math.pow(u, 3) - 3 * u * Math.pow(v, 2));
+      const baseZ = 0.22 * (Math.pow(u, 3) - 3 * u * Math.pow(v, 2));
       const z = hasWave
-        ? 0.32 * ((Math.pow(u, 3) - 3 * u * Math.pow(v, 2)) * Math.cos(waveT * 1.2) + (3 * Math.pow(u, 2) * v - Math.pow(v, 3)) * Math.sin(waveT * 1.2))
+        ? 0.22 * ((Math.pow(u, 3) - 3 * u * Math.pow(v, 2)) * Math.cos(waveT * 1.2) + (3 * Math.pow(u, 2) * v - Math.pow(v, 3)) * Math.sin(waveT * 1.2))
         : baseZ;
       return { x, y, z };
     } else if (type === 'torus') {
@@ -1599,16 +1600,16 @@ export const TestDiagramsStudioView: React.FC = () => {
       const x = u;
       const y = v;
       const rawZ = Math.pow(u * u + v - 11, 2) + Math.pow(u + v * v - 7, 2);
-      const baseZ = 0.018 * rawZ - 1.2;
+      const baseZ = 0.014 * rawZ - 1.2;
       const z = hasWave
-        ? baseZ + 0.16 * Math.sin(2 * u + waveT * 1.8) * Math.sin(2 * v + waveT * 1.4)
+        ? baseZ + 0.14 * Math.sin(2 * u + waveT * 1.8) * Math.sin(2 * v + waveT * 1.4)
         : baseZ;
       return { x, y, z };
     } else {
       // 4D Hyperplane Slicing: z = (x^2 - y^2) * cos(w) + 2xy * sin(w)
       const x = u;
       const y = v;
-      const baseZ = 0.48 * ((u * u - v * v) * Math.cos(w) + 2 * u * v * Math.sin(w));
+      const baseZ = 0.42 * ((u * u - v * v) * Math.cos(w) + 2 * u * v * Math.sin(w));
       const z = hasWave
         ? baseZ + 0.14 * Math.sin(2 * u + waveT * 2.2) * Math.cos(2 * v)
         : baseZ;
@@ -1775,11 +1776,11 @@ export const TestDiagramsStudioView: React.FC = () => {
       const y2 = y * cosX - z1 * sinX;
       const z2 = y * sinX + z1 * cosX;
 
-      const dist = 5.5;
-      const scale = 160;
+      const dist = 7.5;
+      const baseScale = Math.min(width, height) * 0.165 * zoom3D;
       const factor = dist / (z2 + dist);
-      const px = cx + x1 * factor * scale;
-      const py = cy - y2 * factor * scale;
+      const px = cx + x1 * factor * baseScale;
+      const py = cy - y2 * factor * baseScale;
 
       return { px, py, zDepth: z2 };
     };
@@ -2192,7 +2193,7 @@ export const TestDiagramsStudioView: React.FC = () => {
 
     ctx.restore();
 
-  }, [activeModuleId, surfaceType, hyperW, autoSlice4D, showSlicePlane, sliceHeightZ, rotX, rotY, shadingMode, surfaceColormap, show3dAxes, showFloorGrid, meshResolution, currentCanvasTheme, isBendingAnim, timeT, surfaceTelemetry, showRollingBall, ballPhysicsTick]);
+  }, [activeModuleId, surfaceType, hyperW, autoSlice4D, showSlicePlane, sliceHeightZ, rotX, rotY, zoom3D, shadingMode, surfaceColormap, show3dAxes, showFloorGrid, meshResolution, currentCanvasTheme, isBendingAnim, timeT, surfaceTelemetry, showRollingBall, ballPhysicsTick]);
 
   // ─────────────────────────────────────────────────────────────────────────────
   // 9. PHASE 7: VECTOR FIELDS & PHASE SPACE ORBITS
@@ -5168,6 +5169,7 @@ export const TestDiagramsStudioView: React.FC = () => {
                 )}
                 <DualParamControl label="Pitch Angle (Rx):" value={rotX} min={-80} max={80} step={2} onChange={setRotX} color="#38bdf8" />
                 <DualParamControl label="Yaw Angle (Ry):" value={rotY} min={-180} max={180} step={2} onChange={setRotY} color="#34d399" />
+                <DualParamControl label="View Zoom:" value={zoom3D} min={0.5} max={2.2} step={0.05} onChange={setZoom3D} color="#a855f7" />
                 <DualParamControl label="Mesh Density (N):" value={meshResolution} min={16} max={36} step={2} precision={0} onChange={setMeshResolution} color="#fbbf24" />
 
                 {/* 4. Layer Visibility Toggles */}
@@ -7475,6 +7477,10 @@ export const TestDiagramsStudioView: React.FC = () => {
           {activeModuleId === 'mathbox_3d' && (
             <div
               style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', touchAction: 'none' }}
+              onWheel={(e) => {
+                e.preventDefault();
+                setZoom3D(prev => Math.max(0.4, Math.min(2.5, Number((prev - e.deltaY * 0.0015).toFixed(2)))));
+              }}
               onMouseDown={(e) => {
                 setIsDragging3D(true);
                 dragStartRef.current = { x: e.clientX, y: e.clientY, rx: rotX, ry: rotY };
