@@ -37,7 +37,6 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
   }, [selectedProviderId]);
 
   const activeApiKey = useMemo(() => {
-    if (selectedProviderId === 'pollinations-keyless') return 'keyless_anonymous';
     const keyProp = selectedProviderId.replace('-keyed', '') as keyof UserKeys;
     const rawVal = userKeys ? userKeys[keyProp] : '';
     return typeof rawVal === 'string' ? rawVal : (rawVal ? String(rawVal) : '');
@@ -175,7 +174,7 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
             const isSelected = p.id === selectedProviderId;
             const provModels = customModels[p.id] || p.models;
             const provKey = userKeys ? (userKeys as any)[p.id.replace('-keyed', '')] : '';
-            const isConfigured = p.id === 'pollinations-keyless' || Boolean(provKey);
+            const isConfigured = Boolean(provKey);
 
             return (
               <button
@@ -328,11 +327,11 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
             padding: '4px 10px',
             borderRadius: '20px',
             fontWeight: 600,
-            background: hasApiKey ? 'rgba(34, 197, 94, 0.15)' : 'rgba(234, 179, 8, 0.15)',
-            color: hasApiKey ? '#4ade80' : '#facc15',
-            border: `1px solid ${hasApiKey ? 'rgba(34, 197, 94, 0.3)' : 'rgba(234, 179, 8, 0.3)'}`
+            background: hasApiKey ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+            color: hasApiKey ? '#4ade80' : '#f87171',
+            border: `1px solid ${hasApiKey ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
           }}>
-            {selectedProviderId === 'pollinations-keyless' ? '🟢 Keyless Free' : hasApiKey ? '🟢 Key Configured' : '🟡 Key Optional'}
+            {hasApiKey ? '🟢 Key Configured' : '🔴 Key Required'}
           </span>
 
           <button

@@ -426,7 +426,7 @@ GENERAL AI ASSISTANT DIRECTIVES:
         endpoint = 'https://api.poolside.ai/v1/chat/completions';
     } else if (targetProvider === "local_endpoint" || targetProvider === "local") {
         endpoint = req.headers['x-user-local-endpoint'] || process.env.LOCAL_ENDPOINT || 'http://127.0.0.1:11434/v1/chat/completions';
-    } else if (targetProvider === "pollinations" || targetProvider === "pollinations-keyed" || targetProvider === "pollinations-keyless") {
+    } else if (targetProvider === "pollinations" || targetProvider === "pollinations-keyed") {
         endpoint = 'https://gen.pollinations.ai/v1/chat/completions';
     } else if (targetProvider === "ollama") {
         endpoint = 'https://ollama.com/v1/chat/completions';
@@ -584,18 +584,14 @@ Diagram generation and visual image embeddings are strictly turned OFF by user s
                 "Content-Type": "application/json"
             };
 
-            if (targetProvider === "pollinations-keyless" || currentKey === 'keyless_anonymous') {
-                delete headers["Authorization"];
-            } else if (targetProvider === "pollinations-keyed" || targetProvider === "pollinations") {
-                if (currentKey && currentKey !== 'keyless_anonymous') {
-                    headers["Authorization"] = `Bearer ${currentKey}`;
-                } else {
-                    delete headers["Authorization"];
-                }
+            if (targetProvider === "pollinations-keyed" || targetProvider === "pollinations") {
+                headers["Authorization"] = `Bearer ${currentKey}`;
             } else if (targetProvider === "opencode") {
                 headers["Authorization"] = `Bearer ${currentKey}`;
                 headers["x-api-key"] = currentKey;
                 headers["api-key"] = currentKey;
+            } else if (targetProvider === "local_endpoint" || targetProvider === "local") {
+                delete headers["Authorization"];
             } else {
                 headers["Authorization"] = `Bearer ${currentKey}`;
             }
@@ -603,31 +599,15 @@ Diagram generation and visual image embeddings are strictly turned OFF by user s
             // OpenRouter optional tracking headers
             if (targetProvider === "openrouter") {
                 headers["HTTP-Referer"] = "https://chatterbot-dashboard.vercel.app";
-                headers["X-Title"] = "ChatterBot Dashboard";
+                headers["X-Title"] = "Prof Joe AI";
             }
 
-            // Clean model ID from prefixes (e.g. models/gemini-3.7-flash -> gemini-3.7-flash)
-            let cleanModel = (model || '').replace(/^models\//, '').trim();
+            // Clean model ID from prefixes (e.g. models/gemini-2.5-flash -> gemini-2.5-flash)
+            const cleanModel = (model || '').replace(/^models\//, '').trim();
+            const targetModel = cleanModel;
 
-            // Strict single model selection with smart alias resolution for Gemini
-            let modelCandidates = [cleanModel];
-            if (targetProvider === "gemini") {
-                // Map deprecated gemini-2.5-flash and older models to gemini-3.6-flash / 3.7-flash
-                if (cleanModel === 'gemini-2.5-flash' || cleanModel === 'gemini-1.5-flash' || cleanModel === 'gemini-2.0-flash' || cleanModel === 'gemini-flash') {
-                    cleanModel = 'gemini-3.6-flash';
-                }
-                if (cleanModel === 'gemini-3.7-flash' || cleanModel === 'gemini-3.6-flash' || cleanModel === 'gemini-3.5-flash' || cleanModel === 'gemini-3.5-flash-lite') {
-                    modelCandidates = [cleanModel, 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
-                } else if (cleanModel.startsWith('gemma-4')) {
-                    modelCandidates = [cleanModel, 'gemma-4-31b-it', 'gemma-4-26b-a4b-it', 'gemini-3.6-flash'];
-                } else {
-                    modelCandidates = [cleanModel, 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.5-flash'];
-                }
-            }
-
-            for (const targetModel of modelCandidates) {
-                try {
-                    let response;
+            try {
+                let response;
 
                     if (targetProvider === "poolside") {
                         // Poolside Laguna Model Multi-Bridge Router (NaraRouter, Pollinations, OpenCode, OpenRouter)
@@ -783,34 +763,6 @@ Diagram generation and visual image embeddings are strictly turned OFF by user s
                                 lastErrorText = `Ollama Cloud Connection Error: ${errEp?.message || 'Connection refused'}`;
                             }
                         }
-
-                        if (!ollamaSuccess) {
-                            // Automatic Seamless Fallback to Free OpenRouter / Pollinations Inference Engine
-                            try {
-                                const fbModel = "openai/gpt-4o-mini";
-                                const fbRes = await fetch("https://openrouter.ai/api/v1/chat/completions", {
-                                    method: "POST",
-                                    headers: {
-                                        "Content-Type": "application/json",
-                                        "Authorization": `Bearer ${process.env.OPENROUTER_API_KEY || ''}`,
-                                        "HTTP-Referer": "https://chatterbot-dashboard.vercel.app",
-                                        "X-Title": "ChatterBot Dashboard"
-                                    },
-                                    body: JSON.stringify({
-                                        model: fbModel,
-                                        messages: apiMessages,
-                                        temperature: targetTemperature,
-                                        max_tokens: targetMaxTokens
-                                    })
-                                });
-                                if (fbRes.ok) {
-                                    responsePayload = await fbRes.json();
-                                    successfulModel = `${fbModel} (Ollama Fallback)`;
-                                    break;
-                                }
-                            } catch (eFb) {}
-                        }
-
                         if (ollamaSuccess && responsePayload) break;
                     } else if (targetProvider === "local") {
                         // Slot 2: Local Device Hardware Inference Engine (LM Studio / Local Ollama / vLLM / TextGenWebUI)
@@ -939,10 +891,9 @@ Diagram generation and visual image embeddings are strictly turned OFF by user s
                     lastStatus = 500;
                     console.error(`Key rotation: Network error on key index ${i}:`, err);
                 }
-            }
 
-            if (responsePayload) break;
-        }
+                if (responsePayload) break;
+            }
 
         if (!responsePayload) {
             return res.status(lastStatus).json({ 

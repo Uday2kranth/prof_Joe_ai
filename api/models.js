@@ -23,7 +23,7 @@ export default async function handler(req, res) {
 
         const keyStr = typeof apiKey === 'string' ? apiKey : (apiKey ? String(apiKey) : '');
 
-        if (keyStr && keyStr !== 'keyless_anonymous') {
+        if (keyStr) {
             const firstKey = keyStr.split(',')[0].trim();
             headers['Authorization'] = `Bearer ${firstKey}`;
             headers['x-api-key'] = firstKey;
@@ -37,7 +37,7 @@ export default async function handler(req, res) {
             case 'pollinations':
             case 'pollinations-keyed':
                 fetchUrl = 'https://gen.pollinations.ai/v1/models';
-                if (keyStr && keyStr !== 'keyless_anonymous') {
+                if (keyStr) {
                     headers['Authorization'] = `Bearer ${keyStr.split(',')[0].trim()}`;
                 }
                 break;
