@@ -1541,7 +1541,8 @@ export const TestDiagramsStudioView: React.FC = () => {
   const resetBall = (randomize = false) => {
     const rx = randomize ? (Math.random() * 2.8 - 1.4) : -1.3;
     const ry = randomize ? (Math.random() * 2.8 - 1.4) : 1.1;
-    const pz = eval3DSurface(rx, ry, surfaceType, surfaceTelemetry.effectiveW).z;
+    const effectiveW = surfaceType === 'hyper_4d' ? (autoSlice4D || isBendingAnim ? hyperW + timeT * 0.7 : hyperW) : 0;
+    const pz = eval3DSurface(rx, ry, surfaceType, effectiveW, timeT, isBendingAnim).z;
     ballPhysicsRef.current = {
       x: rx,
       y: ry,
@@ -1557,41 +1558,68 @@ export const TestDiagramsStudioView: React.FC = () => {
     setBallPhysicsTick(prev => prev + 1);
   };
 
-  // Surface Mathematical Coordinate & Height Evaluator
-  const eval3DSurface = (u: number, v: number, type: 'saddle' | 'monkey' | 'torus' | 'mobius' | 'himmelblau' | 'hyper_4d', w: number) => {
+  // Auto-reset physics ball when switching 3D surface geometries
+  useEffect(() => {
+    if (activeModuleId === 'mathbox_3d') {
+      resetBall(true);
+    }
+  }, [surfaceType, activeModuleId]);
+
+  // Surface Mathematical Coordinate & Height Evaluator with Harmonic Wave Dynamics
+  const eval3DSurface = (
+    u: number,
+    v: number,
+    type: 'saddle' | 'monkey' | 'torus' | 'mobius' | 'himmelblau' | 'hyper_4d',
+    w: number,
+    waveT: number = 0,
+    hasWave: boolean = false
+  ) => {
     if (type === 'saddle') {
       const x = u;
       const y = v;
-      const z = 0.55 * (u * u - v * v);
+      const baseZ = 0.55 * (u * u - v * v);
+      const z = hasWave
+        ? baseZ * Math.cos(waveT * 1.2) + 0.16 * Math.sin(2.2 * u + waveT * 2.0) * Math.cos(2.2 * v)
+        : baseZ;
       return { x, y, z };
     } else if (type === 'monkey') {
       const x = u;
       const y = v;
-      const z = 0.32 * (Math.pow(u, 3) - 3 * u * Math.pow(v, 2));
+      const baseZ = 0.32 * (Math.pow(u, 3) - 3 * u * Math.pow(v, 2));
+      const z = hasWave
+        ? 0.32 * ((Math.pow(u, 3) - 3 * u * Math.pow(v, 2)) * Math.cos(waveT * 1.2) + (3 * Math.pow(u, 2) * v - Math.pow(v, 3)) * Math.sin(waveT * 1.2))
+        : baseZ;
       return { x, y, z };
     } else if (type === 'torus') {
-      const R = 1.35;
-      const r = 0.55;
+      const R = hasWave ? 1.35 + 0.22 * Math.sin(waveT * 1.6) : 1.35;
+      const r = hasWave ? 0.55 + 0.14 * Math.cos(waveT * 1.6) : 0.55;
       const x = (R + r * Math.cos(v)) * Math.cos(u);
       const y = (R + r * Math.cos(v)) * Math.sin(u);
       const z = r * Math.sin(v);
       return { x, y, z };
     } else if (type === 'mobius') {
-      const x = (1 + (v / 2) * Math.cos(u / 2)) * Math.cos(u);
-      const y = (1 + (v / 2) * Math.cos(u / 2)) * Math.sin(u);
-      const z = (v / 2) * Math.sin(u / 2);
+      const twist = hasWave ? u + waveT * 1.4 : u;
+      const x = (1 + (v / 2) * Math.cos(twist / 2)) * Math.cos(u);
+      const y = (1 + (v / 2) * Math.cos(twist / 2)) * Math.sin(u);
+      const z = (v / 2) * Math.sin(twist / 2);
       return { x, y, z };
     } else if (type === 'himmelblau') {
       const x = u;
       const y = v;
       const rawZ = Math.pow(u * u + v - 11, 2) + Math.pow(u + v * v - 7, 2);
-      const z = 0.018 * rawZ - 1.2;
+      const baseZ = 0.018 * rawZ - 1.2;
+      const z = hasWave
+        ? baseZ + 0.16 * Math.sin(2 * u + waveT * 1.8) * Math.sin(2 * v + waveT * 1.4)
+        : baseZ;
       return { x, y, z };
     } else {
       // 4D Hyperplane Slicing: z = (x^2 - y^2) * cos(w) + 2xy * sin(w)
       const x = u;
       const y = v;
-      const z = 0.48 * ((u * u - v * v) * Math.cos(w) + 2 * u * v * Math.sin(w));
+      const baseZ = 0.48 * ((u * u - v * v) * Math.cos(w) + 2 * u * v * Math.sin(w));
+      const z = hasWave
+        ? baseZ + 0.14 * Math.sin(2 * u + waveT * 2.2) * Math.cos(2 * v)
+        : baseZ;
       return { x, y, z };
     }
   };
@@ -1654,7 +1682,7 @@ export const TestDiagramsStudioView: React.FC = () => {
 
   // Mathematical Curvature & Hessian Telemetry for Active 3D/4D Manifold
   const surfaceTelemetry = useMemo(() => {
-    const effectiveW = surfaceType === 'hyper_4d' ? (autoSlice4D ? hyperW + timeT * 0.6 : hyperW) : 0;
+    const effectiveW = surfaceType === 'hyper_4d' ? (autoSlice4D || isBendingAnim ? hyperW + timeT * 0.7 : hyperW) : 0;
 
     let equationLatex = '';
     let description = '';
@@ -1662,32 +1690,32 @@ export const TestDiagramsStudioView: React.FC = () => {
     let fxx = 0, fyy = 0, fxy = 0;
 
     if (surfaceType === 'saddle') {
-      equationLatex = 'z = 0.55 · (x² - y²)';
-      description = 'Hyperbolic Paraboloid (Minimax saddle point at origin)';
+      equationLatex = isBendingAnim ? 'z = 0.55(x² - y²)cos(ωt) + 0.16sin(2.2x+2ωt)cos(2.2y)' : 'z = 0.55 · (x² - y²)';
+      description = isBendingAnim ? 'Harmonic Breathing Hyperbolic Paraboloid (Wave Active)' : 'Hyperbolic Paraboloid (Minimax saddle point at origin)';
       fxx = 1.1; fyy = -1.1; fxy = 0;
       criticalPointInfo = 'Saddle Point at (0, 0): det(H) = -1.21 < 0';
     } else if (surfaceType === 'monkey') {
-      equationLatex = 'z = 0.32 · (x³ - 3xy²)';
-      description = 'Monkey Saddle (3 downward troughs & 3 upward ridges)';
+      equationLatex = isBendingAnim ? 'z = 0.32[(x³ - 3xy²)cos(ωt) + (3x²y - y³)sin(ωt)]' : 'z = 0.32 · (x³ - 3xy²)';
+      description = isBendingAnim ? 'Rotating Tri-Ridge Monkey Saddle (Wave Active)' : 'Monkey Saddle (3 downward troughs & 3 upward ridges)';
       fxx = 0; fyy = 0; fxy = 0;
       criticalPointInfo = 'Monkey Saddle at (0, 0): det(H) = 0 (Degenerate Tri-Saddle)';
     } else if (surfaceType === 'torus') {
-      equationLatex = '(√(x² + y²) - R)² + z² = r²';
-      description = 'Parametric Torus (Genus-1 compact manifold, R=1.35, r=0.55)';
+      equationLatex = '(√(x² + y²) - R(t))² + z² = r(t)²';
+      description = isBendingAnim ? 'Pulsating Torus (Dynamic Tube Breathing & Knot Geodesic)' : 'Parametric Torus (Genus-1 compact manifold, R=1.35, r=0.55)';
       criticalPointInfo = 'Outer equator: Elliptic (K > 0) • Inner ring: Hyperbolic (K < 0)';
     } else if (surfaceType === 'mobius') {
-      equationLatex = 'x(u,v) = (1 + ½v·cos½u)cos u,  z = ½v·sin½u';
-      description = 'Möbius Strip (Non-orientable manifold with 180° half-twist)';
+      equationLatex = 'x(u,v) = (1 + ½v·cos½θ)cos u,  θ = u + ωt';
+      description = isBendingAnim ? 'Dynamic Traveling Half-Twist Möbius Strip (Wave Active)' : 'Möbius Strip (Non-orientable manifold with 180° half-twist)';
       criticalPointInfo = 'One-sided boundary curve, Euler characteristic χ = 0';
     } else if (surfaceType === 'himmelblau') {
-      equationLatex = 'f(x,y) = (x² + y - 11)² + (x + y² - 7)²';
-      description = 'Himmelblau Multi-Modal Optimization Surface (4 global minima)';
+      equationLatex = 'f(x,y) = (x² + y - 11)² + (x + y² - 7)² + Ψ(t)';
+      description = isBendingAnim ? 'Oscillating Himmelblau 4-Well Potential Landscape' : 'Himmelblau Multi-Modal Optimization Surface (4 global minima)';
       fxx = 14; fyy = 2; fxy = 4;
       criticalPointInfo = '4 Global Minima: f(x*, y*) = 0 • 1 Local Max • 4 Saddles';
     } else {
       const wDeg = (((effectiveW % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) * (180 / Math.PI)).toFixed(0);
       equationLatex = `z = 0.48 · [(x² - y²)cos(w) + 2xy·sin(w)],  w=${wDeg}°`;
-      description = '4D Hyper-Saddle sliced by 3D Hyperplane w = w(t)';
+      description = isBendingAnim ? '4D Hyper-Saddle Sliced with Propagating Hyper-Wave' : '4D Hyper-Saddle sliced by 3D Hyperplane w = w(t)';
       fxx = 0.96 * Math.cos(effectiveW);
       fyy = -0.96 * Math.cos(effectiveW);
       fxy = 0.96 * Math.sin(effectiveW);
@@ -1705,7 +1733,7 @@ export const TestDiagramsStudioView: React.FC = () => {
       : 'Degenerate Critical Flat (det H = 0)';
 
     return { equationLatex, description, criticalPointInfo, fxx, fyy, fxy, detH, curvatureClass, effectiveW };
-  }, [surfaceType, hyperW, autoSlice4D, timeT]);
+  }, [surfaceType, hyperW, autoSlice4D, isBendingAnim, timeT]);
 
   // 3D Canvas Rendering Loop
   useEffect(() => {
@@ -1739,8 +1767,9 @@ export const TestDiagramsStudioView: React.FC = () => {
     ctx.fillStyle = currentCanvasTheme.bg || '#090d16';
     ctx.fillRect(0, 0, width, height);
 
-    // Dynamic 4D Slice Angle
-    const effectiveW = surfaceType === 'hyper_4d' ? (autoSlice4D ? hyperW + timeT * 0.6 : hyperW) : hyperW;
+    // Dynamic 4D Slice Angle & Dynamic Slicing Height
+    const effectiveW = surfaceType === 'hyper_4d' ? (autoSlice4D || isBendingAnim ? hyperW + timeT * 0.7 : hyperW) : hyperW;
+    const effectiveSliceZ = isBendingAnim && showSlicePlane ? sliceHeightZ + 0.65 * Math.sin(timeT * 1.5) : sliceHeightZ;
 
     // Rotation Matrix: Yaw (rotY) then Pitch (rotX)
     const radY = (rotY * Math.PI) / 180;
@@ -1837,7 +1866,7 @@ export const TestDiagramsStudioView: React.FC = () => {
       const u = uMin + (i / N) * (uMax - uMin);
       for (let j = 0; j <= N; j++) {
         const v = vMin + (j / N) * (vMax - vMin);
-        const pt = eval3DSurface(u, v, surfaceType, effectiveW);
+        const pt = eval3DSurface(u, v, surfaceType, effectiveW, timeT, isBendingAnim);
         const proj = project(pt.x, pt.z, pt.y);
         grid[i][j] = { x: pt.x, y: pt.y, z: pt.z, px: proj.px, py: proj.py, zDepth: proj.zDepth };
         if (pt.z < minZ) minZ = pt.z;
@@ -1901,11 +1930,11 @@ export const TestDiagramsStudioView: React.FC = () => {
           edges.forEach(([ea, eb]) => {
             const zMinE = Math.min(ea.z, eb.z);
             const zMaxE = Math.max(ea.z, eb.z);
-            if (sliceHeightZ >= zMinE && sliceHeightZ <= zMaxE && Math.abs(eb.z - ea.z) > 1e-5) {
-              const t = (sliceHeightZ - ea.z) / (eb.z - ea.z);
+            if (effectiveSliceZ >= zMinE && effectiveSliceZ <= zMaxE && Math.abs(eb.z - ea.z) > 1e-5) {
+              const t = (effectiveSliceZ - ea.z) / (eb.z - ea.z);
               const ix = ea.x + t * (eb.x - ea.x);
               const iy = ea.y + t * (eb.y - ea.y);
-              const proj = project(ix, sliceHeightZ, iy);
+              const proj = project(ix, effectiveSliceZ, iy);
               isoclinePts.push({ px: proj.px, py: proj.py });
             }
           });
@@ -1961,10 +1990,10 @@ export const TestDiagramsStudioView: React.FC = () => {
 
     // 6. Draw Horizontal Slicing Plane
     if (showSlicePlane) {
-      const sp0 = project(-2.2, sliceHeightZ, -2.2);
-      const sp1 = project(2.2, sliceHeightZ, -2.2);
-      const sp2 = project(2.2, sliceHeightZ, 2.2);
-      const sp3 = project(-2.2, sliceHeightZ, 2.2);
+      const sp0 = project(-2.2, effectiveSliceZ, -2.2);
+      const sp1 = project(2.2, effectiveSliceZ, -2.2);
+      const sp2 = project(2.2, effectiveSliceZ, 2.2);
+      const sp3 = project(-2.2, effectiveSliceZ, 2.2);
 
       ctx.beginPath();
       ctx.moveTo(sp0.px, sp0.py);
@@ -1983,7 +2012,7 @@ export const TestDiagramsStudioView: React.FC = () => {
 
       ctx.fillStyle = '#fbbf24';
       ctx.font = 'bold 9.5px monospace';
-      ctx.fillText(`Slice z₀ = ${sliceHeightZ.toFixed(2)}`, sp1.px + 6, sp1.py);
+      ctx.fillText(`Slice z₀ = ${effectiveSliceZ.toFixed(2)}${isBendingAnim ? ' (Wave Oscillating)' : ''}`, sp1.px + 6, sp1.py);
     }
 
     // 7. Draw 3D Axes Triad & Corner 3D Orientation Gizmo
@@ -2003,100 +2032,93 @@ export const TestDiagramsStudioView: React.FC = () => {
       ctx.beginPath(); ctx.moveTo(origin.px, origin.py); ctx.lineTo(negZ.px, negZ.py); ctx.stroke();
       ctx.setLineDash([]);
 
-      // Positive bold axes with arrow tips
-      const axisX = project(2.3, 0, 0);
-      const axisY = project(0, 0, 2.3);
-      const axisZ = project(0, 2.3, 0);
+      // Positive illuminated solid axes with distinct colors
+      // X-Axis (Red / Coral)
+      const posX = project(2.3, 0, 0);
+      ctx.strokeStyle = '#f87171';
+      ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.moveTo(origin.px, origin.py); ctx.lineTo(posX.px, posX.py); ctx.stroke();
+      ctx.fillStyle = '#f87171';
+      ctx.font = 'bold 10px monospace';
+      ctx.fillText('+X (u)', posX.px + 5, posX.py + 3);
 
-      // X Axis (Emerald)
-      ctx.lineWidth = 2.8;
+      // Y-Axis (Green / Emerald)
+      const posY = project(0, 0, 2.3);
       ctx.strokeStyle = '#34d399';
-      ctx.beginPath(); ctx.moveTo(origin.px, origin.py); ctx.lineTo(axisX.px, axisX.py); ctx.stroke();
+      ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.moveTo(origin.px, origin.py); ctx.lineTo(posY.px, posY.py); ctx.stroke();
       ctx.fillStyle = '#34d399';
-      ctx.beginPath(); ctx.arc(axisX.px, axisX.py, 4, 0, 2 * Math.PI); ctx.fill();
-      ctx.font = 'bold 11px monospace';
-      ctx.fillText('+X', axisX.px + 6, axisX.py + 4);
+      ctx.font = 'bold 10px monospace';
+      ctx.fillText('+Y (v)', posY.px + 5, posY.py + 3);
 
-      // Y Axis (Cyan Depth)
+      // Z-Axis (Cyan / Sky)
+      const posZ = project(0, 2.3, 0);
       ctx.strokeStyle = '#38bdf8';
-      ctx.beginPath(); ctx.moveTo(origin.px, origin.py); ctx.lineTo(axisY.px, axisY.py); ctx.stroke();
+      ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.moveTo(origin.px, origin.py); ctx.lineTo(posZ.px, posZ.py); ctx.stroke();
       ctx.fillStyle = '#38bdf8';
-      ctx.beginPath(); ctx.arc(axisY.px, axisY.py, 4, 0, 2 * Math.PI); ctx.fill();
-      ctx.fillText('+Y', axisY.px + 6, axisY.py + 4);
+      ctx.font = 'bold 10px monospace';
+      ctx.fillText('+Z (f)', posZ.px - 6, posZ.py - 6);
 
-      // Z Axis (Gold Height)
-      ctx.strokeStyle = '#fbbf24';
-      ctx.beginPath(); ctx.moveTo(origin.px, origin.py); ctx.lineTo(axisZ.px, axisZ.py); ctx.stroke();
-      ctx.fillStyle = '#fbbf24';
-      ctx.beginPath(); ctx.arc(axisZ.px, axisZ.py, 4, 0, 2 * Math.PI); ctx.fill();
-      ctx.fillText('+Z', axisZ.px - 6, axisZ.py - 6);
+      // 7b. Fixed Bottom-Right 3D Orientation Mini-Gizmo
+      const gizmoCX = width - 42;
+      const gizmoCY = height - 42;
+      const gLen = 22;
 
-      // Origin Point
-      ctx.fillStyle = '#ffffff';
-      ctx.beginPath(); ctx.arc(origin.px, origin.py, 3.5, 0, 2 * Math.PI); ctx.fill();
+      const gx = gizmoCX + gLen * cosY;
+      const gy = gizmoCY - gLen * sinY * sinX;
+      ctx.strokeStyle = '#f87171';
+      ctx.lineWidth = 2.0;
+      ctx.beginPath(); ctx.moveTo(gizmoCX, gizmoCY); ctx.lineTo(gx, gy); ctx.stroke();
+      ctx.fillStyle = '#f87171';
+      ctx.font = 'bold 8.5px monospace';
+      ctx.fillText('X', gx + 3, gy + 3);
 
-      // 7b. Corner 3D Orientation Gizmo (Top-Right Glass Disc)
-      const gizmoCx = width - 42;
-      const gizmoCy = 42;
-      const gR = 24;
-
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
-      ctx.strokeStyle = 'rgba(56, 189, 248, 0.45)';
-      ctx.lineWidth = 1.2;
-      ctx.beginPath(); ctx.arc(gizmoCx, gizmoCy, gR, 0, 2 * Math.PI); ctx.fill(); ctx.stroke();
-
-      const gLen = 17;
-      const gx1 = cosY * gLen;
-      const gz1 = -sinY * gLen;
-      const gy2_x = -gz1 * sinX;
-      const gxTip = { px: gizmoCx + gx1, py: gizmoCy - gy2_x };
-
-      const yx1 = sinY * gLen;
-      const yz1 = cosY * gLen;
-      const gy2_y = -yz1 * sinX;
-      const gyTip = { px: gizmoCx + yx1, py: gizmoCy - gy2_y };
-
-      const gzTip = { px: gizmoCx, py: gizmoCy - cosX * gLen };
-
-      // Draw Gizmo Vectors
-      ctx.lineWidth = 2.2;
-      ctx.strokeStyle = '#34d399';
-      ctx.beginPath(); ctx.moveTo(gizmoCx, gizmoCy); ctx.lineTo(gxTip.px, gxTip.py); ctx.stroke();
-      ctx.fillStyle = '#34d399'; ctx.font = 'bold 8.5px monospace'; ctx.fillText('X', gxTip.px + 2, gxTip.py + 3);
-
+      const hy = gizmoCY - gLen * cosX;
       ctx.strokeStyle = '#38bdf8';
-      ctx.beginPath(); ctx.moveTo(gizmoCx, gizmoCy); ctx.lineTo(gyTip.px, gyTip.py); ctx.stroke();
-      ctx.fillStyle = '#38bdf8'; ctx.fillText('Y', gyTip.px + 2, gyTip.py + 3);
+      ctx.lineWidth = 2.0;
+      ctx.beginPath(); ctx.moveTo(gizmoCX, gizmoCY); ctx.lineTo(gizmoCX, hy); ctx.stroke();
+      ctx.fillStyle = '#38bdf8';
+      ctx.fillText('Z', gizmoCX - 3, hy - 4);
 
-      ctx.strokeStyle = '#fbbf24';
-      ctx.beginPath(); ctx.moveTo(gizmoCx, gizmoCy); ctx.lineTo(gzTip.px, gzTip.py); ctx.stroke();
-      ctx.fillStyle = '#fbbf24'; ctx.fillText('Z', gzTip.px - 3, gzTip.py - 3);
+      const kx = gizmoCX - gLen * sinY;
+      const ky = gizmoCY - gLen * cosY * sinX;
+      ctx.strokeStyle = '#34d399';
+      ctx.lineWidth = 2.0;
+      ctx.beginPath(); ctx.moveTo(gizmoCX, gizmoCY); ctx.lineTo(kx, ky); ctx.stroke();
+      ctx.fillStyle = '#34d399';
+      ctx.fillText('Y', kx + 3, ky + 3);
+
+      ctx.fillStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(gizmoCX, gizmoCY, 2.5, 0, 2 * Math.PI); ctx.fill();
     }
 
-    // 8. Draw 3D Gradient Descent Rolling Particle / Geodesic Orbit & Traced Path
+    // 8. Draw 3D Gradient Descent Rolling Ball / Geodesic Particle
     const phys = ballPhysicsRef.current;
-    if (showRollingBall && phys.history.length > 0) {
-      // 8a. Traced Trajectory Ribbon
-      if (phys.history.length > 1) {
-        ctx.beginPath();
-        phys.history.forEach((pt, pIdx) => {
-          const proj = project(pt.x, pt.z, pt.y);
-          if (pIdx === 0) ctx.moveTo(proj.px, proj.py);
-          else ctx.lineTo(proj.px, proj.py);
-        });
+    if (showRollingBall && phys) {
+      // 8a. History Trajectory Ribbon (Trailing Path)
+      if (phys.history.length >= 2) {
         ctx.strokeStyle = surfaceType === 'torus' || surfaceType === 'mobius' ? '#38bdf8' : '#fbbf24';
-        ctx.lineWidth = 3.2;
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        for (let h = 0; h < phys.history.length; h++) {
+          const hp = phys.history[h];
+          const hProj = project(hp.x, hp.z, hp.y);
+          if (h === 0) ctx.moveTo(hProj.px, hProj.py);
+          else ctx.lineTo(hProj.px, hProj.py);
+        }
         ctx.stroke();
 
+        // Glowing halo line
         ctx.strokeStyle = surfaceType === 'torus' || surfaceType === 'mobius' ? 'rgba(56, 189, 248, 0.35)' : 'rgba(251, 191, 36, 0.35)';
-        ctx.lineWidth = 6.0;
+        ctx.lineWidth = 5.0;
         ctx.stroke();
       }
 
-      // 8b. Current Ball Position
+      // 8b. Active Ball Position & Drop-Line to Floor
       const currentZ = (surfaceType === 'torus' || surfaceType === 'mobius')
         ? (phys.history[phys.history.length - 1]?.z ?? 0)
-        : eval3DSurface(phys.x, phys.y, surfaceType, effectiveW).z;
+        : eval3DSurface(phys.x, phys.y, surfaceType, effectiveW, timeT, isBendingAnim).z;
       const ballProj = project(phys.x, currentZ, phys.y);
       const floorProj = project(phys.x, -1.8, phys.y);
 
@@ -2151,7 +2173,7 @@ export const TestDiagramsStudioView: React.FC = () => {
 
     ctx.fillStyle = '#38bdf8';
     ctx.font = 'bold 11px monospace';
-    ctx.fillText(surfaceType.toUpperCase() + ' (3D MESH)', 24, 32);
+    ctx.fillText(surfaceType.toUpperCase() + ' (3D MESH)' + (isBendingAnim ? ' [WAVE ON]' : ''), 24, 32);
 
     ctx.fillStyle = '#cbd5e1';
     ctx.font = '9.5px monospace';
@@ -2159,7 +2181,7 @@ export const TestDiagramsStudioView: React.FC = () => {
     if (surfaceType === 'hyper_4d') {
       const wDeg = (((effectiveW % (2 * Math.PI)) + 2 * Math.PI) % (2 * Math.PI) * (180 / Math.PI)).toFixed(0);
       ctx.fillStyle = '#ec4899';
-      ctx.fillText(`4D Hyper-Slice: w = ${wDeg}° (${autoSlice4D ? 'Auto-Orbit' : 'Manual'})`, 24, 58);
+      ctx.fillText(`4D Hyper-Slice: w = ${wDeg}° (${autoSlice4D || isBendingAnim ? 'Auto-Orbit' : 'Manual'})`, 24, 58);
     } else {
       ctx.fillStyle = '#34d399';
       ctx.fillText(`${surfaceTelemetry.curvatureClass}`, 24, 58);
@@ -2170,7 +2192,7 @@ export const TestDiagramsStudioView: React.FC = () => {
         ctx.fillStyle = '#38bdf8';
         ctx.fillText(`● Geodesic Orbit: Toroidal Knot (step ${phys.stepCount})`, 24, 72);
       } else {
-        const currentZ = eval3DSurface(phys.x, phys.y, surfaceType, effectiveW).z;
+        const currentZ = eval3DSurface(phys.x, phys.y, surfaceType, effectiveW, timeT, isBendingAnim).z;
         ctx.fillStyle = '#fbbf24';
         ctx.fillText(`● Descent Ball: z=${currentZ.toFixed(2)} |∇f|=${phys.gradNorm.toFixed(3)} (step ${phys.stepCount})`, 24, 72);
       }
@@ -2178,7 +2200,7 @@ export const TestDiagramsStudioView: React.FC = () => {
 
     ctx.restore();
 
-  }, [activeModuleId, surfaceType, hyperW, autoSlice4D, showSlicePlane, sliceHeightZ, rotX, rotY, shadingMode, surfaceColormap, show3dAxes, showFloorGrid, meshResolution, currentCanvasTheme, timeT, surfaceTelemetry, showRollingBall, ballPhysicsTick]);
+  }, [activeModuleId, surfaceType, hyperW, autoSlice4D, showSlicePlane, sliceHeightZ, rotX, rotY, shadingMode, surfaceColormap, show3dAxes, showFloorGrid, meshResolution, currentCanvasTheme, isBendingAnim, timeT, surfaceTelemetry, showRollingBall, ballPhysicsTick]);
 
   // ─────────────────────────────────────────────────────────────────────────────
   // 9. PHASE 7: VECTOR FIELDS & PHASE SPACE ORBITS
@@ -2238,13 +2260,13 @@ export const TestDiagramsStudioView: React.FC = () => {
         // 3D Manifold Gradient Descent & Geodesic Physics Step
         if (activeModuleId === 'mathbox_3d' && showRollingBall) {
           const phys = ballPhysicsRef.current;
-          const effW = surfaceType === 'hyper_4d' ? (autoSlice4D ? hyperW + timeT * 0.6 : hyperW) : 0;
+          const effW = surfaceType === 'hyper_4d' ? (autoSlice4D || isBendingAnim ? hyperW + timeT * 0.7 : hyperW) : 0;
 
           if (surfaceType === 'torus') {
             // (1, 2) Torus Knot Geodesic Circumnavigation
             phys.u = (phys.u + dt * animSpeed * 1.4) % (2 * Math.PI);
             phys.v = (phys.v + dt * animSpeed * 2.8) % (2 * Math.PI);
-            const pt = eval3DSurface(phys.u, phys.v, 'torus', 0);
+            const pt = eval3DSurface(phys.u, phys.v, 'torus', 0, timeT, isBendingAnim);
             phys.x = pt.x;
             phys.y = pt.y;
             phys.history.push({ x: pt.x, y: pt.y, z: pt.z });
@@ -2254,7 +2276,7 @@ export const TestDiagramsStudioView: React.FC = () => {
             // Non-orientable Möbius strip centerline twist orbit
             phys.u = (phys.u + dt * animSpeed * 1.2) % (4 * Math.PI);
             phys.v = 0.55 * Math.sin(phys.u * 1.5);
-            const pt = eval3DSurface(phys.u, phys.v, 'mobius', 0);
+            const pt = eval3DSurface(phys.u, phys.v, 'mobius', 0, timeT, isBendingAnim);
             phys.x = pt.x;
             phys.y = pt.y;
             phys.history.push({ x: pt.x, y: pt.y, z: pt.z });
@@ -2263,10 +2285,10 @@ export const TestDiagramsStudioView: React.FC = () => {
           } else {
             // Classical Gradient Descent with Momentum for Explicit Height Fields
             const eps = 0.005;
-            const zXp = eval3DSurface(phys.x + eps, phys.y, surfaceType, effW).z;
-            const zXm = eval3DSurface(phys.x - eps, phys.y, surfaceType, effW).z;
-            const zYp = eval3DSurface(phys.x, phys.y + eps, surfaceType, effW).z;
-            const zYm = eval3DSurface(phys.x, phys.y - eps, surfaceType, effW).z;
+            const zXp = eval3DSurface(phys.x + eps, phys.y, surfaceType, effW, timeT, isBendingAnim).z;
+            const zXm = eval3DSurface(phys.x - eps, phys.y, surfaceType, effW, timeT, isBendingAnim).z;
+            const zYp = eval3DSurface(phys.x, phys.y + eps, surfaceType, effW, timeT, isBendingAnim).z;
+            const zYm = eval3DSurface(phys.x, phys.y - eps, surfaceType, effW, timeT, isBendingAnim).z;
 
             const gx = (zXp - zXm) / (2 * eps);
             const gy = (zYp - zYm) / (2 * eps);
@@ -2278,7 +2300,7 @@ export const TestDiagramsStudioView: React.FC = () => {
               phys.vy = phys.vy * ballMomentum - ballLearningRate * gy;
               const nx = Math.max(-2.0, Math.min(2.0, phys.x + phys.vx * animSpeed));
               const ny = Math.max(-2.0, Math.min(2.0, phys.y + phys.vy * animSpeed));
-              const nz = eval3DSurface(nx, ny, surfaceType, effW).z;
+              const nz = eval3DSurface(nx, ny, surfaceType, effW, timeT, isBendingAnim).z;
 
               phys.x = nx;
               phys.y = ny;
@@ -2293,7 +2315,7 @@ export const TestDiagramsStudioView: React.FC = () => {
     };
     animId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animId);
-  }, [isSimulating, isAutoOrbit, isGradDescentRunning, learningRateEta, manualBeta0, manualBeta1, linPoints, animSpeed, activeModuleId, showRollingBall, ballMomentum, ballLearningRate, surfaceType, autoSlice4D, hyperW, timeT]);
+  }, [isSimulating, isAutoOrbit, isBendingAnim, isGradDescentRunning, learningRateEta, manualBeta0, manualBeta1, linPoints, animSpeed, activeModuleId, showRollingBall, ballMomentum, ballLearningRate, surfaceType, autoSlice4D, hyperW, timeT]);
 
   // Compute Linear Regression Statistics
   const linStats = useMemo(() => {
@@ -2795,128 +2817,6 @@ export const TestDiagramsStudioView: React.FC = () => {
     ctx.lineWidth = 2;
     ctx.stroke();
   }, [activeModuleId, linSubMode, lin3dRotX, lin3dRotY, linStats, linSliceX3, linSliceX4, linPoints]);
-
-  // 3D Canvas Projection for MathBox 3D
-  useEffect(() => {
-    if (activeModuleId !== 'mathbox_3d') return;
-    const canvas = canvas3DRef.current;
-    if (!canvas) return;
-    const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-
-    const W = canvas.width;
-    const H = canvas.height;
-    ctx.clearRect(0, 0, W, H);
-
-    const bgGrad = ctx.createRadialGradient(W / 2, H / 2, 20, W / 2, H / 2, W * 0.7);
-    bgGrad.addColorStop(0, currentCanvasTheme.plotBoxBg || currentCanvasTheme.bg || '#0b1120');
-    bgGrad.addColorStop(1, currentCanvasTheme.bg || '#020617');
-    ctx.fillStyle = bgGrad;
-    ctx.fillRect(0, 0, W, H);
-
-    const radX = (rotX * Math.PI) / 180;
-    const radY = (rotY * Math.PI) / 180;
-    const cosX = Math.cos(radX);
-    const sinX = Math.sin(radX);
-    const cosY = Math.cos(radY);
-    const sinY = Math.sin(radY);
-
-    const project3D = (x: number, y: number, z: number) => {
-      const x1 = x * cosY - z * sinY;
-      const z1 = x * sinY + z * cosY;
-      const y2 = y * cosX - z1 * sinX;
-      const z2 = y * sinX + z1 * cosX;
-      const scale = 62;
-      return { x: W / 2 + x1 * scale, y: H / 2 - y2 * scale, z: z2 };
-    };
-
-    const bX = 2.4;
-    const bZ = 2.4;
-    const bYMin = -1.6;
-
-    ctx.strokeStyle = 'rgba(51, 65, 85, 0.4)';
-    ctx.lineWidth = 1;
-    for (let gx = -bX; gx <= bX + 0.1; gx += 0.8) {
-      const pStart = project3D(gx, bYMin, -bZ);
-      const pEnd = project3D(gx, bYMin, bZ);
-      ctx.beginPath();
-      ctx.moveTo(pStart.x, pStart.y);
-      ctx.lineTo(pEnd.x, pEnd.y);
-      ctx.stroke();
-    }
-    for (let gz = -bZ; gz <= bZ + 0.1; gz += 0.8) {
-      const pStart = project3D(-bX, bYMin, gz);
-      const pEnd = project3D(bX, bYMin, gz);
-      ctx.beginPath();
-      ctx.moveTo(pStart.x, pStart.y);
-      ctx.lineTo(pEnd.x, pEnd.y);
-      ctx.stroke();
-    }
-
-    const evalZ = (u: number, v: number) => {
-      if (surfaceType === 'hyper_4d') {
-        return (u * u - v * v) * 0.35 * Math.cos(hyperW) + 0.45 * Math.sin(u * hyperW);
-      } else if (surfaceType === 'saddle') {
-        return (u * u - v * v) * 0.42;
-      } else if (surfaceType === 'monkey') {
-        return (u * u * u - 3 * u * v * v) * 0.16;
-      } else if (surfaceType === 'torus') {
-        const r = 0.6;
-        return Math.sin(v) * r;
-      } else if (surfaceType === 'mobius') {
-        return Math.sin(u / 2) * Math.sin(v) * 0.75;
-      } else if (surfaceType === 'himmelblau') {
-        return (Math.pow(u * u + v - 11, 2) + Math.pow(u + v * v - 7, 2)) * 0.015 - 1.2;
-      } else {
-        return (u * u + v * v) * 0.32 - 1.0;
-      }
-    };
-
-    const quads: Array<{ p1: any; p2: any; p3: any; p4: any; avgZ: number; valZ: number }> = [];
-    const steps = 24;
-    const range = 2.1;
-    for (let i = 0; i < steps; i++) {
-      for (let j = 0; j < steps; j++) {
-        const u1 = -range + (i / steps) * (2 * range);
-        const u2 = -range + ((i + 1) / steps) * (2 * range);
-        const v1 = -range + (j / steps) * (2 * range);
-        const v2 = -range + ((j + 1) / steps) * (2 * range);
-
-        const z1 = evalZ(u1, v1);
-        const z2 = evalZ(u2, v1);
-        const z3 = evalZ(u2, v2);
-        const z4 = evalZ(u1, v2);
-
-        const p1 = project3D(u1, z1, v1);
-        const p2 = project3D(u2, z2, v1);
-        const p3 = project3D(u2, z3, v2);
-        const p4 = project3D(u1, z4, v2);
-
-        quads.push({ p1, p2, p3, p4, avgZ: (p1.z + p2.z + p3.z + p4.z) / 4, valZ: (z1 + z2 + z3 + z4) / 4 });
-      }
-    }
-
-    quads.sort((a, b) => a.avgZ - b.avgZ);
-    quads.forEach(q => {
-      ctx.beginPath();
-      ctx.moveTo(q.p1.x, q.p1.y);
-      ctx.lineTo(q.p2.x, q.p2.y);
-      ctx.lineTo(q.p3.x, q.p3.y);
-      ctx.lineTo(q.p4.x, q.p4.y);
-      ctx.closePath();
-
-      const normH = Math.max(0, Math.min(1, (q.valZ + 1.2) / 2.4));
-      const red = Math.round(56 + normH * (192 - 56));
-      const green = Math.round(189 - normH * (189 - 132));
-      const blue = 248;
-
-      ctx.fillStyle = `rgba(${red}, ${green}, ${blue}, 0.78)`;
-      ctx.fill();
-      ctx.strokeStyle = `rgba(15, 23, 42, 0.5)`;
-      ctx.lineWidth = 0.8;
-      ctx.stroke();
-    });
-  }, [activeModuleId, surfaceType, hyperW, rotX, rotY, timeT]);
 
   return (
     <div
