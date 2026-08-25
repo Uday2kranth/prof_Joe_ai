@@ -98,7 +98,6 @@ const THEME_PALETTES: Record<CanvasAtmosphere, CanvasThemeTokens> = {
     accentCyan: '#0284c7',
     accentAmber: '#d97706',
     accentEmerald: '#16a34a',
-    purple: '#9333ea',
     accentPurple: '#9333ea',
     accentRose: '#e11d48',
   },

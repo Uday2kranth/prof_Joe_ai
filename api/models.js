@@ -88,7 +88,8 @@ export default async function handler(req, res) {
         }
 
         const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000);
+        const timeoutDuration = (provider === 'local_endpoint' || provider === 'local') ? 2500 : 15000;
+        const timeout = setTimeout(() => controller.abort(), timeoutDuration);
 
         const response = await fetch(fetchUrl, {
             method: 'GET',
@@ -126,6 +127,60 @@ export default async function handler(req, res) {
                         { id: 'groq/compound-mini', name: 'Groq Compound Mini [Free]', isFree: true },
                         { id: 'openai/gpt-oss-20b', name: 'GPT-OSS 20B [Free]', isFree: true },
                         { id: 'allam-2-7b', name: 'Allam 2 7B [Free]', isFree: true }
+                    ]
+                });
+            }
+            if (provider === 'cerebras') {
+                return res.status(200).json({
+                    success: true,
+                    provider: 'cerebras',
+                    count: 3,
+                    models: [
+                        { id: 'llama-3.3-70b', name: 'Llama 3.3 70B [Cerebras Fast]', isFree: true },
+                        { id: 'llama3.1-8b', name: 'Llama 3.1 8B [Cerebras Fast]', isFree: true },
+                        { id: 'llama3.1-70b', name: 'Llama 3.1 70B [Cerebras Fast]', isFree: true }
+                    ]
+                });
+            }
+            if (provider === 'nvidia') {
+                return res.status(200).json({
+                    success: true,
+                    provider: 'nvidia',
+                    count: 5,
+                    models: [
+                        { id: 'meta/llama-3.3-70b-instruct', name: 'Llama 3.3 70B Instruct [NVIDIA NIM]', isFree: true },
+                        { id: 'nvidia/llama-3.1-nemotron-70b-instruct', name: 'Nemotron 70B Instruct [NVIDIA NIM]', isFree: true },
+                        { id: 'meta/llama-3.1-8b-instruct', name: 'Llama 3.1 8B Instruct [NVIDIA NIM]', isFree: true },
+                        { id: 'mistralai/mistral-large-2-instruct', name: 'Mistral Large 2 [NVIDIA NIM]', isFree: true },
+                        { id: 'deepseek-ai/deepseek-r1', name: 'DeepSeek R1 [NVIDIA NIM]', isFree: true }
+                    ]
+                });
+            }
+            if (provider === 'pollinations' || provider === 'pollinations-keyed') {
+                return res.status(200).json({
+                    success: true,
+                    provider: 'pollinations',
+                    count: 5,
+                    models: [
+                        { id: 'openai', name: 'OpenAI GPT-4o Mini [Pollinations]', isFree: true },
+                        { id: 'deepseek', name: 'DeepSeek V3 [Pollinations]', isFree: true },
+                        { id: 'mistral', name: 'Mistral Small [Pollinations]', isFree: true },
+                        { id: 'qwen-coder', name: 'Qwen 2.5 Coder [Pollinations]', isFree: true },
+                        { id: 'llama', name: 'Llama 3.3 70B [Pollinations]', isFree: true }
+                    ]
+                });
+            }
+            if (provider === 'local_endpoint' || provider === 'local') {
+                return res.status(200).json({
+                    success: true,
+                    provider: 'local_endpoint',
+                    count: 5,
+                    models: [
+                        { id: 'llama3.2:3b', name: 'Llama 3.2 3B [Local Device]', isFree: true },
+                        { id: 'llama3.1:8b', name: 'Llama 3.1 8B [Local Device]', isFree: true },
+                        { id: 'deepseek-r1:8b', name: 'DeepSeek R1 8B [Local Device]', isFree: true },
+                        { id: 'qwen2.5-coder:7b', name: 'Qwen 2.5 Coder 7B [Local Device]', isFree: true },
+                        { id: 'mistral:7b', name: 'Mistral 7B [Local Device]', isFree: true }
                     ]
                 });
             }
@@ -523,6 +578,142 @@ export default async function handler(req, res) {
                 models: [
                     { id: 'MiniMax-M2.7', name: 'MiniMax M2.7 [Free Quota]', isFree: true },
                     { id: 'gemma-4-31B-it', name: 'Gemma 4 31B [Free Quota]', isFree: true }
+                ]
+            });
+        }
+
+        if (reqProvider === 'cerebras') {
+            return res.status(200).json({
+                success: true,
+                provider: 'cerebras',
+                count: 3,
+                models: [
+                    { id: 'llama-3.3-70b', name: 'Llama 3.3 70B [Cerebras Fast]', isFree: true },
+                    { id: 'llama3.1-8b', name: 'Llama 3.1 8B [Cerebras Fast]', isFree: true },
+                    { id: 'llama3.1-70b', name: 'Llama 3.1 70B [Cerebras Fast]', isFree: true }
+                ]
+            });
+        }
+
+        if (reqProvider === 'nvidia') {
+            return res.status(200).json({
+                success: true,
+                provider: 'nvidia',
+                count: 5,
+                models: [
+                    { id: 'meta/llama-3.3-70b-instruct', name: 'Llama 3.3 70B Instruct [NVIDIA NIM]', isFree: true },
+                    { id: 'nvidia/llama-3.1-nemotron-70b-instruct', name: 'Nemotron 70B Instruct [NVIDIA NIM]', isFree: true },
+                    { id: 'meta/llama-3.1-8b-instruct', name: 'Llama 3.1 8B Instruct [NVIDIA NIM]', isFree: true },
+                    { id: 'mistralai/mistral-large-2-instruct', name: 'Mistral Large 2 [NVIDIA NIM]', isFree: true },
+                    { id: 'deepseek-ai/deepseek-r1', name: 'DeepSeek R1 [NVIDIA NIM]', isFree: true }
+                ]
+            });
+        }
+
+        if (reqProvider === 'local_endpoint' || reqProvider === 'local') {
+            return res.status(200).json({
+                success: true,
+                provider: 'local_endpoint',
+                count: 5,
+                models: [
+                    { id: 'llama3.2:3b', name: 'Llama 3.2 3B [Local Device]', isFree: true },
+                    { id: 'llama3.1:8b', name: 'Llama 3.1 8B [Local Device]', isFree: true },
+                    { id: 'deepseek-r1:8b', name: 'DeepSeek R1 8B [Local Device]', isFree: true },
+                    { id: 'qwen2.5-coder:7b', name: 'Qwen 2.5 Coder 7B [Local Device]', isFree: true },
+                    { id: 'mistral:7b', name: 'Mistral 7B [Local Device]', isFree: true }
+                ]
+            });
+        }
+
+        if (reqProvider === 'pollinations' || reqProvider === 'pollinations-keyed') {
+            return res.status(200).json({
+                success: true,
+                provider: 'pollinations',
+                count: 5,
+                models: [
+                    { id: 'openai', name: 'OpenAI GPT-4o Mini [Pollinations]', isFree: true },
+                    { id: 'deepseek', name: 'DeepSeek V3 [Pollinations]', isFree: true },
+                    { id: 'mistral', name: 'Mistral Small [Pollinations]', isFree: true },
+                    { id: 'qwen-coder', name: 'Qwen 2.5 Coder [Pollinations]', isFree: true },
+                    { id: 'llama', name: 'Llama 3.3 70B [Pollinations]', isFree: true }
+                ]
+            });
+        }
+
+        if (reqProvider === 'huggingface') {
+            return res.status(200).json({
+                success: true,
+                provider: 'huggingface',
+                count: 6,
+                models: [
+                    { id: 'Qwen/Qwen2.5-72B-Instruct', name: 'Qwen 2.5 72B Instruct [Free]', isFree: true },
+                    { id: 'Qwen/Qwen2.5-Coder-32B-Instruct', name: 'Qwen 2.5 Coder 32B [Free]', isFree: true },
+                    { id: 'Qwen/Qwen2.5-7B-Instruct', name: 'Qwen 2.5 7B Instruct [Free]', isFree: true },
+                    { id: 'meta-llama/Llama-3.3-70B-Instruct', name: 'Llama 3.3 70B Instruct [Free]', isFree: true },
+                    { id: 'deepseek-ai/DeepSeek-V3', name: 'DeepSeek V3 [Free]', isFree: true },
+                    { id: 'deepseek-ai/DeepSeek-R1', name: 'DeepSeek R1 Reasoning [Free]', isFree: true }
+                ]
+            });
+        }
+
+        if (reqProvider === 'opencode') {
+            return res.status(200).json({
+                success: true,
+                provider: 'opencode',
+                count: 6,
+                models: [
+                    { id: 'deepseek-v4-flash-free', name: 'DeepSeek V4 Flash (OpenCode) [Free]', isFree: true },
+                    { id: 'opencode/laguna-s-2.1-free', name: 'Laguna S 2.1 Agent (OpenCode) [Free]', isFree: true },
+                    { id: 'ling-3.0-flash-free', name: 'Ling 3.0 Flash (OpenCode) [Free]', isFree: true },
+                    { id: 'mimo-v2.5-free', name: 'Mimo V2.5 Reasoning (OpenCode) [Free]', isFree: true },
+                    { id: 'nemotron-3-ultra-free', name: 'Nemotron 3 Ultra 550B (OpenCode) [Free]', isFree: true },
+                    { id: 'north-mini-code-free', name: 'North Mini Code Specialist (OpenCode) [Free]', isFree: true }
+                ]
+            });
+        }
+
+        if (reqProvider === 'poolside') {
+            return res.status(200).json({
+                success: true,
+                provider: 'poolside',
+                count: 3,
+                models: [
+                    { id: 'poolside/laguna-s-2.1:free', name: 'Laguna S 2.1 Agent [Free]', isFree: true },
+                    { id: 'poolside/laguna-xs-2.1:free', name: 'Laguna XS 2.1 Code Engine [Free]', isFree: true },
+                    { id: 'poolside/laguna-m.1:free', name: 'Laguna M 2.1 Specialist [Free]', isFree: true }
+                ]
+            });
+        }
+
+        if (reqProvider === 'nararouter') {
+            return res.status(200).json({
+                success: true,
+                provider: 'nararouter',
+                count: 6,
+                models: [
+                    { id: 'laguna-s-2.1', name: 'Laguna S 2.1 Agent [Free]', isFree: true },
+                    { id: 'agnes-2.5-flash', name: 'Agnes 2.5 Flash [Free]', isFree: true },
+                    { id: 'agnes-2.0-flash', name: 'Agnes 2.0 Flash [Free]', isFree: true },
+                    { id: 'mistral-large', name: 'Mistral Large [Free]', isFree: true },
+                    { id: 'mistral-medium-3-5', name: 'Mistral Medium 3.5 [Free]', isFree: true },
+                    { id: 'qwen-3.8-max-free', name: 'Qwen 3.8 Max [Free]', isFree: true }
+                ]
+            });
+        }
+
+        if (reqProvider === 'ollama') {
+            return res.status(200).json({
+                success: true,
+                provider: 'ollama',
+                count: 7,
+                models: [
+                    { id: 'gpt-oss:20b', name: 'GPT-OSS 20B [Free]', isFree: true },
+                    { id: 'gpt-oss:120b', name: 'GPT-OSS 120B [Free]', isFree: true },
+                    { id: 'gemma4:31b', name: 'Gemma 4 31B [Free]', isFree: true },
+                    { id: 'nemotron-3-nano:30b', name: 'Nemotron 3 Nano 30B [Free]', isFree: true },
+                    { id: 'nemotron-3-super', name: 'Nemotron 3 Super 120B [Free]', isFree: true },
+                    { id: 'nemotron-3-ultra', name: 'Nemotron 3 Ultra 550B [Free]', isFree: true },
+                    { id: 'minimax-m3', name: 'MiniMax M3 [Free]', isFree: true }
                 ]
             });
         }

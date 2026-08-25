@@ -4445,7 +4445,7 @@ export const StatisticalOptimizationModule: React.FC = () => {
           <div className={`canvas-katex-hud-overlay ${isHudMinimized ? 'minimized' : ''}`}>
             <div className="hud-header">
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <span>{activeModelMeta.title}</span>
+                <span>{activeModelMeta.name}</span>
                 {!isHudMinimized && <span className="hud-badge">{activePillar.toUpperCase().replace('_', ' ')}</span>}
               </div>
               <button

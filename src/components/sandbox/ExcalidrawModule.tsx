@@ -35,9 +35,9 @@ export const ExcalidrawModule: React.FC = () => {
   const PROVIDER_OPTIONS = [
     { id: 'pollinations', name: 'Pollinations (Free / No Key)', defaultModel: 'openai' },
     { id: 'cerebras', name: 'Cerebras (Ultra Fast)', defaultModel: 'llama3.1-8b' },
-    { id: 'groq', name: 'Groq (High Speed)', defaultModel: 'llama-3.3-70b-versatile' },
-    { id: 'gemini', name: 'Google Gemini', defaultModel: 'gemini-2.5-flash' },
-    { id: 'openrouter', name: 'OpenRouter', defaultModel: 'deepseek/deepseek-r1' },
+    { id: 'groq', name: 'Groq (High Speed)', defaultModel: 'openai/gpt-oss-120b' },
+    { id: 'gemini', name: 'Google Gemini', defaultModel: 'gemini-3.6-flash' },
+    { id: 'openrouter', name: 'OpenRouter', defaultModel: 'openrouter/free' },
     { id: 'nvidia', name: 'NVIDIA NIM', defaultModel: 'meta/llama-3.1-70b-instruct' },
     { id: 'mistral', name: 'Mistral AI', defaultModel: 'mistral-large-latest' },
     { id: 'sambanova', name: 'SambaNova Fast', defaultModel: 'Meta-Llama-3.1-70B-Instruct' }

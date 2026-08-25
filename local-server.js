@@ -107,33 +107,18 @@ const server = http.createServer((req, res) => {
         }
       };
 
-      const handlers = {
-        '/api/chat': chatHandler,
-        '/api/login': loginHandler,
-        '/api/user-keys': userKeysHandler,
-        '/api/sessions': sessionsHandler,
-        '/api/codelab-sessions': codelabSessionsHandler,
-        '/api/persona-sessions': personaSessionsHandler,
-        '/api/models': modelsHandler
-      };
-
       const normalizedPath = pathname.replace(/\/$/, '');
+      const routeName = normalizedPath.replace('/api/', '');
+      const handlerFile = path.join(__dirname, 'api', `${routeName}.js`);
 
       try {
-        if (handlers[normalizedPath]) {
-          await handlers[normalizedPath](mockReq, mockRes);
+        if (fs.existsSync(handlerFile)) {
+          const fileUrl = url.pathToFileURL(handlerFile).href + `?t=${Date.now()}`;
+          const dynamicMod = await import(fileUrl);
+          const handler = dynamicMod.default || dynamicMod;
+          await handler(mockReq, mockRes);
         } else {
-          // Dynamic fallback for any additional api file (e.g. send-email.js)
-          const routeName = normalizedPath.replace('/api/', '');
-          const handlerFile = path.join(__dirname, 'api', `${routeName}.js`);
-
-          if (fs.existsSync(handlerFile)) {
-            const dynamicMod = await import(`./api/${routeName}.js`);
-            const handler = dynamicMod.default || dynamicMod;
-            await handler(mockReq, mockRes);
-          } else {
-            mockRes.status(404).json({ error: `API route ${pathname} not found.` });
-          }
+          mockRes.status(404).json({ error: `API route ${pathname} not found.` });
         }
       } catch (err) {
         console.error(`API Error in ${pathname}:`, err);

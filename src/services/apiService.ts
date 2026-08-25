@@ -99,6 +99,8 @@ export async function sendChatMessage(
     resData = {
       error: response.status === 502
         ? '❌ Local API Server Offline (HTTP 502). Please start `node local-server.js` or run `npm run dev`.'
+        : response.status === 400
+        ? `🔑 Personal API key required for ${provider || 'this provider'}. Please add your key in Settings (⚙️) to use this model.`
         : `Server returned empty response (HTTP ${response.status}). Please verify API key configuration.`
     };
   }

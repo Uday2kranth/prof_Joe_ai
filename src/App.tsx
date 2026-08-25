@@ -36,6 +36,7 @@ const QuizArenaView = React.lazy(() => import('./components/QuizArenaView').then
 const PinnedNotesArchiveView = React.lazy(() => import('./components/PinnedNotesArchiveView').then(m => ({ default: m.PinnedNotesArchiveView })));
 const SettingsStudioView = React.lazy(() => import('./components/SettingsStudioView').then(m => ({ default: m.SettingsStudioView })));
 const TestDiagramsStudioView = React.lazy(() => import('./components/TestDiagramsStudioView').then(m => ({ default: m.TestDiagramsStudioView })));
+const DeepLearningStudioView = React.lazy(() => import('./components/DeepLearningStudioView').then(m => ({ default: m.DeepLearningStudioView })));
 import { ACADEMIC_PRESETS } from './components/CodeLabPresetDrawer';
 import { SettingsModal } from './components/SettingsModal';
 import { LoginModal } from './components/LoginModal';
@@ -691,11 +692,6 @@ export const App: React.FC = () => {
   };
 
   // Perform hard legacy key cache wipe on app startup
-  useEffect(() => {
-    localStorage.removeItem('chatterbot_user_keys');
-    localStorage.removeItem('chatterbot_keys');
-  }, []);
-
   // Android: Push WebView below the native status bar so header buttons are accessible
   useEffect(() => {
     import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
@@ -708,18 +704,19 @@ export const App: React.FC = () => {
   const IS_ADMIN_BUILD = import.meta.env.MODE === 'admin' || import.meta.env.VITE_ENABLE_ADMIN_KEYS === 'true';
 
   const [userKeys, setUserKeys] = useState<UserKeys>(() => {
-    const activeUser = localStorage.getItem('chatterbot_username');
+    const activeUser = localStorage.getItem('chatterbot_username') || 'Guest_Student';
     const isAuthorizedAdmin = (activeUser === 'Admin@uday' || activeUser === 'Uday@joe') && IS_ADMIN_BUILD;
     const baseFallback = isAuthorizedAdmin ? ADMIN_BUNDLED_SYSTEM_KEYS : DEFAULT_KEYS;
 
-    if (activeUser) {
-      const savedKeys = localStorage.getItem(`chatterbot_user_keys_${activeUser}`);
-      if (savedKeys) {
-        try {
-          return { ...baseFallback, ...JSON.parse(savedKeys) };
-        } catch (e) {
-          console.error('Failed to parse userKeys', e);
-        }
+    const savedKeys = localStorage.getItem(`chatterbot_user_keys_${activeUser}`)
+      || localStorage.getItem('chatterbot_user_keys')
+      || localStorage.getItem('prof_joe_user_keys');
+
+    if (savedKeys) {
+      try {
+        return { ...baseFallback, ...JSON.parse(savedKeys) };
+      } catch (e) {
+        console.error('Failed to parse userKeys', e);
       }
     }
     return baseFallback;
@@ -1417,8 +1414,12 @@ export const App: React.FC = () => {
 
   const handleSaveUserKeys = async (newKeys: UserKeys) => {
     setUserKeys(newKeys);
+    const activeUser = currentUser || localStorage.getItem('chatterbot_username') || 'Guest_Student';
+    localStorage.setItem(`chatterbot_user_keys_${activeUser}`, JSON.stringify(newKeys));
+    localStorage.setItem('chatterbot_user_keys', JSON.stringify(newKeys));
+    localStorage.setItem('prof_joe_user_keys', JSON.stringify(newKeys));
+
     if (currentUser) {
-      localStorage.setItem(`chatterbot_user_keys_${currentUser}`, JSON.stringify(newKeys));
       try {
         await fetch(getApiUrl('/api/user-keys'), {
           method: 'POST',
@@ -2228,6 +2229,8 @@ export const App: React.FC = () => {
                   ? 'TEXTRACTOR WORKSPACE ⚡'
                   : activeHubWorkspace === 'test_diagrams'
                   ? 'MAFS • JSXGRAPH • PLOTLY • MATHBOX STUDIO 📐'
+                  : activeHubWorkspace === 'deep_learning_studio'
+                  ? 'DEEP LEARNING & NEURAL NETWORK STUDIO 🧠'
                   : `${activeHubWorkspace} Workspace`}
               </span>
             </div>
@@ -2481,6 +2484,10 @@ export const App: React.FC = () => {
 
             {activeHubWorkspace === 'test_diagrams' && (
               <TestDiagramsStudioView />
+            )}
+
+            {activeHubWorkspace === 'deep_learning_studio' && (
+              <DeepLearningStudioView />
             )}
             </React.Suspense>
           </main>

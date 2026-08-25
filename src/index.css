@@ -7259,6 +7259,142 @@ body {
   box-sizing: border-box;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   📐 MATHBOX & DIAGRAMS STUDIO UNIFIED BENTO DECK & ATMOSPHERE TOKENS
+   ═══════════════════════════════════════════════════════════════════════════ */
+.mathbox-bento-hub {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  width: 100%;
+  overflow-y: auto;
+  padding: 14px 18px 40px 18px;
+  background: var(--bg-primary, #020617);
+  box-sizing: border-box;
+}
+
+.mathbox-bento-header {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  padding: 14px 20px;
+  background: var(--card-bg, rgba(15, 23, 42, 0.88));
+  border-radius: 14px;
+  border: 1px solid var(--card-border, rgba(51, 65, 85, 0.7));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  margin-bottom: 14px;
+  box-shadow: var(--card-shadow, 0 8px 32px rgba(0, 0, 0, 0.35));
+  flex-shrink: 0;
+}
+
+.mathbox-bento-search-input {
+  height: 34px;
+  padding: 0 12px 0 32px;
+  border-radius: 8px;
+  background: var(--dropdown-bg, rgba(15, 23, 42, 0.95));
+  border: 1px solid var(--dropdown-border, rgba(56, 189, 248, 0.3));
+  color: var(--text-primary, #f8fafc);
+  font-size: 0.76rem;
+  width: 220px;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.mathbox-bento-search-input:focus {
+  border-color: var(--accent-cyan, #38bdf8);
+  box-shadow: 0 0 0 2px var(--cursor-glow, rgba(6, 182, 212, 0.2));
+}
+
+.mathbox-bento-pill {
+  padding: 6px 12px;
+  border-radius: 20px;
+  font-size: 0.72rem;
+  font-weight: 600;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+  background: var(--pill-bg, rgba(30, 41, 59, 0.65));
+  color: var(--text-muted, #94a3b8);
+  border: 1px solid var(--pill-border, rgba(51, 65, 85, 0.6));
+  transition: all 0.18s ease;
+}
+
+.mathbox-bento-pill.active {
+  font-weight: 800;
+  background: var(--pill-active-bg, rgba(56, 189, 248, 0.22));
+  color: var(--pill-active-text, #38bdf8);
+  border-color: var(--accent-cyan, #38bdf8);
+  box-shadow: 0 2px 8px var(--cursor-glow, rgba(6, 182, 212, 0.2));
+}
+
+.mathbox-bento-card {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 18px;
+  border-radius: 14px;
+  background: var(--bento-tile-bg, var(--card-bg, rgba(15, 23, 42, 0.75)));
+  border: 1px solid var(--bento-tile-border, var(--card-border, rgba(51, 65, 85, 0.65)));
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1), border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+  box-shadow: var(--card-shadow, 0 4px 16px rgba(0, 0, 0, 0.25));
+  position: relative;
+  overflow: hidden;
+}
+
+.mathbox-bento-card:hover {
+  transform: translateY(-3px);
+  border-color: var(--accent-cyan, #38bdf8);
+  box-shadow: 0 10px 24px var(--card-shadow, rgba(0, 0, 0, 0.35)), 0 0 16px var(--cursor-glow, rgba(6, 182, 212, 0.25));
+}
+
+.mathbox-bento-card.active {
+  border-color: var(--accent-cyan, #38bdf8);
+  box-shadow: 0 0 0 1px var(--accent-cyan, #38bdf8), 0 6px 20px var(--cursor-glow, rgba(6, 182, 212, 0.25));
+}
+
+.mathbox-bento-card h3 {
+  color: var(--text-primary, #f8fafc);
+}
+
+.mathbox-bento-card p {
+  color: var(--text-muted, #94a3b8);
+}
+
+/* Atmosphere adaptations for light themes (Oxford Daylight & Amber Parchment) */
+[data-theme="light"] .mathbox-bento-hub,
+[data-atmosphere="oxford_daylight"] .mathbox-bento-hub,
+[data-atmosphere="amber_parchment"] .mathbox-bento-hub {
+  background: var(--bg-primary, #f8fafc);
+}
+
+[data-theme="light"] .mathbox-bento-card,
+[data-atmosphere="oxford_daylight"] .mathbox-bento-card,
+[data-atmosphere="amber_parchment"] .mathbox-bento-card {
+  background: var(--card-bg, rgba(255, 255, 255, 0.92));
+  border-color: var(--card-border, rgba(203, 213, 225, 0.8));
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .mathbox-bento-card h3,
+[data-atmosphere="oxford_daylight"] .mathbox-bento-card h3,
+[data-atmosphere="amber_parchment"] .mathbox-bento-card h3 {
+  color: var(--text-primary, #0f172a);
+}
+
+[data-theme="light"] .mathbox-bento-card p,
+[data-atmosphere="oxford_daylight"] .mathbox-bento-card p,
+[data-atmosphere="amber_parchment"] .mathbox-bento-card p {
+  color: var(--text-secondary, #475569);
+}
+
 /* FULL-BLEED WORKSPACE CONTAINER WITH TOP HOME NAVIGATION BREADCRUMB */
 .demo-workspace-header {
   min-height: 48px;

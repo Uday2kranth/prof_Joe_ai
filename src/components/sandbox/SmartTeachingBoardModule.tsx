@@ -762,7 +762,10 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
   ]
 }`;
 
-      const userKeysStr = localStorage.getItem('prof_joe_user_keys');
+      const activeUser = localStorage.getItem('chatterbot_username') || 'Guest_Student';
+      const userKeysStr = localStorage.getItem(`chatterbot_user_keys_${activeUser}`)
+        || localStorage.getItem('chatterbot_user_keys')
+        || localStorage.getItem('prof_joe_user_keys');
       const userKeys: UserKeys = userKeysStr ? JSON.parse(userKeysStr) : {};
       const messages: Message[] = [{
         id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
@@ -771,7 +774,7 @@ Return ONLY a strictly valid JSON object with NO markdown formatting:
         timestamp: Date.now()
       }];
 
-      const response = await sendChatMessage('gemini', 'gemini-2.5-flash', messages, userKeys, false, 'none', systemInstruction);
+      const response = await sendChatMessage('gemini', 'gemini-3.6-flash', messages, userKeys, false, 'none', systemInstruction);
       const cleaned = response.content.replace(/```json/g, '').replace(/```/g, '').trim();
       const parsed = JSON.parse(cleaned);
 

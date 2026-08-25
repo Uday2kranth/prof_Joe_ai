@@ -23,7 +23,7 @@ import {
 import { MorphingText } from './MorphingText';
 
 interface DemoLandingHubProps {
-  onSelectWorkspace: (workspaceId: 'chat' | 'personas' | 'fun_personas' | 'examprep' | 'diagrams' | 'system_prompts' | 'prompts' | 'cubes' | 'extractor_studio' | 'code_lab' | 'lecture_notes' | 'sandbox' | 'dsa_lab' | 'flashcards_studio' | 'quiz_arena' | 'pinned_archive' | 'test_diagrams') => void;
+  onSelectWorkspace: (workspaceId: 'chat' | 'personas' | 'fun_personas' | 'examprep' | 'diagrams' | 'system_prompts' | 'prompts' | 'cubes' | 'extractor_studio' | 'code_lab' | 'lecture_notes' | 'sandbox' | 'dsa_lab' | 'flashcards_studio' | 'quiz_arena' | 'pinned_archive' | 'test_diagrams' | 'deep_learning_studio') => void;
   onOpenSettings: () => void;
   onOpenSettingsStudio?: () => void;
   theme: 'dark' | 'light';
@@ -405,6 +405,31 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
             <div className="portal-card-footer">
               <button type="button" className="launch-portal-btn">
                 <span>Launch Framework Studio</span>
+                <ArrowRight size={14} className="launch-arrow" />
+              </button>
+            </div>
+          </div>
+
+          {/* Card: Deep Learning & Neural Network Studio */}
+          <div 
+            className="hub-portal-card deep-learning-portal"
+            onClick={() => onSelectWorkspace('deep_learning_studio')}
+          >
+            <div className="portal-card-header">
+              <div className="portal-icon-badge purple-bg">
+                <Cpu size={24} />
+              </div>
+              <span className="portal-tag purple-tag">
+                Neural & DL Suite
+              </span>
+            </div>
+            <div className="portal-card-body">
+              <h3>Deep Learning Studio 🧠</h3>
+              <p>In-browser neural networks, CNN feature maps, RNN unrolling, Transformer attention heatmaps, and 3D latent embeddings with 0 backend.</p>
+            </div>
+            <div className="portal-card-footer">
+              <button type="button" className="launch-portal-btn">
+                <span>Launch DL Studio</span>
                 <ArrowRight size={14} className="launch-arrow" />
               </button>
             </div>

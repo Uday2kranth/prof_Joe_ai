@@ -357,10 +357,10 @@ GENERAL AI ASSISTANT DIRECTIVES:
 
     // 1. Resolve API Key: prioritizes client-submitted header keys. Admin fallback keys are strictly reserved for Admin accounts.
     let apiKey = '';
-    const isAdmin = (user && (user.toLowerCase() === "admin@uday" || user.toLowerCase() === "uday@joe"));
+    const isAdmin = Boolean(user && (user.toLowerCase() === "admin@uday" || user.toLowerCase() === "uday@joe"));
 
     if (targetProvider === "openrouter") {
-        apiKey = req.headers['x-user-openrouter-key'] || process.env.OPENROUTER_API_KEY || '';
+        apiKey = req.headers['x-user-openrouter-key'] || (isAdmin ? process.env.OPENROUTER_API_KEY : '') || '';
     } else if (targetProvider === "nvidia") {
         apiKey = req.headers['x-user-nvidia-key'] || (isAdmin ? process.env.NVIDIA_API_KEY : '') || '';
     } else if (targetProvider === "omnirouter") {
@@ -382,19 +382,19 @@ GENERAL AI ASSISTANT DIRECTIVES:
     } else if (targetProvider === "opencode") {
         apiKey = req.headers['x-user-opencode-key'] || (isAdmin ? process.env.OPENCODE_API_KEY : '') || '';
     } else if (targetProvider === "poolside") {
-        apiKey = req.headers['x-user-poolside-key'] || (isAdmin ? process.env.POOLSIDE_API_KEY : '') || process.env.POOLSIDE_API_KEY || 'poolside_free_user';
+        apiKey = req.headers['x-user-poolside-key'] || (isAdmin ? process.env.POOLSIDE_API_KEY : '') || '';
     } else if (targetProvider === "local_endpoint" || targetProvider === "local") {
         apiKey = 'local_device_keyless';
     } else if (targetProvider === "pollinations-keyed" || targetProvider === "pollinations") {
         apiKey = req.headers['x-user-pollinations-key'] || (isAdmin ? process.env.POLLINATIONS_API_KEY : '') || '';
     } else if (targetProvider === "ollama") {
-        apiKey = req.headers['x-user-ollama-key'] || (isAdmin ? process.env.OLLAMA_API_KEY : '') || 'ollama_cloud_default';
+        apiKey = req.headers['x-user-ollama-key'] || (isAdmin ? process.env.OLLAMA_API_KEY : '') || '';
     }
 
     if (!apiKey) {
         const providerTitle = provider || targetProvider.toUpperCase();
         return res.status(400).json({ 
-            error: `🔑 Personal API key required for ${providerTitle}. Please add your key in Settings (⚙️) or switch to OpenRouter (Free Tier).` 
+            error: `🔑 Personal API key required for ${providerTitle}. Please add your key in Settings (⚙️) to use this model.` 
         });
     }
 
@@ -427,9 +427,7 @@ GENERAL AI ASSISTANT DIRECTIVES:
     } else if (targetProvider === "local_endpoint" || targetProvider === "local") {
         endpoint = req.headers['x-user-local-endpoint'] || process.env.LOCAL_ENDPOINT || 'http://127.0.0.1:11434/v1/chat/completions';
     } else if (targetProvider === "pollinations" || targetProvider === "pollinations-keyed" || targetProvider === "pollinations-keyless") {
-        endpoint = (apiKey === 'keyless_anonymous' || !apiKey)
-            ? 'https://text.pollinations.ai/'
-            : 'https://gen.pollinations.ai/v1/chat/completions';
+        endpoint = 'https://gen.pollinations.ai/v1/chat/completions';
     } else if (targetProvider === "ollama") {
         endpoint = 'https://ollama.com/v1/chat/completions';
     } else {
@@ -609,30 +607,27 @@ Diagram generation and visual image embeddings are strictly turned OFF by user s
             }
 
             // Clean model ID from prefixes (e.g. models/gemini-3.7-flash -> gemini-3.7-flash)
-            const cleanModel = (model || '').replace(/^models\//, '').trim();
+            let cleanModel = (model || '').replace(/^models\//, '').trim();
 
             // Strict single model selection with smart alias resolution for Gemini
             let modelCandidates = [cleanModel];
             if (targetProvider === "gemini") {
+                // Map deprecated gemini-2.5-flash and older models to gemini-3.6-flash / 3.7-flash
+                if (cleanModel === 'gemini-2.5-flash' || cleanModel === 'gemini-1.5-flash' || cleanModel === 'gemini-2.0-flash' || cleanModel === 'gemini-flash') {
+                    cleanModel = 'gemini-3.6-flash';
+                }
                 if (cleanModel === 'gemini-3.7-flash' || cleanModel === 'gemini-3.6-flash' || cleanModel === 'gemini-3.5-flash' || cleanModel === 'gemini-3.5-flash-lite') {
-                    modelCandidates = [cleanModel, 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite', 'gemini-2.5-flash-lite'];
+                    modelCandidates = [cleanModel, 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
                 } else if (cleanModel.startsWith('gemma-4')) {
-                    modelCandidates = [cleanModel, 'gemma-4-31b-it', 'gemma-4-26b-a4b-it', 'gemini-3.7-flash'];
+                    modelCandidates = [cleanModel, 'gemma-4-31b-it', 'gemma-4-26b-a4b-it', 'gemini-3.6-flash'];
                 } else {
-                    modelCandidates = [cleanModel, 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash', 'gemini-3.5-flash-lite'];
+                    modelCandidates = [cleanModel, 'gemini-3.6-flash', 'gemini-3.7-flash', 'gemini-3.5-flash'];
                 }
             }
 
             for (const targetModel of modelCandidates) {
                 try {
                     let response;
-                    
-                    const isPollinationsKeyless = targetProvider === "pollinations-keyless" || (
-                        (targetProvider === "pollinations" || targetProvider === "pollinations-keyed") && (
-                            req.headers['x-pollinations-subtype'] === 'keyless' ||
-                            !currentKey || currentKey === 'keyless_anonymous'
-                        )
-                    );
 
                     if (targetProvider === "poolside") {
                         // Poolside Laguna Model Multi-Bridge Router (NaraRouter, Pollinations, OpenCode, OpenRouter)
@@ -874,47 +869,6 @@ Diagram generation and visual image embeddings are strictly turned OFF by user s
                         }
 
                         if (localSuccess && responsePayload) break;
-                    } else if (isPollinationsKeyless) {
-                        // Keyless Pollinations mode: Use 100% free anonymous GET endpoint with system prompt
-                        const systemMsg = apiMessages.find(m => m.role === 'system')?.content || '';
-                        const userMsg = apiMessages.filter(m => m.role === 'user').pop()?.content || prompt;
-
-                        // Map targetModel to Pollinations supported keyless model names
-                        let pollModel = targetModel;
-                        if (pollModel === 'openai-fast' || pollModel === 'openai') pollModel = 'openai';
-                        else if (pollModel === 'deepseek') pollModel = 'mistral';
-                        else if (pollModel === 'qwen-coder') pollModel = 'qwen';
-                        else if (pollModel === 'llama') pollModel = 'llama';
-                        else pollModel = 'openai';
-                        
-                        let pollUrl = `https://text.pollinations.ai/${encodeURIComponent(userMsg)}?system=${encodeURIComponent(systemMsg)}&model=${encodeURIComponent(pollModel)}&temperature=${targetTemperature}`;
-                        
-                        response = await fetch(pollUrl, { method: "GET" });
-
-                        if (!response.ok) {
-                            // Fallback to default Pollinations keyless text endpoint without model parameter
-                            const fallbackUrl = `https://text.pollinations.ai/${encodeURIComponent(userMsg)}?system=${encodeURIComponent(systemMsg)}`;
-                            response = await fetch(fallbackUrl, { method: "GET" });
-                        }
-
-                        if (response.ok) {
-                            const rawText = await response.text();
-                            responsePayload = {
-                                id: `chatcmpl-pollinations-${Date.now()}`,
-                                object: 'chat.completion',
-                                created: Math.floor(Date.now() / 1000),
-                                model: targetModel,
-                                choices: [
-                                    {
-                                        index: 0,
-                                        message: { role: 'assistant', content: rawText },
-                                        finish_reason: 'stop'
-                                    }
-                                ]
-                            };
-                            successfulModel = targetModel;
-                            break;
-                        }
                     } else {
                         // Standard Authenticated API mode
                         response = await fetch(fetchEndpoint, {

@@ -298,11 +298,11 @@ export const WHITEBOARD_AI_PROVIDERS = [
   {
     id: 'gemini',
     name: 'Google Gemini',
-    defaultModel: 'gemini-2.5-flash',
+    defaultModel: 'gemini-3.6-flash',
     models: [
-      { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash' },
-      { id: 'gemini-2.5-pro', name: 'Gemini 2.5 Pro' },
-      { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash' }
+      { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash' },
+      { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash' },
+      { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash' }
     ]
   },
   {
@@ -1077,7 +1077,12 @@ export const WhiteboardModule: React.FC = () => {
     if (!aiPrompt.trim() || isGeneratingAiFormula) return;
     setIsGeneratingAiFormula(true);
     try {
-      const userKeys: UserKeys = JSON.parse(localStorage.getItem('chatterbot_user_keys') || '{}');
+      const activeUser = localStorage.getItem('chatterbot_username') || 'Guest_Student';
+      const savedKeysStr = localStorage.getItem(`chatterbot_user_keys_${activeUser}`)
+        || localStorage.getItem('chatterbot_user_keys')
+        || localStorage.getItem('prof_joe_user_keys')
+        || '{}';
+      const userKeys: UserKeys = JSON.parse(savedKeysStr);
       const targetModel = isCustomModel && customModelInput.trim() ? customModelInput.trim() : selectedModel;
       const prompt = `Generate a standard, complete LaTeX mathematical formula for the academic topic: "${aiPrompt.trim()}". Return JSON ONLY with format: {"name": "Formula Name", "latex": "raw_latex_string", "explanation": "one concise sentence explanation for students"}`;
 
@@ -1137,7 +1142,12 @@ export const WhiteboardModule: React.FC = () => {
     if (!aiDiagramPrompt.trim() || isGeneratingAiDiagram) return;
     setIsGeneratingAiDiagram(true);
     try {
-      const userKeys: UserKeys = JSON.parse(localStorage.getItem('chatterbot_user_keys') || '{}');
+      const activeUser = localStorage.getItem('chatterbot_username') || 'Guest_Student';
+      const savedKeysStr = localStorage.getItem(`chatterbot_user_keys_${activeUser}`)
+        || localStorage.getItem('chatterbot_user_keys')
+        || localStorage.getItem('prof_joe_user_keys')
+        || '{}';
+      const userKeys: UserKeys = JSON.parse(savedKeysStr);
       const targetModel = isCustomModel && customModelInput.trim() ? customModelInput.trim() : selectedModel;
       const prompt = `You are an educational architecture diagram generator.
 Create an interconnected multi-node diagram for: "${aiDiagramPrompt.trim()}".

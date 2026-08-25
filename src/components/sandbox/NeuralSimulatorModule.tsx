@@ -7689,7 +7689,7 @@ export const NeuralSimulatorModule: React.FC = () => {
     ctx.fill(); ctx.stroke();
 
     // Subtle Grid Background
-    ctx.strokeStyle = theme.gridColor;
+    ctx.strokeStyle = theme.grid;
     ctx.lineWidth = 1;
     for (let x = leftX + 16; x < leftX + leftW; x += 22) {
       ctx.beginPath(); ctx.moveTo(x, leftY); ctx.lineTo(x, leftY + boardH); ctx.stroke();
@@ -11634,7 +11634,7 @@ export const NeuralSimulatorModule: React.FC = () => {
       case 'loss_surface_optimization':
         return `w_{t+1} = w_t - \\eta \\nabla L(w_t) \\quad [\\text{loss}=${optLoss.toFixed(3)}, \\|\\nabla L\\|=${optGradNorm.toFixed(3)}]`;
       case 'neural_mlp':
-        return `a^{[l]} = g\\left(W^{[l]} a^{[l-1]} + b^{[l]}\\right) \\quad [\\text{act}=\\text{${mlpActivation.toUpperCase()}}, \\text{layers}=${mlpLayers.length}]`;
+        return `a^{[l]} = g\\left(W^{[l]} a^{[l-1]} + b^{[l]}\\right) \\quad [\\text{act}=\\text{${mlpActivation.toUpperCase()}}, \\text{layers}=${mlpLayers}]`;
       case 'backprop_autodiff':
         return `\\frac{\\partial L}{\\partial w} = \\frac{\\partial L}{\\partial a} \\cdot \\frac{\\partial a}{\\partial z} \\cdot \\frac{\\partial z}{\\partial w} \\quad [\\text{epoch}=${autodiffStepCount}]`;
       case 'conv_operations':

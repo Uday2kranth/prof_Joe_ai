@@ -286,7 +286,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
 
     printBubbleToPdf(
       sampleMarkdown,
-      activeModel || 'gemini-2.5-pro',
+      activeModel || 'gemini-3.6-flash',
       printConfig.customTitle || 'MDS-104-T Statistical Inference'
     );
   };
@@ -2954,7 +2954,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 140px), 1fr))', gap: '10px' }}>
                         {[
                           { icon: Globe, label: 'Web Grounding', desc: 'Live Academic Search', active: true },
-                          { icon: Cpu, label: 'Model Monitor', desc: 'gemini-2.5-pro • Free', active: true },
+                          { icon: Cpu, label: 'Model Monitor', desc: 'gemini-3.6-flash • Free', active: true },
                           { icon: FileText, label: 'Native Print / PDF', desc: 'Custom Exam Layout', active: false },
                           { icon: Trash2, label: 'Purge Context', desc: 'Zero Token Reset', active: false }
                         ].map((bento, idx) => (
