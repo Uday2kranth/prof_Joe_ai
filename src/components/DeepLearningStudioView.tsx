@@ -2,57 +2,22 @@ import React, { useState, useEffect, useRef, useMemo } from 'react';
 import {
   Play,
   Pause,
-  RotateCcw,
   Sliders,
   Sparkles,
-  Activity,
   Layers,
-  Zap,
-  Code2,
-  Copy,
-  Check,
-  Maximize2,
-  Download,
-  Info,
-  MousePointer,
-  Compass,
-  ArrowRight,
   TrendingUp,
   Grid,
   Box,
-  Eye,
-  EyeOff,
-  BarChart2,
-  PlusCircle,
-  Trash2,
   ChevronDown,
-  ChevronUp,
   PanelLeftClose,
   PanelLeftOpen,
-  SplitSquareVertical,
-  Crosshair,
-  RefreshCw,
-  Shuffle,
-  CircleDot,
-  Plus,
-  Minus,
   Orbit,
-  Percent,
-  Waves,
-  FastForward,
   Square,
-  ShieldAlert,
   Target,
-  Dice5,
-  Binary,
   Cpu,
   Workflow,
   Network,
-  Share2,
   GitBranch,
-  Gauge,
-  Sigma,
-  Flame,
   SkipForward,
   SkipBack
 } from 'lucide-react';
@@ -167,8 +132,8 @@ export const DeepLearningStudioView: React.FC = () => {
   const [activeModuleId, setActiveModuleId] = useState<DeepLearningModuleId>('mlp_playground');
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isSimulating, setIsSimulating] = useState<boolean>(true);
-  const [isAutoOrbit, setIsAutoOrbit] = useState<boolean>(false);
-  const [animSpeed, setAnimSpeed] = useState<number>(1.0);
+  const [isAutoOrbit] = useState<boolean>(false);
+  const [animSpeed] = useState<number>(1.0);
   const [timeT, setTimeT] = useState<number>(0);
 
   const activeMeta = useMemo(() => {
@@ -339,7 +304,6 @@ export const DeepLearningStudioView: React.FC = () => {
   const [cnnStride, setCnnStride] = useState<number>(1);
   const [cnnFilterStep, setCnnFilterStep] = useState<number>(0);
   const [cnnBias, setCnnBias] = useState<number>(0.0);
-  const [isAutoSlideConv, setIsAutoSlideConv] = useState<boolean>(false);
 
   // 6x6 Input Image Matrix with preset initialization
   const [userGrid6x6, setUserGrid6x6] = useState<number[][]>([
@@ -623,7 +587,7 @@ export const DeepLearningStudioView: React.FC = () => {
   const [latentRotX, setLatentRotX] = useState<number>(25);
   const [latentRotY, setLatentRotY] = useState<number>(40);
   const [isDraggingLatent, setIsDraggingLatent] = useState<boolean>(false);
-  const [selectedLatentPoint, setSelectedLatentPoint] = useState<{ x: number; y: number; z: number; label: string; clusterId: number } | null>(null);
+  const [selectedLatentPoint] = useState<{ x: number; y: number; z: number; label: string; clusterId: number } | null>(null);
   const dragLatentStartRef = useRef<{ x: number; y: number; rx: number; ry: number }>({ x: 0, y: 0, rx: 25, ry: 40 });
   const canvasLatentRef = useRef<HTMLCanvasElement | null>(null);
 
@@ -942,7 +906,6 @@ export const DeepLearningStudioView: React.FC = () => {
   const [latentCursorZ1, setLatentCursorZ1] = useState<number>(0.2);
   const [latentCursorZ2, setLatentCursorZ2] = useState<number>(-0.4);
   const [vaeBetaLoss, setVaeBetaLoss] = useState<number>(1.0);
-  const [isReparameterizeActive, setIsReparameterizeActive] = useState<boolean>(true);
 
   // Decoded 10x10 Pixel Matrix from Latent Coordinates (z1, z2)
   const decodedVaePixels = useMemo(() => {

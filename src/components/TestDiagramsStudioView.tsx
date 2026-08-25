@@ -24,23 +24,16 @@ import {
   Target,
   Dice5,
   Search,
-  ArrowLeft,
   ArrowRight,
   Grid,
-  Layers,
   Sparkles,
-  Sliders,
-  Eye,
-  CheckCircle2,
-  ExternalLink,
-  BookOpen,
   RotateCcw,
   SkipBack,
   SkipForward
 } from 'lucide-react';
 import { DualParamControl } from './common/DualParamControl';
 import { PillSelector } from './common/PillSelector';
-import { getCanvasTheme, type CanvasAtmosphere } from '../utils/canvasThemeEngine';
+import { getCanvasTheme } from '../utils/canvasThemeEngine';
 
 export type MathStudioModuleId =
   // 1. Statistics & Machine Learning
@@ -1508,7 +1501,6 @@ export const TestDiagramsStudioView: React.FC = () => {
   const [ballLearningRate, setBallLearningRate] = useState<number>(0.07);
   const [ballMomentum, setBallMomentum] = useState<number>(0.72);
   const [ballPhysicsTick, setBallPhysicsTick] = useState<number>(0);
-  const isDragging3DRef = useRef<boolean>(false);
   const [isDragging3D, setIsDragging3D] = useState<boolean>(false);
   const dragStartRef = useRef<{ x: number; y: number; rx: number; ry: number }>({ x: 0, y: 0, rx: 26, ry: 42 });
   const canvas3DRef = useRef<HTMLCanvasElement | null>(null);
@@ -6593,7 +6585,7 @@ export const TestDiagramsStudioView: React.FC = () => {
                                       <circle cx={pX} cy={pY} r="8" fill="#fbbf24" stroke="#ffffff" strokeWidth="2.2" />
                                       <rect x={bX - 74} y={bY - 11} width="148" height="22" rx="5" fill="#0b1120" stroke="#fbbf24" strokeWidth="1.4" />
                                       <text x={bX} y={bY + 4} fill="#fbbf24" fontSize="9" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
-                                        ★ ({v.x.toFixed(1)}, {v.y.toFixed(1)}) OPTIMAL Z* = {feasiblePolygon.optimalVertex.z.toFixed(1)}
+                                        ★ ({v.x.toFixed(1)}, {v.y.toFixed(1)}) OPTIMAL Z* = {feasiblePolygon.optimalVertex?.z?.toFixed(1) ?? 'N/A'}
                                       </text>
                                     </>
                                   ) : isSimplexStep ? (
