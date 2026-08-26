@@ -1,0 +1,79 @@
+{
+  "description": "Golden Reference Standard Datasets (Scikit-Learn, SciPy, Bishop PRML benchmarks)",
+  "gaussianZTable": [
+    { "z": -3.0, "expectedCdf": 0.00135, "tolerance": 0.0001 },
+    { "z": -2.58, "expectedCdf": 0.00494, "tolerance": 0.0001 },
+    { "z": -1.96, "expectedCdf": 0.025, "tolerance": 0.0001 },
+    { "z": -1.645, "expectedCdf": 0.05, "tolerance": 0.0002 },
+    { "z": -1.0, "expectedCdf": 0.158655, "tolerance": 0.0001 },
+    { "z": 0.0, "expectedCdf": 0.5, "tolerance": 0.00001 },
+    { "z": 1.0, "expectedCdf": 0.841345, "tolerance": 0.0001 },
+    { "z": 1.645, "expectedCdf": 0.95, "tolerance": 0.0002 },
+    { "z": 1.96, "expectedCdf": 0.975, "tolerance": 0.0001 },
+    { "z": 2.58, "expectedCdf": 0.99506, "tolerance": 0.0001 },
+    { "z": 3.0, "expectedCdf": 0.99865, "tolerance": 0.0001 }
+  ],
+  "olsBenchmark": {
+    "points": [
+      { "x": 1.0, "y": 2.1 },
+      { "x": 2.0, "y": 3.9 },
+      { "x": 3.0, "y": 6.2 },
+      { "x": 4.0, "y": 8.1 },
+      { "x": 5.0, "y": 9.8 }
+    ],
+    "expectedSlope": 1.96,
+    "expectedIntercept": 0.14,
+    "expectedRSquared": 0.99761,
+    "expectedPearsonR": 0.99880
+  },
+  "svrReference": {
+    "epsilon": 0.5,
+    "cases": [
+      { "y": 3.0, "yHat": 3.2, "expectedLoss": 0.0, "expectedXi": 0.0, "expectedXiStar": 0.0 },
+      { "y": 5.5, "yHat": 5.0, "expectedLoss": 0.0, "expectedXi": 0.0, "expectedXiStar": 0.0 },
+      { "y": 2.0, "yHat": 2.8, "expectedLoss": 0.3, "expectedXi": 0.0, "expectedXiStar": 0.3 },
+      { "y": 7.0, "yHat": 6.0, "expectedLoss": 0.5, "expectedXi": 0.5, "expectedXiStar": 0.0 }
+    ]
+  },
+  "logisticActivation": [
+    { "z": -5.0, "expectedSigmoid": 0.00669285 },
+    { "z": -2.0, "expectedSigmoid": 0.11920292 },
+    { "z": -1.0, "expectedSigmoid": 0.26894142 },
+    { "z": 0.0, "expectedSigmoid": 0.5 },
+    { "z": 1.0, "expectedSigmoid": 0.73105858 },
+    { "z": 2.0, "expectedSigmoid": 0.88079708 },
+    { "z": 5.0, "expectedSigmoid": 0.99330715 }
+  ],
+  "rk4HarmonicOscillator": {
+    "initial": { "x": 1.0, "y": 0.0 },
+    "dt": 0.1,
+    "step1Expected": { "x": 0.995004, "y": -0.099833 },
+    "step2Expected": { "x": 0.980067, "y": -0.198669 }
+  },
+  "jacobianStability": [
+    {
+      "matrix": [[0, 1], [-1, 0]],
+      "expectedTrace": 0,
+      "expectedDet": 1,
+      "expectedClassification": "center_or_neutral"
+    },
+    {
+      "matrix": [[1, 0], [0, -1]],
+      "expectedTrace": 0,
+      "expectedDet": -1,
+      "expectedClassification": "saddle_point"
+    },
+    {
+      "matrix": [[-2, 1], [0, -3]],
+      "expectedTrace": -5,
+      "expectedDet": 6,
+      "expectedClassification": "stable_sink"
+    },
+    {
+      "matrix": [[2, 1], [0, 3]],
+      "expectedTrace": 5,
+      "expectedDet": 6,
+      "expectedClassification": "unstable_source"
+    }
+  ]
+}

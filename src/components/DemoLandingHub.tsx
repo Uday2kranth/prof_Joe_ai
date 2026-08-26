@@ -21,6 +21,8 @@ import {
   Compass
 } from 'lucide-react';
 import { MorphingText } from './MorphingText';
+import { Hero3DPreviewShowcase } from './Hero3DPreviewShowcase';
+
 
 interface DemoLandingHubProps {
   onSelectWorkspace: (workspaceId: 'chat' | 'personas' | 'fun_personas' | 'examprep' | 'diagrams' | 'system_prompts' | 'prompts' | 'cubes' | 'extractor_studio' | 'code_lab' | 'lecture_notes' | 'sandbox' | 'dsa_lab' | 'flashcards_studio' | 'quiz_arena' | 'pinned_archive' | 'test_diagrams' | 'deep_learning_studio') => void;
@@ -166,7 +168,10 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
             className="my-3"
           />
 
+          {/* 🌟 2-Tier Architecture: Live 60 FPS 3D Hero Preview Showcase */}
+          <Hero3DPreviewShowcase onLaunchStudio={onSelectWorkspace} />
         </div>
+
 
         {/* Workspace Cards Grid */}
         <div className="demo-portals-grid">

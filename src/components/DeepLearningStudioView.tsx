@@ -23,6 +23,8 @@ import {
 } from 'lucide-react';
 import { DualParamControl } from './common/DualParamControl';
 import { PillSelector } from './common/PillSelector';
+import { evaluateActivation, evaluateActivationDeriv, type NeuralActivationType } from '../utils/math_studio/logisticSoftmax';
+
 
 export type DeepLearningModuleId =
   | 'mlp_playground'
@@ -237,58 +239,49 @@ export const DeepLearningStudioView: React.FC = () => {
     setMlpEpoch(0);
   };
 
-  // Activation Function Math & Derivative Formulas
+  // Activation Function Math & Derivative Formulas (Delegated to Pure Math Engine)
   const activationMeta = useMemo(() => {
-    if (mlpActivation === 'relu') {
-      return {
+    const act = mlpActivation as NeuralActivationType;
+    const infoMap: Record<string, { formula: string; derivative: string; range: string; advantage: string }> = {
+      relu: {
         formula: 'f(z) = max(0, z)',
         derivative: "f'(z) = 1 if z > 0 else 0",
-        eval: (z: number) => Math.max(0, z),
-        evalDeriv: (z: number) => (z > 0 ? 1 : 0),
         range: '[0, +∞)',
         advantage: 'Mitigates vanishing gradient in deep nets'
-      };
-    } else if (mlpActivation === 'sigmoid') {
-      return {
+      },
+      sigmoid: {
         formula: 'f(z) = 1 / (1 + e⁻ᶻ)',
         derivative: "f'(z) = f(z)(1 - f(z))",
-        eval: (z: number) => 1 / (1 + Math.exp(-z)),
-        evalDeriv: (z: number) => {
-          const s = 1 / (1 + Math.exp(-z));
-          return s * (1 - s);
-        },
         range: '(0, 1)',
         advantage: 'Interpretable as binary probability'
-      };
-    } else if (mlpActivation === 'gelu') {
-      return {
+      },
+      gelu: {
         formula: 'f(z) = z · Φ(z) ≈ 0.5z(1 + tanh(√(2/π)(z + 0.044715z³)))',
         derivative: "f'(z) ≈ Φ(z) + z · ϕ(z)",
-        eval: (z: number) => 0.5 * z * (1 + Math.tanh(Math.sqrt(2 / Math.PI) * (z + 0.044715 * Math.pow(z, 3)))),
-        evalDeriv: (z: number) => 0.5 * (1 + Math.tanh(0.79788 * (z + 0.044715 * Math.pow(z, 3)))) + 0.39894 * z * (1 - Math.pow(Math.tanh(0.79788 * (z + 0.044715 * Math.pow(z, 3))), 2)),
         range: '[-0.17, +∞)',
         advantage: 'Transformer & LLM standard (BERT/GPT)'
-      };
-    } else if (mlpActivation === 'leaky_relu') {
-      return {
+      },
+      leaky_relu: {
         formula: 'f(z) = max(0.01z, z)',
         derivative: "f'(z) = 1 if z > 0 else 0.01",
-        eval: (z: number) => (z > 0 ? z : 0.01 * z),
-        evalDeriv: (z: number) => (z > 0 ? 1 : 0.01),
         range: '(-∞, +∞)',
         advantage: 'Prevents dying ReLU neuron problem'
-      };
-    } else {
-      return {
+      },
+      tanh: {
         formula: 'f(z) = tanh(z) = (eᶻ - e⁻ᶻ) / (eᶻ + e⁻ᶻ)',
         derivative: "f'(z) = 1 - tanh²(z)",
-        eval: (z: number) => Math.tanh(z),
-        evalDeriv: (z: number) => 1 - Math.pow(Math.tanh(z), 2),
         range: '(-1, 1)',
         advantage: 'Zero-centered, smooth gradient convergence'
-      };
-    }
+      }
+    };
+    const info = infoMap[mlpActivation] || infoMap.tanh;
+    return {
+      ...info,
+      eval: (z: number) => evaluateActivation(z, act),
+      evalDeriv: (z: number) => evaluateActivationDeriv(z, act)
+    };
   }, [mlpActivation]);
+
 
   // ─────────────────────────────────────────────────────────────────────────────
   // 2. CNN FEATURE MAPS STATE

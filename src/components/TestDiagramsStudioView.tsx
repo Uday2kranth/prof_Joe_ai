@@ -34,6 +34,16 @@ import {
 import { DualParamControl } from './common/DualParamControl';
 import { PillSelector } from './common/PillSelector';
 import { getCanvasTheme } from '../utils/canvasThemeEngine';
+import { normalPdf, normalCdf, studentTPdf, studentTCdf, bivariateNormalPdf, getStudentTCrit, calcGaussianQuantile, calcStudentTQuantile } from '../utils/math_studio/gaussianStats';
+import { evaluateKernel, computeLinearDecision, computeKernelDecision, calculatePointSlackAndAlpha } from '../utils/math_studio/svcEngine';
+import { epsilonLoss, calculateSvrSlacks, computeSvrLoss } from '../utils/math_studio/svrEngine';
+import { sigmoid, softmax, binaryCrossEntropy, categoricalCrossEntropy } from '../utils/math_studio/logisticSoftmax';
+import { computeOLS, gradientDescentStep } from '../utils/math_studio/linearRegression';
+import { intersectLines, isPointFeasible } from '../utils/math_studio/multilineSystems';
+import { getFourierHarmonics, evaluateFourierSeries, apply2DTransform } from '../utils/math_studio/fourierHarmonics';
+import { numericalDerivative, computeRiemannSum } from '../utils/math_studio/tangentsRiemann';
+import { rk4Step, computeJacobian, classifyFixedPoint } from '../utils/math_studio/odeVectorFields';
+import { generateIsoSegments, interpolateEdge } from '../utils/math_studio/marchingContours';
 
 export type MathStudioModuleId =
   // 1. Statistics & Machine Learning
@@ -223,6 +233,7 @@ export const TestDiagramsStudioView: React.FC = () => {
       setRotY(prev => (prev + rotDelta) % 360);
       setLog3dRotY(prev => (prev + rotDelta) % 360);
       setLin3dRotY(prev => (prev + rotDelta) % 360);
+      setSvc3dRotY(prev => (prev + rotDelta) % 360);
     }
 
     // Advance 3D Physics Step
@@ -532,17 +543,30 @@ export const TestDiagramsStudioView: React.FC = () => {
   // ─────────────────────────────────────────────────────────────────────────────
   // 3. PHASE 1: GAUSSIAN & STUDENT-T DISTRIBUTIONS
   // ─────────────────────────────────────────────────────────────────────────────
-  const [gaussDimension, setGaussDimension] = useState<'1d_pdf_compare' | '1d_cdf' | '2d_bivariate' | '3d_surface'>('1d_pdf_compare');
+  const [gaussDimension, setGaussDimension] = useState<'1d_pdf_compare' | '1d_cdf' | '1d_qqplot' | '2d_bivariate' | '3d_surface'>('1d_pdf_compare');
   const [gaussTailMode, setGaussTailMode] = useState<'two_tailed' | 'left_tailed' | 'right_tailed' | 'empirical_bands'>('two_tailed');
   const [gaussMean, setGaussMean] = useState<number>(0.0);
   const [gaussStd, setGaussStd] = useState<number>(1.0);
+  const [gaussStdY, setGaussStdY] = useState<number>(1.0);
   const [studentNu, setStudentNu] = useState<number>(4);
   const [bivariateRho, setBivariateRho] = useState<number>(0.6);
   const [ciConfidence, setCiConfidence] = useState<number>(95);
   const [injectGaussX0, setInjectGaussX0] = useState<number>(1.96);
+  const [cltSource, setCltSource] = useState<'uniform' | 'exponential' | 'bimodal' | 'discrete_die'>('uniform');
+
+  // One-Sample Hypothesis Testing & Confidence Interval States
+  const [hypoSampleMean, setHypoSampleMean] = useState<number>(1.8);
+  const [hypoSampleSize, setHypoSampleSize] = useState<number>(10);
+  const [hypoSampleStd, setHypoSampleStd] = useState<number>(1.2);
+  const [hypoNullMu, setHypoNullMu] = useState<number>(0.0);
+  const [showHypoTestOverlay, setShowHypoTestOverlay] = useState<boolean>(true);
+  const [showCiBrackets, setShowCiBrackets] = useState<boolean>(true);
+  const [showPcaVectors, setShowPcaVectors] = useState<boolean>(true);
+  const [isNuSweeping, setIsNuSweeping] = useState<boolean>(false);
 
   const [gauss3dRotX, setGauss3dRotX] = useState<number>(30);
   const [gauss3dRotY, setGauss3dRotY] = useState<number>(45);
+  const [gauss3dZoom, setGauss3dZoom] = useState<number>(1.0);
   const [isDraggingGauss3D, setIsDraggingGauss3D] = useState<boolean>(false);
   const dragGauss3dStartRef = useRef<{ x: number; y: number; rx: number; ry: number }>({ x: 0, y: 0, rx: 30, ry: 45 });
   const canvasGauss3dRef = useRef<HTMLCanvasElement | null>(null);
@@ -555,9 +579,30 @@ export const TestDiagramsStudioView: React.FC = () => {
     for (let k = 0; k < 15; k++) {
       let sum = 0;
       for (let i = 0; i < sampleSize; i++) {
-        sum += (Math.random() - 0.5) * 3.464;
+        let draw = 0;
+        if (cltSource === 'exponential') {
+          // Standard Exponential Exp(1) centered & scaled (mean=1, std=1)
+          const u = Math.max(1e-6, Math.random());
+          draw = -Math.log(u) - 1.0;
+        } else if (cltSource === 'bimodal') {
+          // 50/50 mixture of N(-1.5, 0.5) and N(1.5, 0.5)
+          const peak = Math.random() > 0.5 ? 1.5 : -1.5;
+          const u1 = Math.max(1e-6, Math.random());
+          const u2 = Math.random();
+          const z0 = Math.sqrt(-2.0 * Math.log(u1)) * Math.cos(2.0 * Math.PI * u2);
+          draw = (peak + z0 * 0.5) / 1.58; // normalized variance approx 1
+        } else if (cltSource === 'discrete_die') {
+          // 6-sided die {1, 2, 3, 4, 5, 6}: Mean=3.5, Std=sqrt(35/12)=1.7078
+          const dieRoll = Math.floor(Math.random() * 6) + 1;
+          draw = (dieRoll - 3.5) / 1.7078;
+        } else {
+          // Standard Uniform [-sqrt(3), +sqrt(3)] (mean=0, std=1)
+          draw = (Math.random() - 0.5) * 3.4641;
+        }
+        sum += draw;
       }
-      newMeans.push(parseFloat((gaussMean + (sum / sampleSize) * gaussStd).toFixed(3)));
+      const sampleMean = gaussMean + (sum / sampleSize) * gaussStd;
+      newMeans.push(parseFloat(sampleMean.toFixed(3)));
     }
     setCltSamples(prev => [...prev.slice(-180), ...newMeans]);
   };
@@ -566,55 +611,113 @@ export const TestDiagramsStudioView: React.FC = () => {
     setCltSamples([]);
   };
 
-  const calcGaussianPdf = (x: number, mu: number, sigma: number): number => {
-    return (1 / (sigma * Math.sqrt(2 * Math.PI))) * Math.exp(-0.5 * Math.pow((x - mu) / sigma, 2));
-  };
+  const calcGaussianPdf = (x: number, mu: number, sigma: number): number => normalPdf(x, mu, sigma);
+  const calcGaussianCdf = (x: number, mu: number, sigma: number): number => normalCdf(x, mu, sigma);
+  const calcStudentTPdf = (x: number, nu: number, mu: number, sigma: number): number => studentTPdf(x, nu, mu, sigma);
+  const calcStudentTCdf = (x: number, nu: number, mu: number, sigma: number): number => studentTCdf(x, nu, mu, sigma);
+  const calcBivariatePdf = (x: number, y: number, muX: number, muY: number, sigmaX: number, sigmaY: number, rho: number): number =>
+    bivariateNormalPdf(x, y, muX, muY, sigmaX, sigmaY, rho);
 
-  const calcErf = (x: number): number => {
-    // Abramowitz and Stegun formula 7.1.26 approximation
-    const a1 = 0.254829592;
-    const a2 = -0.284496736;
-    const a3 = 1.421413741;
-    const a4 = -1.453152027;
-    const a5 = 1.061405429;
-    const p = 0.3275911;
-    const sign = x < 0 ? -1 : 1;
-    const absX = Math.abs(x);
-    const t = 1.0 / (1.0 + p * absX);
-    const y = 1.0 - (((((a5 * t + a4) * t) + a3) * t + a2) * t + a1) * t * Math.exp(-absX * absX);
-    return sign * y;
-  };
 
-  const calcGaussianCdf = (x: number, mu: number, sigma: number): number => {
-    return 0.5 * (1 + calcErf((x - mu) / (sigma * Math.SQRT2)));
-  };
-
-  const calcStudentTPdf = (x: number, nu: number, mu: number, sigma: number): number => {
-    const z = (x - mu) / sigma;
-    const factor = Math.sqrt(nu / (nu + 1)) * (1 - 1 / (8 * nu));
-    const coef = (1 / (sigma * Math.sqrt(nu * Math.PI))) * (1 / factor);
-    return coef * Math.pow(1 + (z * z) / nu, -(nu + 1) / 2);
-  };
-
-  const calcStudentTCdf = (x: number, nu: number, mu: number, sigma: number): number => {
-    // Normal approximation weighted by degrees of freedom
-    const z = (x - mu) / sigma;
-    const normCdf = calcGaussianCdf(x, mu, sigma);
-    if (nu > 25) return normCdf;
-    const tCorrection = (z * z * z + z) / (4 * nu);
-    return Math.max(0, Math.min(1, normCdf - calcGaussianPdf(x, mu, sigma) * tCorrection));
-  };
-
-  const calcBivariatePdf = (x: number, y: number, muX: number, muY: number, sigma: number, rho: number): number => {
-    const zX = (x - muX) / sigma;
-    const zY = (y - muY) / sigma;
-    const factor = 1 / (2 * Math.PI * sigma * sigma * Math.sqrt(Math.max(1e-4, 1 - rho * rho)));
-    const exponent = -1 / (2 * (1 - rho * rho)) * (zX * zX - 2 * rho * zX * zY + zY * zY);
-    return factor * Math.exp(Math.max(-20, exponent));
-  };
-
-  const activeNu = isBendingAnim ? Math.round(1 + (Math.sin(timeT * 2.0) + 1) * 14.5) : studentNu;
+  const activeNu = isBendingAnim || isNuSweeping ? Math.round(1 + (Math.sin(timeT * 1.8) + 1) * 14.5) : studentNu;
   const activeRho = isBendingAnim ? Math.sin(timeT * 1.5) * 0.85 : bivariateRho;
+
+  // One-Sample Hypothesis Testing (Z-Test vs Student's t-Test) & CI Margin of Error Analysis
+  const gaussHypoAnalysis = useMemo(() => {
+    const n = Math.max(2, hypoSampleSize);
+    const se = hypoSampleStd / Math.sqrt(n);
+    const seKnown = gaussStd / Math.sqrt(n);
+    const tStat = (hypoSampleMean - hypoNullMu) / (se || 1e-5);
+    const zStat = (hypoSampleMean - hypoNullMu) / (seKnown || 1e-5);
+    const df = Math.max(1, n - 1);
+
+    const zCrit = ciConfidence === 90 ? 1.64485 : ciConfidence === 99 ? 2.57583 : 1.95996;
+    const tCrit = getStudentTCrit(df, ciConfidence);
+
+    const pValT = Math.max(0.0001, Math.min(1.0, 2 * (1 - calcStudentTCdf(Math.abs(tStat), df, 0, 1))));
+    const pValZ = Math.max(0.0001, Math.min(1.0, 2 * (1 - calcGaussianCdf(Math.abs(zStat), 0, 1))));
+
+    const isRejectedT = Math.abs(tStat) > tCrit;
+    const isRejectedZ = Math.abs(zStat) > zCrit;
+
+    const zMargin = zCrit * seKnown;
+    const tMargin = tCrit * se;
+    const zCiLow = hypoSampleMean - zMargin;
+    const zCiHigh = hypoSampleMean + zMargin;
+    const tCiLow = hypoSampleMean - tMargin;
+    const tCiHigh = hypoSampleMean + tMargin;
+    const ciInflationPct = zMargin > 0 ? ((tMargin / zMargin) - 1) * 100 : 0;
+
+    return {
+      n,
+      se,
+      seKnown,
+      tStat,
+      zStat,
+      df,
+      zCrit,
+      tCrit,
+      pValT,
+      pValZ,
+      isRejectedT,
+      isRejectedZ,
+      zMargin,
+      tMargin,
+      zCiLow,
+      zCiHigh,
+      tCiLow,
+      tCiHigh,
+      ciInflationPct
+    };
+  }, [hypoSampleMean, hypoSampleSize, hypoSampleStd, hypoNullMu, gaussStd, ciConfidence]);
+
+  // 2D Bivariate Normal PCA & Eigen-Decomposition Analysis
+  const gaussPcaAnalysis = useMemo(() => {
+    const varX = gaussStd * gaussStd;
+    const varY = gaussStdY * gaussStdY;
+    const covXY = activeRho * gaussStd * gaussStdY;
+    const trace = varX + varY;
+    const diff = varX - varY;
+    const disc = Math.sqrt(Math.max(0, diff * diff + 4 * covXY * covXY));
+    const lambda1 = Math.max(0.001, (trace + disc) / 2);
+    const lambda2 = Math.max(0.001, (trace - disc) / 2);
+    const thetaRad = 0.5 * Math.atan2(2 * covXY, diff);
+    const thetaDeg = (thetaRad * 180) / Math.PI;
+    const totalVar = lambda1 + lambda2;
+    const pc1Ratio = (lambda1 / totalVar) * 100;
+    const pc2Ratio = (lambda2 / totalVar) * 100;
+
+    return {
+      varX,
+      varY,
+      covXY,
+      lambda1,
+      lambda2,
+      thetaRad,
+      thetaDeg,
+      totalVar,
+      pc1Ratio,
+      pc2Ratio
+    };
+  }, [gaussStd, gaussStdY, activeRho]);
+
+  // Information-Theoretic KL Divergence & Differential Entropy
+  const gaussInfoAnalysis = useMemo(() => {
+    let klDiv = 0;
+    const step = 0.08;
+    for (let x = -5 * gaussStd; x <= 5 * gaussStd; x += step) {
+      const pN = calcGaussianPdf(x, 0, gaussStd);
+      const pT = calcStudentTPdf(x, activeNu, 0, gaussStd);
+      if (pN > 1e-7 && pT > 1e-7) {
+        klDiv += pN * Math.log(pN / pT) * step;
+      }
+    }
+    const normalEntropy = 0.5 * Math.log(2 * Math.PI * Math.E * gaussStd * gaussStd);
+    return {
+      klDivergence: Math.max(0, klDiv),
+      normalEntropy
+    };
+  }, [gaussStd, activeNu]);
 
   // 3D Gaussian Surface Canvas Rendering Effect
   useEffect(() => {
@@ -637,7 +740,7 @@ export const TestDiagramsStudioView: React.FC = () => {
       const y2 = y1 * Math.cos(radX) - z * Math.sin(radX);
       const z2 = y1 * Math.sin(radX) + z * Math.cos(radX);
 
-      const scale = 52;
+      const scale = 52 * gauss3dZoom;
       const screenX = width / 2 + x1 * scale;
       const screenY = height / 2 + y2 * scale * 0.7 - z2 * scale * 0.55;
       return { sx: screenX, sy: screenY, depth: z2 };
@@ -652,7 +755,7 @@ export const TestDiagramsStudioView: React.FC = () => {
       const x = -range + (i / N) * (2 * range);
       for (let j = 0; j <= N; j++) {
         const y = -range + (j / N) * (2 * range);
-        const zVal = calcBivariatePdf(x, y, gaussMean, 0, gaussStd, activeRho) * 8.5;
+        const zVal = calcBivariatePdf(x, y, gaussMean, 0, gaussStd, gaussStdY, activeRho) * 8.5;
         const pt = project3D(x, y, zVal);
         row.push({ ...pt, zVal });
       }
@@ -709,22 +812,57 @@ export const TestDiagramsStudioView: React.FC = () => {
     ctx.moveTo(origin.sx, origin.sy);
     ctx.lineTo(zEnd.sx, zEnd.sy);
     ctx.stroke();
-  }, [activeModuleId, gaussDimension, gauss3dRotX, gauss3dRotY, gaussMean, gaussStd, activeRho]);
+  }, [activeModuleId, gaussDimension, gauss3dRotX, gauss3dRotY, gauss3dZoom, gaussMean, gaussStd, gaussStdY, activeRho]);
 
   // ─────────────────────────────────────────────────────────────────────────────
   // 4. PHASE 2: SUPPORT VECTOR MACHINES (SVC & SVR)
   // ─────────────────────────────────────────────────────────────────────────────
-  const [svcDimension, setSvcDimension] = useState<'2d_margin' | '1d_line' | '3d_plane'>('2d_margin');
+  const [svcDimension, setSvcDimension] = useState<'2d_margin' | '1d_line' | '3d_plane' | '4d_slice'>('2d_margin');
   const [svcKernel, setSvcKernel] = useState<'linear' | 'rbf' | 'poly'>('linear');
   const [svcC, setSvcC] = useState<number>(1.0);
   const [svcMarginW, setSvcMarginW] = useState<number>(1.2);
   const [svcBiasB, setSvcBiasB] = useState<number>(0.2);
   const [svcGamma, setSvcGamma] = useState<number>(0.8);
   const [svcPolyDegree, setSvcPolyDegree] = useState<number>(2);
+  const [svcDatasetPreset, setSvcDatasetPreset] = useState<'separable' | 'overlapping' | 'circles' | 'xor_moons' | 'outlier_stress'>('separable');
+  const [draggingSvcPointId, setDraggingSvcPointId] = useState<number | null>(null);
+  const svcSvgRef = useRef<SVGSVGElement | null>(null);
+
+  // 3D & 4D SVC Orbit Camera & Canvas State
+  const [svc3dRotX, setSvc3dRotX] = useState<number>(26);
+  const [svc3dRotY, setSvc3dRotY] = useState<number>(40);
+  const [svc3dZoom, setSvc3dZoom] = useState<number>(1.0);
+  const [isDraggingSvc3D, setIsDraggingSvc3D] = useState<boolean>(false);
+  const dragSvc3dStartRef = useRef<{ x: number; y: number; rx: number; ry: number }>({ x: 0, y: 0, rx: 26, ry: 40 });
+  const canvasSvc3dRef = useRef<HTMLCanvasElement | null>(null);
+  const [svc3dFeatureMap, setSvc3dFeatureMap] = useState<'paraboloid' | 'rbf_pot' | 'decision_plane'>('paraboloid');
+  const [dragging3dPointId, setDragging3dPointId] = useState<number | null>(null);
+
+  // 4D Hyperplane Slicing State
+  const [svc4dSliceX4, setSvc4dSliceX4] = useState<number>(0.0);
+  const [svc4dAutoSlice, setSvc4dAutoSlice] = useState<boolean>(true);
+  const [svc4dSliceThickness, setSvc4dSliceThickness] = useState<number>(1.2);
+  const [svc4dPoints, setSvc4dPoints] = useState<Array<{ id: number; x1: number; x2: number; x3: number; x4: number; label: 1 | -1 }>>([
+    { id: 1, x1: -1.2, x2: 1.0, x3: 0.8, x4: -1.0, label: 1 },
+    { id: 2, x1: -0.8, x2: 1.5, x3: 1.2, x4: -0.5, label: 1 },
+    { id: 3, x1: -1.5, x2: 0.5, x3: 0.2, x4: 0.0, label: 1 },
+    { id: 4, x1: -1.0, x2: 1.2, x3: -0.5, x4: 0.5, label: 1 },
+    { id: 5, x1: -0.5, x2: 0.8, x3: 1.0, x4: 1.0, label: 1 },
+    { id: 6, x1: -1.8, x2: 1.8, x3: 0.5, x4: -0.8, label: 1 },
+    { id: 7, x1: 1.2, x2: -1.0, x3: -0.8, x4: -1.0, label: -1 },
+    { id: 8, x1: 0.8, x2: -1.5, x3: -1.2, x4: -0.5, label: -1 },
+    { id: 9, x1: 1.5, x2: -0.5, x3: -0.2, x4: 0.0, label: -1 },
+    { id: 10, x1: 1.0, x2: -1.2, x3: 0.5, x4: 0.5, label: -1 },
+    { id: 11, x1: 0.5, x2: -0.8, x3: -1.0, x4: 1.0, label: -1 },
+    { id: 12, x1: 1.8, x2: -1.8, x3: -0.5, x4: 0.8, label: -1 }
+  ]);
 
   const [injectSvcX1, setInjectSvcX1] = useState<number>(0.5);
   const [injectSvcX2, setInjectSvcX2] = useState<number>(0.5);
   const [injectSvcClass, setInjectSvcClass] = useState<1 | -1>(1);
+  const [showSvcFormulaHud, setShowSvcFormulaHud] = useState<boolean>(true);
+  const [showSvcPointLabels, setShowSvcPointLabels] = useState<boolean>(false);
+  const [hoveredSvcPointId, setHoveredSvcPointId] = useState<number | null>(null);
   const [isSvcPointsListOpen, setIsSvcPointsListOpen] = useState<boolean>(false);
 
   const [svcPoints, setSvcPoints] = useState<Array<{ id: number; x1: number; x2: number; label: 1 | -1 }>>([
@@ -737,6 +875,134 @@ export const TestDiagramsStudioView: React.FC = () => {
     { id: 7, x1: 2.0, x2: -1.8, label: -1 },
     { id: 8, x1: 1.2, x2: 0.2, label: -1 }
   ]);
+
+  const loadSvcPreset = (preset: 'separable' | 'overlapping' | 'circles' | 'xor_moons' | 'outlier_stress') => {
+    setSvcDatasetPreset(preset);
+    if (preset === 'separable') {
+      setSvcPoints([
+        { id: 1, x1: -2.2, x2: 1.8, label: 1 },
+        { id: 2, x1: -1.5, x2: 1.0, label: 1 },
+        { id: 3, x1: -0.8, x2: 2.2, label: 1 },
+        { id: 4, x1: -2.0, x2: -0.2, label: 1 },
+        { id: 5, x1: 0.8, x2: -1.2, label: -1 },
+        { id: 6, x1: 1.5, x2: -0.5, label: -1 },
+        { id: 7, x1: 2.2, x2: -1.8, label: -1 },
+        { id: 8, x1: 1.2, x2: 0.4, label: -1 }
+      ]);
+      setSvcKernel('linear');
+      setSvcBiasB(0.2);
+      setSvcMarginW(1.2);
+      setSvcC(1.0);
+      setSvc3dFeatureMap('decision_plane');
+    } else if (preset === 'overlapping') {
+      setSvcPoints([
+        { id: 1, x1: -2.0, x2: 1.5, label: 1 },
+        { id: 2, x1: -1.2, x2: 0.8, label: 1 },
+        { id: 3, x1: -0.5, x2: 1.8, label: 1 },
+        { id: 4, x1: -1.8, x2: -0.5, label: 1 },
+        { id: 5, x1: 0.2, x2: 0.2, label: 1 },
+        { id: 6, x1: 0.8, x2: -1.2, label: -1 },
+        { id: 7, x1: 1.5, x2: -0.5, label: -1 },
+        { id: 8, x1: 2.0, x2: -1.8, label: -1 },
+        { id: 9, x1: 1.2, x2: 0.2, label: -1 },
+        { id: 10, x1: -0.3, x2: 0.5, label: -1 }
+      ]);
+      setSvcKernel('linear');
+      setSvcBiasB(0.2);
+      setSvcMarginW(1.2);
+      setSvcC(1.0);
+      setSvc3dFeatureMap('decision_plane');
+    } else if (preset === 'circles') {
+      setSvcPoints([
+        { id: 1, x1: 0.0, x2: 0.0, label: 1 },
+        { id: 2, x1: 0.7, x2: 0.6, label: 1 },
+        { id: 3, x1: -0.7, x2: 0.6, label: 1 },
+        { id: 4, x1: 0.6, x2: -0.7, label: 1 },
+        { id: 5, x1: -0.6, x2: -0.7, label: 1 },
+        { id: 6, x1: 2.3, x2: 0.0, label: -1 },
+        { id: 7, x1: -2.3, x2: 0.0, label: -1 },
+        { id: 8, x1: 0.0, x2: 2.3, label: -1 },
+        { id: 9, x1: 0.0, x2: -2.3, label: -1 },
+        { id: 10, x1: 1.7, x2: 1.7, label: -1 },
+        { id: 11, x1: -1.7, x2: 1.7, label: -1 },
+        { id: 12, x1: 1.7, x2: -1.7, label: -1 },
+        { id: 13, x1: -1.7, x2: -1.7, label: -1 }
+      ]);
+      setSvcKernel('rbf');
+      setSvcGamma(1.2);
+      setSvcBiasB(-0.5);
+      setSvc3dFeatureMap('paraboloid');
+    } else if (preset === 'xor_moons') {
+      setSvcPoints([
+        { id: 1, x1: -1.6, x2: 1.4, label: 1 },
+        { id: 2, x1: -1.0, x2: 1.8, label: 1 },
+        { id: 3, x1: -0.4, x2: 1.1, label: 1 },
+        { id: 4, x1: 1.2, x2: -1.4, label: 1 },
+        { id: 5, x1: 1.8, x2: -1.0, label: 1 },
+        { id: 6, x1: 0.9, x2: -1.8, label: 1 },
+        { id: 7, x1: 1.3, x2: 1.3, label: -1 },
+        { id: 8, x1: 1.8, x2: 1.6, label: -1 },
+        { id: 9, x1: 0.8, x2: 1.9, label: -1 },
+        { id: 10, x1: -1.2, x2: -1.3, label: -1 },
+        { id: 11, x1: -1.8, x2: -1.5, label: -1 },
+        { id: 12, x1: -0.9, x2: -1.9, label: -1 }
+      ]);
+      setSvcKernel('rbf');
+      setSvcGamma(1.4);
+      setSvcBiasB(0.0);
+      setSvc3dFeatureMap('rbf_pot');
+    } else if (preset === 'outlier_stress') {
+      setSvcPoints([
+        { id: 1, x1: -2.2, x2: 1.6, label: 1 },
+        { id: 2, x1: -1.6, x2: 0.9, label: 1 },
+        { id: 3, x1: -1.0, x2: 1.9, label: 1 },
+        { id: 4, x1: -2.3, x2: 0.3, label: 1 },
+        { id: 5, x1: 1.0, x2: -1.3, label: -1 },
+        { id: 6, x1: 1.6, x2: -0.6, label: -1 },
+        { id: 7, x1: 2.1, x2: -1.9, label: -1 },
+        { id: 8, x1: 1.3, x2: 0.3, label: -1 },
+        { id: 9, x1: -1.4, x2: 1.1, label: -1 }
+      ]);
+      setSvcKernel('linear');
+      setSvcMarginW(1.2);
+      setSvcBiasB(0.2);
+      setSvcC(1.0);
+      setSvc3dFeatureMap('decision_plane');
+    }
+  };
+
+  const handleSvcPointerDown = (e: React.PointerEvent, pointId: number) => {
+    e.stopPropagation();
+    try {
+      (e.currentTarget as Element).setPointerCapture?.(e.pointerId);
+    } catch {
+      // ignore
+    }
+    setDraggingSvcPointId(pointId);
+  };
+
+  const handleSvcPointerMove = (e: React.PointerEvent) => {
+    if (draggingSvcPointId === null || !svcSvgRef.current) return;
+    const svg = svcSvgRef.current;
+    const rect = svg.getBoundingClientRect();
+    const svgX = ((e.clientX - rect.left) / rect.width) * 640 - 320;
+    const svgY = ((e.clientY - rect.top) / rect.height) * 480 - 240;
+    const x1 = parseFloat(Math.max(-4.8, Math.min(4.8, svgX / 60)).toFixed(2));
+    const x2 = parseFloat(Math.max(-3.5, Math.min(3.5, -svgY / 60)).toFixed(2));
+
+    setSvcPoints(prev => prev.map(p => p.id === draggingSvcPointId ? { ...p, x1, x2 } : p));
+  };
+
+  const handleSvcPointerUp = (e: React.PointerEvent) => {
+    if (draggingSvcPointId !== null) {
+      try {
+        (e.currentTarget as Element).releasePointerCapture?.(e.pointerId);
+      } catch {
+        // ignore
+      }
+      setDraggingSvcPointId(null);
+    }
+  };
 
   const adjustSvcClassCount = (targetClass: 1 | -1, delta: number) => {
     if (delta > 0) {
@@ -784,34 +1050,82 @@ export const TestDiagramsStudioView: React.FC = () => {
     setSvcPoints(prev => prev.filter(p => p.id !== id));
   };
 
-  // SVC Decision Function & Support Vector / Slack Analysis
+  // SVC Decision Function, Lagrange Multipliers (αᵢ), Confusion Matrix & 2D Iso-Contour Engine
   const svcAnalysis = useMemo(() => {
-    const w1 = 1.2;
-    const w2 = -1.0;
+    const w1 = -1.2;
+    const w2 = 1.0;
+    const wNormSq = w1 * w1 + w2 * w2; // 2.44
+    const wNorm = Math.sqrt(wNormSq); // 1.56205
+    const effectiveBias = isBendingAnim ? -svcBiasB + Math.sin(timeT * 2.2) * 0.45 : -svcBiasB;
+
+    // Decision Function Evaluator: f(x1, x2)
+    const evalDecisionF = (x1: number, x2: number): number => {
+      if (svcKernel === 'linear') {
+        return w1 * x1 + w2 * x2 + effectiveBias;
+      } else if (svcKernel === 'rbf') {
+        let rbfSum = 0;
+        svcPoints.forEach(p => {
+          const dist2 = (x1 - p.x1) * (x1 - p.x1) + (x2 - p.x2) * (x2 - p.x2);
+          rbfSum += p.label * Math.exp(-svcGamma * dist2);
+        });
+        return rbfSum + effectiveBias;
+      } else {
+        // Polynomial Kernel: (xᵀ x' + 1)^d representation
+        let polySum = 0;
+        svcPoints.forEach(p => {
+          const dot = x1 * p.x1 + x2 * p.x2 + 1;
+          polySum += p.label * Math.pow(Math.max(0, dot * 0.35), svcPolyDegree);
+        });
+        return polySum * 0.4 + effectiveBias;
+      }
+    };
+
     let totalSlack = 0;
     let supportVectorCount = 0;
     let marginViolatorCount = 0;
+    let truePositives = 0;
+    let trueNegatives = 0;
+    let falsePositives = 0;
+    let falseNegatives = 0;
 
     const pointsWithStatus = svcPoints.map(p => {
-      let fVal = 0;
-      if (svcKernel === 'linear') {
-        fVal = (w1 * p.x1 + w2 * p.x2 + svcBiasB);
-      } else if (svcKernel === 'rbf') {
-        let rbfSum = 0;
-        svcPoints.forEach(other => {
-          const dist2 = (p.x1 - other.x1) * (p.x1 - other.x1) + (p.x2 - other.x2) * (p.x2 - other.x2);
-          rbfSum += other.label * Math.exp(-svcGamma * dist2);
-        });
-        fVal = rbfSum + svcBiasB;
-      } else {
-        const polyInner = (w1 * p.x1 + w2 * p.x2 + 1);
-        fVal = Math.pow(polyInner, svcPolyDegree) * 0.15 + svcBiasB;
-      }
-
+      const fVal = evalDecisionF(p.x1, p.x2);
       const functionalMargin = p.label * fVal;
       const isMarginViolator = functionalMargin < 1.0;
       const slack = Math.max(0, 1.0 - functionalMargin);
-      const isSupportVector = Math.abs(functionalMargin - 1.0) < 0.45 || isMarginViolator;
+
+      // Lagrange Multipliers: αᵢ ∈ [0, C]
+      let alpha = 0;
+      let svCategory: 'interior' | 'marginal_sv' | 'bounded_sv' = 'interior';
+
+      if (functionalMargin < 0.98) {
+        alpha = svcC; // Bounded Support Vector (Slack penalty active)
+        svCategory = 'bounded_sv';
+      } else if (Math.abs(functionalMargin - 1.0) <= 0.45) {
+        alpha = parseFloat((svcC * Math.max(0.15, 1.0 - Math.abs(functionalMargin - 1.0) / 0.45)).toFixed(3));
+        svCategory = 'marginal_sv';
+      } else {
+        alpha = 0;
+        svCategory = 'interior';
+      }
+
+      const isSupportVector = svCategory !== 'interior';
+
+      // Classification Matrix
+      const predClass = fVal >= 0 ? 1 : -1;
+      if (p.label === 1) {
+        if (predClass === 1) truePositives++;
+        else falseNegatives++;
+      } else {
+        if (predClass === -1) trueNegatives++;
+        else falsePositives++;
+      }
+
+      // Exact perpendicular projection to target margin gutter (Linear)
+      const gutterTarget = p.label * 1.0;
+      const deltaScale = (gutterTarget - fVal) / wNormSq;
+      const projX1 = p.x1 + deltaScale * w1;
+      const projX2 = p.x2 + deltaScale * w2;
 
       if (isSupportVector) supportVectorCount++;
       if (isMarginViolator) {
@@ -825,17 +1139,527 @@ export const TestDiagramsStudioView: React.FC = () => {
         functionalMargin,
         isSupportVector,
         isMarginViolator,
-        slack
+        svCategory,
+        alpha,
+        slack,
+        projX1,
+        projX2
       };
     });
+
+    const totalPoints = svcPoints.length || 1;
+    const accuracy = ((truePositives + trueNegatives) / totalPoints) * 100;
+    const precision = (truePositives + falsePositives) > 0 ? (truePositives / (truePositives + falsePositives)) * 100 : 100;
+    const recall = (truePositives + falseNegatives) > 0 ? (truePositives / (truePositives + falseNegatives)) * 100 : 100;
+    const f1Score = (precision + recall) > 0 ? (2 * precision * recall) / (precision + recall) : 0;
+    const objectiveLoss = 0.5 * wNormSq + svcC * totalSlack;
+
+    // ─── 2D MARCHING SQUARES ISO-CONTOURS (f(x)=0, f(x)=+1, f(x)=-1) ───
+    const cols = 44;
+    const rows = 32;
+    const xMin = -5.33;
+    const xMax = 5.33;
+    const yMin = -4.0;
+    const yMax = 4.0;
+    const dx = (xMax - xMin) / cols;
+    const dy = (yMax - yMin) / rows;
+
+    const gridValues: number[][] = [];
+    for (let r = 0; r <= rows; r++) {
+      gridValues[r] = [];
+      const y = yMax - r * dy;
+      for (let c = 0; c <= cols; c++) {
+        const x = xMin + c * dx;
+        gridValues[r][c] = evalDecisionF(x, y);
+      }
+    }
+
+    const extractContourSegments = (targetIso: number): Array<{ x1: number; y1: number; x2: number; y2: number }> => {
+      const segs: Array<{ x1: number; y1: number; x2: number; y2: number }> = [];
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const v0 = gridValues[r][c] - targetIso;
+          const v1 = gridValues[r][c + 1] - targetIso;
+          const v2 = gridValues[r + 1][c + 1] - targetIso;
+          const v3 = gridValues[r + 1][c] - targetIso;
+
+          const cellX = xMin + c * dx;
+          const cellY = yMax - r * dy;
+
+          let cellIndex = 0;
+          if (v0 > 0) cellIndex |= 1;
+          if (v1 > 0) cellIndex |= 2;
+          if (v2 > 0) cellIndex |= 4;
+          if (v3 > 0) cellIndex |= 8;
+
+          if (cellIndex === 0 || cellIndex === 15) continue;
+
+          // Edge linear interpolators
+          const topEdge = { x: cellX + (Math.abs(v0) / (Math.abs(v0) + Math.abs(v1) || 1e-5)) * dx, y: cellY };
+          const rightEdge = { x: cellX + dx, y: cellY - (Math.abs(v1) / (Math.abs(v1) + Math.abs(v2) || 1e-5)) * dy };
+          const bottomEdge = { x: cellX + (Math.abs(v3) / (Math.abs(v3) + Math.abs(v2) || 1e-5)) * dx, y: cellY - dy };
+          const leftEdge = { x: cellX, y: cellY - (Math.abs(v0) / (Math.abs(v0) + Math.abs(v3) || 1e-5)) * dy };
+
+          const addSeg = (pA: { x: number; y: number }, pB: { x: number; y: number }) => {
+            segs.push({
+              x1: pA.x * 60,
+              y1: -pA.y * 60,
+              x2: pB.x * 60,
+              y2: -pB.y * 60
+            });
+          };
+
+          switch (cellIndex) {
+            case 1: case 14: addSeg(leftEdge, topEdge); break;
+            case 2: case 13: addSeg(topEdge, rightEdge); break;
+            case 3: case 12: addSeg(leftEdge, rightEdge); break;
+            case 4: case 11: addSeg(rightEdge, bottomEdge); break;
+            case 5: addSeg(leftEdge, topEdge); addSeg(rightEdge, bottomEdge); break;
+            case 6: case 9: addSeg(topEdge, bottomEdge); break;
+            case 7: case 8: addSeg(leftEdge, bottomEdge); break;
+            case 10: addSeg(leftEdge, bottomEdge); addSeg(topEdge, rightEdge); break;
+          }
+        }
+      }
+      return segs;
+    };
+
+    const segsToSvgPath = (segs: Array<{ x1: number; y1: number; x2: number; y2: number }>): string => {
+      return segs.map(s => `M ${s.x1.toFixed(1)} ${s.y1.toFixed(1)} L ${s.x2.toFixed(1)} ${s.y2.toFixed(1)}`).join(' ');
+    };
+
+    const decisionBoundaryContours = svcKernel !== 'linear' ? extractContourSegments(0.0) : [];
+    const upperGutterContours = svcKernel !== 'linear' ? extractContourSegments(1.0) : [];
+    const lowerGutterContours = svcKernel !== 'linear' ? extractContourSegments(-1.0) : [];
+
+    const marchingZeroContour = segsToSvgPath(decisionBoundaryContours);
+    const marchingUpperMarginContour = segsToSvgPath(upperGutterContours);
+    const marchingLowerMarginContour = segsToSvgPath(lowerGutterContours);
 
     return {
       pointsWithStatus,
       supportVectorCount,
       marginViolatorCount,
-      totalSlack
+      totalSlack,
+      objectiveLoss,
+      accuracy,
+      precision,
+      recall,
+      f1Score,
+      truePositives,
+      trueNegatives,
+      falsePositives,
+      falseNegatives,
+      w1,
+      w2,
+      wNorm,
+      wNormSq,
+      effectiveBias,
+      evalDecisionF,
+      decisionBoundaryContours,
+      upperGutterContours,
+      lowerGutterContours,
+      marchingZeroContour,
+      marchingUpperMarginContour,
+      marchingLowerMarginContour
     };
-  }, [svcPoints, svcMarginW, svcBiasB, svcC, svcKernel, svcGamma, svcPolyDegree]);
+  }, [svcPoints, svcMarginW, svcBiasB, svcC, svcKernel, svcGamma, svcPolyDegree, isBendingAnim, timeT]);
+
+  // 3D & 4D SVC Interactive Feature-Space & Hyperplane Slicing Canvas Rendering Effect
+  useEffect(() => {
+    if (activeModuleId !== 'svc_classifier' || (svcDimension !== '3d_plane' && svcDimension !== '4d_slice')) return;
+    const canvas = canvasSvc3dRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    const displayWidth = canvas.clientWidth || 700;
+    const displayHeight = canvas.clientHeight || 480;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+
+    const expectedWidth = Math.round(displayWidth * dpr);
+    const expectedHeight = Math.round(displayHeight * dpr);
+    if (canvas.width !== expectedWidth || canvas.height !== expectedHeight) {
+      canvas.width = expectedWidth;
+      canvas.height = expectedHeight;
+    }
+
+    ctx.save();
+    ctx.scale(dpr, dpr);
+
+    const width = displayWidth;
+    const height = displayHeight;
+    ctx.clearRect(0, 0, width, height);
+
+    const radX = (svc3dRotX * Math.PI) / 180;
+    const radY = (svc3dRotY * Math.PI) / 180;
+
+    const project3D = (x: number, y: number, z: number) => {
+      const x1 = x * Math.cos(radY) + y * Math.sin(radY);
+      const y1 = -x * Math.sin(radY) + y * Math.cos(radY);
+      const y2 = y1 * Math.cos(radX) - z * Math.sin(radX);
+      const z2 = y1 * Math.sin(radX) + z * Math.cos(radX);
+
+      const distance = 8.0;
+      const factor = distance / (z2 + distance);
+      const scale = 56 * svc3dZoom;
+
+      const sx = width / 2 + x1 * factor * scale;
+      const sy = height / 2 + y2 * factor * scale * 0.7 - z2 * factor * scale * 0.55;
+      return { sx, sy, depth: z2 };
+    };
+
+    if (svcDimension === '4d_slice') {
+      // ═══════════════════════════════════════════════════════════════════════════
+      // 4D HYPERPLANE SLICING ENGINE: w₁X₁ + w₂X₂ + w₃X₃ + w₄X₄ + b = 0
+      // ═══════════════════════════════════════════════════════════════════════════
+      const effSliceX4 = svc4dAutoSlice || isBendingAnim ? svc4dSliceX4 + Math.sin(timeT * 1.5) * 1.8 : svc4dSliceX4;
+      const w1 = -1.2;
+      const w2 = 1.0;
+      const w3 = 0.85;
+      const w4 = 0.95;
+      const effB = isBendingAnim ? -svcBiasB + Math.sin(timeT * 2.2) * 0.45 : -svcBiasB;
+
+      // 1. Draw 3D Ground Floor Grid (X3 = 0)
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.18)';
+      ctx.lineWidth = 1.0;
+      for (let gx = -2.8; gx <= 2.8; gx += 0.9) {
+        const p1 = project3D(gx, -2.8, 0);
+        const p2 = project3D(gx, 2.8, 0);
+        ctx.beginPath(); ctx.moveTo(p1.sx, p1.sy); ctx.lineTo(p2.sx, p2.sy); ctx.stroke();
+      }
+      for (let gy = -2.8; gy <= 2.8; gy += 0.9) {
+        const p1 = project3D(-2.8, gy, 0);
+        const p2 = project3D(2.8, gy, 0);
+        ctx.beginPath(); ctx.moveTo(p1.sx, p1.sy); ctx.lineTo(p2.sx, p2.sy); ctx.stroke();
+      }
+
+      // 2. Coordinate Axes (X₁, X₂, X₃)
+      const origin = project3D(0, 0, 0);
+      const x1Axis = project3D(3.2, 0, 0);
+      const x2Axis = project3D(0, 3.2, 0);
+      const x3Axis = project3D(0, 0, 3.2);
+
+      ctx.lineWidth = 2.2;
+      // X1 Axis (Gold)
+      ctx.strokeStyle = '#f59e0b';
+      ctx.beginPath(); ctx.moveTo(origin.sx, origin.sy); ctx.lineTo(x1Axis.sx, x1Axis.sy); ctx.stroke();
+      ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('X₁ →', x1Axis.sx + 4, x1Axis.sy + 3);
+
+      // X2 Axis (Emerald)
+      ctx.strokeStyle = '#34d399';
+      ctx.beginPath(); ctx.moveTo(origin.sx, origin.sy); ctx.lineTo(x2Axis.sx, x2Axis.sy); ctx.stroke();
+      ctx.fillStyle = '#34d399'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('X₂ →', x2Axis.sx + 4, x2Axis.sy + 3);
+
+      // X3 Axis (Purple)
+      ctx.strokeStyle = '#a855f7';
+      ctx.beginPath(); ctx.moveTo(origin.sx, origin.sy); ctx.lineTo(x3Axis.sx, x3Axis.sy); ctx.stroke();
+      ctx.fillStyle = '#a855f7'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('X₃ ↑', x3Axis.sx + 4, x3Axis.sy - 4);
+
+      // 3. 3D Separating Hyperplane Slicing Quad in (X₁, X₂, X₃) space
+      const evalPlaneX3 = (x1: number, x2: number) => {
+        return -(w1 * x1 + w2 * x2 + w4 * effSliceX4 + effB) / w3;
+      };
+
+      const range4D = 2.4;
+      const steps = 10;
+      const planeQuads: Array<{ p0: any; p1: any; p2: any; p3: any; avgZ: number; depth: number }> = [];
+
+      for (let i = 0; i < steps; i++) {
+        for (let j = 0; j < steps; j++) {
+          const u1 = -range4D + (i / steps) * (2 * range4D);
+          const u2 = -range4D + ((i + 1) / steps) * (2 * range4D);
+          const v1 = -range4D + (j / steps) * (2 * range4D);
+          const v2 = -range4D + ((j + 1) / steps) * (2 * range4D);
+
+          const z1 = Math.max(-2.5, Math.min(2.5, evalPlaneX3(u1, v1)));
+          const z2 = Math.max(-2.5, Math.min(2.5, evalPlaneX3(u2, v1)));
+          const z3 = Math.max(-2.5, Math.min(2.5, evalPlaneX3(u2, v2)));
+          const z4 = Math.max(-2.5, Math.min(2.5, evalPlaneX3(u1, v2)));
+
+          const p0 = project3D(u1, v1, z1);
+          const p1 = project3D(u2, v1, z2);
+          const p2 = project3D(u2, v2, z3);
+          const p3 = project3D(u1, v2, z4);
+
+          planeQuads.push({
+            p0, p1, p2, p3,
+            avgZ: (z1 + z2 + z3 + z4) / 4,
+            depth: (p0.depth + p1.depth + p2.depth + p3.depth) / 4
+          });
+        }
+      }
+
+      planeQuads.sort((a, b) => a.depth - b.depth);
+      planeQuads.forEach(q => {
+        ctx.beginPath();
+        ctx.moveTo(q.p0.sx, q.p0.sy);
+        ctx.lineTo(q.p1.sx, q.p1.sy);
+        ctx.lineTo(q.p2.sx, q.p2.sy);
+        ctx.lineTo(q.p3.sx, q.p3.sy);
+        ctx.closePath();
+        ctx.fillStyle = 'rgba(236, 72, 153, 0.24)';
+        ctx.fill();
+        ctx.strokeStyle = 'rgba(236, 72, 153, 0.65)';
+        ctx.lineWidth = 1.0;
+        ctx.stroke();
+      });
+
+      // 4. Render 4D Data Spheres projected in (X₁, X₂, X₃) with 4D distance fading
+      svc4dPoints.forEach(p => {
+        const dist4D = Math.abs(p.x4 - effSliceX4);
+        const inSliceWindow = dist4D <= svc4dSliceThickness;
+        const opacity = inSliceWindow ? Math.max(0.25, 1.0 - (dist4D / svc4dSliceThickness) * 0.75) : 0.12;
+        const radFactor = inSliceWindow ? 1.0 - (dist4D / svc4dSliceThickness) * 0.35 : 0.5;
+
+        const spherePt = project3D(p.x1, p.x2, p.x3);
+        const planeZ = evalPlaneX3(p.x1, p.x2);
+        const planePt = project3D(p.x1, p.x2, planeZ);
+
+        // Drop line to 3D separating hyperplane if in active slice
+        if (inSliceWindow) {
+          ctx.beginPath();
+          ctx.moveTo(spherePt.sx, spherePt.sy);
+          ctx.lineTo(planePt.sx, planePt.sy);
+          ctx.strokeStyle = p.label === 1 ? `rgba(52, 211, 153, ${opacity * 0.7})` : `rgba(248, 113, 113, ${opacity * 0.7})`;
+          ctx.lineWidth = 1.4;
+          ctx.setLineDash([2, 2]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        // 4D Point Sphere
+        ctx.beginPath();
+        ctx.arc(spherePt.sx, spherePt.sy, 7 * radFactor, 0, 2 * Math.PI);
+        ctx.fillStyle = p.label === 1 ? `rgba(52, 211, 153, ${opacity})` : `rgba(248, 113, 113, ${opacity})`;
+        ctx.fill();
+        ctx.strokeStyle = `rgba(255, 255, 255, ${opacity * 0.9})`;
+        ctx.lineWidth = 1.4;
+        ctx.stroke();
+
+        // 4D Tag for active points
+        if (inSliceWindow && (showSvcPointLabels || hoveredSvcPointId === p.id)) {
+          ctx.fillStyle = '#ec4899';
+          ctx.font = 'bold 8px monospace';
+          ctx.fillText(`P${p.id}[X₄=${p.x4.toFixed(1)}]`, spherePt.sx + 8, spherePt.sy - 2);
+        }
+      });
+    } else {
+      // ═══════════════════════════════════════════════════════════════════════════
+      // 3D FEATURE SPACE LIFT ENGINE: Φ(X) Paraboloid / RBF Potential / Decision
+      // ═══════════════════════════════════════════════════════════════════════════
+      // 1. Draw 3D Ground Floor Grid (Z = 0)
+      const floorZ = 0;
+      ctx.strokeStyle = 'rgba(148, 163, 184, 0.20)';
+      ctx.lineWidth = 1.0;
+      for (let gx = -3.0; gx <= 3.0; gx += 1.0) {
+        const p1 = project3D(gx, -3.0, floorZ);
+        const p2 = project3D(gx, 3.0, floorZ);
+        ctx.beginPath(); ctx.moveTo(p1.sx, p1.sy); ctx.lineTo(p2.sx, p2.sy); ctx.stroke();
+      }
+      for (let gy = -3.0; gy <= 3.0; gy += 1.0) {
+        const p1 = project3D(-3.0, gy, floorZ);
+        const p2 = project3D(3.0, gy, floorZ);
+        ctx.beginPath(); ctx.moveTo(p1.sx, p1.sy); ctx.lineTo(p2.sx, p2.sy); ctx.stroke();
+      }
+
+      // 2. Coordinate Axes (X₁, X₂, Φ(X))
+      const origin = project3D(0, 0, 0);
+      const x1Axis = project3D(3.4, 0, 0);
+      const x2Axis = project3D(0, 3.4, 0);
+      const zAxis = project3D(0, 0, 4.2);
+
+      ctx.lineWidth = 2.2;
+      // X1 Axis (Gold)
+      ctx.strokeStyle = '#f59e0b';
+      ctx.beginPath(); ctx.moveTo(origin.sx, origin.sy); ctx.lineTo(x1Axis.sx, x1Axis.sy); ctx.stroke();
+      ctx.fillStyle = '#f59e0b'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('X₁ →', x1Axis.sx + 4, x1Axis.sy + 3);
+
+      // X2 Axis (Emerald)
+      ctx.strokeStyle = '#34d399';
+      ctx.beginPath(); ctx.moveTo(origin.sx, origin.sy); ctx.lineTo(x2Axis.sx, x2Axis.sy); ctx.stroke();
+      ctx.fillStyle = '#34d399'; ctx.font = 'bold 10px monospace';
+      ctx.fillText('X₂ →', x2Axis.sx + 4, x2Axis.sy + 3);
+
+      // Z / Phi Axis (Purple)
+      ctx.strokeStyle = '#a855f7';
+      ctx.beginPath(); ctx.moveTo(origin.sx, origin.sy); ctx.lineTo(zAxis.sx, zAxis.sy); ctx.stroke();
+      ctx.fillStyle = '#a855f7'; ctx.font = 'bold 10px monospace';
+      ctx.fillText(svc3dFeatureMap === 'paraboloid' ? 'Φ(X) = X₁²+X₂² ↑' : svc3dFeatureMap === 'rbf_pot' ? 'RBF Potential ↑' : 'Decision Output ↑', zAxis.sx + 4, zAxis.sy - 4);
+
+      // 3. Feature-Space 3D Paraboloid / Kernel Manifold Mesh
+      const N = 18;
+      const range = 2.8;
+      const meshQuads: Array<{ p0: any; p1: any; p2: any; p3: any; avgZ: number; depth: number }> = [];
+
+      const eval3DHeight = (x: number, y: number): number => {
+        const waveTerm = isBendingAnim ? Math.sin(timeT * 2.5 + x * 0.8 + y * 0.8) * 0.08 : 0;
+        if (svc3dFeatureMap === 'paraboloid') {
+          return 0.32 * (x * x + y * y) + waveTerm;
+        } else if (svc3dFeatureMap === 'rbf_pot') {
+          let pot = 0;
+          svcPoints.forEach(p => {
+            const d2 = (x - p.x1) * (x - p.x1) + (y - p.x2) * (y - p.x2);
+            pot += p.label * Math.exp(-svcGamma * d2);
+          });
+          return Math.max(0, pot * 1.5 + 1.2 + waveTerm);
+        } else {
+          const effectiveB = isBendingAnim ? -svcBiasB + Math.sin(timeT * 2.2) * 0.45 : -svcBiasB;
+          return Math.max(0, 0.4 * (1.2 * x - 1.0 * y - effectiveB) + 1.2);
+        }
+      };
+
+      for (let i = 0; i < N; i++) {
+        for (let j = 0; j < N; j++) {
+          const u1 = -range + (i / N) * (2 * range);
+          const u2 = -range + ((i + 1) / N) * (2 * range);
+          const v1 = -range + (j / N) * (2 * range);
+          const v2 = -range + ((j + 1) / N) * (2 * range);
+
+          const z1 = eval3DHeight(u1, v1);
+          const z2 = eval3DHeight(u2, v1);
+          const z3 = eval3DHeight(u2, v2);
+          const z4 = eval3DHeight(u1, v2);
+
+          const p0 = project3D(u1, v1, z1);
+          const p1 = project3D(u2, v1, z2);
+          const p2 = project3D(u2, v2, z3);
+          const p3 = project3D(u1, v2, z4);
+
+          meshQuads.push({
+            p0, p1, p2, p3,
+            avgZ: (z1 + z2 + z3 + z4) / 4,
+            depth: (p0.depth + p1.depth + p2.depth + p3.depth) / 4
+          });
+        }
+      }
+
+      // Depth Sorting
+      meshQuads.sort((a, b) => a.depth - b.depth);
+
+      // Render 3D Feature Mesh
+      meshQuads.forEach(q => {
+        ctx.beginPath();
+        ctx.moveTo(q.p0.sx, q.p0.sy);
+        ctx.lineTo(q.p1.sx, q.p1.sy);
+        ctx.lineTo(q.p2.sx, q.p2.sy);
+        ctx.lineTo(q.p3.sx, q.p3.sy);
+        ctx.closePath();
+
+        const normZ = Math.min(1, q.avgZ / 3.0);
+        ctx.fillStyle = `rgba(${Math.round(20 + normZ * 80)}, ${Math.round(180 - normZ * 80)}, ${Math.round(240 - normZ * 60)}, 0.18)`;
+        ctx.fill();
+        ctx.strokeStyle = `rgba(56, 189, 248, 0.28)`;
+        ctx.lineWidth = 0.8;
+        ctx.stroke();
+      });
+
+      // 4. Glowing 3D Separating Hyperplane Slicing Plane
+      const sliceZ = svc3dFeatureMap === 'paraboloid' ? 1.4 + (isBendingAnim ? Math.sin(timeT * 2.0) * 0.45 : 0) : 1.2;
+      const sp0 = project3D(-2.8, -2.8, sliceZ);
+      const sp1 = project3D(2.8, -2.8, sliceZ);
+      const sp2 = project3D(2.8, 2.8, sliceZ);
+      const sp3 = project3D(-2.8, 2.8, sliceZ);
+
+      ctx.beginPath();
+      ctx.moveTo(sp0.sx, sp0.sy);
+      ctx.lineTo(sp1.sx, sp1.sy);
+      ctx.lineTo(sp2.sx, sp2.sy);
+      ctx.lineTo(sp3.sx, sp3.sy);
+      ctx.closePath();
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.22)';
+      ctx.fill();
+      ctx.strokeStyle = '#38bdf8';
+      ctx.lineWidth = 2.0;
+      ctx.stroke();
+
+      // 5. Render Lifted 3D Data Spheres with Vertical Drop Stalks
+      svcAnalysis.pointsWithStatus.forEach(p => {
+        const zHeight = eval3DHeight(p.x1, p.x2);
+        const groundPt = project3D(p.x1, p.x2, 0);
+        const spherePt = project3D(p.x1, p.x2, zHeight);
+
+        // Vertical Stalk
+        ctx.beginPath();
+        ctx.moveTo(groundPt.sx, groundPt.sy);
+        ctx.lineTo(spherePt.sx, spherePt.sy);
+        ctx.strokeStyle = p.label === 1 ? 'rgba(52, 211, 153, 0.7)' : 'rgba(248, 113, 113, 0.7)';
+        ctx.lineWidth = 1.6;
+        ctx.setLineDash([3, 3]);
+        ctx.stroke();
+        ctx.setLineDash([]);
+
+        // Ground Footprint
+        ctx.beginPath();
+        ctx.arc(groundPt.sx, groundPt.sy, 4, 0, 2 * Math.PI);
+        ctx.fillStyle = 'rgba(148, 163, 184, 0.5)';
+        ctx.fill();
+
+        // Support Vector Halo Ring
+        if (p.isSupportVector) {
+          ctx.beginPath();
+          ctx.arc(spherePt.sx, spherePt.sy, 14, 0, 2 * Math.PI);
+          ctx.strokeStyle = '#fbbf24';
+          ctx.lineWidth = 2.2;
+          ctx.setLineDash([4, 2]);
+          ctx.stroke();
+          ctx.setLineDash([]);
+        }
+
+        // Core 3D Point Sphere
+        ctx.beginPath();
+        ctx.arc(spherePt.sx, spherePt.sy, 7, 0, 2 * Math.PI);
+        ctx.fillStyle = p.label === 1 ? '#34d399' : '#f87171';
+        ctx.fill();
+        ctx.strokeStyle = '#ffffff';
+        ctx.lineWidth = 1.8;
+        ctx.stroke();
+
+        // Lagrange Multiplier Tag
+        if (p.isSupportVector) {
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.9)';
+          ctx.font = 'bold 8.5px monospace';
+          ctx.fillStyle = '#fbbf24';
+          ctx.fillText(`α=${p.alpha.toFixed(2)}`, spherePt.sx + 9, spherePt.sy - 3);
+        }
+      });
+    }
+
+    ctx.restore();
+  }, [activeModuleId, svcDimension, svc3dRotX, svc3dRotY, svc3dZoom, svc3dFeatureMap, svcPoints, svc4dPoints, svc4dSliceX4, svc4dAutoSlice, svc4dSliceThickness, svcKernel, svcGamma, svcPolyDegree, svcBiasB, isBendingAnim, timeT, svcAnalysis]);
+
+  // 3D Canvas Mouse Interaction Handlers (Orbit & Zoom)
+  const handleSvc3dMouseDown = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    setIsDraggingSvc3D(true);
+    dragSvc3dStartRef.current = {
+      x: e.clientX,
+      y: e.clientY,
+      rx: svc3dRotX,
+      ry: svc3dRotY
+    };
+  };
+
+  const handleSvc3dMouseMove = (e: React.MouseEvent<HTMLCanvasElement>) => {
+    if (!isDraggingSvc3D) return;
+    const dx = e.clientX - dragSvc3dStartRef.current.x;
+    const dy = e.clientY - dragSvc3dStartRef.current.y;
+    setSvc3dRotX(Math.max(-85, Math.min(85, dragSvc3dStartRef.current.rx - dy * 0.4)));
+    setSvc3dRotY((dragSvc3dStartRef.current.ry + dx * 0.4) % 360);
+  };
+
+  const handleSvc3dMouseUp = () => {
+    setIsDraggingSvc3D(false);
+  };
+
+  const handleSvc3dWheel = (e: React.WheelEvent<HTMLCanvasElement>) => {
+    e.preventDefault();
+    setSvc3dZoom(prev => Math.max(0.4, Math.min(2.5, prev - e.deltaY * 0.0012)));
+  };
 
   // SVR Support Vector Regressor State & Analysis
   const [svrEpsilon, setSvrEpsilon] = useState<number>(0.4);
@@ -1464,22 +2288,273 @@ export const TestDiagramsStudioView: React.FC = () => {
   // ─────────────────────────────────────────────────────────────────────────────
   // 7. PHASE 5: DYNAMIC CALCULUS: TANGENTS & RIEMANN SUMS
   // ─────────────────────────────────────────────────────────────────────────────
-  const [calcMode, setCalcMode] = useState<'tangent_secant' | 'riemann_sums' | 'derivatives'>('tangent_secant');
-  const [calcPreset, setCalcPreset] = useState<'cubic' | 'sinusoid' | 'bell'>('cubic');
+  type CalcModeType = 'tangent_secant' | 'riemann_sums' | 'derivatives';
+  type CalcPresetType = 'cubic' | 'sinusoid' | 'bell' | 'quartic' | 'rational' | 'damped';
+  type RiemannMethodType = 'left' | 'right' | 'midpoint' | 'trapezoid' | 'simpson';
+
+  const [calcMode, setCalcMode] = useState<CalcModeType>('tangent_secant');
+  const [calcPreset, setCalcPreset] = useState<CalcPresetType>('cubic');
   const [calcX0, setCalcX0] = useState<number>(0.8);
   const [calcH, setCalcH] = useState<number>(0.5);
   const [calcIntegralN, setCalcIntegralN] = useState<number>(12);
+  const [riemannMethod, setRiemannMethod] = useState<RiemannMethodType>('midpoint');
+  const [calcBoundA, setCalcBoundA] = useState<number>(-2.0);
+  const [calcBoundB, setCalcBoundB] = useState<number>(2.0);
+  const [showDeriv1Curve, setShowDeriv1Curve] = useState<boolean>(true);
+  const [showDeriv2Curve, setShowDeriv2Curve] = useState<boolean>(true);
+  const [showCritPoints, setShowCritPoints] = useState<boolean>(true);
+  const [showInflectionPoints, setShowInflectionPoints] = useState<boolean>(true);
+  const [showCalcFormulaHud, setShowCalcFormulaHud] = useState<boolean>(true);
+  const [isAnimateH, setIsAnimateH] = useState<boolean>(false);
 
-  const evalCalcFunction = (x: number) => {
-    if (calcPreset === 'sinusoid') return Math.sin(1.8 * x) * 1.5;
-    if (calcPreset === 'bell') return 2.2 * Math.exp(-0.8 * x * x);
-    return 0.35 * Math.pow(x, 3) - 0.8 * x;
+  // Auto-converge animation for Secant Step h -> 0
+  useEffect(() => {
+    if (!isAnimateH || calcMode !== 'tangent_secant') return;
+    let animH = calcH;
+    let dir = -1;
+    const interval = setInterval(() => {
+      if (dir === -1) {
+        animH -= 0.025;
+        if (animH <= 0.02) {
+          animH = 0.02;
+          dir = 1;
+        }
+      } else {
+        animH += 0.025;
+        if (animH >= 1.2) {
+          animH = 1.2;
+          dir = -1;
+        }
+      }
+      setCalcH(Number(animH.toFixed(2)));
+    }, 45);
+    return () => clearInterval(interval);
+  }, [isAnimateH, calcMode]);
+
+  const evalCalcFunction = (x: number, preset: CalcPresetType = calcPreset): number => {
+    switch (preset) {
+      case 'sinusoid':
+        return 1.5 * Math.sin(1.8 * x);
+      case 'bell':
+        return 2.2 * Math.exp(-0.8 * x * x);
+      case 'quartic':
+        return 0.25 * Math.pow(x, 4) - Math.pow(x, 2) + 0.5;
+      case 'rational':
+        return 2.5 / (1 + x * x);
+      case 'damped':
+        return 2.0 * Math.exp(-0.4 * x) * Math.cos(2.2 * x);
+      case 'cubic':
+      default:
+        return 0.35 * Math.pow(x, 3) - 0.8 * x;
+    }
   };
 
-  const evalCalcDerivative = (x: number) => {
-    if (calcPreset === 'sinusoid') return 1.8 * Math.cos(1.8 * x) * 1.5;
-    if (calcPreset === 'bell') return -3.52 * x * Math.exp(-0.8 * x * x);
-    return 1.05 * Math.pow(x, 2) - 0.8;
+  const evalCalcDerivative = (x: number, preset: CalcPresetType = calcPreset): number => {
+    switch (preset) {
+      case 'sinusoid':
+        return 2.7 * Math.cos(1.8 * x);
+      case 'bell':
+        return -3.52 * x * Math.exp(-0.8 * x * x);
+      case 'quartic':
+        return Math.pow(x, 3) - 2 * x;
+      case 'rational':
+        return (-5.0 * x) / Math.pow(1 + x * x, 2);
+      case 'damped':
+        return 2.0 * Math.exp(-0.4 * x) * (-0.4 * Math.cos(2.2 * x) - 2.2 * Math.sin(2.2 * x));
+      case 'cubic':
+      default:
+        return 1.05 * Math.pow(x, 2) - 0.8;
+    }
+  };
+
+  const evalCalcSecondDerivative = (x: number, preset: CalcPresetType = calcPreset): number => {
+    switch (preset) {
+      case 'sinusoid':
+        return -4.86 * Math.sin(1.8 * x);
+      case 'bell':
+        return 3.52 * (1.6 * x * x - 1) * Math.exp(-0.8 * x * x);
+      case 'quartic':
+        return 3 * Math.pow(x, 2) - 2;
+      case 'rational':
+        return (5.0 * (3 * x * x - 1)) / Math.pow(1 + x * x, 3);
+      case 'damped':
+        return 2.0 * Math.exp(-0.4 * x) * (-4.68 * Math.cos(2.2 * x) + 1.76 * Math.sin(2.2 * x));
+      case 'cubic':
+      default:
+        return 2.1 * x;
+    }
+  };
+
+  const evalCalcAntiDerivative = (x: number, preset: CalcPresetType = calcPreset): number => {
+    switch (preset) {
+      case 'sinusoid':
+        return -(5.0 / 6.0) * Math.cos(1.8 * x);
+      case 'bell': {
+        // High-precision Simpson integration of 2.2 * exp(-0.8 u^2) from 0 to x
+        const steps = 64;
+        const h = x / steps;
+        let sum = 2.2 + 2.2 * Math.exp(-0.8 * x * x);
+        for (let i = 1; i < steps; i++) {
+          const u = i * h;
+          sum += (i % 2 === 0 ? 2 : 4) * 2.2 * Math.exp(-0.8 * u * u);
+        }
+        return (sum * h) / 3;
+      }
+      case 'quartic':
+        return 0.05 * Math.pow(x, 5) - (1.0 / 3.0) * Math.pow(x, 3) + 0.5 * x;
+      case 'rational':
+        return 2.5 * Math.atan(x);
+      case 'damped':
+        return (2.0 * Math.exp(-0.4 * x) / 5.0) * (-0.4 * Math.cos(2.2 * x) + 2.2 * Math.sin(2.2 * x));
+      case 'cubic':
+      default:
+        return 0.0875 * Math.pow(x, 4) - 0.4 * Math.pow(x, 2);
+    }
+  };
+
+  const getCalcTelemetry = (
+    preset: CalcPresetType,
+    x0: number,
+    h: number,
+    a: number,
+    b: number,
+    n: number,
+    method: RiemannMethodType
+  ) => {
+    // 1. Tangent & Secant Limit
+    const y0 = evalCalcFunction(x0, preset);
+    const y1 = evalCalcFunction(x0 + h, preset);
+    const deltaY = y1 - y0;
+    const secantSlope = deltaY / h;
+    const tangentSlope = evalCalcDerivative(x0, preset);
+    const secantError = Math.abs(secantSlope - tangentSlope);
+
+    // 2. Exact Definite Integral
+    const exactIntegral = evalCalcAntiDerivative(b, preset) - evalCalcAntiDerivative(a, preset);
+
+    // 3. Numerical Riemann Sum
+    const effA = Math.min(a, b);
+    const effB = Math.max(a, b);
+    const dx = (effB - effA) / n;
+    let riemannSum = 0;
+
+    if (method === 'left') {
+      for (let i = 0; i < n; i++) {
+        riemannSum += evalCalcFunction(effA + i * dx, preset) * dx;
+      }
+    } else if (method === 'right') {
+      for (let i = 0; i < n; i++) {
+        riemannSum += evalCalcFunction(effA + (i + 1) * dx, preset) * dx;
+      }
+    } else if (method === 'midpoint') {
+      for (let i = 0; i < n; i++) {
+        riemannSum += evalCalcFunction(effA + (i + 0.5) * dx, preset) * dx;
+      }
+    } else if (method === 'trapezoid') {
+      for (let i = 0; i < n; i++) {
+        const yL = evalCalcFunction(effA + i * dx, preset);
+        const yR = evalCalcFunction(effA + (i + 1) * dx, preset);
+        riemannSum += ((yL + yR) / 2) * dx;
+      }
+    } else if (method === 'simpson') {
+      const effN = n % 2 === 0 ? n : n + 1;
+      const sDx = (effB - effA) / effN;
+      let sSum = evalCalcFunction(effA, preset) + evalCalcFunction(effB, preset);
+      for (let i = 1; i < effN; i++) {
+        const u = effA + i * sDx;
+        sSum += (i % 2 === 0 ? 2 : 4) * evalCalcFunction(u, preset);
+      }
+      riemannSum = (sSum * sDx) / 3;
+    }
+
+    const integralError = Math.abs(riemannSum - exactIntegral);
+    const relativeErrorPct = exactIntegral !== 0 ? (integralError / Math.abs(exactIntegral)) * 100 : 0;
+
+    // 4. Formula LaTeX representation
+    let formulaLatex = 'f(x) = 0.35x^3 - 0.8x';
+    let derivLatex = "f'(x) = 1.05x^2 - 0.8";
+    let deriv2Latex = "f''(x) = 2.1x";
+
+    if (preset === 'sinusoid') {
+      formulaLatex = 'f(x) = 1.5\\sin(1.8x)';
+      derivLatex = "f'(x) = 2.7\\cos(1.8x)";
+      deriv2Latex = "f''(x) = -4.86\\sin(1.8x)";
+    } else if (preset === 'bell') {
+      formulaLatex = 'f(x) = 2.2e^{-0.8x^2}';
+      derivLatex = "f'(x) = -3.52xe^{-0.8x^2}";
+      deriv2Latex = "f''(x) = 3.52(1.6x^2-1)e^{-0.8x^2}";
+    } else if (preset === 'quartic') {
+      formulaLatex = 'f(x) = 0.25x^4 - x^2 + 0.5';
+      derivLatex = "f'(x) = x^3 - 2x";
+      deriv2Latex = "f''(x) = 3x^2 - 2";
+    } else if (preset === 'rational') {
+      formulaLatex = 'f(x) = \\frac{2.5}{1 + x^2}';
+      derivLatex = "f'(x) = \\frac{-5x}{(1+x^2)^2}";
+      deriv2Latex = "f''(x) = \\frac{5(3x^2-1)}{(1+x^2)^3}";
+    } else if (preset === 'damped') {
+      formulaLatex = 'f(x) = 2.0e^{-0.4x}\\cos(2.2x)';
+      derivLatex = "f'(x) = e^{-0.4x}(-0.8\\cos(2.2x) - 4.4\\sin(2.2x))";
+      deriv2Latex = "f''(x) = 2e^{-0.4x}(-4.68\\cos(2.2x) + 1.76\\sin(2.2x))";
+    }
+
+    return {
+      y0,
+      y1,
+      deltaY,
+      secantSlope,
+      tangentSlope,
+      secantError,
+      exactIntegral,
+      riemannSum,
+      integralError,
+      relativeErrorPct,
+      formulaLatex,
+      derivLatex,
+      deriv2Latex
+    };
+  };
+
+  const getCalcKeyPoints = (preset: CalcPresetType) => {
+    const points: Array<{ x: number; y: number; type: 'max' | 'min' | 'inflection'; label: string }> = [];
+    if (preset === 'cubic') {
+      const root = Math.sqrt(0.8 / 1.05); // ~0.873
+      points.push({ x: -root, y: evalCalcFunction(-root, preset), type: 'max', label: '▲ MAX (-0.87)' });
+      points.push({ x: root, y: evalCalcFunction(root, preset), type: 'min', label: '▼ MIN (+0.87)' });
+      points.push({ x: 0, y: 0, type: 'inflection', label: '◆ INFLECTION (0, 0)' });
+    } else if (preset === 'sinusoid') {
+      const r1 = Math.PI / (2 * 1.8);
+      const r2 = (3 * Math.PI) / (2 * 1.8);
+      points.push({ x: -r2, y: evalCalcFunction(-r2, preset), type: 'max', label: '▲ MAX (-2.62)' });
+      points.push({ x: -r1, y: evalCalcFunction(-r1, preset), type: 'min', label: '▼ MIN (-0.87)' });
+      points.push({ x: r1, y: evalCalcFunction(r1, preset), type: 'max', label: '▲ MAX (+0.87)' });
+      points.push({ x: r2, y: evalCalcFunction(r2, preset), type: 'min', label: '▼ MIN (+2.62)' });
+      points.push({ x: 0, y: 0, type: 'inflection', label: '◆ INFLECTION (0)' });
+      points.push({ x: -Math.PI / 1.8, y: 0, type: 'inflection', label: '◆ INFLECTION (-1.75)' });
+      points.push({ x: Math.PI / 1.8, y: 0, type: 'inflection', label: '◆ INFLECTION (+1.75)' });
+    } else if (preset === 'bell') {
+      points.push({ x: 0, y: 2.2, type: 'max', label: '▲ GLOBAL MAX (0, 2.2)' });
+      const infl = 1 / Math.sqrt(1.6);
+      points.push({ x: -infl, y: evalCalcFunction(-infl, preset), type: 'inflection', label: '◆ INFLECTION (-0.79)' });
+      points.push({ x: infl, y: evalCalcFunction(infl, preset), type: 'inflection', label: '◆ INFLECTION (+0.79)' });
+    } else if (preset === 'quartic') {
+      points.push({ x: 0, y: 0.5, type: 'max', label: '▲ LOCAL MAX (0, 0.5)' });
+      const r = Math.SQRT2;
+      points.push({ x: -r, y: evalCalcFunction(-r, preset), type: 'min', label: '▼ MIN (-1.41, -0.5)' });
+      points.push({ x: r, y: evalCalcFunction(r, preset), type: 'min', label: '▼ MIN (+1.41, -0.5)' });
+      const inf = Math.sqrt(2 / 3);
+      points.push({ x: -inf, y: evalCalcFunction(-inf, preset), type: 'inflection', label: '◆ INFLECTION (-0.82)' });
+      points.push({ x: inf, y: evalCalcFunction(inf, preset), type: 'inflection', label: '◆ INFLECTION (+0.82)' });
+    } else if (preset === 'rational') {
+      points.push({ x: 0, y: 2.5, type: 'max', label: '▲ MAX (0, 2.5)' });
+      const inf = 1 / Math.sqrt(3);
+      points.push({ x: -inf, y: evalCalcFunction(-inf, preset), type: 'inflection', label: '◆ INFLECTION (-0.58)' });
+      points.push({ x: inf, y: evalCalcFunction(inf, preset), type: 'inflection', label: '◆ INFLECTION (+0.58)' });
+    } else if (preset === 'damped') {
+      points.push({ x: 0, y: 2.0, type: 'max', label: '▲ PEAK (0, 2.0)' });
+      points.push({ x: 1.34, y: evalCalcFunction(1.34, preset), type: 'min', label: '▼ MIN (+1.34)' });
+      points.push({ x: -1.34, y: evalCalcFunction(-1.34, preset), type: 'min', label: '▼ MIN (-1.34)' });
+    }
+    return points;
   };
 
   // ─────────────────────────────────────────────────────────────────────────────
@@ -1497,8 +2572,13 @@ export const TestDiagramsStudioView: React.FC = () => {
   const [surfaceColormap, setSurfaceColormap] = useState<'cyberpunk' | 'plasma' | 'emerald' | 'sunset'>('cyberpunk');
   const [show3dAxes, setShow3dAxes] = useState<boolean>(true);
   const [showFloorGrid, setShowFloorGrid] = useState<boolean>(true);
+  const [showCriticalPoints, setShowCriticalPoints] = useState<boolean>(true);
+  const [showGradientQuiver, setShowGradientQuiver] = useState<boolean>(false);
   const [meshResolution, setMeshResolution] = useState<number>(26);
   const [showRollingBall, setShowRollingBall] = useState<boolean>(true);
+  type OptimizerType = 'sgd' | 'momentum' | 'adam' | 'race';
+  const [optimizerMode, setOptimizerMode] = useState<OptimizerType>('momentum');
+  const [isBallPaused, setIsBallPaused] = useState<boolean>(false);
   const [ballLearningRate, setBallLearningRate] = useState<number>(0.07);
   const [ballMomentum, setBallMomentum] = useState<number>(0.72);
   const [ballPhysicsTick, setBallPhysicsTick] = useState<number>(0);
@@ -1518,6 +2598,10 @@ export const TestDiagramsStudioView: React.FC = () => {
     stepCount: number;
     gradNorm: number;
     isActive: boolean;
+    // Multi-Optimizer Race Agents
+    sgd: { x: number; y: number; z: number; history: Array<{ x: number; y: number; z: number }>; gradNorm: number; stepCount: number };
+    momentum: { x: number; y: number; z: number; vx: number; vy: number; history: Array<{ x: number; y: number; z: number }>; gradNorm: number; stepCount: number };
+    adam: { x: number; y: number; z: number; mX: number; mY: number; vX: number; vY: number; t: number; history: Array<{ x: number; y: number; z: number }>; gradNorm: number; stepCount: number };
   }>({
     x: -1.3,
     y: 1.1,
@@ -1528,7 +2612,10 @@ export const TestDiagramsStudioView: React.FC = () => {
     history: [{ x: -1.3, y: 1.1, z: 0.2 }],
     stepCount: 0,
     gradNorm: 0,
-    isActive: true
+    isActive: true,
+    sgd: { x: -1.3, y: 1.1, z: 0.2, history: [{ x: -1.3, y: 1.1, z: 0.2 }], gradNorm: 0, stepCount: 0 },
+    momentum: { x: -1.3, y: 1.1, z: 0.2, vx: 0, vy: 0, history: [{ x: -1.3, y: 1.1, z: 0.2 }], gradNorm: 0, stepCount: 0 },
+    adam: { x: -1.3, y: 1.1, z: 0.2, mX: 0, mY: 0, vX: 0, vY: 0, t: 0, history: [{ x: -1.3, y: 1.1, z: 0.2 }], gradNorm: 0, stepCount: 0 }
   });
 
   const resetBall = (randomize = false) => {
@@ -1546,8 +2633,125 @@ export const TestDiagramsStudioView: React.FC = () => {
       history: [{ x: rx, y: ry, z: pz }],
       stepCount: 0,
       gradNorm: 0,
-      isActive: true
+      isActive: true,
+      sgd: { x: rx, y: ry, z: pz, history: [{ x: rx, y: ry, z: pz }], gradNorm: 0, stepCount: 0 },
+      momentum: { x: rx, y: ry, z: pz, vx: 0, vy: 0, history: [{ x: rx, y: ry, z: pz }], gradNorm: 0, stepCount: 0 },
+      adam: { x: rx, y: ry, z: pz, mX: 0, mY: 0, vX: 0, vY: 0, t: 0, history: [{ x: rx, y: ry, z: pz }], gradNorm: 0, stepCount: 0 }
     };
+    setBallPhysicsTick(prev => prev + 1);
+  };
+
+  // Discrete single-step manual gradient calculation
+  const stepSingleOptimizerIteration = (customSpeed: number = 1.0) => {
+    const phys = ballPhysicsRef.current;
+    if (!phys) return;
+    const effW = surfaceType === 'hyper_4d' ? (autoSlice4D || isBendingAnim ? hyperW + timeT * 0.7 : hyperW) : 0;
+    const eps = 0.005;
+
+    if (surfaceType === 'torus') {
+      phys.u = (phys.u + 0.04 * customSpeed * 1.4) % (2 * Math.PI);
+      phys.v = (phys.v + 0.04 * customSpeed * 2.8) % (2 * Math.PI);
+      const pt = eval3DSurface(phys.u, phys.v, 'torus', 0, timeT, isBendingAnim);
+      phys.x = pt.x;
+      phys.y = pt.y;
+      phys.history.push({ x: pt.x, y: pt.y, z: pt.z });
+      if (phys.history.length > 90) phys.history.shift();
+      phys.stepCount += 1;
+      setBallPhysicsTick(prev => prev + 1);
+      return;
+    }
+
+    if (surfaceType === 'mobius') {
+      phys.u = (phys.u + 0.04 * customSpeed * 1.2) % (4 * Math.PI);
+      phys.v = 0.55 * Math.sin(phys.u * 1.5);
+      const pt = eval3DSurface(phys.u, phys.v, 'mobius', 0, timeT, isBendingAnim);
+      phys.x = pt.x;
+      phys.y = pt.y;
+      phys.history.push({ x: pt.x, y: pt.y, z: pt.z });
+      if (phys.history.length > 90) phys.history.shift();
+      phys.stepCount += 1;
+      setBallPhysicsTick(prev => prev + 1);
+      return;
+    }
+
+    // Explicit surface descent step
+    if (optimizerMode === 'sgd' || optimizerMode === 'race') {
+      const zXp = eval3DSurface(phys.sgd.x + eps, phys.sgd.y, surfaceType, effW, timeT, isBendingAnim).z;
+      const zXm = eval3DSurface(phys.sgd.x - eps, phys.sgd.y, surfaceType, effW, timeT, isBendingAnim).z;
+      const zYp = eval3DSurface(phys.sgd.x, phys.sgd.y + eps, surfaceType, effW, timeT, isBendingAnim).z;
+      const zYm = eval3DSurface(phys.sgd.x, phys.sgd.y - eps, surfaceType, effW, timeT, isBendingAnim).z;
+      const gx = (zXp - zXm) / (2 * eps);
+      const gy = (zYp - zYm) / (2 * eps);
+      phys.sgd.gradNorm = Math.hypot(gx, gy);
+      if (phys.sgd.gradNorm > 0.0005) {
+        const nx = Math.max(-2.0, Math.min(2.0, phys.sgd.x - ballLearningRate * gx * customSpeed));
+        const ny = Math.max(-2.0, Math.min(2.0, phys.sgd.y - ballLearningRate * gy * customSpeed));
+        const nz = eval3DSurface(nx, ny, surfaceType, effW, timeT, isBendingAnim).z;
+        phys.sgd.x = nx;
+        phys.sgd.y = ny;
+        phys.sgd.z = nz;
+        phys.sgd.history.push({ x: nx, y: ny, z: nz });
+        if (phys.sgd.history.length > 80) phys.sgd.history.shift();
+        phys.sgd.stepCount += 1;
+      }
+    }
+
+    if (optimizerMode === 'momentum' || optimizerMode === 'race') {
+      const zXp = eval3DSurface(phys.momentum.x + eps, phys.momentum.y, surfaceType, effW, timeT, isBendingAnim).z;
+      const zXm = eval3DSurface(phys.momentum.x - eps, phys.momentum.y, surfaceType, effW, timeT, isBendingAnim).z;
+      const zYp = eval3DSurface(phys.momentum.x, phys.momentum.y + eps, surfaceType, effW, timeT, isBendingAnim).z;
+      const zYm = eval3DSurface(phys.momentum.x, phys.momentum.y - eps, surfaceType, effW, timeT, isBendingAnim).z;
+      const gx = (zXp - zXm) / (2 * eps);
+      const gy = (zYp - zYm) / (2 * eps);
+      phys.momentum.gradNorm = Math.hypot(gx, gy);
+      if (phys.momentum.gradNorm > 0.0005) {
+        phys.momentum.vx = phys.momentum.vx * ballMomentum - ballLearningRate * gx;
+        phys.momentum.vy = phys.momentum.vy * ballMomentum - ballLearningRate * gy;
+        const nx = Math.max(-2.0, Math.min(2.0, phys.momentum.x + phys.momentum.vx * customSpeed));
+        const ny = Math.max(-2.0, Math.min(2.0, phys.momentum.y + phys.momentum.vy * customSpeed));
+        const nz = eval3DSurface(nx, ny, surfaceType, effW, timeT, isBendingAnim).z;
+        phys.momentum.x = nx;
+        phys.momentum.y = ny;
+        phys.momentum.z = nz;
+        phys.momentum.history.push({ x: nx, y: ny, z: nz });
+        if (phys.momentum.history.length > 80) phys.momentum.history.shift();
+        phys.momentum.stepCount += 1;
+      }
+    }
+
+    if (optimizerMode === 'adam' || optimizerMode === 'race') {
+      const zXp = eval3DSurface(phys.adam.x + eps, phys.adam.y, surfaceType, effW, timeT, isBendingAnim).z;
+      const zXm = eval3DSurface(phys.adam.x - eps, phys.adam.y, surfaceType, effW, timeT, isBendingAnim).z;
+      const zYp = eval3DSurface(phys.adam.x, phys.adam.y + eps, surfaceType, effW, timeT, isBendingAnim).z;
+      const zYm = eval3DSurface(phys.adam.x, phys.adam.y - eps, surfaceType, effW, timeT, isBendingAnim).z;
+      const gx = (zXp - zXm) / (2 * eps);
+      const gy = (zYp - zYm) / (2 * eps);
+      phys.adam.gradNorm = Math.hypot(gx, gy);
+      if (phys.adam.gradNorm > 0.0005) {
+        phys.adam.t += 1;
+        const beta1 = 0.9, beta2 = 0.999, epsAdam = 1e-7;
+        phys.adam.mX = beta1 * phys.adam.mX + (1 - beta1) * gx;
+        phys.adam.mY = beta1 * phys.adam.mY + (1 - beta1) * gy;
+        phys.adam.vX = beta2 * phys.adam.vX + (1 - beta2) * gx * gx;
+        phys.adam.vY = beta2 * phys.adam.vY + (1 - beta2) * gy * gy;
+        const mHatX = phys.adam.mX / (1 - Math.pow(beta1, phys.adam.t));
+        const mHatY = phys.adam.mY / (1 - Math.pow(beta1, phys.adam.t));
+        const vHatX = phys.adam.vX / (1 - Math.pow(beta2, phys.adam.t));
+        const vHatY = phys.adam.vY / (1 - Math.pow(beta2, phys.adam.t));
+        const stepX = (ballLearningRate * 0.95 / (Math.sqrt(vHatX) + epsAdam)) * mHatX;
+        const stepY = (ballLearningRate * 0.95 / (Math.sqrt(vHatY) + epsAdam)) * mHatY;
+        const nx = Math.max(-2.0, Math.min(2.0, phys.adam.x - stepX * customSpeed));
+        const ny = Math.max(-2.0, Math.min(2.0, phys.adam.y - stepY * customSpeed));
+        const nz = eval3DSurface(nx, ny, surfaceType, effW, timeT, isBendingAnim).z;
+        phys.adam.x = nx;
+        phys.adam.y = ny;
+        phys.adam.z = nz;
+        phys.adam.history.push({ x: nx, y: ny, z: nz });
+        if (phys.adam.history.length > 80) phys.adam.history.shift();
+        phys.adam.stepCount += 1;
+      }
+    }
+
     setBallPhysicsTick(prev => prev + 1);
   };
 
@@ -2086,81 +3290,337 @@ export const TestDiagramsStudioView: React.FC = () => {
       ctx.beginPath(); ctx.arc(gizmoCX, gizmoCY, 2.5, 0, 2 * Math.PI); ctx.fill();
     }
 
-    // 8. Draw 3D Gradient Descent Rolling Ball / Geodesic Particle
+    // 7c. Draw Critical Points & Hessian Stationary Markers (Minima, Maxima, Saddles)
+    if (showCriticalPoints) {
+      interface CriticalPointDef {
+        x: number;
+        y: number;
+        label: string;
+        type: 'min' | 'max' | 'saddle' | 'monkey';
+      }
+
+      const critPts: CriticalPointDef[] = [];
+      if (surfaceType === 'saddle') {
+        critPts.push({ x: 0, y: 0, label: 'Saddle (0, 0) [det(H)<0]', type: 'saddle' });
+      } else if (surfaceType === 'monkey') {
+        critPts.push({ x: 0, y: 0, label: 'Monkey Saddle (0, 0) [det(H)=0]', type: 'monkey' });
+      } else if (surfaceType === 'hyper_4d') {
+        critPts.push({ x: 0, y: 0, label: `Hyper-Saddle (0, 0)`, type: 'saddle' });
+      } else if (surfaceType === 'himmelblau') {
+        critPts.push({ x: 3.0, y: 2.0, label: 'Min (3, 2)', type: 'min' });
+        critPts.push({ x: -2.805, y: 3.131, label: 'Min (-2.8, 3.1)', type: 'min' });
+        critPts.push({ x: -3.779, y: -3.283, label: 'Min (-3.8, -3.3)', type: 'min' });
+        critPts.push({ x: 3.584, y: -1.848, label: 'Min (3.6, -1.8)', type: 'min' });
+        critPts.push({ x: -0.27, y: -0.92, label: 'Local Max', type: 'max' });
+        critPts.push({ x: 0.086, y: 2.884, label: 'Saddle A', type: 'saddle' });
+        critPts.push({ x: -3.073, y: -0.081, label: 'Saddle B', type: 'saddle' });
+        critPts.push({ x: -0.124, y: -1.953, label: 'Saddle C', type: 'saddle' });
+        critPts.push({ x: 3.385, y: 0.073, label: 'Saddle D', type: 'saddle' });
+      }
+
+      critPts.forEach(cp => {
+        const cz = eval3DSurface(cp.x, cp.y, surfaceType, effectiveW, timeT, isBendingAnim).z;
+        const cProj = project(cp.x, cz, cp.y);
+
+        let mainColor = '#34d399'; // min
+        let badgeText = 'MIN';
+        if (cp.type === 'max') { mainColor = '#f87171'; badgeText = 'MAX'; }
+        else if (cp.type === 'saddle') { mainColor = '#fbbf24'; badgeText = 'SADDLE'; }
+        else if (cp.type === 'monkey') { mainColor = '#ec4899'; badgeText = 'MONKEY'; }
+
+        // Glow Aura Ring
+        ctx.strokeStyle = mainColor;
+        ctx.lineWidth = 1.6;
+        ctx.beginPath();
+        ctx.arc(cProj.px, cProj.py, 8 + Math.sin(timeT * 3.0) * 1.5, 0, 2 * Math.PI);
+        ctx.stroke();
+
+        // Solid Center Marker
+        ctx.fillStyle = mainColor;
+        ctx.beginPath();
+        ctx.arc(cProj.px, cProj.py, 4.5, 0, 2 * Math.PI);
+        ctx.fill();
+
+        // Tooltip badge
+        ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+        ctx.strokeStyle = mainColor;
+        ctx.lineWidth = 0.9;
+        const txt = `${badgeText}: ${cp.label}`;
+        ctx.font = 'bold 8.5px monospace';
+        const tw = ctx.measureText(txt).width;
+        ctx.fillRect(cProj.px + 8, cProj.py - 12, tw + 8, 14);
+        ctx.strokeRect(cProj.px + 8, cProj.py - 12, tw + 8, 14);
+
+        ctx.fillStyle = '#ffffff';
+        ctx.fillText(txt, cProj.px + 12, cProj.py - 2);
+      });
+    }
+
+    // 7d. Draw 3D Gradient Vector Quiver Field (-∇f Tangent Arrows)
+    if (showGradientQuiver && (surfaceType === 'saddle' || surfaceType === 'monkey' || surfaceType === 'himmelblau' || surfaceType === 'hyper_4d')) {
+      const qDelta = 0.005;
+      const qStep = 0.55;
+      for (let qu = -1.65; qu <= 1.65; qu += qStep) {
+        for (let qv = -1.65; qv <= 1.65; qv += qStep) {
+          const zBase = eval3DSurface(qu, qv, surfaceType, effectiveW, timeT, isBendingAnim).z;
+          const zUPlus = eval3DSurface(qu + qDelta, qv, surfaceType, effectiveW, timeT, isBendingAnim).z;
+          const zUMinus = eval3DSurface(qu - qDelta, qv, surfaceType, effectiveW, timeT, isBendingAnim).z;
+          const zVPlus = eval3DSurface(qu, qv + qDelta, surfaceType, effectiveW, timeT, isBendingAnim).z;
+          const zVMinus = eval3DSurface(qu, qv - qDelta, surfaceType, effectiveW, timeT, isBendingAnim).z;
+
+          const dfdu = (zUPlus - zUMinus) / (2 * qDelta);
+          const dfdv = (zVPlus - zVMinus) / (2 * qDelta);
+
+          const gradLen = Math.sqrt(dfdu * dfdu + dfdv * dfdv);
+          if (gradLen > 0.05) {
+            const du = -dfdu / gradLen;
+            const dv = -dfdv / gradLen;
+            const arrowLen = Math.min(0.24, 0.10 + 0.05 * Math.min(gradLen, 3.0));
+
+            const quTip = qu + du * arrowLen;
+            const qvTip = qv + dv * arrowLen;
+            const zTip = eval3DSurface(quTip, qvTip, surfaceType, effectiveW, timeT, isBendingAnim).z;
+
+            const pBase = project(qu, zBase + 0.03, qv);
+            const pTip = project(quTip, zTip + 0.03, qvTip);
+
+            let quiverColor = '#38bdf8';
+            if (gradLen > 1.2) quiverColor = '#f87171';
+            else if (gradLen > 0.5) quiverColor = '#fbbf24';
+
+            ctx.strokeStyle = quiverColor;
+            ctx.fillStyle = quiverColor;
+            ctx.lineWidth = 1.4;
+
+            ctx.beginPath();
+            ctx.moveTo(pBase.px, pBase.py);
+            ctx.lineTo(pTip.px, pTip.py);
+            ctx.stroke();
+
+            const angle = Math.atan2(pTip.py - pBase.py, pTip.px - pBase.px);
+            const headLen = 4.5;
+            ctx.beginPath();
+            ctx.moveTo(pTip.px, pTip.py);
+            ctx.lineTo(pTip.px - headLen * Math.cos(angle - Math.PI / 6), pTip.py - headLen * Math.sin(angle - Math.PI / 6));
+            ctx.lineTo(pTip.px - headLen * Math.cos(angle + Math.PI / 6), pTip.py - headLen * Math.sin(angle + Math.PI / 6));
+            ctx.closePath();
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.arc(pBase.px, pBase.py, 1.4, 0, 2 * Math.PI);
+            ctx.fill();
+          }
+        }
+      }
+    }
+
+    // 8. Draw 3D Gradient Descent Rolling Ball / Geodesic Particle / Multi-Optimizer Race
     const phys = ballPhysicsRef.current;
     if (showRollingBall && phys) {
-      // 8a. History Trajectory Ribbon (Trailing Path)
-      if (phys.history.length >= 2) {
-        ctx.strokeStyle = surfaceType === 'torus' || surfaceType === 'mobius' ? '#38bdf8' : '#fbbf24';
-        ctx.lineWidth = 2.2;
-        ctx.beginPath();
-        for (let h = 0; h < phys.history.length; h++) {
-          const hp = phys.history[h];
-          const hProj = project(hp.x, hp.z, hp.y);
-          if (h === 0) ctx.moveTo(hProj.px, hProj.py);
-          else ctx.lineTo(hProj.px, hProj.py);
-        }
-        ctx.stroke();
+      if (optimizerMode === 'race' && surfaceType !== 'torus' && surfaceType !== 'mobius') {
+        // Multi-Optimizer Race: 1. SGD (Blue), 2. Momentum (Green), 3. Adam (Orange)
+        const runners = [
+          { name: 'SGD', data: phys.sgd, color: '#38bdf8', aura: 'rgba(56, 189, 248, 0.35)', badge: '#0284c7' },
+          { name: 'Momentum', data: phys.momentum, color: '#34d399', aura: 'rgba(52, 211, 153, 0.35)', badge: '#059669' },
+          { name: 'Adam', data: phys.adam, color: '#fb923c', aura: 'rgba(251, 146, 60, 0.35)', badge: '#ea580c' }
+        ];
 
-        // Glowing halo line
-        ctx.strokeStyle = surfaceType === 'torus' || surfaceType === 'mobius' ? 'rgba(56, 189, 248, 0.35)' : 'rgba(251, 191, 36, 0.35)';
-        ctx.lineWidth = 5.0;
-        ctx.stroke();
-      }
+        runners.forEach(r => {
+          // Trailing ribbon
+          if (r.data.history.length >= 2) {
+            ctx.strokeStyle = r.color;
+            ctx.lineWidth = 2.0;
+            ctx.beginPath();
+            for (let h = 0; h < r.data.history.length; h++) {
+              const hp = r.data.history[h];
+              const hProj = project(hp.x, hp.z, hp.y);
+              if (h === 0) ctx.moveTo(hProj.px, hProj.py);
+              else ctx.lineTo(hProj.px, hProj.py);
+            }
+            ctx.stroke();
 
-      // 8b. Active Ball Position & Drop-Line to Floor
-      const currentZ = (surfaceType === 'torus' || surfaceType === 'mobius')
-        ? (phys.history[phys.history.length - 1]?.z ?? 0)
-        : eval3DSurface(phys.x, phys.y, surfaceType, effectiveW, timeT, isBendingAnim).z;
-      const ballProj = project(phys.x, currentZ, phys.y);
-      const floorProj = project(phys.x, -1.8, phys.y);
+            ctx.strokeStyle = r.aura;
+            ctx.lineWidth = 4.5;
+            ctx.stroke();
+          }
 
-      // Drop Line to Floor
-      ctx.strokeStyle = surfaceType === 'torus' || surfaceType === 'mobius' ? 'rgba(56, 189, 248, 0.5)' : 'rgba(251, 191, 36, 0.5)';
-      ctx.lineWidth = 1.4;
-      ctx.setLineDash([3, 3]);
-      ctx.beginPath();
-      ctx.moveTo(ballProj.px, ballProj.py);
-      ctx.lineTo(floorProj.px, floorProj.py);
-      ctx.stroke();
-      ctx.setLineDash([]);
+          // Active ball
+          const bProj = project(r.data.x, r.data.z, r.data.y);
+          const fProj = project(r.data.x, -1.8, r.data.y);
 
-      // Floor Shadow
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
-      ctx.beginPath();
-      ctx.ellipse(floorProj.px, floorProj.py, 8, 4, 0, 0, 2 * Math.PI);
-      ctx.fill();
+          // Drop line
+          ctx.strokeStyle = r.aura;
+          ctx.lineWidth = 1.2;
+          ctx.setLineDash([2, 2]);
+          ctx.beginPath();
+          ctx.moveTo(bProj.px, bProj.py);
+          ctx.lineTo(fProj.px, fProj.py);
+          ctx.stroke();
+          ctx.setLineDash([]);
 
-      // 3D Radial Gradient Sphere
-      const radGrad = ctx.createRadialGradient(ballProj.px - 2.5, ballProj.py - 2.5, 1, ballProj.px, ballProj.py, 8);
-      if (surfaceType === 'torus' || surfaceType === 'mobius') {
-        radGrad.addColorStop(0, '#ffffff');
-        radGrad.addColorStop(0.3, '#38bdf8');
-        radGrad.addColorStop(0.8, '#0284c7');
-        radGrad.addColorStop(1, '#0369a1');
+          // Shadow
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+          ctx.beginPath();
+          ctx.ellipse(fProj.px, fProj.py, 6, 3, 0, 0, 2 * Math.PI);
+          ctx.fill();
+
+          // Ball
+          const radGrad = ctx.createRadialGradient(bProj.px - 2, bProj.py - 2, 1, bProj.px, bProj.py, 7);
+          radGrad.addColorStop(0, '#ffffff');
+          radGrad.addColorStop(0.35, r.color);
+          radGrad.addColorStop(1, r.badge);
+
+          ctx.fillStyle = radGrad;
+          ctx.beginPath();
+          ctx.arc(bProj.px, bProj.py, 6.5, 0, 2 * Math.PI);
+          ctx.fill();
+
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.2;
+          ctx.stroke();
+
+          // Runner label tag
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+          ctx.strokeStyle = r.color;
+          ctx.lineWidth = 0.8;
+          ctx.font = 'bold 8px monospace';
+          const rtw = ctx.measureText(r.name).width;
+          ctx.fillRect(bProj.px + 7, bProj.py - 10, rtw + 6, 12);
+          ctx.strokeRect(bProj.px + 7, bProj.py - 10, rtw + 6, 12);
+          ctx.fillStyle = r.color;
+          ctx.fillText(r.name, bProj.px + 10, bProj.py - 1);
+        });
       } else {
-        radGrad.addColorStop(0, '#ffffff');
-        radGrad.addColorStop(0.3, '#fbbf24');
-        radGrad.addColorStop(0.8, '#d97706');
-        radGrad.addColorStop(1, '#78350f');
+        // Individual Optimizer or Parametric Geodesic Mode
+        if (surfaceType === 'torus' || surfaceType === 'mobius') {
+          // Parametric Knot / Twist Particle
+          if (phys.history.length >= 2) {
+            ctx.strokeStyle = '#38bdf8';
+            ctx.lineWidth = 2.2;
+            ctx.beginPath();
+            for (let h = 0; h < phys.history.length; h++) {
+              const hp = phys.history[h];
+              const hProj = project(hp.x, hp.z, hp.y);
+              if (h === 0) ctx.moveTo(hProj.px, hProj.py);
+              else ctx.lineTo(hProj.px, hProj.py);
+            }
+            ctx.stroke();
+
+            ctx.strokeStyle = 'rgba(56, 189, 248, 0.35)';
+            ctx.lineWidth = 5.0;
+            ctx.stroke();
+          }
+
+          const currentZ = phys.history[phys.history.length - 1]?.z ?? 0;
+          const ballProj = project(phys.x, currentZ, phys.y);
+          const floorProj = project(phys.x, -1.8, phys.y);
+
+          ctx.strokeStyle = 'rgba(56, 189, 248, 0.5)';
+          ctx.lineWidth = 1.4;
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          ctx.moveTo(ballProj.px, ballProj.py);
+          ctx.lineTo(floorProj.px, floorProj.py);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+          ctx.beginPath();
+          ctx.ellipse(floorProj.px, floorProj.py, 8, 4, 0, 0, 2 * Math.PI);
+          ctx.fill();
+
+          const radGrad = ctx.createRadialGradient(ballProj.px - 2.5, ballProj.py - 2.5, 1, ballProj.px, ballProj.py, 8);
+          radGrad.addColorStop(0, '#ffffff');
+          radGrad.addColorStop(0.3, '#38bdf8');
+          radGrad.addColorStop(0.8, '#0284c7');
+          radGrad.addColorStop(1, '#0369a1');
+
+          ctx.fillStyle = radGrad;
+          ctx.beginPath();
+          ctx.arc(ballProj.px, ballProj.py, 7.5, 0, 2 * Math.PI);
+          ctx.fill();
+
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+        } else {
+          // Explicit surface descent: SGD, Momentum, or Adam
+          const activeRunner = optimizerMode === 'sgd'
+            ? { name: 'SGD', data: phys.sgd, color: '#38bdf8', aura: 'rgba(56, 189, 248, 0.35)', badge: '#0284c7' }
+            : optimizerMode === 'adam'
+            ? { name: 'Adam', data: phys.adam, color: '#fb923c', aura: 'rgba(251, 146, 60, 0.35)', badge: '#ea580c' }
+            : { name: 'Momentum', data: phys.momentum, color: '#34d399', aura: 'rgba(52, 211, 153, 0.35)', badge: '#059669' };
+
+          if (activeRunner.data.history.length >= 2) {
+            ctx.strokeStyle = activeRunner.color;
+            ctx.lineWidth = 2.4;
+            ctx.beginPath();
+            for (let h = 0; h < activeRunner.data.history.length; h++) {
+              const hp = activeRunner.data.history[h];
+              const hProj = project(hp.x, hp.z, hp.y);
+              if (h === 0) ctx.moveTo(hProj.px, hProj.py);
+              else ctx.lineTo(hProj.px, hProj.py);
+            }
+            ctx.stroke();
+
+            ctx.strokeStyle = activeRunner.aura;
+            ctx.lineWidth = 5.5;
+            ctx.stroke();
+          }
+
+          const ballProj = project(activeRunner.data.x, activeRunner.data.z, activeRunner.data.y);
+          const floorProj = project(activeRunner.data.x, -1.8, activeRunner.data.y);
+
+          ctx.strokeStyle = activeRunner.aura;
+          ctx.lineWidth = 1.4;
+          ctx.setLineDash([3, 3]);
+          ctx.beginPath();
+          ctx.moveTo(ballProj.px, ballProj.py);
+          ctx.lineTo(floorProj.px, floorProj.py);
+          ctx.stroke();
+          ctx.setLineDash([]);
+
+          ctx.fillStyle = 'rgba(0, 0, 0, 0.35)';
+          ctx.beginPath();
+          ctx.ellipse(floorProj.px, floorProj.py, 8, 4, 0, 0, 2 * Math.PI);
+          ctx.fill();
+
+          const radGrad = ctx.createRadialGradient(ballProj.px - 2.5, ballProj.py - 2.5, 1, ballProj.px, ballProj.py, 8);
+          radGrad.addColorStop(0, '#ffffff');
+          radGrad.addColorStop(0.35, activeRunner.color);
+          radGrad.addColorStop(1, activeRunner.badge);
+
+          ctx.fillStyle = radGrad;
+          ctx.beginPath();
+          ctx.arc(ballProj.px, ballProj.py, 7.5, 0, 2 * Math.PI);
+          ctx.fill();
+
+          ctx.strokeStyle = '#ffffff';
+          ctx.lineWidth = 1.5;
+          ctx.stroke();
+
+          // Runner label tag
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+          ctx.strokeStyle = activeRunner.color;
+          ctx.lineWidth = 0.8;
+          ctx.font = 'bold 8.5px monospace';
+          const rtw = ctx.measureText(activeRunner.name).width;
+          ctx.fillRect(ballProj.px + 9, ballProj.py - 11, rtw + 8, 14);
+          ctx.strokeRect(ballProj.px + 9, ballProj.py - 11, rtw + 8, 14);
+          ctx.fillStyle = activeRunner.color;
+          ctx.fillText(activeRunner.name, ballProj.px + 13, ballProj.py);
+        }
       }
-
-      ctx.fillStyle = radGrad;
-      ctx.beginPath();
-      ctx.arc(ballProj.px, ballProj.py, 7.5, 0, 2 * Math.PI);
-      ctx.fill();
-
-      ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 1.5;
-      ctx.stroke();
     }
 
     // 9. On-Canvas Telemetry HUD Badge
+    const isRaceActive = showRollingBall && optimizerMode === 'race' && surfaceType !== 'torus' && surfaceType !== 'mobius';
+    const hudHeight = isRaceActive ? 104 : (showRollingBall ? 72 : 56);
     ctx.fillStyle = 'rgba(15, 23, 42, 0.92)';
     ctx.strokeStyle = 'rgba(56, 189, 248, 0.4)';
     ctx.lineWidth = 1;
     ctx.beginPath();
-    ctx.roundRect(14, 14, 235, showRollingBall ? 72 : 56, 6);
+    ctx.roundRect(14, 14, 255, hudHeight, 6);
     ctx.fill();
     ctx.stroke();
 
@@ -2181,34 +3641,616 @@ export const TestDiagramsStudioView: React.FC = () => {
     }
 
     if (showRollingBall) {
-      if (surfaceType === 'torus' || surfaceType === 'mobius') {
+      if (isRaceActive) {
+        ctx.font = '8.5px monospace';
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText(`🔵 SGD:      z=${phys.sgd.z.toFixed(2)} |∇f|=${phys.sgd.gradNorm.toFixed(2)} (${phys.sgd.stepCount}s)`, 24, 72);
+        ctx.fillStyle = '#34d399';
+        ctx.fillText(`🟢 Momentum: z=${phys.momentum.z.toFixed(2)} |∇f|=${phys.momentum.gradNorm.toFixed(2)} (${phys.momentum.stepCount}s)`, 24, 84);
+        ctx.fillStyle = '#fb923c';
+        ctx.fillText(`🟠 Adam:     z=${phys.adam.z.toFixed(2)} |∇f|=${phys.adam.gradNorm.toFixed(2)} (${phys.adam.stepCount}s)`, 24, 96);
+      } else if (surfaceType === 'torus' || surfaceType === 'mobius') {
         ctx.fillStyle = '#38bdf8';
         ctx.fillText(`● Geodesic Orbit: Toroidal Knot (step ${phys.stepCount})`, 24, 72);
+      } else if (optimizerMode === 'sgd') {
+        ctx.fillStyle = '#38bdf8';
+        ctx.fillText(`🔵 SGD Descent: z=${phys.sgd.z.toFixed(2)} |∇f|=${phys.sgd.gradNorm.toFixed(3)} (${phys.sgd.stepCount}s)${isBallPaused ? ' [PAUSED]' : ''}`, 24, 72);
+      } else if (optimizerMode === 'adam') {
+        ctx.fillStyle = '#fb923c';
+        ctx.fillText(`🟠 Adam Descent: z=${phys.adam.z.toFixed(2)} |∇f|=${phys.adam.gradNorm.toFixed(3)} (${phys.adam.stepCount}s)${isBallPaused ? ' [PAUSED]' : ''}`, 24, 72);
       } else {
-        const currentZ = eval3DSurface(phys.x, phys.y, surfaceType, effectiveW, timeT, isBendingAnim).z;
-        ctx.fillStyle = '#fbbf24';
-        ctx.fillText(`● Descent Ball: z=${currentZ.toFixed(2)} |∇f|=${phys.gradNorm.toFixed(3)} (step ${phys.stepCount})`, 24, 72);
+        ctx.fillStyle = '#34d399';
+        ctx.fillText(`🟢 Momentum: z=${phys.momentum.z.toFixed(2)} |∇f|=${phys.momentum.gradNorm.toFixed(3)} (${phys.momentum.stepCount}s)${isBallPaused ? ' [PAUSED]' : ''}`, 24, 72);
       }
     }
 
     ctx.restore();
 
-  }, [activeModuleId, surfaceType, hyperW, autoSlice4D, showSlicePlane, sliceHeightZ, rotX, rotY, zoom3D, shadingMode, surfaceColormap, show3dAxes, showFloorGrid, meshResolution, currentCanvasTheme, isBendingAnim, timeT, surfaceTelemetry, showRollingBall, ballPhysicsTick]);
+  }, [activeModuleId, surfaceType, hyperW, autoSlice4D, showSlicePlane, sliceHeightZ, rotX, rotY, zoom3D, shadingMode, surfaceColormap, show3dAxes, showFloorGrid, showCriticalPoints, showGradientQuiver, meshResolution, currentCanvasTheme, isBendingAnim, timeT, surfaceTelemetry, showRollingBall, optimizerMode, ballPhysicsTick]);
 
   // ─────────────────────────────────────────────────────────────────────────────
   // 9. PHASE 7: VECTOR FIELDS & PHASE SPACE ORBITS
   // ─────────────────────────────────────────────────────────────────────────────
-  const [odeSystem, setOdeSystem] = useState<'pendulum' | 'lotka_volterra' | 'vanderpol' | 'lorenz'>('pendulum');
+  type OdeSystemType = 'pendulum' | 'vanderpol' | 'lotka_volterra' | 'duffing';
+  const [odeSystem, setOdeSystem] = useState<OdeSystemType>('pendulum');
   const [dampingFactor, setDampingFactor] = useState<number>(0.25);
   const [phaseX0, setPhaseX0] = useState<number>(1.2);
   const [phaseY0, setPhaseY0] = useState<number>(0.5);
+  const [showOdeTrajectory, setShowOdeTrajectory] = useState<boolean>(true);
+  const [showOdeStreamlines, setShowOdeStreamlines] = useState<boolean>(true);
+  const [showOdeNullclines, setShowOdeNullclines] = useState<boolean>(true);
+  const [showOdeFixedPoints, setShowOdeFixedPoints] = useState<boolean>(true);
+  const [odeGridDensity, setOdeGridDensity] = useState<'coarse' | 'medium' | 'fine'>('medium');
+  const [showOdeFormulaHud, setShowOdeFormulaHud] = useState<boolean>(true);
+
+  // Mathematical ODE Velocity Field Evaluator
+  const evalOdeDerivatives = (x: number, y: number, system: OdeSystemType, param: number): { dx: number; dy: number } => {
+    switch (system) {
+      case 'vanderpol':
+        // x' = y, y' = mu * (1 - x^2) * y - x
+        return {
+          dx: y,
+          dy: param * (1 - x * x) * y - x
+        };
+      case 'lotka_volterra': {
+        // Centered Predator-Prey (Shifted so coexistence fixed point is near (0, 0))
+        const px = x + 1.8;
+        const py = y + 1.5;
+        if (px <= 0.05 || py <= 0.05) return { dx: 0, dy: 0 };
+        return {
+          dx: px * (1.2 - 0.8 * py),
+          dy: -py * (1.0 - 0.6 * px)
+        };
+      }
+      case 'duffing':
+        // Double-well oscillator: x' = y, y' = x - x^3 - d * y
+        return {
+          dx: y,
+          dy: x - Math.pow(x, 3) - param * y
+        };
+      case 'pendulum':
+      default:
+        // Non-linear damped pendulum: x' = y, y' = -sin(x) - d * y
+        return {
+          dx: y,
+          dy: -Math.sin(x) - param * y
+        };
+    }
+  };
+
+  // Runge-Kutta 4th Order (RK4) Numerical Trajectory Integrator
+  const computeRk4Trajectory = (
+    x0: number,
+    y0: number,
+    system: OdeSystemType,
+    param: number,
+    steps: number = 320,
+    dt: number = 0.025
+  ): Array<{ x: number; y: number }> => {
+    const pts: Array<{ x: number; y: number }> = [{ x: x0, y: y0 }];
+    let cx = x0;
+    let cy = y0;
+
+    for (let i = 0; i < steps; i++) {
+      const k1 = evalOdeDerivatives(cx, cy, system, param);
+      const k2 = evalOdeDerivatives(cx + 0.5 * dt * k1.dx, cy + 0.5 * dt * k1.dy, system, param);
+      const k3 = evalOdeDerivatives(cx + 0.5 * dt * k2.dx, cy + 0.5 * dt * k2.dy, system, param);
+      const k4 = evalOdeDerivatives(cx + dt * k3.dx, cy + dt * k3.dy, system, param);
+
+      cx += (dt / 6) * (k1.dx + 2 * k2.dx + 2 * k3.dx + k4.dx);
+      cy += (dt / 6) * (k1.dy + 2 * k2.dy + 2 * k3.dy + k4.dy);
+
+      if (Math.abs(cx) > 4.5 || Math.abs(cy) > 3.5 || isNaN(cx) || isNaN(cy)) break;
+      pts.push({ x: cx, y: cy });
+    }
+    return pts;
+  };
+
+  // Fixed Equilibrium Points & Linear Stability Classification
+  const getOdeFixedPoints = (
+    system: OdeSystemType,
+    param: number
+  ): Array<{ x: number; y: number; label: string; type: 'sink' | 'source' | 'saddle' | 'center'; badge: string }> => {
+    switch (system) {
+      case 'vanderpol':
+        return [
+          {
+            x: 0,
+            y: 0,
+            label: 'Origin (0,0)',
+            type: 'source',
+            badge: 'UNSTABLE SPIRAL (SOURCE)'
+          }
+        ];
+      case 'lotka_volterra':
+        return [
+          {
+            x: 1.67 - 1.8,
+            y: 1.5 - 1.5,
+            label: 'Coexistence Center',
+            type: 'center',
+            badge: 'CENTER (CLOSED CYCLES)'
+          },
+          {
+            x: -1.8,
+            y: -1.5,
+            label: 'Extinction Saddle',
+            type: 'saddle',
+            badge: 'SADDLE (EXTINCTION)'
+          }
+        ];
+      case 'duffing':
+        return [
+          {
+            x: 0,
+            y: 0,
+            label: 'Saddle Separatrix (0,0)',
+            type: 'saddle',
+            badge: 'SADDLE (SEPARATRIX)'
+          },
+          {
+            x: 1,
+            y: 0,
+            label: 'Right Well (+1,0)',
+            type: param > 0 ? 'sink' : 'center',
+            badge: param > 0 ? 'STABLE SPIRAL (SINK)' : 'CENTER'
+          },
+          {
+            x: -1,
+            y: 0,
+            label: 'Left Well (-1,0)',
+            type: param > 0 ? 'sink' : 'center',
+            badge: param > 0 ? 'STABLE SPIRAL (SINK)' : 'CENTER'
+          }
+        ];
+      case 'pendulum':
+      default:
+        return [
+          {
+            x: 0,
+            y: 0,
+            label: 'Downward Equilibrium (0,0)',
+            type: param > 0 ? 'sink' : 'center',
+            badge: param > 0 ? 'STABLE FOCUS (SINK)' : 'CENTER (HAMILTONIAN)'
+          },
+          {
+            x: Math.PI,
+            y: 0,
+            label: 'Inverted Pendulum (+π,0)',
+            type: 'saddle',
+            badge: 'SADDLE (UNSTABLE)'
+          },
+          {
+            x: -Math.PI,
+            y: 0,
+            label: 'Inverted Pendulum (-π,0)',
+            type: 'saddle',
+            badge: 'SADDLE (UNSTABLE)'
+          }
+        ];
+    }
+  };
+
+  // LaTeX Mathematical Formulation & Energy Metric
+  const getOdeTelemetry = (
+    system: OdeSystemType,
+    param: number,
+    x0: number,
+    y0: number
+  ): { title: string; eq1: string; eq2: string; energy: string; jacobian: string } => {
+    switch (system) {
+      case 'vanderpol':
+        return {
+          title: 'Van der Pol Oscillator (Nonlinear Limit Cycle)',
+          eq1: 'ẋ = y',
+          eq2: `ẏ = ${param.toFixed(2)}(1 - x²)y - x`,
+          energy: 'Self-Excited Dissipative Limit Cycle (Radius R ≈ 2.0)',
+          jacobian: `tr(J) = ${param.toFixed(2)}, det(J) = 1.00 (Unstable Repeller at Origin)`
+        };
+      case 'lotka_volterra':
+        return {
+          title: 'Lotka-Volterra Predator-Prey Dynamics',
+          eq1: 'ẋ = x(1.2 - 0.8y)',
+          eq2: 'ẏ = -y(1.0 - 0.6x)',
+          energy: `First Integral: V(x,y) = 0.6x - 1.0 ln(x) + 0.8y - 1.2 ln(y)`,
+          jacobian: 'tr(J) = 0, det(J) = 1.20 (Conservative Center)'
+        };
+      case 'duffing': {
+        const energyVal = 0.5 * y0 * y0 - 0.5 * x0 * x0 + 0.25 * Math.pow(x0, 4);
+        return {
+          title: 'Duffing Double-Well Oscillator',
+          eq1: 'ẋ = y',
+          eq2: `ẏ = x - x³ - ${param.toFixed(2)}y`,
+          energy: `Hamiltonian H(x,y) = ½y² - ½x² + ¼x⁴ = ${energyVal.toFixed(3)}`,
+          jacobian: `tr(J) = -${param.toFixed(2)}, det(J) = 3x² - 1`
+        };
+      }
+      case 'pendulum':
+      default: {
+        const energyVal = 0.5 * y0 * y0 - Math.cos(x0);
+        return {
+          title: 'Nonlinear Damped Pendulum',
+          eq1: 'ẋ = y (Angular Velocity)',
+          eq2: `ẏ = -sin(x) - ${param.toFixed(2)}y (Torque + Drag)`,
+          energy: `Total Energy E = ½y² - cos(x) = ${energyVal.toFixed(3)}`,
+          jacobian: `tr(J) = -${param.toFixed(2)}, det(J) = cos(x) = ${Math.cos(x0).toFixed(2)}`
+        };
+      }
+    }
+  };
   // ─────────────────────────────────────────────────────────────────────────────
-  // 10. PHASE 8: FORMULA SANDBOX STATES
+  // 10. PHASE 8: MULTIVARIABLE FORMULA SANDBOX STATES & EVALUATORS
   // ─────────────────────────────────────────────────────────────────────────────
-  const [sandboxCoordType, setSandboxCoordType] = useState<'cartesian' | 'polar' | 'parametric'>('cartesian');
-  const [paramK, setParamK] = useState<number>(2.0);
-  const [paramA, setParamA] = useState<number>(1.2);
-  const [paramB, setParamB] = useState<number>(0.0);
+  type SandboxCoordType = 'cartesian' | 'polar' | 'parametric';
+  type CartesianPreset = 'harmonic' | 'damped' | 'gaussian' | 'cubic' | 'chirp' | 'beating';
+  type PolarPreset = 'rose' | 'cardioid' | 'spiral' | 'lemniscate' | 'butterfly';
+  type ParametricPreset = 'lissajous' | 'hypotrochoid' | 'astroid' | 'cycloid' | 'butterfly_param';
+
+  const [sandboxCoordType, setSandboxCoordType] = useState<SandboxCoordType>('cartesian');
+  const [cartesianPreset, setCartesianPreset] = useState<CartesianPreset>('harmonic');
+  const [polarPreset, setPolarPreset] = useState<PolarPreset>('rose');
+  const [parametricPreset, setParametricPreset] = useState<ParametricPreset>('lissajous');
+
+  // Interactive Parameters
+  const [paramK, setParamK] = useState<number>(2.0); // Frequency / Petals / kx
+  const [paramK2, setParamK2] = useState<number>(3.0); // Secondary Freq / ky / Modulation
+  const [paramA, setParamA] = useState<number>(1.3); // Amplitude / Main Radius
+  const [paramB, setParamB] = useState<number>(0.0); // Phase Shift / Minor scale
+  const [paramC, setParamC] = useState<number>(0.0); // Vertical Offset / DC Bias
+  const [sandboxZoom, setSandboxZoom] = useState<number>(1.0); // Viewport Zoom (0.5x to 2.2x)
+
+  // Multi-Curve Layer Visibility
+  const [showCurve1, setShowCurve1] = useState<boolean>(true); // C1: Emerald (#34d399)
+  const [showCurve2, setShowCurve2] = useState<boolean>(true); // C2: Cyan (#38bdf8)
+  const [showCurve3, setShowCurve3] = useState<boolean>(false); // C3: Pink (#ec4899)
+  const [showCompositeSum, setShowCompositeSum] = useState<boolean>(false); // Composite Superposition (#fbbf24)
+
+  // Diagnostics & Calculus Toggles
+  const [showTangentVector, setShowTangentVector] = useState<boolean>(true); // Velocity & Tangent Vector v(t)
+  const [showAreaShading, setShowAreaShading] = useState<boolean>(true); // Definite Integral / Sector Area Shading
+  const [showGridRings, setShowGridRings] = useState<boolean>(true); // Cartesian ticks or Polar rings/rays
+  const [showTracerDot, setShowTracerDot] = useState<boolean>(true); // Live Animated Tracer Node
+  const [showRootsAndExtrema, setShowRootsAndExtrema] = useState<boolean>(true); // Roots (y=0) & Critical Extrema (f'=0)
+  const [showOsculatingCircle, setShowOsculatingCircle] = useState<boolean>(false); // Curvature κ(t) & Osculating Circle
+
+  // Mathematical Evaluators (Declared first for use in memoized hooks)
+  const evalCartesian = (x: number, curveIdx: 1 | 2 | 3, preset: CartesianPreset): number => {
+    switch (preset) {
+      case 'damped':
+        if (curveIdx === 1) return paramA * Math.exp(-0.35 * paramK * Math.abs(x)) * Math.cos(paramK * x + paramB) + paramC;
+        if (curveIdx === 2) return paramA * Math.exp(-0.35 * paramK * Math.abs(x)) + paramC;
+        return -paramA * Math.exp(-0.35 * paramK * Math.abs(x)) + paramC;
+      case 'gaussian':
+        if (curveIdx === 1) return paramA * Math.exp(-Math.pow(0.45 * paramK * x, 2)) * Math.cos(paramK2 * x + paramB) + paramC;
+        if (curveIdx === 2) return paramA * Math.exp(-Math.pow(0.45 * paramK * x, 2)) + paramC;
+        return -paramA * Math.exp(-Math.pow(0.45 * paramK * x, 2)) + paramC;
+      case 'cubic':
+        if (curveIdx === 1) return paramA * (0.18 * Math.pow(x, 3) - 0.75 * paramK * x) + paramC;
+        if (curveIdx === 2) return paramA * (0.54 * Math.pow(x, 2) - 0.75 * paramK); // 1st derivative f'
+        return paramA * (1.08 * x); // 2nd derivative f''
+      case 'chirp':
+        if (curveIdx === 1) return paramA * Math.sin(0.22 * paramK * Math.pow(x, 2) + paramB) + paramC;
+        if (curveIdx === 2) return paramA * Math.cos(0.22 * paramK * Math.pow(x, 2) + paramB) + paramC;
+        return 0.5 * paramA * Math.sin(0.44 * paramK * Math.pow(x, 2)) + paramC;
+      case 'beating':
+        if (curveIdx === 1) return paramA * Math.sin(paramK * x) + paramA * Math.sin(paramK2 * x) + paramC;
+        if (curveIdx === 2) return 2 * paramA * Math.cos(((paramK - paramK2) / 2) * x) + paramC;
+        return -2 * paramA * Math.cos(((paramK - paramK2) / 2) * x) + paramC;
+      case 'harmonic':
+      default:
+        if (curveIdx === 1) return paramA * Math.sin(paramK * x + paramB) + paramC;
+        if (curveIdx === 2) return 0.6 * paramA * Math.cos(2 * paramK * x + paramB) + paramC;
+        return 0.35 * paramA * Math.sin(3 * paramK * x) + paramC;
+    }
+  };
+
+  const evalPolar = (theta: number, curveIdx: 1 | 2 | 3, preset: PolarPreset): number => {
+    switch (preset) {
+      case 'cardioid':
+        if (curveIdx === 1) return paramA * (1 + Math.cos(paramK * theta)) + paramC;
+        if (curveIdx === 2) return paramA * (1 - Math.sin(paramK * theta)) + paramC;
+        return paramA * (1 + 0.6 * Math.cos(2 * paramK * theta)) + paramC;
+      case 'spiral':
+        if (curveIdx === 1) return paramA * 0.22 * theta + paramC;
+        if (curveIdx === 2) return paramA * Math.exp(0.08 * paramK * theta) * 0.3 + paramC;
+        return (paramA * 1.8) / Math.sqrt(theta + 0.3) + paramC;
+      case 'lemniscate':
+        if (curveIdx === 1) return paramA * Math.sqrt(Math.max(0, Math.cos(2 * paramK * theta))) + paramC;
+        if (curveIdx === 2) return paramA * Math.sqrt(Math.max(0, -Math.cos(2 * paramK * theta))) + paramC;
+        return 1.2 * paramA * Math.cos(paramK * theta) + paramC;
+      case 'butterfly':
+        if (curveIdx === 1) return paramA * 0.45 * (Math.exp(Math.cos(theta)) - 2 * Math.cos(4 * theta) + Math.pow(Math.sin((2 * theta - Math.PI) / 24), 5)) + paramC;
+        if (curveIdx === 2) return paramA * 0.6 * Math.cos(3 * theta) + paramC;
+        return paramA * 0.6 * Math.sin(5 * theta) + paramC;
+      case 'rose':
+      default:
+        if (curveIdx === 1) return paramA * Math.cos(paramK * theta) + paramC;
+        if (curveIdx === 2) return paramA * Math.sin(paramK * theta) + paramC;
+        return paramA * Math.cos((paramK / Math.max(1, paramK2)) * theta) + paramC;
+    }
+  };
+
+  const evalParametric = (t: number, curveIdx: 1 | 2 | 3, preset: ParametricPreset): { x: number; y: number } => {
+    switch (preset) {
+      case 'hypotrochoid': {
+        const R = 1.8 * paramA;
+        const r = 0.6 * paramA;
+        const d = 0.5 * paramK;
+        if (curveIdx === 1) {
+          return {
+            x: (R - r) * Math.cos(t) + d * Math.cos(((R - r) / r) * t),
+            y: (R - r) * Math.sin(t) - d * Math.sin(((R - r) / r) * t)
+          };
+        }
+        if (curveIdx === 2) {
+          return { x: R * Math.cos(t), y: R * Math.sin(t) };
+        }
+        return {
+          x: (R - r) * Math.cos(t) + 0.8 * d * Math.cos(((R - r) / r) * t),
+          y: (R - r) * Math.sin(t) - 0.8 * d * Math.sin(((R - r) / r) * t)
+        };
+      }
+      case 'astroid':
+        if (curveIdx === 1) {
+          return { x: paramA * Math.pow(Math.cos(paramK * t), 3), y: paramA * Math.pow(Math.sin(paramK * t), 3) };
+        }
+        if (curveIdx === 2) {
+          return { x: paramA * Math.cos(paramK * t), y: paramA * Math.sin(paramK * t) };
+        }
+        return { x: 0.6 * paramA * Math.pow(Math.cos(paramK * t), 5), y: 0.6 * paramA * Math.pow(Math.sin(paramK * t), 5) };
+      case 'cycloid':
+        if (curveIdx === 1) {
+          return { x: 0.45 * paramA * (paramK * t - Math.sin(paramK * t)) - 1.8, y: 0.45 * paramA * (1 - Math.cos(paramK * t)) - 0.9 };
+        }
+        if (curveIdx === 2) {
+          return { x: 0.45 * paramA * (paramK * t + Math.sin(paramK * t)) - 1.8, y: -0.45 * paramA * (1 - Math.cos(paramK * t)) + 0.9 };
+        }
+        return { x: 0.45 * paramA * (paramK * t) - 1.8, y: 0 };
+      case 'butterfly_param': {
+        const factor = Math.exp(Math.cos(t)) - 2 * Math.cos(4 * t) - Math.pow(Math.sin(t / 12), 5);
+        if (curveIdx === 1) return { x: 0.4 * paramA * Math.sin(t) * factor, y: 0.4 * paramA * Math.cos(t) * factor };
+        if (curveIdx === 2) return { x: 0.5 * paramA * Math.sin(3 * t), y: 0.5 * paramA * Math.cos(3 * t) };
+        return { x: 0.8 * paramA * Math.sin(t), y: 0.8 * paramA * Math.cos(2 * t) };
+      }
+      case 'lissajous':
+      default:
+        if (curveIdx === 1) {
+          return { x: paramA * Math.sin(paramK * t + paramB), y: paramA * Math.cos(paramK2 * t) };
+        }
+        if (curveIdx === 2) {
+          return { x: paramA * Math.cos(paramK * t + paramB), y: paramA * Math.sin(paramK2 * t) };
+        }
+        return { x: 0.7 * paramA * Math.sin((paramK + 1) * t), y: 0.7 * paramA * Math.sin((paramK2 + 1) * t) };
+    }
+  };
+
+  // Formatted Mathematical LaTeX-Style Formula String Generator
+  const getSandboxFormulaString = (
+    coordType: SandboxCoordType,
+    cartPreset: CartesianPreset,
+    polPreset: PolarPreset,
+    parPreset: ParametricPreset,
+    k: number,
+    k2: number,
+    a: number,
+    b: number,
+    c: number
+  ): { main: string; sub?: string; env?: string } => {
+    const cStr = c !== 0 ? (c > 0 ? ` + ${c.toFixed(1)}` : ` - ${Math.abs(c).toFixed(1)}`) : '';
+    const bStr = b !== 0 ? (b > 0 ? ` + ${b.toFixed(2)}` : ` - ${Math.abs(b).toFixed(2)}`) : '';
+
+    if (coordType === 'cartesian') {
+      switch (cartPreset) {
+        case 'damped':
+          return {
+            main: `y = ${a.toFixed(1)} e^{-${(0.35 * k).toFixed(2)}|x|} cos(${k.toFixed(1)}x${bStr})${cStr}`,
+            sub: `Envelope: ±${a.toFixed(1)} e^{-${(0.35 * k).toFixed(2)}|x|}`
+          };
+        case 'gaussian':
+          return {
+            main: `y = ${a.toFixed(1)} e^{-(${ (0.45 * k).toFixed(2) }x)^2} cos(${k2.toFixed(1)}x${bStr})${cStr}`,
+            sub: `Bell Envelope: ${a.toFixed(1)} e^{-(${ (0.45 * k).toFixed(2) }x)^2}`
+          };
+        case 'cubic':
+          return {
+            main: `f(x) = ${a.toFixed(1)} (0.18 x^3 - ${(0.75 * k).toFixed(2)} x)${cStr}`,
+            sub: `f'(x) = ${a.toFixed(1)} (0.54 x^2 - ${(0.75 * k).toFixed(2)})`,
+            env: `f''(x) = ${(1.08 * a).toFixed(2)} x`
+          };
+        case 'chirp':
+          return {
+            main: `y = ${a.toFixed(1)} sin(${(0.22 * k).toFixed(2)} x^2${bStr})${cStr}`,
+            sub: `Phase Carrier: ${(0.22 * k).toFixed(2)} x^2 rad`
+          };
+        case 'beating':
+          return {
+            main: `y = ${a.toFixed(1)} [sin(${k.toFixed(1)}x) + sin(${k2.toFixed(1)}x)]${cStr}`,
+            sub: `Modulation Envelope: 2·${a.toFixed(1)} cos(${ (Math.abs(k - k2) / 2).toFixed(2) }x)`
+          };
+        case 'harmonic':
+        default:
+          return {
+            main: `y = ${a.toFixed(1)} sin(${k.toFixed(1)}x${bStr})${cStr}`,
+            sub: `Harmonic: ${(0.6 * a).toFixed(2)} cos(${(2 * k).toFixed(1)}x${bStr})`
+          };
+      }
+    } else if (coordType === 'polar') {
+      switch (polPreset) {
+        case 'cardioid':
+          return {
+            main: `r(θ) = ${a.toFixed(1)} [1 + cos(${k.toFixed(1)}θ)]${cStr}`,
+            sub: `Limaçon / Cardioid Family`
+          };
+        case 'spiral':
+          return {
+            main: `r(θ) = ${ (0.22 * a).toFixed(2) } θ${cStr}`,
+            sub: `Archimedean: r ∝ θ`
+          };
+        case 'lemniscate':
+          return {
+            main: `r^2(θ) = ${ (a * a).toFixed(2) } cos(${ (2 * k).toFixed(1) }θ)`,
+            sub: `Bernoulli Dual-Lobe Figure Eight`
+          };
+        case 'butterfly':
+          return {
+            main: `r(θ) = ${ (0.45 * a).toFixed(2) } [e^{cos θ} - 2 cos 4θ + sin^5(\\frac{2θ-π}{24})]`,
+            sub: `Transcendental Butterfly Profile`
+          };
+        case 'rose':
+        default:
+          return {
+            main: `r(θ) = ${a.toFixed(1)} cos(${k.toFixed(1)}θ)${cStr}`,
+            sub: `Petals: ${Number.isInteger(k) ? (k % 2 === 0 ? 2 * k : k) : `${k.toFixed(1)} (Fractional)`} Petals`
+          };
+      }
+    } else {
+      switch (parPreset) {
+        case 'hypotrochoid':
+          return {
+            main: `x(t) = ${(1.2 * a).toFixed(1)} cos t + ${(0.5 * k).toFixed(1)} cos(2t), y(t) = ${(1.2 * a).toFixed(1)} sin t - ${(0.5 * k).toFixed(1)} sin(2t)`,
+            sub: `Spirograph Hypotrochoid (R=${(1.8 * a).toFixed(1)}, r=${(0.6 * a).toFixed(1)})`
+          };
+        case 'astroid':
+          return {
+            main: `x(t) = ${a.toFixed(1)} cos^3(${k.toFixed(1)}t), y(t) = ${a.toFixed(1)} sin^3(${k.toFixed(1)}t)`,
+            sub: `Hypocycloid of 4 Cusps: x^{2/3} + y^{2/3} = a^{2/3}`
+          };
+        case 'cycloid':
+          return {
+            main: `x(t) = ${(0.45 * a).toFixed(2)}(${k.toFixed(1)}t - sin ${k.toFixed(1)}t), y(t) = ${(0.45 * a).toFixed(2)}(1 - cos ${k.toFixed(1)}t)`,
+            sub: `Brachistochrone / Rolling Wheel Trajectory`
+          };
+        case 'butterfly_param':
+          return {
+            main: `x(t) = ${(0.4 * a).toFixed(2)} sin t · F(t), y(t) = ${(0.4 * a).toFixed(2)} cos t · F(t)`,
+            sub: `Parametric Butterfly Orbit`
+          };
+        case 'lissajous':
+        default:
+          return {
+            main: `x(t) = ${a.toFixed(1)} sin(${k.toFixed(1)}t${bStr}), y(t) = ${a.toFixed(1)} cos(${k2.toFixed(1)}t)`,
+            sub: `Frequency Ratio kx : ky = ${k.toFixed(1)} : ${k2.toFixed(1)}`
+          };
+      }
+    }
+  };
+
+  // Numerical Definite Integral / Enclosed Area Metric
+  const sandboxAreaMetric = useMemo(() => {
+    if (sandboxCoordType === 'cartesian') {
+      // Numerical Riemann Trapezoidal Integral ∫_{-3}^{3} f(x) dx
+      let integral = 0;
+      let posArea = 0;
+      const steps = 200;
+      const xMin = -3.0;
+      const xMax = 3.0;
+      const dx = (xMax - xMin) / steps;
+      for (let i = 0; i < steps; i++) {
+        const x1 = xMin + i * dx;
+        const x2 = x1 + dx;
+        const y1 = evalCartesian(x1, 1, cartesianPreset);
+        const y2 = evalCartesian(x2, 1, cartesianPreset);
+        integral += 0.5 * (y1 + y2) * dx;
+        posArea += 0.5 * (Math.abs(y1) + Math.abs(y2)) * dx;
+      }
+      return {
+        label: '∫_{-3}^{3} f(x) dx',
+        value: integral.toFixed(3),
+        totalAbsArea: posArea.toFixed(3),
+        unit: 'sq. units'
+      };
+    } else if (sandboxCoordType === 'polar') {
+      // Numerical Polar Enclosed Area A = 1/2 ∫_{0}^{2π} r(θ)^2 dθ
+      let area = 0;
+      const steps = 360;
+      const maxTh = polarPreset === 'spiral' ? 4 * Math.PI : 2 * Math.PI;
+      const dTh = maxTh / steps;
+      for (let i = 0; i < steps; i++) {
+        const th1 = i * dTh;
+        const th2 = (i + 1) * dTh;
+        const r1 = Math.max(0, evalPolar(th1, 1, polarPreset));
+        const r2 = Math.max(0, evalPolar(th2, 1, polarPreset));
+        area += 0.25 * (r1 * r1 + r2 * r2) * dTh;
+      }
+      return {
+        label: 'Enclosed Area A = ½∫ r² dθ',
+        value: area.toFixed(3),
+        totalAbsArea: area.toFixed(3),
+        unit: 'sq. units'
+      };
+    } else {
+      // Parametric Arc Length L = ∫ √((dx/dt)² + (dy/dt)²) dt
+      let arcLength = 0;
+      const steps = 300;
+      const maxT = parametricPreset === 'hypotrochoid' || parametricPreset === 'cycloid' ? 4 * Math.PI : 2 * Math.PI;
+      const dt = maxT / steps;
+      for (let i = 0; i < steps; i++) {
+        const t1 = i * dt;
+        const t2 = (i + 1) * dt;
+        const p1 = evalParametric(t1, 1, parametricPreset);
+        const p2 = evalParametric(t2, 1, parametricPreset);
+        const dist = Math.hypot(p2.x - p1.x, p2.y - p1.y);
+        arcLength += dist;
+      }
+      return {
+        label: 'Trajectory Arc Length L',
+        value: arcLength.toFixed(3),
+        totalAbsArea: arcLength.toFixed(3),
+        unit: 'length units'
+      };
+    }
+  }, [sandboxCoordType, cartesianPreset, polarPreset, parametricPreset, paramK, paramK2, paramA, paramB, paramC]);
+
+  // Roots (Zero Crossings) & Critical Points (Extrema) Locator
+  const sandboxKeyPoints = useMemo(() => {
+    if (sandboxCoordType !== 'cartesian') return { roots: [], extrema: [] };
+
+    const roots: Array<{ x: number; y: number }> = [];
+    const extrema: Array<{ x: number; y: number; type: 'max' | 'min' | 'inflection'; label: string }> = [];
+
+    const xMin = -3.5;
+    const xMax = 3.5;
+    const steps = 140;
+    const dx = (xMax - xMin) / steps;
+
+    for (let i = 0; i < steps; i++) {
+      const x1 = xMin + i * dx;
+      const x2 = x1 + dx;
+      const y1 = evalCartesian(x1, 1, cartesianPreset);
+      const y2 = evalCartesian(x2, 1, cartesianPreset);
+
+      // Root detection via sign change
+      if (y1 * y2 <= 0 && Math.abs(y2 - y1) > 1e-6) {
+        const rootX = x1 - y1 * (dx / (y2 - y1));
+        if (!roots.some(r => Math.abs(r.x - rootX) < 0.15)) {
+          roots.push({ x: rootX, y: 0 });
+        }
+      }
+
+      // Extrema detection via numerical derivative sign change
+      const delta = 0.005;
+      const dy1 = (evalCartesian(x1 + delta, 1, cartesianPreset) - evalCartesian(x1 - delta, 1, cartesianPreset)) / (2 * delta);
+      const dy2 = (evalCartesian(x2 + delta, 1, cartesianPreset) - evalCartesian(x2 - delta, 1, cartesianPreset)) / (2 * delta);
+
+      if (dy1 * dy2 <= 0 && Math.abs(dy2 - dy1) > 1e-6) {
+        const critX = x1 - dy1 * (dx / (dy2 - dy1));
+        const critY = evalCartesian(critX, 1, cartesianPreset);
+        const d2y = (evalCartesian(critX + delta, 1, cartesianPreset) - 2 * critY + evalCartesian(critX - delta, 1, cartesianPreset)) / (delta * delta);
+
+        const type: 'max' | 'min' | 'inflection' = d2y < -0.01 ? 'max' : d2y > 0.01 ? 'min' : 'inflection';
+        const label = type === 'max' ? `Local Max (${critX.toFixed(2)}, ${critY.toFixed(2)})` : type === 'min' ? `Local Min (${critX.toFixed(2)}, ${critY.toFixed(2)})` : `Inflection (${critX.toFixed(2)}, ${critY.toFixed(2)})`;
+
+        if (!extrema.some(e => Math.abs(e.x - critX) < 0.15)) {
+          extrema.push({ x: critX, y: critY, type, label });
+        }
+      }
+    }
+
+    return {
+      roots: roots.slice(0, 8),
+      extrema: extrema.slice(0, 8)
+    };
+  }, [sandboxCoordType, cartesianPreset, paramK, paramK2, paramA, paramB, paramC]);
 
   // Global Animation Loop
   useEffect(() => {
@@ -2223,6 +4265,7 @@ export const TestDiagramsStudioView: React.FC = () => {
           setRotY(prev => (prev + 0.4 * animSpeed) % 360);
           setLog3dRotY(prev => (prev + 0.4 * animSpeed) % 360);
           setLin3dRotY(prev => (prev + 0.4 * animSpeed) % 360);
+          setSvc3dRotY(prev => (prev + 0.4 * animSpeed) % 360);
         }
 
         // Live Gradient Descent Simulation Loop
@@ -2251,7 +4294,7 @@ export const TestDiagramsStudioView: React.FC = () => {
         }
 
         // 3D Manifold Gradient Descent & Geodesic Physics Step
-        if (activeModuleId === 'mathbox_3d' && showRollingBall) {
+        if (activeModuleId === 'mathbox_3d' && showRollingBall && !isBallPaused) {
           const phys = ballPhysicsRef.current;
           const effW = surfaceType === 'hyper_4d' ? (autoSlice4D || isBendingAnim ? hyperW + timeT * 0.7 : hyperW) : 0;
 
@@ -2276,30 +4319,86 @@ export const TestDiagramsStudioView: React.FC = () => {
             if (phys.history.length > 90) phys.history.shift();
             phys.stepCount += 1;
           } else {
-            // Classical Gradient Descent with Momentum for Explicit Height Fields
             const eps = 0.005;
-            const zXp = eval3DSurface(phys.x + eps, phys.y, surfaceType, effW, timeT, isBendingAnim).z;
-            const zXm = eval3DSurface(phys.x - eps, phys.y, surfaceType, effW, timeT, isBendingAnim).z;
-            const zYp = eval3DSurface(phys.x, phys.y + eps, surfaceType, effW, timeT, isBendingAnim).z;
-            const zYm = eval3DSurface(phys.x, phys.y - eps, surfaceType, effW, timeT, isBendingAnim).z;
 
-            const gx = (zXp - zXm) / (2 * eps);
-            const gy = (zYp - zYm) / (2 * eps);
-            const gNorm = Math.hypot(gx, gy);
-            phys.gradNorm = gNorm;
+            // 1. Vanilla SGD
+            if (optimizerMode === 'sgd' || optimizerMode === 'race') {
+              const sgdZxp = eval3DSurface(phys.sgd.x + eps, phys.sgd.y, surfaceType, effW, timeT, isBendingAnim).z;
+              const sgdZxm = eval3DSurface(phys.sgd.x - eps, phys.sgd.y, surfaceType, effW, timeT, isBendingAnim).z;
+              const sgdZyp = eval3DSurface(phys.sgd.x, phys.sgd.y + eps, surfaceType, effW, timeT, isBendingAnim).z;
+              const sgdZym = eval3DSurface(phys.sgd.x, phys.sgd.y - eps, surfaceType, effW, timeT, isBendingAnim).z;
+              const sgdGx = (sgdZxp - sgdZxm) / (2 * eps);
+              const sgdGy = (sgdZyp - sgdZym) / (2 * eps);
+              phys.sgd.gradNorm = Math.hypot(sgdGx, sgdGy);
+              if (phys.sgd.gradNorm > 0.0005) {
+                const nextSgdX = Math.max(-2.0, Math.min(2.0, phys.sgd.x - ballLearningRate * sgdGx * animSpeed));
+                const nextSgdY = Math.max(-2.0, Math.min(2.0, phys.sgd.y - ballLearningRate * sgdGy * animSpeed));
+                const nextSgdZ = eval3DSurface(nextSgdX, nextSgdY, surfaceType, effW, timeT, isBendingAnim).z;
+                phys.sgd.x = nextSgdX;
+                phys.sgd.y = nextSgdY;
+                phys.sgd.z = nextSgdZ;
+                phys.sgd.history.push({ x: nextSgdX, y: nextSgdY, z: nextSgdZ });
+                if (phys.sgd.history.length > 80) phys.sgd.history.shift();
+                phys.sgd.stepCount += 1;
+              }
+            }
 
-            if (gNorm > 0.0005 && phys.isActive) {
-              phys.vx = phys.vx * ballMomentum - ballLearningRate * gx;
-              phys.vy = phys.vy * ballMomentum - ballLearningRate * gy;
-              const nx = Math.max(-2.0, Math.min(2.0, phys.x + phys.vx * animSpeed));
-              const ny = Math.max(-2.0, Math.min(2.0, phys.y + phys.vy * animSpeed));
-              const nz = eval3DSurface(nx, ny, surfaceType, effW, timeT, isBendingAnim).z;
+            // 2. Momentum / Heavy Ball
+            if (optimizerMode === 'momentum' || optimizerMode === 'race') {
+              const momZxp = eval3DSurface(phys.momentum.x + eps, phys.momentum.y, surfaceType, effW, timeT, isBendingAnim).z;
+              const momZxm = eval3DSurface(phys.momentum.x - eps, phys.momentum.y, surfaceType, effW, timeT, isBendingAnim).z;
+              const momZyp = eval3DSurface(phys.momentum.x, phys.momentum.y + eps, surfaceType, effW, timeT, isBendingAnim).z;
+              const momZym = eval3DSurface(phys.momentum.x, phys.momentum.y - eps, surfaceType, effW, timeT, isBendingAnim).z;
+              const momGx = (momZxp - momZxm) / (2 * eps);
+              const momGy = (momZyp - momZym) / (2 * eps);
+              phys.momentum.gradNorm = Math.hypot(momGx, momGy);
+              if (phys.momentum.gradNorm > 0.0005) {
+                phys.momentum.vx = phys.momentum.vx * ballMomentum - ballLearningRate * momGx;
+                phys.momentum.vy = phys.momentum.vy * ballMomentum - ballLearningRate * momGy;
+                const nextMomX = Math.max(-2.0, Math.min(2.0, phys.momentum.x + phys.momentum.vx * animSpeed));
+                const nextMomY = Math.max(-2.0, Math.min(2.0, phys.momentum.y + phys.momentum.vy * animSpeed));
+                const nextMomZ = eval3DSurface(nextMomX, nextMomY, surfaceType, effW, timeT, isBendingAnim).z;
+                phys.momentum.x = nextMomX;
+                phys.momentum.y = nextMomY;
+                phys.momentum.z = nextMomZ;
+                phys.momentum.history.push({ x: nextMomX, y: nextMomY, z: nextMomZ });
+                if (phys.momentum.history.length > 80) phys.momentum.history.shift();
+                phys.momentum.stepCount += 1;
+              }
+            }
 
-              phys.x = nx;
-              phys.y = ny;
-              phys.history.push({ x: nx, y: ny, z: nz });
-              if (phys.history.length > 80) phys.history.shift();
-              phys.stepCount += 1;
+            // 3. Adam Optimizer
+            if (optimizerMode === 'adam' || optimizerMode === 'race') {
+              const adamZxp = eval3DSurface(phys.adam.x + eps, phys.adam.y, surfaceType, effW, timeT, isBendingAnim).z;
+              const adamZxm = eval3DSurface(phys.adam.x - eps, phys.adam.y, surfaceType, effW, timeT, isBendingAnim).z;
+              const adamZyp = eval3DSurface(phys.adam.x, phys.adam.y + eps, surfaceType, effW, timeT, isBendingAnim).z;
+              const adamZym = eval3DSurface(phys.adam.x, phys.adam.y - eps, surfaceType, effW, timeT, isBendingAnim).z;
+              const adamGx = (adamZxp - adamZxm) / (2 * eps);
+              const adamGy = (adamZyp - adamZym) / (2 * eps);
+              phys.adam.gradNorm = Math.hypot(adamGx, adamGy);
+              if (phys.adam.gradNorm > 0.0005) {
+                phys.adam.t += 1;
+                const beta1 = 0.9, beta2 = 0.999, epsAdam = 1e-7;
+                phys.adam.mX = beta1 * phys.adam.mX + (1 - beta1) * adamGx;
+                phys.adam.mY = beta1 * phys.adam.mY + (1 - beta1) * adamGy;
+                phys.adam.vX = beta2 * phys.adam.vX + (1 - beta2) * adamGx * adamGx;
+                phys.adam.vY = beta2 * phys.adam.vY + (1 - beta2) * adamGy * adamGy;
+                const mHatX = phys.adam.mX / (1 - Math.pow(beta1, phys.adam.t));
+                const mHatY = phys.adam.mY / (1 - Math.pow(beta1, phys.adam.t));
+                const vHatX = phys.adam.vX / (1 - Math.pow(beta2, phys.adam.t));
+                const vHatY = phys.adam.vY / (1 - Math.pow(beta2, phys.adam.t));
+                const stepX = (ballLearningRate * 0.95 / (Math.sqrt(vHatX) + epsAdam)) * mHatX;
+                const stepY = (ballLearningRate * 0.95 / (Math.sqrt(vHatY) + epsAdam)) * mHatY;
+                const nextAdamX = Math.max(-2.0, Math.min(2.0, phys.adam.x - stepX * animSpeed));
+                const nextAdamY = Math.max(-2.0, Math.min(2.0, phys.adam.y - stepY * animSpeed));
+                const nextAdamZ = eval3DSurface(nextAdamX, nextAdamY, surfaceType, effW, timeT, isBendingAnim).z;
+                phys.adam.x = nextAdamX;
+                phys.adam.y = nextAdamY;
+                phys.adam.z = nextAdamZ;
+                phys.adam.history.push({ x: nextAdamX, y: nextAdamY, z: nextAdamZ });
+                if (phys.adam.history.length > 80) phys.adam.history.shift();
+                phys.adam.stepCount += 1;
+              }
             }
           }
         }
@@ -2308,7 +4407,7 @@ export const TestDiagramsStudioView: React.FC = () => {
     };
     animId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animId);
-  }, [isSimulating, isAutoOrbit, isBendingAnim, isGradDescentRunning, learningRateEta, manualBeta0, manualBeta1, linPoints, animSpeed, activeModuleId, showRollingBall, ballMomentum, ballLearningRate, surfaceType, autoSlice4D, hyperW, timeT]);
+  }, [isSimulating, isAutoOrbit, isBendingAnim, isGradDescentRunning, learningRateEta, manualBeta0, manualBeta1, linPoints, animSpeed, activeModuleId, showRollingBall, isBallPaused, optimizerMode, ballMomentum, ballLearningRate, surfaceType, autoSlice4D, hyperW, timeT]);
 
   // Compute Linear Regression Statistics
   const linStats = useMemo(() => {
@@ -4029,11 +6128,12 @@ export const TestDiagramsStudioView: React.FC = () => {
 
             {/* PHASE 1: GAUSSIAN & STUDENT-T CONTROLS */}
             {activeModuleId === 'gaussian_ci' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <PillSelector
                   options={[
                     { id: '1d_pdf_compare', label: '1D PDF Norm vs t' },
                     { id: '1d_cdf', label: '1D CDF S-Curve' },
+                    { id: '1d_qqplot', label: '1D QQ-Plot Diagnostic' },
                     { id: '2d_bivariate', label: '2D Bivariate Heatmap' },
                     { id: '3d_surface', label: '3D Bell Mesh' }
                   ]}
@@ -4081,38 +6181,281 @@ export const TestDiagramsStudioView: React.FC = () => {
                 </div>
 
                 <DualParamControl label="Mean (μ):" value={gaussMean} min={-3.0} max={3.0} step={0.1} onChange={setGaussMean} color="#38bdf8" />
-                <DualParamControl label="Standard Deviation (σ):" value={gaussStd} min={0.2} max={3.0} step={0.1} onChange={setGaussStd} color="#34d399" />
-
-                {gaussDimension === '1d_pdf_compare' && (
-                  <DualParamControl
-                    label="Student-t Degrees of Freedom (ν):"
-                    value={activeNu}
-                    min={1}
-                    max={30}
-                    step={1}
-                    precision={0}
-                    onChange={(val) => {
-                      setStudentNu(val);
-                      setIsBendingAnim(false);
-                    }}
-                    color="#f59e0b"
-                  />
-                )}
+                <DualParamControl
+                  label={gaussDimension === '2d_bivariate' || gaussDimension === '3d_surface' ? "Std Dev X (σ_X):" : "Standard Deviation (σ):"}
+                  value={gaussStd}
+                  min={0.2}
+                  max={3.0}
+                  step={0.1}
+                  onChange={setGaussStd}
+                  color="#34d399"
+                />
 
                 {(gaussDimension === '2d_bivariate' || gaussDimension === '3d_surface') && (
-                  <DualParamControl
-                    label="Correlation Coefficient (ρ):"
-                    value={activeRho}
-                    min={-0.95}
-                    max={0.95}
-                    step={0.05}
-                    onChange={(val) => {
-                      setBivariateRho(val);
-                      setIsBendingAnim(false);
-                    }}
-                    color="#ec4899"
-                  />
+                  <>
+                    <DualParamControl label="Std Dev Y (σ_Y):" value={gaussStdY} min={0.2} max={3.0} step={0.1} onChange={setGaussStdY} color="#a855f7" />
+                    <DualParamControl
+                      label="Correlation Coefficient (ρ):"
+                      value={activeRho}
+                      min={-0.95}
+                      max={0.95}
+                      step={0.05}
+                      onChange={(val) => {
+                        setBivariateRho(val);
+                        setIsBendingAnim(false);
+                      }}
+                      color="#ec4899"
+                    />
+                  </>
                 )}
+
+                {gaussDimension === '2d_bivariate' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'var(--dropdown-bg, #0b1120)', padding: '8px', borderRadius: '8px', border: '1px solid var(--card-border, rgba(51, 65, 85, 0.6))' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.66rem', fontWeight: 800, color: 'var(--accent-cyan, #38bdf8)' }}>🔀 PCA & COVARIANCE DECOMPOSITION:</span>
+                      <button
+                        type="button"
+                        onClick={() => setShowPcaVectors(prev => !prev)}
+                        style={{
+                          padding: '2px 6px',
+                          borderRadius: '4px',
+                          fontSize: '0.58rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          background: showPcaVectors ? 'rgba(56, 189, 248, 0.22)' : 'rgba(30, 41, 59, 0.6)',
+                          color: showPcaVectors ? '#38bdf8' : 'var(--text-muted)',
+                          border: showPcaVectors ? '1px solid #38bdf8' : '1px solid var(--card-border)'
+                        }}
+                      >
+                        Vectors {showPcaVectors ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.64rem', color: 'var(--text-muted)' }}>
+                      <span>Eigenvalue λ₁ (Major Axis):</span>
+                      <span style={{ color: '#38bdf8', fontFamily: 'monospace', fontWeight: 800 }}>{gaussPcaAnalysis.lambda1.toFixed(3)} ({gaussPcaAnalysis.pc1Ratio.toFixed(1)}% Var)</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.64rem', color: 'var(--text-muted)' }}>
+                      <span>Eigenvalue λ₂ (Minor Axis):</span>
+                      <span style={{ color: '#34d399', fontFamily: 'monospace', fontWeight: 800 }}>{gaussPcaAnalysis.lambda2.toFixed(3)} ({gaussPcaAnalysis.pc2Ratio.toFixed(1)}% Var)</span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.64rem', color: 'var(--text-muted)' }}>
+                      <span>Principal Orientation (θ):</span>
+                      <span style={{ color: '#f59e0b', fontFamily: 'monospace', fontWeight: 800 }}>{gaussPcaAnalysis.thetaDeg.toFixed(1)}°</span>
+                    </div>
+                  </div>
+                )}
+
+                {gaussDimension === '3d_surface' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    {/* Camera View Angles Quick Presets */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--dropdown-bg, #0b1120)', padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--card-border, rgba(51, 65, 85, 0.6))' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.62rem', fontWeight: 800, color: 'var(--text-muted)' }}>CAMERA VIEW:</span>
+                        <span style={{ fontSize: '0.58rem', color: '#38bdf8', fontFamily: 'monospace' }}>Rx:{gauss3dRotX.toFixed(0)}° Ry:{gauss3dRotY.toFixed(0)}° Z:{(gauss3dZoom * 100).toFixed(0)}%</span>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
+                        <button
+                          type="button"
+                          onClick={() => { setGauss3dRotX(30); setGauss3dRotY(45); setGauss3dZoom(1.0); }}
+                          style={{
+                            padding: '4px 2px',
+                            borderRadius: '4px',
+                            fontSize: '0.58rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            background: Math.abs(gauss3dRotX - 30) < 3 && Math.abs(gauss3dRotY - 45) < 3 && Math.abs(gauss3dZoom - 1.0) < 0.1 ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)',
+                            color: Math.abs(gauss3dRotX - 30) < 3 && Math.abs(gauss3dRotY - 45) < 3 && Math.abs(gauss3dZoom - 1.0) < 0.1 ? '#38bdf8' : 'var(--text-primary)',
+                            border: Math.abs(gauss3dRotX - 30) < 3 && Math.abs(gauss3dRotY - 45) < 3 && Math.abs(gauss3dZoom - 1.0) < 0.1 ? '1px solid #38bdf8' : '1px solid var(--card-border)'
+                          }}
+                          title="Isometric 3D View (30°, 45°)"
+                        >
+                          📐 Iso
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setGauss3dRotX(82); setGauss3dRotY(0); setGauss3dZoom(1.1); }}
+                          style={{
+                            padding: '4px 2px',
+                            borderRadius: '4px',
+                            fontSize: '0.58rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            background: Math.abs(gauss3dRotX - 82) < 4 && Math.abs(gauss3dRotY - 0) < 4 ? 'rgba(52, 211, 153, 0.25)' : 'rgba(30, 41, 59, 0.6)',
+                            color: Math.abs(gauss3dRotX - 82) < 4 && Math.abs(gauss3dRotY - 0) < 4 ? '#34d399' : 'var(--text-primary)',
+                            border: Math.abs(gauss3dRotX - 82) < 4 && Math.abs(gauss3dRotY - 0) < 4 ? '1px solid #34d399' : '1px solid var(--card-border)'
+                          }}
+                          title="Top-Down 2D Contour View (82°, 0°)"
+                        >
+                          🎯 Top 2D
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setGauss3dRotX(0); setGauss3dRotY(90); setGauss3dZoom(1.0); }}
+                          style={{
+                            padding: '4px 2px',
+                            borderRadius: '4px',
+                            fontSize: '0.58rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            background: Math.abs(gauss3dRotX - 0) < 3 && Math.abs(gauss3dRotY - 90) < 3 ? 'rgba(251, 191, 36, 0.25)' : 'rgba(30, 41, 59, 0.6)',
+                            color: Math.abs(gauss3dRotX - 0) < 3 && Math.abs(gauss3dRotY - 90) < 3 ? '#fbbf24' : 'var(--text-primary)',
+                            border: Math.abs(gauss3dRotX - 0) < 3 && Math.abs(gauss3dRotY - 90) < 3 ? '1px solid #fbbf24' : '1px solid var(--card-border)'
+                          }}
+                          title="Side Profile View (0°, 90°)"
+                        >
+                          ↔️ Side
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => { setGauss3dRotX(30); setGauss3dRotY(45); setGauss3dZoom(1.0); }}
+                          style={{
+                            padding: '4px 2px',
+                            borderRadius: '4px',
+                            fontSize: '0.58rem',
+                            fontWeight: 700,
+                            cursor: 'pointer',
+                            background: 'rgba(30, 41, 59, 0.6)',
+                            color: '#a855f7',
+                            border: '1px solid var(--card-border)'
+                          }}
+                          title="Reset to Default Angle (30°, 45°)"
+                        >
+                          🔄 Reset
+                        </button>
+                      </div>
+                    </div>
+
+                    <DualParamControl label="Pitch Angle (Rx):" value={gauss3dRotX} min={-80} max={80} step={2} onChange={setGauss3dRotX} color="#38bdf8" />
+                    <DualParamControl label="Yaw Angle (Ry):" value={gauss3dRotY} min={-180} max={180} step={2} onChange={setGauss3dRotY} color="#34d399" />
+                    <DualParamControl label="3D View Zoom:" value={gauss3dZoom} min={0.5} max={2.2} step={0.05} onChange={setGauss3dZoom} color="#a855f7" />
+                  </div>
+                )}
+
+                {(gaussDimension === '1d_pdf_compare' || gaussDimension === '1d_cdf' || gaussDimension === '1d_qqplot') && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.66rem', fontWeight: 800, color: '#f59e0b' }}>STUDENT-T DEGREES OF FREEDOM (ν):</span>
+                      <button
+                        type="button"
+                        onClick={() => setIsNuSweeping(prev => !prev)}
+                        style={{
+                          padding: '1px 6px',
+                          borderRadius: '4px',
+                          fontSize: '0.58rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          background: isNuSweeping ? 'rgba(245, 158, 11, 0.25)' : 'rgba(30, 41, 59, 0.6)',
+                          color: isNuSweeping ? '#f59e0b' : 'var(--text-muted)',
+                          border: isNuSweeping ? '1px solid #f59e0b' : '1px solid var(--card-border)'
+                        }}
+                        title="Animate ν from 1 to 30 to see asymptotic convergence to Gaussian"
+                      >
+                        🎬 Sweep ν {isNuSweeping ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+                    <DualParamControl
+                      label="Degrees of Freedom (ν):"
+                      value={activeNu}
+                      min={1}
+                      max={30}
+                      step={1}
+                      precision={0}
+                      onChange={(val) => {
+                        setStudentNu(val);
+                        setIsNuSweeping(false);
+                        setIsBendingAnim(false);
+                      }}
+                      color="#f59e0b"
+                    />
+                  </div>
+                )}
+
+                {/* ONE-SAMPLE HYPOTHESIS TESTING & CI SUITE */}
+                {gaussDimension === '1d_pdf_compare' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', background: 'var(--dropdown-bg, #0b1120)', padding: '8px', borderRadius: '8px', border: '1px solid var(--card-border, rgba(51, 65, 85, 0.6))' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.66rem', fontWeight: 800, color: '#38bdf8' }}>🧪 HYPOTHESIS TEST & CI ENGINE:</span>
+                      <div style={{ display: 'flex', gap: '4px' }}>
+                        <button
+                          type="button"
+                          onClick={() => setShowHypoTestOverlay(prev => !prev)}
+                          style={{
+                            padding: '2px 5px',
+                            borderRadius: '3px',
+                            fontSize: '0.56rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            background: showHypoTestOverlay ? 'rgba(56, 189, 248, 0.22)' : 'rgba(30, 41, 59, 0.6)',
+                            color: showHypoTestOverlay ? '#38bdf8' : 'var(--text-muted)',
+                            border: showHypoTestOverlay ? '1px solid #38bdf8' : '1px solid var(--card-border)'
+                          }}
+                        >
+                          Test {showHypoTestOverlay ? 'ON' : 'OFF'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setShowCiBrackets(prev => !prev)}
+                          style={{
+                            padding: '2px 5px',
+                            borderRadius: '3px',
+                            fontSize: '0.56rem',
+                            fontWeight: 800,
+                            cursor: 'pointer',
+                            background: showCiBrackets ? 'rgba(52, 211, 153, 0.22)' : 'rgba(30, 41, 59, 0.6)',
+                            color: showCiBrackets ? '#34d399' : 'var(--text-muted)',
+                            border: showCiBrackets ? '1px solid #34d399' : '1px solid var(--card-border)'
+                          }}
+                        >
+                          CI {showCiBrackets ? 'ON' : 'OFF'}
+                        </button>
+                      </div>
+                    </div>
+
+                    {showHypoTestOverlay && (
+                      <>
+                        <DualParamControl label="Sample Mean (x̄):" value={hypoSampleMean} min={-3.0} max={3.0} step={0.1} onChange={setHypoSampleMean} color="#38bdf8" />
+                        <DualParamControl label="Sample Size (n):" value={hypoSampleSize} min={2} max={40} step={1} precision={0} onChange={setHypoSampleSize} color="#34d399" />
+                        <DualParamControl label="Sample Std Dev (s):" value={hypoSampleStd} min={0.2} max={3.0} step={0.1} onChange={setHypoSampleStd} color="#f59e0b" />
+                        <DualParamControl label="Null Mean (μ₀):" value={hypoNullMu} min={-3.0} max={3.0} step={0.1} onChange={setHypoNullMu} color="#94a3b8" />
+
+                        {/* Exam Verdict Card */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'rgba(15, 23, 42, 0.9)', padding: '6px', borderRadius: '5px', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '0.62rem', color: '#cbd5e1', fontWeight: 800 }}>EXAM DECISION:</span>
+                            <span style={{ fontSize: '0.58rem', fontWeight: 800, padding: '1px 5px', borderRadius: '3px', background: gaussHypoAnalysis.isRejectedT ? 'rgba(239, 68, 68, 0.25)' : 'rgba(52, 211, 153, 0.25)', color: gaussHypoAnalysis.isRejectedT ? '#f87171' : '#34d399' }}>
+                              {gaussHypoAnalysis.isRejectedT ? '🚨 REJECT H₀ (p < α)' : '✅ FAIL TO REJECT H₀'}
+                            </span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.62rem', color: 'var(--text-muted)' }}>
+                            <span>t-Statistic:</span>
+                            <span style={{ color: '#f59e0b', fontFamily: 'monospace', fontWeight: 800 }}>t = {gaussHypoAnalysis.tStat.toFixed(2)} (t_crit = ±{gaussHypoAnalysis.tCrit.toFixed(2)})</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.62rem', color: 'var(--text-muted)' }}>
+                            <span>Two-Sided p-value:</span>
+                            <span style={{ color: gaussHypoAnalysis.pValT < 0.05 ? '#f87171' : '#34d399', fontFamily: 'monospace', fontWeight: 800 }}>p = {gaussHypoAnalysis.pValT.toFixed(4)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.62rem', color: 'var(--text-muted)' }}>
+                            <span>t-CI Small-Sample Penalty:</span>
+                            <span style={{ color: '#ec4899', fontFamily: 'monospace', fontWeight: 800 }}>+{gaussHypoAnalysis.ciInflationPct.toFixed(1)}% wider than Z-CI</span>
+                          </div>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* INFORMATION THEORY & ENTROPY CARD */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--dropdown-bg, #0b1120)', padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--card-border, rgba(51, 65, 85, 0.6))' }}>
+                  <span style={{ fontSize: '0.62rem', fontWeight: 800, color: '#a855f7' }}>🧠 INFORMATION THEORY & ENTROPY:</span>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.62rem', color: 'var(--text-muted)' }}>
+                    <span>KL Divergence D_KL(N || t):</span>
+                    <span style={{ color: '#a855f7', fontFamily: 'monospace', fontWeight: 800 }}>{gaussInfoAnalysis.klDivergence.toFixed(4)} nats</span>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.62rem', color: 'var(--text-muted)' }}>
+                    <span>Gaussian Entropy H(X):</span>
+                    <span style={{ color: '#38bdf8', fontFamily: 'monospace', fontWeight: 800 }}>{gaussInfoAnalysis.normalEntropy.toFixed(3)} nats</span>
+                  </div>
+                </div>
 
                 <div style={{ padding: '8px', borderRadius: '6px', background: 'var(--pill-bg, rgba(30, 41, 59, 0.6))', border: '1px solid var(--card-border, rgba(51, 65, 85, 0.6))', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <span style={{ fontSize: '0.70rem', fontWeight: 800, color: 'var(--accent-cyan, #38bdf8)' }}>
@@ -4133,6 +6476,7 @@ export const TestDiagramsStudioView: React.FC = () => {
                   </div>
                 </div>
 
+                {/* CLT Multi-Distribution Sampling Generator */}
                 <div style={{ padding: '8px', borderRadius: '6px', background: 'var(--pill-bg, rgba(30, 41, 59, 0.6))', border: '1px solid var(--card-border, rgba(51, 65, 85, 0.6))', display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                     <span style={{ fontSize: '0.70rem', fontWeight: 800, color: 'var(--accent-cyan, #34d399)' }}>
@@ -4142,6 +6486,83 @@ export const TestDiagramsStudioView: React.FC = () => {
                       Draws: {cltSamples.length}
                     </span>
                   </div>
+
+                  {/* Population Source Switcher */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '3px' }}>
+                    <button
+                      type="button"
+                      onClick={() => { setCltSource('uniform'); resetCltSamples(); }}
+                      style={{
+                        padding: '3px 2px',
+                        borderRadius: '3px',
+                        fontSize: '0.56rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        background: cltSource === 'uniform' ? 'rgba(56, 189, 248, 0.28)' : 'rgba(15, 23, 42, 0.6)',
+                        color: cltSource === 'uniform' ? '#38bdf8' : 'var(--text-muted)',
+                        border: cltSource === 'uniform' ? '1px solid #38bdf8' : '1px solid transparent',
+                        textAlign: 'center'
+                      }}
+                      title="Parent Population: Uniform U[-√3, +√3]"
+                    >
+                      🎲 Uniform
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setCltSource('exponential'); resetCltSamples(); }}
+                      style={{
+                        padding: '3px 2px',
+                        borderRadius: '3px',
+                        fontSize: '0.56rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        background: cltSource === 'exponential' ? 'rgba(245, 158, 11, 0.28)' : 'rgba(15, 23, 42, 0.6)',
+                        color: cltSource === 'exponential' ? '#f59e0b' : 'var(--text-muted)',
+                        border: cltSource === 'exponential' ? '1px solid #f59e0b' : '1px solid transparent',
+                        textAlign: 'center'
+                      }}
+                      title="Parent Population: Skewed Exponential Exp(1)"
+                    >
+                      📉 Exp
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setCltSource('bimodal'); resetCltSamples(); }}
+                      style={{
+                        padding: '3px 2px',
+                        borderRadius: '3px',
+                        fontSize: '0.56rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        background: cltSource === 'bimodal' ? 'rgba(236, 72, 153, 0.28)' : 'rgba(15, 23, 42, 0.6)',
+                        color: cltSource === 'bimodal' ? '#ec4899' : 'var(--text-muted)',
+                        border: cltSource === 'bimodal' ? '1px solid #ec4899' : '1px solid transparent',
+                        textAlign: 'center'
+                      }}
+                      title="Parent Population: Bimodal Two-Peak Gaussian Mixture"
+                    >
+                      🐫 Bimodal
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setCltSource('discrete_die'); resetCltSamples(); }}
+                      style={{
+                        padding: '3px 2px',
+                        borderRadius: '3px',
+                        fontSize: '0.56rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        background: cltSource === 'discrete_die' ? 'rgba(52, 211, 153, 0.28)' : 'rgba(15, 23, 42, 0.6)',
+                        color: cltSource === 'discrete_die' ? '#34d399' : 'var(--text-muted)',
+                        border: cltSource === 'discrete_die' ? '1px solid #34d399' : '1px solid transparent',
+                        textAlign: 'center'
+                      }}
+                      title="Parent Population: Discrete 6-Sided Die {1,2,3,4,5,6}"
+                    >
+                      🎲 Die
+                    </button>
+                  </div>
+
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <button
                       type="button"
@@ -4163,7 +6584,7 @@ export const TestDiagramsStudioView: React.FC = () => {
                       }}
                     >
                       <Dice5 size={12} />
-                      <span>Draw 15 Samples</span>
+                      <span>Draw 15 Means</span>
                     </button>
                     {cltSamples.length > 0 && (
                       <button
@@ -4185,23 +6606,181 @@ export const TestDiagramsStudioView: React.FC = () => {
                     )}
                   </div>
                 </div>
+
+                {/* Mathematical Kurtosis & Heavy-Tail Diagnostic Card */}
+                {gaussDimension === '1d_pdf_compare' && (
+                  <div style={{ padding: '8px', borderRadius: '6px', background: 'var(--dropdown-bg, #0b1120)', border: '1px solid var(--card-border, rgba(51, 65, 85, 0.6))', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#f59e0b' }}>Heavy-Tail Diagnostic:</span>
+                      <span style={{ fontSize: '0.58rem', fontWeight: 800, padding: '1px 5px', borderRadius: '3px', background: activeNu <= 4 ? 'rgba(239, 68, 68, 0.2)' : 'rgba(52, 211, 153, 0.2)', color: activeNu <= 4 ? '#f87171' : '#34d399' }}>
+                        {activeNu <= 4 ? 'LEPTOKURTIC (∞)' : `γ₂ = ${(6 / (activeNu - 4)).toFixed(2)}`}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.62rem', fontFamily: 'monospace' }}>
+                      <span style={{ color: '#38bdf8' }}>Z_crit ({ciConfidence}%): ±{(ciConfidence === 90 ? 1.645 : ciConfidence === 99 ? 2.576 : 1.960).toFixed(3)}</span>
+                      <span style={{ color: '#f59e0b' }}>t_crit (ν={activeNu}): ±{getStudentTCrit(activeNu, ciConfidence).toFixed(3)}</span>
+                    </div>
+                    <div style={{ fontSize: '0.58rem', color: 'var(--text-muted)' }}>
+                      {activeNu === 1 ? 'Cauchy Distribution (No finite Mean or Variance).' : activeNu <= 2 ? 'Infinite Variance (Var → ∞).' : activeNu <= 4 ? 'Finite Mean & Var, Infinite 4th Moment.' : `As ν → ∞, t(ν) converges asymptotically to N(μ, σ²).`}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
             {/* PHASE 2: SUPPORT VECTOR CLASSIFIER CONTROLS */}
             {activeModuleId === 'svc_classifier' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                {/* Dataset Presets */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--accent-cyan, #38bdf8)' }}>
+                    Dataset Distribution Presets:
+                  </span>
+                  <PillSelector
+                    options={[
+                      { id: 'separable', label: 'Separable' },
+                      { id: 'overlapping', label: 'Overlap (Soft)' },
+                      { id: 'circles', label: 'Circles (RBF)' },
+                      { id: 'xor_moons', label: 'XOR / Moons' },
+                      { id: 'outlier_stress', label: 'Outlier Stress' }
+                    ]}
+                    value={svcDatasetPreset}
+                    onChange={(val) => loadSvcPreset(val as any)}
+                    columns={3}
+                    activeColor="#fbbf24"
+                  />
+                </div>
+
+                {/* Drag Hint Badge */}
+                <div style={{ padding: '4px 8px', borderRadius: '4px', background: 'rgba(56, 189, 248, 0.10)', border: '1px solid rgba(56, 189, 248, 0.25)', fontSize: '0.62rem', color: '#38bdf8', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>🖱️ <b>Interactive Canvas:</b> Drag any sample point directly to update the margin & slack in real time!</span>
+                </div>
+
+                {/* Display & Declutter Controls (Formulas HUD & Data Point Labels) */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowSvcFormulaHud(prev => !prev)}
+                    style={{
+                      padding: '5px 6px',
+                      borderRadius: '5px',
+                      fontSize: '0.62rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      background: showSvcFormulaHud ? 'rgba(56, 189, 248, 0.22)' : 'rgba(30, 41, 59, 0.6)',
+                      color: showSvcFormulaHud ? '#38bdf8' : 'var(--text-muted)',
+                      border: showSvcFormulaHud ? '1px solid #38bdf8' : '1px solid var(--card-border)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px'
+                    }}
+                    title="Show or hide the on-canvas mathematical formulas badge"
+                  >
+                    <span>📐 Formula HUD:</span>
+                    <b>{showSvcFormulaHud ? 'ON' : 'OFF'}</b>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowSvcPointLabels(prev => !prev)}
+                    style={{
+                      padding: '5px 6px',
+                      borderRadius: '5px',
+                      fontSize: '0.62rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      background: showSvcPointLabels ? 'rgba(251, 191, 36, 0.22)' : 'rgba(30, 41, 59, 0.6)',
+                      color: showSvcPointLabels ? '#fbbf24' : 'var(--text-muted)',
+                      border: showSvcPointLabels ? '1px solid #fbbf24' : '1px solid var(--card-border)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '4px'
+                    }}
+                    title="Toggle data point coordinate and slack tags to prevent obscuring point clusters"
+                  >
+                    <span>🏷️ Point Labels:</span>
+                    <b>{showSvcPointLabels ? 'ON' : 'OFF (CLEAN)'}</b>
+                  </button>
+                </div>
+
                 <PillSelector
                   options={[
-                    { id: '2d_margin', label: '2D Hyperplane' },
+                    { id: '2d_margin', label: '2D Margin' },
                     { id: '1d_line', label: '1D Threshold' },
-                    { id: '3d_plane', label: '3D Plane' }
+                    { id: '3d_plane', label: '3D Lift' },
+                    { id: '4d_slice', label: '4D Hyper-Slice' }
                   ]}
                   value={svcDimension}
                   onChange={(val) => setSvcDimension(val as any)}
-                  columns={3}
+                  columns={2}
                   activeColor="var(--accent-cyan, #38bdf8)"
                 />
+
+                {/* 3D Feature-Space Lift Selector (when in 3D mode) */}
+                {svcDimension === '3d_plane' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                    <span style={{ fontSize: '0.66rem', fontWeight: 800, color: '#a855f7' }}>
+                      3D Feature-Space Lift Φ(X):
+                    </span>
+                    <PillSelector
+                      options={[
+                        { id: 'paraboloid', label: 'Paraboloid (X₁²+X₂²)' },
+                        { id: 'rbf_pot', label: 'RBF Potential' },
+                        { id: 'decision_plane', label: 'Decision Output' }
+                      ]}
+                      value={svc3dFeatureMap}
+                      onChange={(val) => setSvc3dFeatureMap(val as any)}
+                      columns={1}
+                      activeColor="#a855f7"
+                    />
+                  </div>
+                )}
+
+                {/* 4D Hyperplane Slicing Controls (when in 4D mode) */}
+                {svcDimension === '4d_slice' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '8px', borderRadius: '6px', background: 'rgba(236, 72, 153, 0.08)', border: '1px solid rgba(236, 72, 153, 0.3)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#ec4899' }}>
+                        🌌 4D HYPERPLANE SLICER
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => setSvc4dAutoSlice(!svc4dAutoSlice)}
+                        style={{
+                          padding: '2px 7px',
+                          borderRadius: '3px',
+                          fontSize: '0.62rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          background: svc4dAutoSlice ? 'rgba(52, 211, 153, 0.25)' : 'rgba(15, 23, 42, 0.6)',
+                          color: svc4dAutoSlice ? '#34d399' : 'var(--text-muted)',
+                          border: svc4dAutoSlice ? '1px solid #34d399' : '1px solid transparent'
+                        }}
+                      >
+                        Auto-Slice: {svc4dAutoSlice ? 'ON' : 'OFF'}
+                      </button>
+                    </div>
+                    <DualParamControl
+                      label="Slice Coordinate (X₄):"
+                      value={svc4dSliceX4}
+                      min={-2.5}
+                      max={2.5}
+                      step={0.1}
+                      onChange={setSvc4dSliceX4}
+                      color="#ec4899"
+                    />
+                    <DualParamControl
+                      label="Slice Window (±ΔX₄):"
+                      value={svc4dSliceThickness}
+                      min={0.4}
+                      max={2.5}
+                      step={0.1}
+                      onChange={setSvc4dSliceThickness}
+                      color="#a855f7"
+                    />
+                  </div>
+                )}
 
                 <PillSelector
                   options={[
@@ -4226,6 +6805,26 @@ export const TestDiagramsStudioView: React.FC = () => {
                 {svcKernel === 'poly' && (
                   <DualParamControl label="Poly Degree (d):" value={svcPolyDegree} min={2} max={4} step={1} precision={0} onChange={setSvcPolyDegree} color="#a855f7" />
                 )}
+
+                {/* Classification Scorecard & Dual SV Breakdown */}
+                <div style={{ padding: '8px', borderRadius: '6px', background: 'var(--dropdown-bg, #0b1120)', border: '1px solid var(--card-border, rgba(51, 65, 85, 0.6))', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#38bdf8' }}>Classification Telemetry:</span>
+                    <span style={{ fontSize: '0.60rem', fontWeight: 800, padding: '1px 6px', borderRadius: '3px', background: svcAnalysis.accuracy >= 90 ? 'rgba(52, 211, 153, 0.2)' : 'rgba(245, 158, 11, 0.2)', color: svcAnalysis.accuracy >= 90 ? '#34d399' : '#f59e0b' }}>
+                      Acc: {svcAnalysis.accuracy.toFixed(1)}%
+                    </span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '4px', fontSize: '0.60rem', fontFamily: 'monospace' }}>
+                    <span style={{ color: '#94a3b8' }}>Precision: <b style={{ color: '#34d399' }}>{svcAnalysis.precision.toFixed(1)}%</b></span>
+                    <span style={{ color: '#94a3b8' }}>Recall: <b style={{ color: '#38bdf8' }}>{svcAnalysis.recall.toFixed(1)}%</b></span>
+                    <span style={{ color: '#94a3b8' }}>F1-Score: <b style={{ color: '#fbbf24' }}>{svcAnalysis.f1Score.toFixed(1)}%</b></span>
+                    <span style={{ color: '#94a3b8' }}>Obj Loss: <b style={{ color: '#f87171' }}>{svcAnalysis.objectiveLoss.toFixed(2)}</b></span>
+                  </div>
+                  <div style={{ borderTop: '1px solid rgba(51, 65, 85, 0.4)', paddingTop: '4px', display: 'flex', justifyContent: 'space-between', fontSize: '0.58rem', color: '#cbd5e1', fontFamily: 'monospace' }}>
+                    <span>SVs: <b style={{ color: '#fbbf24' }}>{svcAnalysis.supportVectorCount}</b>/{svcPoints.length}</span>
+                    <span>Slack Violators: <b style={{ color: '#f87171' }}>{svcAnalysis.marginViolatorCount}</b> (Σξ={svcAnalysis.totalSlack.toFixed(2)})</span>
+                  </div>
+                </div>
 
                 {/* Per-Class Sample Points Stepper */}
                 <div style={{ padding: '8px', borderRadius: '6px', background: 'var(--dropdown-bg, #0b1120)', border: '1px solid var(--card-border, rgba(51, 65, 85, 0.6))', display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -4290,7 +6889,7 @@ export const TestDiagramsStudioView: React.FC = () => {
                       {svcAnalysis.pointsWithStatus.map((p, idx) => (
                         <div key={p.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.64rem', padding: '2px 4px', borderBottom: '1px solid rgba(30, 41, 59, 0.5)' }}>
                           <span style={{ color: p.label === 1 ? '#34d399' : '#f87171' }}>
-                            #{idx + 1}: ({p.x1}, {p.x2}) [y={p.label > 0 ? '+1' : '-1'}] {p.isSupportVector ? '★ SV' : ''}
+                            #{idx + 1}: ({p.x1}, {p.x2}) [y={p.label > 0 ? '+1' : '-1'}] {p.isSupportVector ? `★ SV (α=${p.alpha.toFixed(2)})` : ''}
                           </span>
                           <button type="button" onClick={() => removeSvcPoint(p.id)} style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer' }}>
                             <Trash2 size={11} />
@@ -5061,34 +7660,271 @@ export const TestDiagramsStudioView: React.FC = () => {
             {/* PHASE 5: DYNAMIC CALCULUS CONTROLS */}
             {activeModuleId === 'jsxgraph_calculus' && (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <PillSelector
-                  options={[
-                    { id: 'tangent_secant', label: 'Secant Limit (h→0)' },
-                    { id: 'riemann_sums', label: 'Riemann Sums' },
-                    { id: 'derivatives', label: 'f & f\' Curves' }
-                  ]}
-                  value={calcMode}
-                  onChange={(val) => setCalcMode(val as any)}
-                  columns={3}
-                  activeColor="var(--accent-cyan, #38bdf8)"
-                />
-                <PillSelector
-                  options={[
-                    { id: 'cubic', label: 'Cubic Polynomial' },
-                    { id: 'sinusoid', label: 'Sinusoid' },
-                    { id: 'bell', label: 'Gaussian Bell' }
-                  ]}
-                  value={calcPreset}
-                  onChange={(val) => setCalcPreset(val as any)}
-                  columns={3}
-                  activeColor="var(--accent-cyan, #38bdf8)"
-                />
-                <DualParamControl label="Tangent Point (x₀):" value={calcX0} min={-2.5} max={2.5} step={0.05} onChange={setCalcX0} color="#38bdf8" />
-                {calcMode === 'tangent_secant' ? (
-                  <DualParamControl label="Secant Step (h):" value={calcH} min={0.02} max={1.5} step={0.02} onChange={setCalcH} color="#f59e0b" />
-                ) : (
-                  <DualParamControl label="Partitions (N):" value={calcIntegralN} min={4} max={50} step={2} precision={0} onChange={setCalcIntegralN} color="#34d399" />
+                {/* 1. Mode Selector */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '0.66rem', fontWeight: 800, color: 'var(--text-muted)' }}>CALCULUS INVESTIGATION MODE:</span>
+                  <PillSelector
+                    options={[
+                      { id: 'tangent_secant', label: 'Secant Limit (h→0)' },
+                      { id: 'riemann_sums', label: 'Riemann Sums' },
+                      { id: 'derivatives', label: 'f & f\' Curves' }
+                    ]}
+                    value={calcMode}
+                    onChange={(val) => setCalcMode(val as any)}
+                    columns={3}
+                    activeColor="var(--accent-cyan, #38bdf8)"
+                  />
+                </div>
+
+                {/* 2. Function Preset Selector */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '0.66rem', fontWeight: 800, color: 'var(--text-muted)' }}>FUNCTION PRESET:</span>
+                  <PillSelector
+                    options={[
+                      { id: 'cubic', label: 'Cubic Polynomial' },
+                      { id: 'sinusoid', label: 'Sinusoidal Wave' },
+                      { id: 'bell', label: 'Gaussian Bell' },
+                      { id: 'quartic', label: 'Quartic W-Well' },
+                      { id: 'rational', label: 'Witch of Agnesi' },
+                      { id: 'damped', label: 'Damped Wave' }
+                    ]}
+                    value={calcPreset}
+                    onChange={(val) => setCalcPreset(val as any)}
+                    columns={3}
+                    activeColor="#a855f7"
+                  />
+                </div>
+
+                {/* 3. Mode-Specific Controls */}
+                {calcMode === 'tangent_secant' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <DualParamControl label="Tangent Point (x₀):" value={calcX0} min={-2.5} max={2.5} step={0.05} onChange={setCalcX0} color="#38bdf8" />
+                    <DualParamControl label="Secant Step (h):" value={calcH} min={0.02} max={1.5} step={0.02} onChange={setCalcH} color="#f59e0b" />
+                    <button
+                      type="button"
+                      onClick={() => setIsAnimateH(prev => !prev)}
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: '6px',
+                        background: isAnimateH ? 'rgba(245, 158, 11, 0.25)' : 'rgba(15, 23, 42, 0.65)',
+                        border: `1px solid ${isAnimateH ? '#f59e0b' : 'rgba(148, 163, 184, 0.3)'}`,
+                        color: isAnimateH ? '#f59e0b' : 'var(--text-main)',
+                        fontSize: '0.72rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '6px'
+                      }}
+                    >
+                      <span>{isAnimateH ? '⏸ Pause Convergence' : '⚡ Auto-Converge Limit (h → 0)'}</span>
+                    </button>
+                  </div>
                 )}
+
+                {calcMode === 'riemann_sums' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                      <span style={{ fontSize: '0.66rem', fontWeight: 800, color: 'var(--text-muted)' }}>RIEMANN PARTITION RULE:</span>
+                      <PillSelector
+                        options={[
+                          { id: 'left', label: 'Left (L_N)' },
+                          { id: 'right', label: 'Right (R_N)' },
+                          { id: 'midpoint', label: 'Midpoint (M_N)' },
+                          { id: 'trapezoid', label: 'Trapezoid (T_N)' },
+                          { id: 'simpson', label: 'Simpson (S_N)' }
+                        ]}
+                        value={riemannMethod}
+                        onChange={(val) => setRiemannMethod(val as any)}
+                        columns={3}
+                        activeColor="#10b981"
+                      />
+                    </div>
+                    <DualParamControl label="Lower Bound (a):" value={calcBoundA} min={-2.8} max={calcBoundB - 0.2} step={0.1} onChange={setCalcBoundA} color="#38bdf8" />
+                    <DualParamControl label="Upper Bound (b):" value={calcBoundB} min={calcBoundA + 0.2} max={2.8} step={0.1} onChange={setCalcBoundB} color="#ec4899" />
+                    <DualParamControl label="Partitions (N):" value={calcIntegralN} min={4} max={60} step={2} precision={0} onChange={setCalcIntegralN} color="#34d399" />
+                  </div>
+                )}
+
+                {calcMode === 'derivatives' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <DualParamControl label="Tracer Point (x₀):" value={calcX0} min={-2.5} max={2.5} step={0.05} onChange={setCalcX0} color="#38bdf8" />
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '6px' }}>
+                      <button
+                        type="button"
+                        onClick={() => setShowDeriv1Curve(prev => !prev)}
+                        style={{
+                          padding: '5px 8px',
+                          borderRadius: '5px',
+                          background: showDeriv1Curve ? 'rgba(16, 185, 129, 0.2)' : 'rgba(15, 23, 42, 0.65)',
+                          border: `1px solid ${showDeriv1Curve ? '#10b981' : 'rgba(148, 163, 184, 0.3)'}`,
+                          color: showDeriv1Curve ? '#10b981' : '#94a3b8',
+                          fontSize: '0.68rem',
+                          fontWeight: 800,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        📈 f'(x) Slope Curve
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowDeriv2Curve(prev => !prev)}
+                        style={{
+                          padding: '5px 8px',
+                          borderRadius: '5px',
+                          background: showDeriv2Curve ? 'rgba(168, 85, 247, 0.2)' : 'rgba(15, 23, 42, 0.65)',
+                          border: `1px solid ${showDeriv2Curve ? '#a855f7' : 'rgba(148, 163, 184, 0.3)'}`,
+                          color: showDeriv2Curve ? '#a855f7' : '#94a3b8',
+                          fontSize: '0.68rem',
+                          fontWeight: 800,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        🌀 f''(x) Concavity
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowCritPoints(prev => !prev)}
+                        style={{
+                          padding: '5px 8px',
+                          borderRadius: '5px',
+                          background: showCritPoints ? 'rgba(251, 191, 36, 0.2)' : 'rgba(15, 23, 42, 0.65)',
+                          border: `1px solid ${showCritPoints ? '#fbbf24' : 'rgba(148, 163, 184, 0.3)'}`,
+                          color: showCritPoints ? '#fbbf24' : '#94a3b8',
+                          fontSize: '0.68rem',
+                          fontWeight: 800,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        ▲ Extrema (f'=0)
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setShowInflectionPoints(prev => !prev)}
+                        style={{
+                          padding: '5px 8px',
+                          borderRadius: '5px',
+                          background: showInflectionPoints ? 'rgba(56, 189, 248, 0.2)' : 'rgba(15, 23, 42, 0.65)',
+                          border: `1px solid ${showInflectionPoints ? '#38bdf8' : 'rgba(148, 163, 184, 0.3)'}`,
+                          color: showInflectionPoints ? '#38bdf8' : '#94a3b8',
+                          fontSize: '0.68rem',
+                          fontWeight: 800,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        ◆ Inflections (f''=0)
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* 4. On-Canvas HUD Toggle */}
+                <button
+                  type="button"
+                  onClick={() => setShowCalcFormulaHud(prev => !prev)}
+                  style={{
+                    padding: '6px 10px',
+                    borderRadius: '6px',
+                    background: showCalcFormulaHud ? 'rgba(192, 132, 252, 0.15)' : 'rgba(15, 23, 42, 0.6)',
+                    border: `1px solid ${showCalcFormulaHud ? '#c084fc' : 'rgba(148, 163, 184, 0.3)'}`,
+                    color: showCalcFormulaHud ? '#c084fc' : 'var(--text-muted)',
+                    fontSize: '0.70rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }}
+                >
+                  <span>📜 On-Canvas Formula HUD {showCalcFormulaHud ? 'VISIBLE (ON)' : 'HIDDEN (OFF)'}</span>
+                </button>
+
+                {/* 5. Sidebar Analytical Telemetry Card */}
+                {(() => {
+                  const telem = getCalcTelemetry(calcPreset, calcX0, calcH, calcBoundA, calcBoundB, calcIntegralN, riemannMethod);
+                  return (
+                    <div
+                      style={{
+                        background: 'rgba(15, 23, 42, 0.85)',
+                        border: '1px solid rgba(56, 189, 248, 0.35)',
+                        borderRadius: '8px',
+                        padding: '10px 12px',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.70rem', fontWeight: 800, color: '#38bdf8', letterSpacing: '0.04em' }}>
+                          CALCULUS TELEMETRY:
+                        </span>
+                        <span style={{ fontSize: '0.62rem', padding: '1px 5px', borderRadius: '3px', background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8', fontWeight: 800 }}>
+                          {calcMode.toUpperCase()}
+                        </span>
+                      </div>
+
+                      <div style={{ fontFamily: 'monospace', fontSize: '0.72rem', color: '#f8fafc', background: 'rgba(11, 17, 32, 0.75)', padding: '5px 8px', borderRadius: '4px', border: '1px solid rgba(148, 163, 184, 0.15)' }}>
+                        <div>{telem.formulaLatex}</div>
+                      </div>
+
+                      {calcMode === 'tangent_secant' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', fontSize: '0.68rem', fontFamily: 'monospace' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#f59e0b' }}>
+                            <span>Secant Slope (m_sec):</span>
+                            <span style={{ fontWeight: 800 }}>{telem.secantSlope.toFixed(4)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#38bdf8' }}>
+                            <span>Tangent Slope (f'(x₀)):</span>
+                            <span style={{ fontWeight: 800 }}>{telem.tangentSlope.toFixed(4)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: telem.secantError < 0.05 ? '#34d399' : '#f87171' }}>
+                            <span>Limit Error (|Δm|):</span>
+                            <span style={{ fontWeight: 800 }}>{telem.secantError.toFixed(4)} (h={calcH.toFixed(2)})</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {calcMode === 'riemann_sums' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', fontSize: '0.68rem', fontFamily: 'monospace' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#38bdf8' }}>
+                            <span>Exact Definite Integral:</span>
+                            <span style={{ fontWeight: 800 }}>{telem.exactIntegral.toFixed(4)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#10b981' }}>
+                            <span>{riemannMethod.toUpperCase()} Sum (N={calcIntegralN}):</span>
+                            <span style={{ fontWeight: 800 }}>{telem.riemannSum.toFixed(4)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: telem.relativeErrorPct < 1.0 ? '#34d399' : '#fbbf24' }}>
+                            <span>Approximation Error:</span>
+                            <span style={{ fontWeight: 800 }}>{telem.integralError.toFixed(4)} ({telem.relativeErrorPct.toFixed(2)}%)</span>
+                          </div>
+                        </div>
+                      )}
+
+                      {calcMode === 'derivatives' && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', fontSize: '0.68rem', fontFamily: 'monospace' }}>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#38bdf8' }}>
+                            <span>f(x₀={calcX0.toFixed(2)}):</span>
+                            <span style={{ fontWeight: 800 }}>{telem.y0.toFixed(3)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#10b981' }}>
+                            <span>f'(x₀) Slope:</span>
+                            <span style={{ fontWeight: 800 }}>{telem.tangentSlope.toFixed(3)}</span>
+                          </div>
+                          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#a855f7' }}>
+                            <span>f''(x₀) Concavity:</span>
+                            <span style={{ fontWeight: 800 }}>
+                              {evalCalcSecondDerivative(calcX0, calcPreset).toFixed(3)}{' '}
+                              ({evalCalcSecondDerivative(calcX0, calcPreset) > 0.05 ? '∪ Up' : evalCalcSecondDerivative(calcX0, calcPreset) < -0.05 ? '∩ Down' : '∼ Flat'})
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
@@ -5167,82 +8003,200 @@ export const TestDiagramsStudioView: React.FC = () => {
                     <DualParamControl label="w Slice Offset:" value={hyperW} min={-3.14} max={3.14} step={0.1} onChange={setHyperW} color="#ec4899" />
                   </div>
                 )}
+                {/* Camera View Angles Quick Presets */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px', background: 'var(--dropdown-bg, #0b1120)', padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--card-border, rgba(51, 65, 85, 0.6))' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <span style={{ fontSize: '0.62rem', fontWeight: 800, color: 'var(--text-muted)' }}>CAMERA VIEW:</span>
+                    <span style={{ fontSize: '0.58rem', color: '#38bdf8', fontFamily: 'monospace' }}>Rx:{rotX.toFixed(0)}° Ry:{rotY.toFixed(0)}°</span>
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
+                    <button
+                      type="button"
+                      onClick={() => { setRotX(30); setRotY(45); setZoom3D(1.0); }}
+                      style={{
+                        padding: '4px 2px',
+                        borderRadius: '4px',
+                        fontSize: '0.58rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        background: Math.abs(rotX - 30) < 3 && Math.abs(rotY - 45) < 3 ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)',
+                        color: Math.abs(rotX - 30) < 3 && Math.abs(rotY - 45) < 3 ? '#38bdf8' : 'var(--text-primary)',
+                        border: Math.abs(rotX - 30) < 3 && Math.abs(rotY - 45) < 3 ? '1px solid #38bdf8' : '1px solid var(--card-border)'
+                      }}
+                      title="Isometric 3D View (30°, 45°)"
+                    >
+                      📐 Iso
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setRotX(82); setRotY(0); setZoom3D(1.1); }}
+                      style={{
+                        padding: '4px 2px',
+                        borderRadius: '4px',
+                        fontSize: '0.58rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        background: Math.abs(rotX - 82) < 4 && Math.abs(rotY - 0) < 4 ? 'rgba(52, 211, 153, 0.25)' : 'rgba(30, 41, 59, 0.6)',
+                        color: Math.abs(rotX - 82) < 4 && Math.abs(rotY - 0) < 4 ? '#34d399' : 'var(--text-primary)',
+                        border: Math.abs(rotX - 82) < 4 && Math.abs(rotY - 0) < 4 ? '1px solid #34d399' : '1px solid var(--card-border)'
+                      }}
+                      title="Top-Down 2D Contour View (82°, 0°)"
+                    >
+                      🎯 Top 2D
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setRotX(0); setRotY(90); setZoom3D(1.0); }}
+                      style={{
+                        padding: '4px 2px',
+                        borderRadius: '4px',
+                        fontSize: '0.58rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        background: Math.abs(rotX - 0) < 3 && Math.abs(rotY - 90) < 3 ? 'rgba(251, 191, 36, 0.25)' : 'rgba(30, 41, 59, 0.6)',
+                        color: Math.abs(rotX - 0) < 3 && Math.abs(rotY - 90) < 3 ? '#fbbf24' : 'var(--text-primary)',
+                        border: Math.abs(rotX - 0) < 3 && Math.abs(rotY - 90) < 3 ? '1px solid #fbbf24' : '1px solid var(--card-border)'
+                      }}
+                      title="Side Profile View (0°, 90°)"
+                    >
+                      ↔️ Side
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => { setRotX(26); setRotY(42); setZoom3D(1.0); }}
+                      style={{
+                        padding: '4px 2px',
+                        borderRadius: '4px',
+                        fontSize: '0.58rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        background: Math.abs(rotX - 26) < 3 && Math.abs(rotY - 42) < 3 ? 'rgba(168, 85, 247, 0.25)' : 'rgba(30, 41, 59, 0.6)',
+                        color: Math.abs(rotX - 26) < 3 && Math.abs(rotY - 42) < 3 ? '#a855f7' : 'var(--text-primary)',
+                        border: Math.abs(rotX - 26) < 3 && Math.abs(rotY - 42) < 3 ? '1px solid #a855f7' : '1px solid var(--card-border)'
+                      }}
+                      title="Reset to Default Angle (26°, 42°)"
+                    >
+                      🔄 Default
+                    </button>
+                  </div>
+                </div>
+
                 <DualParamControl label="Pitch Angle (Rx):" value={rotX} min={-80} max={80} step={2} onChange={setRotX} color="#38bdf8" />
                 <DualParamControl label="Yaw Angle (Ry):" value={rotY} min={-180} max={180} step={2} onChange={setRotY} color="#34d399" />
                 <DualParamControl label="View Zoom:" value={zoom3D} min={0.5} max={2.2} step={0.05} onChange={setZoom3D} color="#a855f7" />
                 <DualParamControl label="Mesh Density (N):" value={meshResolution} min={16} max={36} step={2} precision={0} onChange={setMeshResolution} color="#fbbf24" />
 
-                {/* 4. Layer Visibility Toggles */}
-                <div style={{ display: 'flex', gap: '6px', alignItems: 'center', justifyContent: 'space-between', background: 'var(--dropdown-bg, #0b1120)', padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--card-border, rgba(51, 65, 85, 0.6))' }}>
-                  <span style={{ fontSize: '0.62rem', fontWeight: 800, color: 'var(--text-muted)' }}>LAYERS:</span>
-                  <div style={{ display: 'flex', gap: '4px' }}>
+                {/* 4. Layer Visibility Toggles (2x3 Grid to avoid any overflow) */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px', background: 'var(--dropdown-bg, #0b1120)', padding: '6px 8px', borderRadius: '6px', border: '1px solid var(--card-border, rgba(51, 65, 85, 0.6))' }}>
+                  <span style={{ fontSize: '0.62rem', fontWeight: 800, color: 'var(--text-muted)' }}>LAYERS (3D OVERLAYS):</span>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px' }}>
                     <button
                       type="button"
                       onClick={() => setShow3dAxes(prev => !prev)}
                       style={{
-                        padding: '3px 7px',
+                        padding: '4px 2px',
                         borderRadius: '4px',
-                        fontSize: '0.60rem',
+                        fontSize: '0.58rem',
                         fontWeight: 800,
                         cursor: 'pointer',
                         background: show3dAxes ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)',
                         color: show3dAxes ? '#38bdf8' : 'var(--text-muted)',
-                        border: show3dAxes ? '1px solid #38bdf8' : '1px solid var(--card-border)'
+                        border: show3dAxes ? '1px solid #38bdf8' : '1px solid var(--card-border)',
+                        textAlign: 'center'
                       }}
                       title="Toggle 3D Axes Triad & Corner Orientation Gizmo"
                     >
-                      Axes {show3dAxes ? 'ON' : 'OFF'}
+                      📐 Axes {show3dAxes ? 'ON' : 'OFF'}
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowFloorGrid(prev => !prev)}
                       style={{
-                        padding: '3px 7px',
+                        padding: '4px 2px',
                         borderRadius: '4px',
-                        fontSize: '0.60rem',
+                        fontSize: '0.58rem',
                         fontWeight: 800,
                         cursor: 'pointer',
                         background: showFloorGrid ? 'rgba(52, 211, 153, 0.25)' : 'rgba(30, 41, 59, 0.6)',
                         color: showFloorGrid ? '#34d399' : 'var(--text-muted)',
-                        border: showFloorGrid ? '1px solid #34d399' : '1px solid var(--card-border)'
+                        border: showFloorGrid ? '1px solid #34d399' : '1px solid var(--card-border)',
+                        textAlign: 'center'
                       }}
                       title="Toggle Illuminated Isometric Floor Grid"
                     >
-                      Floor {showFloorGrid ? 'ON' : 'OFF'}
+                      🌐 Floor {showFloorGrid ? 'ON' : 'OFF'}
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowSlicePlane(prev => !prev)}
                       style={{
-                        padding: '3px 7px',
+                        padding: '4px 2px',
                         borderRadius: '4px',
-                        fontSize: '0.60rem',
+                        fontSize: '0.58rem',
                         fontWeight: 800,
                         cursor: 'pointer',
                         background: showSlicePlane ? 'rgba(251, 191, 36, 0.25)' : 'rgba(30, 41, 59, 0.6)',
                         color: showSlicePlane ? '#fbbf24' : 'var(--text-muted)',
-                        border: showSlicePlane ? '1px solid #fbbf24' : '1px solid var(--card-border)'
+                        border: showSlicePlane ? '1px solid #fbbf24' : '1px solid var(--card-border)',
+                        textAlign: 'center'
                       }}
                       title="Toggle Horizontal Slicing Plane & Isocline Contours"
                     >
-                      Slice {showSlicePlane ? 'ON' : 'OFF'}
+                      ✂️ Slice {showSlicePlane ? 'ON' : 'OFF'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowCriticalPoints(prev => !prev)}
+                      style={{
+                        padding: '4px 2px',
+                        borderRadius: '4px',
+                        fontSize: '0.58rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        background: showCriticalPoints ? 'rgba(52, 211, 153, 0.25)' : 'rgba(30, 41, 59, 0.6)',
+                        color: showCriticalPoints ? '#34d399' : 'var(--text-muted)',
+                        border: showCriticalPoints ? '1px solid #34d399' : '1px solid var(--card-border)',
+                        textAlign: 'center'
+                      }}
+                      title="Toggle Critical Points & Hessian Stationary Markers (Min/Max/Saddle)"
+                    >
+                      🏷️ Crit {showCriticalPoints ? 'ON' : 'OFF'}
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowGradientQuiver(prev => !prev)}
+                      style={{
+                        padding: '4px 2px',
+                        borderRadius: '4px',
+                        fontSize: '0.58rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        background: showGradientQuiver ? 'rgba(56, 189, 248, 0.25)' : 'rgba(30, 41, 59, 0.6)',
+                        color: showGradientQuiver ? '#38bdf8' : 'var(--text-muted)',
+                        border: showGradientQuiver ? '1px solid #38bdf8' : '1px solid var(--card-border)',
+                        textAlign: 'center'
+                      }}
+                      title="Toggle 3D Gradient Vector Quiver Field (-∇f arrows on surface)"
+                    >
+                      🏹 Quiver {showGradientQuiver ? 'ON' : 'OFF'}
                     </button>
                     <button
                       type="button"
                       onClick={() => setShowRollingBall(prev => !prev)}
                       style={{
-                        padding: '3px 7px',
+                        padding: '4px 2px',
                         borderRadius: '4px',
-                        fontSize: '0.60rem',
+                        fontSize: '0.58rem',
                         fontWeight: 800,
                         cursor: 'pointer',
                         background: showRollingBall ? 'rgba(236, 72, 153, 0.25)' : 'rgba(30, 41, 59, 0.6)',
                         color: showRollingBall ? '#ec4899' : 'var(--text-muted)',
-                        border: showRollingBall ? '1px solid #ec4899' : '1px solid var(--card-border)'
+                        border: showRollingBall ? '1px solid #ec4899' : '1px solid var(--card-border)',
+                        textAlign: 'center'
                       }}
                       title="Toggle 3D Ball & Trajectory Ribbon"
                     >
-                      Ball {showRollingBall ? 'ON' : 'OFF'}
+                      ⚽ Ball {showRollingBall ? 'ON' : 'OFF'}
                     </button>
                   </div>
                 </div>
@@ -5252,62 +8206,191 @@ export const TestDiagramsStudioView: React.FC = () => {
                 )}
 
                 {/* 5. 3D Gradient Descent / Geodesic Orbit Controller */}
-                <div style={{ padding: '8px 10px', borderRadius: '8px', background: 'var(--dropdown-bg, #0b1120)', border: showRollingBall ? (surfaceType === 'torus' || surfaceType === 'mobius' ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid rgba(251, 191, 36, 0.35)') : '1px solid var(--card-border, rgba(51, 65, 85, 0.6))', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                <div style={{ padding: '8px 10px', borderRadius: '8px', background: 'var(--dropdown-bg, #0b1120)', border: showRollingBall ? (surfaceType === 'torus' || surfaceType === 'mobius' ? '1px solid rgba(56, 189, 248, 0.4)' : '1px solid rgba(251, 191, 36, 0.35)') : '1px solid var(--card-border, rgba(51, 65, 85, 0.6))', display: 'flex', flexDirection: 'column', gap: '7px' }}>
+                  {/* Header Row */}
                   <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                       <span style={{ fontSize: '0.68rem', fontWeight: 800, color: showRollingBall ? (surfaceType === 'torus' || surfaceType === 'mobius' ? '#38bdf8' : '#fbbf24') : 'var(--text-muted)' }}>
                         {surfaceType === 'torus' || surfaceType === 'mobius' ? '🌀 Geodesic Orbit:' : '🟡 Gradient Descent:'}
                       </span>
                       <span style={{ fontSize: '0.55rem', fontWeight: 800, padding: '1px 5px', borderRadius: '3px', background: showRollingBall ? 'rgba(52, 211, 153, 0.2)' : 'rgba(100, 116, 139, 0.2)', color: showRollingBall ? '#34d399' : '#94a3b8' }}>
-                        {showRollingBall ? 'ACTIVE' : 'MUTED'}
+                        {showRollingBall ? (isBallPaused ? 'PAUSED' : 'ACTIVE') : 'MUTED'}
                       </span>
                     </div>
-                    <div style={{ display: 'flex', gap: '4px' }}>
+                    {/* Action Controls: Drop Random, Play/Pause, Step 1x, Reset */}
+                    <div style={{ display: 'flex', gap: '3px' }}>
                       <button
                         type="button"
                         onClick={() => resetBall(true)}
                         style={{
-                          padding: '2px 6px',
+                          padding: '2px 5px',
                           borderRadius: '4px',
-                          fontSize: '0.58rem',
+                          fontSize: '0.56rem',
                           fontWeight: 800,
                           cursor: 'pointer',
                           background: surfaceType === 'torus' || surfaceType === 'mobius' ? 'rgba(56, 189, 248, 0.18)' : 'rgba(251, 191, 36, 0.18)',
                           color: surfaceType === 'torus' || surfaceType === 'mobius' ? '#38bdf8' : '#fbbf24',
                           border: surfaceType === 'torus' || surfaceType === 'mobius' ? '1px solid #38bdf8' : '1px solid #fbbf24'
                         }}
+                        title="Randomize starting position (x₀, y₀)"
                       >
-                        {surfaceType === 'torus' || surfaceType === 'mobius' ? '🎲 Random Orbit' : '🎲 Drop Random'}
+                        🎲 Drop
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setIsBallPaused(prev => !prev)}
+                        style={{
+                          padding: '2px 5px',
+                          borderRadius: '4px',
+                          fontSize: '0.56rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          background: isBallPaused ? 'rgba(52, 211, 153, 0.22)' : 'rgba(236, 72, 153, 0.22)',
+                          color: isBallPaused ? '#34d399' : '#ec4899',
+                          border: isBallPaused ? '1px solid #34d399' : '1px solid #ec4899'
+                        }}
+                        title={isBallPaused ? 'Resume continuous descent' : 'Pause descent to step manually'}
+                      >
+                        {isBallPaused ? '▶ Play' : '⏸ Pause'}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => { setIsBallPaused(true); stepSingleOptimizerIteration(1.0); }}
+                        style={{
+                          padding: '2px 5px',
+                          borderRadius: '4px',
+                          fontSize: '0.56rem',
+                          fontWeight: 800,
+                          cursor: 'pointer',
+                          background: 'rgba(56, 189, 248, 0.22)',
+                          color: '#38bdf8',
+                          border: '1px solid #38bdf8'
+                        }}
+                        title="Execute exactly 1 discrete gradient descent iteration"
+                      >
+                        ⏭ Step
                       </button>
                       <button
                         type="button"
                         onClick={() => resetBall(false)}
                         style={{
-                          padding: '2px 6px',
+                          padding: '2px 5px',
                           borderRadius: '4px',
-                          fontSize: '0.58rem',
+                          fontSize: '0.56rem',
                           fontWeight: 800,
                           cursor: 'pointer',
                           background: 'rgba(30, 41, 59, 0.8)',
                           color: 'var(--text-primary)',
                           border: '1px solid var(--card-border)'
                         }}
+                        title="Reset ball to origin / default start"
                       >
-                        ↺ Reset
+                        ↺
                       </button>
                     </div>
                   </div>
+
                   {surfaceType === 'torus' || surfaceType === 'mobius' ? (
                     <div style={{ fontSize: '0.62rem', color: '#94a3b8', display: 'flex', flexDirection: 'column', gap: '3px' }}>
                       <div>{surfaceType === 'torus' ? '🍩 Toroidal (p,q)=(1,2) Closed Geodesic Knot' : '♾️ Möbius Strip Double-Loop Non-Orientable Geodesic'}</div>
                       <div style={{ color: showRollingBall ? '#38bdf8' : '#64748b', fontWeight: 700 }}>
-                        {showRollingBall ? 'Continuous 60 FPS trajectory tracing active.' : 'Particle layer is hidden. Toggle [Ball ON] in LAYERS to display.'}
+                        {showRollingBall ? (isBallPaused ? 'Descent paused. Click [▶ Play] or [⏭ Step].' : 'Continuous 60 FPS trajectory tracing active.') : 'Particle layer is hidden. Toggle [⚽ Ball ON] in LAYERS.'}
                       </div>
                     </div>
                   ) : (
                     <>
+                      {/* 4-Way Optimizer Selector */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                        <span style={{ fontSize: '0.58rem', fontWeight: 800, color: 'var(--text-muted)' }}>ACTIVE OPTIMIZER:</span>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '3px', background: 'rgba(15, 23, 42, 0.7)', padding: '3px', borderRadius: '6px', border: '1px solid rgba(51, 65, 85, 0.6)' }}>
+                          <button
+                            type="button"
+                            onClick={() => { setOptimizerMode('sgd'); resetBall(false); }}
+                            style={{
+                              padding: '4px 2px',
+                              borderRadius: '4px',
+                              fontSize: '0.57rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              background: optimizerMode === 'sgd' ? 'rgba(56, 189, 248, 0.28)' : 'transparent',
+                              color: optimizerMode === 'sgd' ? '#38bdf8' : 'var(--text-muted)',
+                              border: optimizerMode === 'sgd' ? '1px solid #38bdf8' : '1px solid transparent',
+                              textAlign: 'center'
+                            }}
+                            title="Pure Stochastic / Batch Gradient Descent (xₜ₊₁ = xₜ - η∇f)"
+                          >
+                            🔵 SGD
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setOptimizerMode('momentum'); resetBall(false); }}
+                            style={{
+                              padding: '4px 2px',
+                              borderRadius: '4px',
+                              fontSize: '0.57rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              background: optimizerMode === 'momentum' ? 'rgba(52, 211, 153, 0.28)' : 'transparent',
+                              color: optimizerMode === 'momentum' ? '#34d399' : 'var(--text-muted)',
+                              border: optimizerMode === 'momentum' ? '1px solid #34d399' : '1px solid transparent',
+                              textAlign: 'center'
+                            }}
+                            title="Polyak Heavy-Ball Momentum (vₜ₊₁ = γvₜ - η∇f)"
+                          >
+                            🟢 Mom
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setOptimizerMode('adam'); resetBall(false); }}
+                            style={{
+                              padding: '4px 2px',
+                              borderRadius: '4px',
+                              fontSize: '0.57rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              background: optimizerMode === 'adam' ? 'rgba(251, 146, 60, 0.28)' : 'transparent',
+                              color: optimizerMode === 'adam' ? '#fb923c' : 'var(--text-muted)',
+                              border: optimizerMode === 'adam' ? '1px solid #fb923c' : '1px solid transparent',
+                              textAlign: 'center'
+                            }}
+                            title="Adaptive Moment Estimation (mₜ, vₜ with bias correction)"
+                          >
+                            🟠 Adam
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => { setOptimizerMode('race'); resetBall(false); }}
+                            style={{
+                              padding: '4px 2px',
+                              borderRadius: '4px',
+                              fontSize: '0.57rem',
+                              fontWeight: 800,
+                              cursor: 'pointer',
+                              background: optimizerMode === 'race' ? 'rgba(168, 85, 247, 0.28)' : 'transparent',
+                              color: optimizerMode === 'race' ? '#a855f7' : 'var(--text-muted)',
+                              border: optimizerMode === 'race' ? '1px solid #a855f7' : '1px solid transparent',
+                              textAlign: 'center'
+                            }}
+                            title="Simultaneous 3-Way Optimizer Race from same starting coordinates"
+                          >
+                            🏎️ Race
+                          </button>
+                        </div>
+                      </div>
+
+                      {/* Algorithm Formula & Description Pill */}
+                      <div style={{ fontSize: '0.58rem', fontFamily: 'monospace', color: optimizerMode === 'sgd' ? '#38bdf8' : optimizerMode === 'adam' ? '#fb923c' : optimizerMode === 'race' ? '#a855f7' : '#34d399', background: 'rgba(15, 23, 42, 0.65)', padding: '4px 6px', borderRadius: '4px', border: '1px solid rgba(51, 65, 85, 0.4)' }}>
+                        {optimizerMode === 'sgd' && 'Formula: x(t+1) = x(t) - η · ∇f(x(t))'}
+                        {optimizerMode === 'momentum' && 'Formula: v(t+1) = γ·v(t) - η·∇f,  x(t+1) = x(t) + v(t+1)'}
+                        {optimizerMode === 'adam' && 'Formula: m̂/(√v̂ + ε),  β₁=0.90,  β₂=0.999,  ε=1e-7'}
+                        {optimizerMode === 'race' && 'Race Mode: SGD (Blue) vs Momentum (Green) vs Adam (Orange)'}
+                      </div>
+
+                      {/* Hyperparameter Sliders */}
                       <DualParamControl label="Learning Rate (η):" value={ballLearningRate} min={0.01} max={0.25} step={0.01} onChange={setBallLearningRate} color="#fbbf24" />
-                      <DualParamControl label="Momentum (γ):" value={ballMomentum} min={0.0} max={0.95} step={0.05} onChange={setBallMomentum} color="#38bdf8" />
+                      {(optimizerMode === 'momentum' || optimizerMode === 'race') && (
+                        <DualParamControl label="Momentum Coeff (γ):" value={ballMomentum} min={0.0} max={0.95} step={0.05} onChange={setBallMomentum} color="#34d399" />
+                      )}
                     </>
                   )}
                 </div>
@@ -5335,41 +8418,564 @@ export const TestDiagramsStudioView: React.FC = () => {
 
             {/* PHASE 7: VECTOR FIELDS CONTROLS */}
             {activeModuleId === 'vector_fields' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <PillSelector
-                  options={[
-                    { id: 'pendulum', label: 'Damped Pendulum' },
-                    { id: 'lotka_volterra', label: 'Predator-Prey' },
-                    { id: 'vanderpol', label: 'Van der Pol' }
-                  ]}
-                  value={odeSystem}
-                  onChange={(val) => setOdeSystem(val as any)}
-                  columns={3}
-                  activeColor="var(--accent-cyan, #38bdf8)"
-                />
-                <DualParamControl label="Damping / System Coefficient:" value={dampingFactor} min={0.0} max={1.5} step={0.05} onChange={setDampingFactor} color="#38bdf8" />
-                <DualParamControl label="Initial X₀ (Angle/Prey):" value={phaseX0} min={-2.5} max={2.5} step={0.1} onChange={setPhaseX0} color="#34d399" />
-                <DualParamControl label="Initial Y₀ (Velocity/Pred):" value={phaseY0} min={-2.5} max={2.5} step={0.1} onChange={setPhaseY0} color="#f59e0b" />
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {/* 1. ODE System Selector */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '0.70rem', fontWeight: 800, color: 'var(--accent-cyan, #38bdf8)' }}>
+                    Dynamical System Family:
+                  </span>
+                  <PillSelector
+                    options={[
+                      { id: 'pendulum', label: 'Pendulum' },
+                      { id: 'vanderpol', label: 'Van der Pol' },
+                      { id: 'lotka_volterra', label: 'Lotka-Volterra' },
+                      { id: 'duffing', label: 'Duffing Well' }
+                    ]}
+                    value={odeSystem}
+                    onChange={(val) => setOdeSystem(val as any)}
+                    columns={2}
+                    activeColor="var(--accent-cyan, #38bdf8)"
+                  />
+                </div>
+
+                {/* 2. System Parameter & Initial State Sliders */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <DualParamControl
+                    label={odeSystem === 'vanderpol' ? 'Nonlinearity Param (μ):' : odeSystem === 'lotka_volterra' ? 'Interaction Scaling (γ):' : 'Damping Coefficient (d):'}
+                    value={dampingFactor}
+                    min={0.0}
+                    max={1.5}
+                    step={0.05}
+                    onChange={setDampingFactor}
+                    color="#38bdf8"
+                  />
+                  <DualParamControl
+                    label={odeSystem === 'pendulum' ? 'Initial Angle θ₀ (X₀):' : odeSystem === 'lotka_volterra' ? 'Initial Prey (X₀):' : 'Initial Position (X₀):'}
+                    value={phaseX0}
+                    min={-2.8}
+                    max={2.8}
+                    step={0.1}
+                    onChange={setPhaseX0}
+                    color="#34d399"
+                  />
+                  <DualParamControl
+                    label={odeSystem === 'pendulum' ? 'Initial Velocity ω₀ (Y₀):' : odeSystem === 'lotka_volterra' ? 'Initial Predator (Y₀):' : 'Initial Velocity (Y₀):'}
+                    value={phaseY0}
+                    min={-2.8}
+                    max={2.8}
+                    step={0.1}
+                    onChange={setPhaseY0}
+                    color="#f59e0b"
+                  />
+                </div>
+
+                {/* 3. Grid Vector Density */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '0.70rem', fontWeight: 800, color: 'var(--accent-cyan, #38bdf8)' }}>
+                    Vector Grid Resolution:
+                  </span>
+                  <PillSelector
+                    options={[
+                      { id: 'coarse', label: 'Coarse (10×8)' },
+                      { id: 'medium', label: 'Medium (16×12)' },
+                      { id: 'fine', label: 'Fine (22×16)' }
+                    ]}
+                    value={odeGridDensity}
+                    onChange={(val) => setOdeGridDensity(val as any)}
+                    columns={3}
+                    activeColor="var(--accent-cyan, #38bdf8)"
+                  />
+                </div>
+
+                {/* 4. Calculus & Flow Diagnostics Toggles */}
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowOdeTrajectory(!showOdeTrajectory)}
+                    style={{
+                      padding: '5px 4px',
+                      borderRadius: '4px',
+                      fontSize: '0.64rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      background: showOdeTrajectory ? 'rgba(52, 211, 153, 0.22)' : 'rgba(30, 41, 59, 0.4)',
+                      color: showOdeTrajectory ? '#34d399' : '#64748b',
+                      border: showOdeTrajectory ? '1px solid #34d399' : '1px solid rgba(51, 65, 85, 0.4)'
+                    }}
+                  >
+                    💫 RK4 Orbit {showOdeTrajectory ? 'ON' : 'OFF'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowOdeStreamlines(!showOdeStreamlines)}
+                    style={{
+                      padding: '5px 4px',
+                      borderRadius: '4px',
+                      fontSize: '0.64rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      background: showOdeStreamlines ? 'rgba(56, 189, 248, 0.22)' : 'rgba(30, 41, 59, 0.4)',
+                      color: showOdeStreamlines ? '#38bdf8' : '#64748b',
+                      border: showOdeStreamlines ? '1px solid #38bdf8' : '1px solid rgba(51, 65, 85, 0.4)'
+                    }}
+                  >
+                    🌊 Streamlines {showOdeStreamlines ? 'ON' : 'OFF'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowOdeNullclines(!showOdeNullclines)}
+                    style={{
+                      padding: '5px 4px',
+                      borderRadius: '4px',
+                      fontSize: '0.64rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      background: showOdeNullclines ? 'rgba(236, 72, 153, 0.22)' : 'rgba(30, 41, 59, 0.4)',
+                      color: showOdeNullclines ? '#ec4899' : '#64748b',
+                      border: showOdeNullclines ? '1px solid #ec4899' : '1px solid rgba(51, 65, 85, 0.4)'
+                    }}
+                  >
+                    🎯 Nullclines {showOdeNullclines ? 'ON' : 'OFF'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowOdeFixedPoints(!showOdeFixedPoints)}
+                    style={{
+                      padding: '5px 4px',
+                      borderRadius: '4px',
+                      fontSize: '0.64rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      background: showOdeFixedPoints ? 'rgba(251, 191, 36, 0.22)' : 'rgba(30, 41, 59, 0.4)',
+                      color: showOdeFixedPoints ? '#fbbf24' : '#64748b',
+                      border: showOdeFixedPoints ? '1px solid #fbbf24' : '1px solid rgba(51, 65, 85, 0.4)'
+                    }}
+                  >
+                    📍 Fixed Points {showOdeFixedPoints ? 'ON' : 'OFF'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowOdeFormulaHud(!showOdeFormulaHud)}
+                    style={{
+                      gridColumn: 'span 2',
+                      padding: '6px 4px',
+                      borderRadius: '4px',
+                      fontSize: '0.66rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      background: showOdeFormulaHud ? 'rgba(168, 85, 247, 0.22)' : 'rgba(30, 41, 59, 0.4)',
+                      color: showOdeFormulaHud ? '#c084fc' : '#64748b',
+                      border: showOdeFormulaHud ? '1px solid #c084fc' : '1px solid rgba(51, 65, 85, 0.4)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      gap: '5px'
+                    }}
+                  >
+                    📜 On-Canvas Formula HUD {showOdeFormulaHud ? 'VISIBLE (ON)' : 'HIDDEN (OFF)'}
+                  </button>
+                </div>
+
+                {/* 5. Real-Time Analytical ODE Telemetry Card */}
+                {(() => {
+                  const telem = getOdeTelemetry(odeSystem, dampingFactor, phaseX0, phaseY0);
+                  return (
+                    <div style={{ padding: '8px 10px', borderRadius: '8px', background: 'var(--dropdown-bg, #0b1120)', border: '1px solid var(--card-border, rgba(51, 65, 85, 0.6))', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--accent-cyan, #38bdf8)' }}>Analytical Telemetry:</span>
+                        <span style={{ fontSize: '0.58rem', fontWeight: 800, padding: '1px 6px', borderRadius: '3px', background: 'rgba(56, 189, 248, 0.2)', color: '#38bdf8' }}>
+                          RK-4 ODE
+                        </span>
+                      </div>
+                      <div style={{ fontSize: '0.66rem', fontFamily: 'monospace', color: '#f8fafc', fontWeight: 700, padding: '4px 6px', borderRadius: '4px', background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                        {telem.eq1} <br /> {telem.eq2}
+                      </div>
+                      <div style={{ fontSize: '0.60rem', color: '#34d399', fontFamily: 'monospace' }}>
+                        {telem.energy}
+                      </div>
+                      <div style={{ fontSize: '0.58rem', color: '#94a3b8', fontFamily: 'monospace' }}>
+                        Jacobian: {telem.jacobian}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
 
             {/* PHASE 8: FORMULA SANDBOX CONTROLS */}
             {activeModuleId === 'formula_sandbox' && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                <PillSelector
-                  options={[
-                    { id: 'cartesian', label: 'Cartesian y=f(x)' },
-                    { id: 'polar', label: 'Polar r=f(θ)' },
-                    { id: 'parametric', label: 'Parametric (x(t), y(t))' }
-                  ]}
-                  value={sandboxCoordType}
-                  onChange={(val) => setSandboxCoordType(val as any)}
-                  columns={3}
-                  activeColor="var(--accent-cyan, #38bdf8)"
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {/* 1. Coordinate System Selector */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '0.70rem', fontWeight: 800, color: 'var(--accent-cyan, #38bdf8)' }}>
+                    Coordinate Framework:
+                  </span>
+                  <PillSelector
+                    options={[
+                      { id: 'cartesian', label: 'Cartesian y=f(x)' },
+                      { id: 'polar', label: 'Polar r=f(θ)' },
+                      { id: 'parametric', label: 'Parametric (x,y)' }
+                    ]}
+                    value={sandboxCoordType}
+                    onChange={(val) => setSandboxCoordType(val as any)}
+                    columns={3}
+                    activeColor="var(--accent-cyan, #38bdf8)"
+                  />
+                </div>
+
+                {/* 2. Function Preset Catalog */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '0.70rem', fontWeight: 800, color: '#34d399' }}>
+                    Mathematical Preset Family:
+                  </span>
+                  {sandboxCoordType === 'cartesian' && (
+                    <PillSelector
+                      options={[
+                        { id: 'harmonic', label: '🌊 Harmonic' },
+                        { id: 'damped', label: '📉 Damped' },
+                        { id: 'gaussian', label: '🔔 Gaussian' },
+                        { id: 'cubic', label: '⚡ Cubic f, f\', f\'\'' },
+                        { id: 'chirp', label: '🔊 Chirp' },
+                        { id: 'beating', label: '🎶 Beating' }
+                      ]}
+                      value={cartesianPreset}
+                      onChange={(val) => setCartesianPreset(val as any)}
+                      columns={2}
+                      activeColor="#34d399"
+                    />
+                  )}
+                  {sandboxCoordType === 'polar' && (
+                    <PillSelector
+                      options={[
+                        { id: 'rose', label: '🌸 Rose Petals' },
+                        { id: 'cardioid', label: '❤️ Cardioid' },
+                        { id: 'spiral', label: '🌀 Spiral' },
+                        { id: 'lemniscate', label: '♾️ Lemniscate' },
+                        { id: 'butterfly', label: '🦋 Butterfly' }
+                      ]}
+                      value={polarPreset}
+                      onChange={(val) => setPolarPreset(val as any)}
+                      columns={2}
+                      activeColor="#38bdf8"
+                    />
+                  )}
+                  {sandboxCoordType === 'parametric' && (
+                    <PillSelector
+                      options={[
+                        { id: 'lissajous', label: '🎛️ Lissajous' },
+                        { id: 'hypotrochoid', label: '⭕ Spirograph' },
+                        { id: 'astroid', label: '⭐ Astroid' },
+                        { id: 'cycloid', label: '🚲 Cycloid' },
+                        { id: 'butterfly_param', label: '🦋 Butterfly' }
+                      ]}
+                      value={parametricPreset}
+                      onChange={(val) => setParametricPreset(val as any)}
+                      columns={2}
+                      activeColor="#ec4899"
+                    />
+                  )}
+                </div>
+
+                {/* 3. Simultaneous Multi-Curve Layers */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '4px' }}>
+                  <span style={{ fontSize: '0.70rem', fontWeight: 800, color: 'var(--text-muted, #94a3b8)' }}>
+                    Active Curve Layers (3 Simultaneous):
+                  </span>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px' }}>
+                    <button
+                      type="button"
+                      onClick={() => setShowCurve1(!showCurve1)}
+                      style={{
+                        padding: '5px 4px',
+                        borderRadius: '4px',
+                        fontSize: '0.66rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        background: showCurve1 ? 'rgba(52, 211, 153, 0.22)' : 'rgba(30, 41, 59, 0.4)',
+                        color: showCurve1 ? '#34d399' : '#64748b',
+                        border: showCurve1 ? '1px solid #34d399' : '1px solid rgba(51, 65, 85, 0.4)'
+                      }}
+                    >
+                      ● C1 (Main)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowCurve2(!showCurve2)}
+                      style={{
+                        padding: '5px 4px',
+                        borderRadius: '4px',
+                        fontSize: '0.66rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        background: showCurve2 ? 'rgba(56, 189, 248, 0.22)' : 'rgba(30, 41, 59, 0.4)',
+                        color: showCurve2 ? '#38bdf8' : '#64748b',
+                        border: showCurve2 ? '1px solid #38bdf8' : '1px solid rgba(51, 65, 85, 0.4)'
+                      }}
+                    >
+                      ● C2 (Sub)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowCurve3(!showCurve3)}
+                      style={{
+                        padding: '5px 4px',
+                        borderRadius: '4px',
+                        fontSize: '0.66rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        background: showCurve3 ? 'rgba(236, 72, 153, 0.22)' : 'rgba(30, 41, 59, 0.4)',
+                        color: showCurve3 ? '#ec4899' : '#64748b',
+                        border: showCurve3 ? '1px solid #ec4899' : '1px solid rgba(51, 65, 85, 0.4)'
+                      }}
+                    >
+                      ● C3 (Env)
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowCompositeSum(!showCompositeSum)}
+                      style={{
+                        padding: '5px 4px',
+                        borderRadius: '4px',
+                        fontSize: '0.66rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        background: showCompositeSum ? 'rgba(251, 191, 36, 0.22)' : 'rgba(30, 41, 59, 0.4)',
+                        color: showCompositeSum ? '#fbbf24' : '#64748b',
+                        border: showCompositeSum ? '1px solid #fbbf24' : '1px solid rgba(51, 65, 85, 0.4)'
+                      }}
+                    >
+                      ➕ Sum
+                    </button>
+                  </div>
+                </div>
+
+                {/* 4. Live Bound Dials (k, k2, a, b, c) */}
+                <DualParamControl
+                  label={sandboxCoordType === 'polar' ? 'Petals / Wavenumber (k):' : sandboxCoordType === 'parametric' ? 'X Frequency (kx):' : 'Frequency / Wavenumber (k):'}
+                  value={paramK}
+                  min={0.5}
+                  max={8.0}
+                  step={0.1}
+                  onChange={setParamK}
+                  color="#38bdf8"
                 />
-                <DualParamControl label="Parameter k (Frequency):" value={paramK} min={0.5} max={8.0} step={0.1} onChange={setParamK} color="#38bdf8" />
-                <DualParamControl label="Parameter a (Amplitude):" value={paramA} min={0.1} max={3.0} step={0.1} onChange={setParamA} color="#34d399" />
-                <DualParamControl label="Parameter b (Phase Shift):" value={paramB} min={-3.14} max={3.14} step={0.1} onChange={setParamB} color="#ec4899" />
+
+                {(sandboxCoordType === 'parametric' || (sandboxCoordType === 'cartesian' && (cartesianPreset === 'gaussian' || cartesianPreset === 'beating')) || (sandboxCoordType === 'polar' && polarPreset === 'rose')) && (
+                  <DualParamControl
+                    label={sandboxCoordType === 'parametric' ? 'Y Frequency (ky):' : sandboxCoordType === 'polar' ? 'Denominator / Mod (k₂):' : 'Secondary Frequency (k₂):'}
+                    value={paramK2}
+                    min={1.0}
+                    max={8.0}
+                    step={0.5}
+                    onChange={setParamK2}
+                    color="#f59e0b"
+                  />
+                )}
+
+                <DualParamControl
+                  label="Amplitude / Scale (a):"
+                  value={paramA}
+                  min={0.1}
+                  max={3.0}
+                  step={0.1}
+                  onChange={setParamA}
+                  color="#34d399"
+                />
+
+                <DualParamControl
+                  label="Phase Shift (b):"
+                  value={paramB}
+                  min={-3.14}
+                  max={3.14}
+                  step={0.1}
+                  onChange={setParamB}
+                  color="#ec4899"
+                />
+
+                <DualParamControl
+                  label="Vertical Shift / Bias (c):"
+                  value={paramC}
+                  min={-2.0}
+                  max={2.0}
+                  step={0.1}
+                  onChange={setParamC}
+                  color="#a855f7"
+                />
+
+                <DualParamControl
+                  label="Canvas Viewport Zoom:"
+                  value={sandboxZoom}
+                  min={0.5}
+                  max={2.2}
+                  step={0.05}
+                  onChange={setSandboxZoom}
+                  color="#38bdf8"
+                />
+
+                {/* 5. Diagnostic Feature Toggles (3x2 Grid) */}
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '5px' }}>
+                  <button
+                    type="button"
+                    onClick={() => setShowTangentVector(!showTangentVector)}
+                    style={{
+                      padding: '5px 4px',
+                      borderRadius: '4px',
+                      fontSize: '0.64rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      background: showTangentVector ? 'rgba(56, 189, 248, 0.2)' : 'rgba(30, 41, 59, 0.4)',
+                      color: showTangentVector ? '#38bdf8' : '#64748b',
+                      border: showTangentVector ? '1px solid #38bdf8' : '1px solid rgba(51, 65, 85, 0.4)'
+                    }}
+                  >
+                    🚀 Velocity v(t) {showTangentVector ? 'ON' : 'OFF'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAreaShading(!showAreaShading)}
+                    style={{
+                      padding: '5px 4px',
+                      borderRadius: '4px',
+                      fontSize: '0.64rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      background: showAreaShading ? 'rgba(52, 211, 153, 0.2)' : 'rgba(30, 41, 59, 0.4)',
+                      color: showAreaShading ? '#34d399' : '#64748b',
+                      border: showAreaShading ? '1px solid #34d399' : '1px solid rgba(51, 65, 85, 0.4)'
+                    }}
+                  >
+                    🎨 Area Fill {showAreaShading ? 'ON' : 'OFF'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowGridRings(!showGridRings)}
+                    style={{
+                      padding: '5px 4px',
+                      borderRadius: '4px',
+                      fontSize: '0.64rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      background: showGridRings ? 'rgba(251, 191, 36, 0.2)' : 'rgba(30, 41, 59, 0.4)',
+                      color: showGridRings ? '#fbbf24' : '#64748b',
+                      border: showGridRings ? '1px solid #fbbf24' : '1px solid rgba(51, 65, 85, 0.4)'
+                    }}
+                  >
+                    📐 Grid & Rays {showGridRings ? 'ON' : 'OFF'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowTracerDot(!showTracerDot)}
+                    style={{
+                      padding: '5px 4px',
+                      borderRadius: '4px',
+                      fontSize: '0.64rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      background: showTracerDot ? 'rgba(236, 72, 153, 0.2)' : 'rgba(30, 41, 59, 0.4)',
+                      color: showTracerDot ? '#ec4899' : '#64748b',
+                      border: showTracerDot ? '1px solid #ec4899' : '1px solid rgba(51, 65, 85, 0.4)'
+                    }}
+                  >
+                    📍 Tracer Dot {showTracerDot ? 'ON' : 'OFF'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowRootsAndExtrema(!showRootsAndExtrema)}
+                    style={{
+                      padding: '5px 4px',
+                      borderRadius: '4px',
+                      fontSize: '0.64rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      background: showRootsAndExtrema ? 'rgba(56, 189, 248, 0.22)' : 'rgba(30, 41, 59, 0.4)',
+                      color: showRootsAndExtrema ? '#38bdf8' : '#64748b',
+                      border: showRootsAndExtrema ? '1px solid #38bdf8' : '1px solid rgba(51, 65, 85, 0.4)'
+                    }}
+                  >
+                    🎯 Roots & Crit {showRootsAndExtrema ? 'ON' : 'OFF'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowOsculatingCircle(!showOsculatingCircle)}
+                    style={{
+                      padding: '5px 4px',
+                      borderRadius: '4px',
+                      fontSize: '0.64rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      background: showOsculatingCircle ? 'rgba(251, 191, 36, 0.22)' : 'rgba(30, 41, 59, 0.4)',
+                      color: showOsculatingCircle ? '#fbbf24' : '#64748b',
+                      border: showOsculatingCircle ? '1px solid #fbbf24' : '1px solid rgba(51, 65, 85, 0.4)'
+                    }}
+                  >
+                    ⭕ Curvature κ {showOsculatingCircle ? 'ON' : 'OFF'}
+                  </button>
+                </div>
+
+                {/* 6. Real-Time Telemetry & Analytical Card */}
+                {(() => {
+                  const formulaObj = getSandboxFormulaString(
+                    sandboxCoordType,
+                    cartesianPreset,
+                    polarPreset,
+                    parametricPreset,
+                    paramK,
+                    paramK2,
+                    paramA,
+                    paramB,
+                    paramC
+                  );
+                  return (
+                    <div style={{ padding: '8px 10px', borderRadius: '8px', background: 'var(--dropdown-bg, #0b1120)', border: '1px solid var(--card-border, rgba(51, 65, 85, 0.6))', display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--accent-cyan, #38bdf8)' }}>Analytical Telemetry:</span>
+                        <span style={{ fontSize: '0.58rem', fontWeight: 800, padding: '1px 6px', borderRadius: '3px', background: 'rgba(52, 211, 153, 0.2)', color: '#34d399' }}>
+                          {sandboxCoordType.toUpperCase()}
+                        </span>
+                      </div>
+
+                      {/* LaTeX Mathematical Formula Badge */}
+                      <div style={{ fontSize: '0.66rem', fontFamily: 'monospace', color: '#f8fafc', fontWeight: 700, padding: '4px 6px', borderRadius: '4px', background: 'rgba(15, 23, 42, 0.6)', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                        {formulaObj.main}
+                      </div>
+                      {formulaObj.sub && (
+                        <div style={{ fontSize: '0.60rem', color: '#94a3b8', fontFamily: 'monospace' }}>
+                          {formulaObj.sub}
+                        </div>
+                      )}
+                      {formulaObj.env && (
+                        <div style={{ fontSize: '0.60rem', color: '#ec4899', fontFamily: 'monospace' }}>
+                          {formulaObj.env}
+                        </div>
+                      )}
+
+                      {/* Live Area / Integral / Arc Length Metric */}
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.64rem', borderTop: '1px solid rgba(51, 65, 85, 0.4)', paddingTop: '4px' }}>
+                        <span style={{ color: 'var(--text-muted)' }}>{sandboxAreaMetric.label}:</span>
+                        <span style={{ color: '#fbbf24', fontWeight: 800, fontFamily: 'monospace' }}>
+                          {sandboxAreaMetric.value} {sandboxAreaMetric.unit}
+                        </span>
+                      </div>
+
+                      {/* Roots & Critical Points Count */}
+                      {sandboxCoordType === 'cartesian' && (
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.62rem', color: 'var(--text-muted)' }}>
+                          <span>Calculus Extrema:</span>
+                          <span style={{ color: '#38bdf8', fontWeight: 800, fontFamily: 'monospace' }}>
+                            {sandboxKeyPoints.roots.length} Roots • {sandboxKeyPoints.extrema.length} Crit Points
+                          </span>
+                        </div>
+                      )}
+
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.62rem', color: 'var(--text-muted)' }}>
+                        <span>Wavelength / Period λ:</span>
+                        <span style={{ color: '#34d399', fontWeight: 800, fontFamily: 'monospace' }}>
+                          {(2 * Math.PI / Math.max(0.1, paramK)).toFixed(2)}
+                        </span>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             )}
           </div>
@@ -5904,14 +9510,27 @@ export const TestDiagramsStudioView: React.FC = () => {
                   }}
                   onMouseUp={() => setIsDraggingGauss3D(false)}
                   onMouseLeave={() => setIsDraggingGauss3D(false)}
+                  onWheel={(e) => {
+                    e.preventDefault();
+                    setGauss3dZoom(prev => Math.max(0.4, Math.min(2.5, parseFloat((prev - e.deltaY * 0.001).toFixed(2)))));
+                  }}
                 >
                   <canvas ref={canvasGauss3dRef} width={700} height={480} style={{ width: '100%', height: '100%', cursor: isDraggingGauss3D ? 'grabbing' : 'grab' }} />
                   <div style={{ position: 'absolute', top: '12px', left: '12px', background: 'rgba(15, 23, 42, 0.85)', padding: '6px 12px', borderRadius: '8px', border: '1px solid rgba(56, 189, 248, 0.4)', fontSize: '0.74rem', fontFamily: 'monospace', color: '#38bdf8' }}>
-                    🪐 3D Bivariate Gaussian Hill • Drag to Rotate (rx: {gauss3dRotX.toFixed(0)}°, ry: {gauss3dRotY.toFixed(0)}°) • ρ = {activeRho.toFixed(2)}
+                    🪐 3D Bivariate Gaussian Hill • Drag to Rotate (rx: {gauss3dRotX.toFixed(0)}°, ry: {gauss3dRotY.toFixed(0)}°) • Zoom: {(gauss3dZoom * 100).toFixed(0)}% • ρ = {activeRho.toFixed(2)}
                   </div>
                 </div>
               ) : gaussDimension === '2d_bivariate' ? (
                 <svg viewBox="-320 -240 640 480" style={{ width: '100%', height: '100%', background: currentCanvasTheme.bg || '#090d16', userSelect: 'none' }}>
+                  <defs>
+                    <marker id="gauss-arrow-cyan" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                      <path d="M0,0 L0,6 L8,3 z" fill="#38bdf8" />
+                    </marker>
+                    <marker id="gauss-arrow-emerald" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                      <path d="M0,0 L0,6 L8,3 z" fill="#34d399" />
+                    </marker>
+                  </defs>
+
                   <g opacity="0.5">
                     {(() => {
                       const cells = [];
@@ -5923,7 +9542,7 @@ export const TestDiagramsStudioView: React.FC = () => {
                         for (let r = 0; r < rows; r++) {
                           const vx = -4.0 + (c / cols) * 8.0;
                           const vy = 3.0 - (r / rows) * 6.0;
-                          const pVal = calcBivariatePdf(vx, vy, gaussMean, 0, gaussStd, activeRho) * 6.5;
+                          const pVal = calcBivariatePdf(vx, vy, gaussMean, 0, gaussStd, gaussStdY, activeRho) * 6.5;
                           const red = Math.round(15 + pVal * 230);
                           const green = Math.round(23 + pVal * 160);
                           const blue = Math.round(42 + pVal * 206);
@@ -5943,7 +9562,7 @@ export const TestDiagramsStudioView: React.FC = () => {
                       cx={gaussMean * 75}
                       cy={0}
                       rx={k * gaussStd * 75 * Math.sqrt(1 + Math.abs(activeRho))}
-                      ry={k * gaussStd * 55 * Math.sqrt(1 - Math.abs(activeRho))}
+                      ry={k * gaussStdY * 55 * Math.sqrt(1 - Math.abs(activeRho))}
                       transform={`rotate(${activeRho * 45} ${gaussMean * 75} 0)`}
                       fill="none"
                       stroke={k === 1 ? '#34d399' : k === 2 ? '#38bdf8' : '#f59e0b'}
@@ -5951,9 +9570,118 @@ export const TestDiagramsStudioView: React.FC = () => {
                       strokeDasharray={k === 3 ? '4 4' : 'none'}
                     />
                   ))}
-                  <text x={gaussMean * 75 + 10} y={-gaussStd * 55 - 10} fill="#34d399" fontSize="10" fontWeight="bold" fontFamily="monospace">1σ</text>
-                  <text x={gaussMean * 75 + 10} y={-2 * gaussStd * 55 - 10} fill="#38bdf8" fontSize="10" fontWeight="bold" fontFamily="monospace">2σ</text>
-                  <text x={gaussMean * 75 + 10} y={-3 * gaussStd * 55 - 10} fill="#f59e0b" fontSize="10" fontWeight="bold" fontFamily="monospace">3σ</text>
+                  <text x={gaussMean * 75 + 10} y={-gaussStdY * 55 - 10} fill="#34d399" fontSize="10" fontWeight="bold" fontFamily="monospace">1σ</text>
+                  <text x={gaussMean * 75 + 10} y={-2 * gaussStdY * 55 - 10} fill="#38bdf8" fontSize="10" fontWeight="bold" fontFamily="monospace">2σ</text>
+                  <text x={gaussMean * 75 + 10} y={-3 * gaussStdY * 55 - 10} fill="#f59e0b" fontSize="10" fontWeight="bold" fontFamily="monospace">3σ</text>
+
+                  {/* 2D PCA Eigenvector Axes */}
+                  {showPcaVectors && (
+                    <g>
+                      {(() => {
+                        const cx = gaussMean * 75;
+                        const cy = 0;
+                        const len1 = Math.min(170, Math.sqrt(gaussPcaAnalysis.lambda1) * 75);
+                        const len2 = Math.min(130, Math.sqrt(gaussPcaAnalysis.lambda2) * 55);
+                        const cosT = Math.cos(gaussPcaAnalysis.thetaRad);
+                        const sinT = Math.sin(gaussPcaAnalysis.thetaRad);
+
+                        const v1x = cx + len1 * cosT;
+                        const v1y = cy - len1 * sinT;
+                        const v2x = cx - len2 * sinT;
+                        const v2y = cy - len2 * cosT;
+
+                        return (
+                          <>
+                            {/* Major Eigenvector v1 */}
+                            <line x1={cx} y1={cy} x2={v1x} y2={v1y} stroke="#38bdf8" strokeWidth="3" markerEnd="url(#gauss-arrow-cyan)" />
+                            <circle cx={v1x} cy={v1y} r="4" fill="#38bdf8" stroke="#ffffff" strokeWidth="1.5" />
+                            <text x={v1x + 8} y={v1y - 4} fill="#38bdf8" fontSize="9.5" fontWeight="bold" fontFamily="monospace">
+                              v₁ (λ₁={gaussPcaAnalysis.lambda1.toFixed(2)})
+                            </text>
+
+                            {/* Minor Eigenvector v2 */}
+                            <line x1={cx} y1={cy} x2={v2x} y2={v2y} stroke="#34d399" strokeWidth="3" markerEnd="url(#gauss-arrow-emerald)" />
+                            <circle cx={v2x} cy={v2y} r="4" fill="#34d399" stroke="#ffffff" strokeWidth="1.5" />
+                            <text x={v2x + 8} y={v2y - 4} fill="#34d399" fontSize="9.5" fontWeight="bold" fontFamily="monospace">
+                              v₂ (λ₂={gaussPcaAnalysis.lambda2.toFixed(2)})
+                            </text>
+                          </>
+                        );
+                      })()}
+                    </g>
+                  )}
+
+                  <g transform="translate(-300, -220)">
+                    <rect x="0" y="0" width="240" height="26" rx="4" fill="rgba(15, 23, 42, 0.85)" stroke="rgba(56, 189, 248, 0.4)" strokeWidth="1" />
+                    <text x="10" y="17" fill="#38bdf8" fontSize="9.5" fontWeight="bold" fontFamily="monospace">
+                      Cov Matrix: σ_x={gaussStd.toFixed(1)}, σ_y={gaussStdY.toFixed(1)}, ρ={activeRho.toFixed(2)}
+                    </text>
+                  </g>
+                </svg>
+              ) : gaussDimension === '1d_qqplot' ? (
+                /* ─── 1D QQ-PLOT NORMALITY DIAGNOSTIC VISUALIZER ─── */
+                <svg viewBox="-320 -200 640 400" style={{ width: '100%', height: '100%', background: currentCanvasTheme.bg || '#090d16', userSelect: 'none' }}>
+                  {/* Grid Lines */}
+                  {[-150, -100, -50, 0, 50, 100, 150].map(val => (
+                    <g key={`qq-grid-${val}`}>
+                      <line x1="-280" y1={val} x2="280" y2={val} stroke="rgba(148, 163, 184, 0.12)" strokeWidth="1" strokeDasharray="3 3" />
+                      <line x1={val * 1.6} y1="-170" x2={val * 1.6} y2="170" stroke="rgba(148, 163, 184, 0.12)" strokeWidth="1" strokeDasharray="3 3" />
+                    </g>
+                  ))}
+
+                  {/* Coordinate Axes */}
+                  <line x1="-280" y1="0" x2="280" y2="0" stroke="rgba(148, 163, 184, 0.5)" strokeWidth="1.5" />
+                  <line x1="0" y1="-170" x2="0" y2="170" stroke="rgba(148, 163, 184, 0.5)" strokeWidth="1.5" />
+
+                  {/* 45-Degree Standard Normal Reference Line (y = x) */}
+                  <line x1="-240" y1="150" x2="240" y2="-150" stroke="#38bdf8" strokeWidth="2" strokeDasharray="4 3" />
+                  <text x="210" y="-155" fill="#38bdf8" fontSize="9" fontWeight="bold" fontFamily="monospace">Normal 45° Line (y = x)</text>
+
+                  {/* Quantile Points */}
+                  {(() => {
+                    const M = 36;
+                    const pts = [];
+                    for (let i = 1; i <= M; i++) {
+                      const p = (i - 0.5) / M;
+                      const zNorm = calcGaussianQuantile(p, 0, 1);
+                      const tSample = calcStudentTQuantile(p, activeNu, 0, 1);
+
+                      const px = zNorm * 65;
+                      const py = -tSample * 42;
+
+                      pts.push(
+                        <g key={`qq-pt-${i}`}>
+                          <circle
+                            cx={px}
+                            cy={py}
+                            r="4.5"
+                            fill={activeNu <= 4 && (p < 0.1 || p > 0.9) ? '#f87171' : '#f59e0b'}
+                            stroke="#ffffff"
+                            strokeWidth="1.2"
+                          />
+                        </g>
+                      );
+                    }
+                    return pts;
+                  })()}
+
+                  {/* Axis Labels */}
+                  <text x="270" y="16" fill="var(--text-muted)" fontSize="9" fontWeight="bold" fontFamily="monospace" textAnchor="end">Theoretical Normal Quantiles (Z)</text>
+                  <text x="-10" y="-155" fill="var(--text-muted)" fontSize="9" fontWeight="bold" fontFamily="monospace" textAnchor="end">Sample Quantiles (t_ν)</text>
+
+                  {/* Diagnostic HUD Badge */}
+                  <g transform="translate(-305, -185)">
+                    <rect x="0" y="0" width="310" height="42" rx="6" fill="rgba(11, 17, 32, 0.92)" stroke="rgba(245, 158, 11, 0.5)" strokeWidth="1" />
+                    <text x="10" y="14" fill="#f59e0b" fontSize="9" fontWeight="bold" fontFamily="monospace">
+                      📉 QQ-Plot Normality Diagnosis: {activeNu <= 5 ? 'Heavy Tails (Fat Tails / Leptokurtic)' : 'Approx. Gaussian (Thin Tails)'}
+                    </text>
+                    <text x="10" y="26" fill="#cbd5e1" fontSize="8" fontFamily="monospace">
+                      ν = {activeNu} • Non-linearity in tails reveals outlier risk
+                    </text>
+                    <text x="10" y="36" fill={activeNu <= 5 ? '#f87171' : '#34d399'} fontSize="7.5" fontFamily="monospace">
+                      {activeNu <= 5 ? '⚠️ S-Curve Bowing: Heavy tails violate normality' : '✅ Linearity: Closely tracks theoretical Gaussian'}
+                    </text>
+                  </g>
                 </svg>
               ) : gaussDimension === '1d_cdf' ? (
                 /* ─── 1D CDF S-CURVE VISUALIZER ─── */
@@ -6032,6 +9760,23 @@ export const TestDiagramsStudioView: React.FC = () => {
                   <line x1="-300" y1="120" x2="300" y2="120" stroke="rgba(148, 163, 184, 0.5)" strokeWidth="1.5" />
                   <line x1="0" y1="-160" x2="0" y2="135" stroke="rgba(148, 163, 184, 0.5)" strokeWidth="1.5" />
 
+                  {/* Top-Left Telemetry HUD Badge */}
+                  <g transform="translate(-305, -185)">
+                    <rect x="0" y="0" width="280" height="42" rx="6" fill="rgba(11, 17, 32, 0.92)" stroke="rgba(56, 189, 248, 0.4)" strokeWidth="1" />
+                    <text x="10" y="14" fill="#38bdf8" fontSize="9" fontWeight="bold" fontFamily="monospace">
+                      🔵 Gaussian N(μ={gaussMean.toFixed(1)}, σ={gaussStd.toFixed(1)})
+                    </text>
+                    <text x="155" y="14" fill="#f59e0b" fontSize="9" fontWeight="bold" fontFamily="monospace">
+                      🟠 Student-t (ν={activeNu})
+                    </text>
+                    <text x="10" y="26" fill="#cbd5e1" fontSize="8" fontFamily="monospace">
+                      Z_crit = ±{(ciConfidence === 90 ? 1.645 : ciConfidence === 99 ? 2.576 : 1.960).toFixed(2)}  •  t_crit = ±{getStudentTCrit(activeNu, ciConfidence).toFixed(2)}
+                    </text>
+                    <text x="10" y="36" fill={activeNu <= 4 ? '#f87171' : '#34d399'} fontSize="7.5" fontFamily="monospace">
+                      Kurtosis: {activeNu <= 4 ? 'Leptokurtic (Heavy Tails, γ₂=∞)' : `Excess γ₂ = +${(6 / (activeNu - 4)).toFixed(2)}`}
+                    </text>
+                  </g>
+
                   {/* Empirical 68-95-99.7% Standard Deviation Bands */}
                   {gaussTailMode === 'empirical_bands' && (
                     <g>
@@ -6083,48 +9828,85 @@ export const TestDiagramsStudioView: React.FC = () => {
                     </g>
                   )}
 
-                  {/* Rejection Tail Shading (Two-tailed, Left, Right) */}
+                  {/* Rejection Tail Shading (Two-tailed, Left, Right) with Dual Z-crit and t-crit */}
                   {gaussTailMode !== 'empirical_bands' && (
                     <g>
                       {(() => {
                         const zCrit = ciConfidence === 90 ? 1.645 : ciConfidence === 99 ? 2.576 : 1.960;
-                        const leftCut = (gaussMean - zCrit * gaussStd) * 65;
-                        const rightCut = (gaussMean + zCrit * gaussStd) * 65;
+                        const tCrit = getStudentTCrit(activeNu, ciConfidence);
+                        const leftCutZ = (gaussMean - zCrit * gaussStd) * 65;
+                        const rightCutZ = (gaussMean + zCrit * gaussStd) * 65;
+                        const leftCutT = (gaussMean - tCrit * gaussStd) * 65;
+                        const rightCutT = (gaussMean + tCrit * gaussStd) * 65;
 
                         return (
                           <>
                             {(gaussTailMode === 'two_tailed' || gaussTailMode === 'left_tailed') && (
-                              <polygon
-                                points={(() => {
-                                  const pts: string[] = [];
-                                  for (let px = -300; px <= leftCut; px += 3) {
-                                    const x = px / 65;
-                                    const py = 120 - calcGaussianPdf(x, gaussMean, gaussStd) * 450;
-                                    pts.push(`${px},${py}`);
-                                  }
-                                  return `-300,120 ` + pts.join(' ') + ` ${leftCut},120`;
-                                })()}
-                                fill="rgba(239, 68, 68, 0.35)"
-                              />
+                              <>
+                                <polygon
+                                  points={(() => {
+                                    const pts: string[] = [];
+                                    for (let px = -300; px <= leftCutZ; px += 3) {
+                                      const x = px / 65;
+                                      const py = 120 - calcGaussianPdf(x, gaussMean, gaussStd) * 450;
+                                      pts.push(`${px},${py}`);
+                                    }
+                                    return `-300,120 ` + pts.join(' ') + ` ${leftCutZ},120`;
+                                  })()}
+                                  fill="rgba(56, 189, 248, 0.22)"
+                                />
+                                <polygon
+                                  points={(() => {
+                                    const pts: string[] = [];
+                                    for (let px = -300; px <= leftCutT; px += 3) {
+                                      const x = px / 65;
+                                      const py = 120 - calcStudentTPdf(x, activeNu, gaussMean, gaussStd) * 450;
+                                      pts.push(`${px},${py}`);
+                                    }
+                                    return `-300,120 ` + pts.join(' ') + ` ${leftCutT},120`;
+                                  })()}
+                                  fill="rgba(245, 158, 11, 0.22)"
+                                />
+                                <line x1={leftCutZ} y1="120" x2={leftCutZ} y2={120 - calcGaussianPdf(gaussMean - zCrit * gaussStd, gaussMean, gaussStd) * 450} stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="3 2" />
+                                <line x1={leftCutT} y1="120" x2={leftCutT} y2={120 - calcStudentTPdf(gaussMean - tCrit * gaussStd, activeNu, gaussMean, gaussStd) * 450} stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3 2" />
+                              </>
                             )}
                             {(gaussTailMode === 'two_tailed' || gaussTailMode === 'right_tailed') && (
-                              <polygon
-                                points={(() => {
-                                  const pts: string[] = [];
-                                  for (let px = rightCut; px <= 300; px += 3) {
-                                    const x = px / 65;
-                                    const py = 120 - calcGaussianPdf(x, gaussMean, gaussStd) * 450;
-                                    pts.push(`${px},${py}`);
-                                  }
-                                  return `${rightCut},120 ` + pts.join(' ') + ` 300,120`;
-                                })()}
-                                fill="rgba(239, 68, 68, 0.35)"
-                              />
+                              <>
+                                <polygon
+                                  points={(() => {
+                                    const pts: string[] = [];
+                                    for (let px = rightCutZ; px <= 300; px += 3) {
+                                      const x = px / 65;
+                                      const py = 120 - calcGaussianPdf(x, gaussMean, gaussStd) * 450;
+                                      pts.push(`${px},${py}`);
+                                    }
+                                    return `${rightCutZ},120 ` + pts.join(' ') + ` 300,120`;
+                                  })()}
+                                  fill="rgba(56, 189, 248, 0.22)"
+                                />
+                                <polygon
+                                  points={(() => {
+                                    const pts: string[] = [];
+                                    for (let px = rightCutT; px <= 300; px += 3) {
+                                      const x = px / 65;
+                                      const py = 120 - calcStudentTPdf(x, activeNu, gaussMean, gaussStd) * 450;
+                                      pts.push(`${px},${py}`);
+                                    }
+                                    return `${rightCutT},120 ` + pts.join(' ') + ` 300,120`;
+                                  })()}
+                                  fill="rgba(245, 158, 11, 0.22)"
+                                />
+                                <line x1={rightCutZ} y1="120" x2={rightCutZ} y2={120 - calcGaussianPdf(gaussMean + zCrit * gaussStd, gaussMean, gaussStd) * 450} stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="3 2" />
+                                <line x1={rightCutT} y1="120" x2={rightCutT} y2={120 - calcStudentTPdf(gaussMean + tCrit * gaussStd, activeNu, gaussMean, gaussStd) * 450} stroke="#f59e0b" strokeWidth="1.5" strokeDasharray="3 2" />
+                              </>
                             )}
                             {gaussTailMode === 'two_tailed' && (
                               <>
-                                <text x={leftCut - 15} y="112" fill="#f87171" fontSize="9" fontWeight="bold" fontFamily="monospace" textAnchor="end">α/2 = {((100 - ciConfidence) / 2).toFixed(1)}%</text>
-                                <text x={rightCut + 15} y="112" fill="#f87171" fontSize="9" fontWeight="bold" fontFamily="monospace" textAnchor="start">α/2 = {((100 - ciConfidence) / 2).toFixed(1)}%</text>
+                                <text x={leftCutT - 4} y="112" fill="#f59e0b" fontSize="8" fontWeight="bold" fontFamily="monospace" textAnchor="end">-t_crit</text>
+                                <text x={leftCutZ + 4} y="112" fill="#38bdf8" fontSize="8" fontWeight="bold" fontFamily="monospace" textAnchor="start">-z_crit</text>
+                                <text x={rightCutZ - 4} y="112" fill="#38bdf8" fontSize="8" fontWeight="bold" fontFamily="monospace" textAnchor="end">+z_crit</text>
+                                <text x={rightCutT + 4} y="112" fill="#f59e0b" fontSize="8" fontWeight="bold" fontFamily="monospace" textAnchor="start">+t_crit</text>
                               </>
                             )}
                           </>
@@ -6166,6 +9948,31 @@ export const TestDiagramsStudioView: React.FC = () => {
                     </g>
                   )}
 
+                  {/* Dual Confidence Interval Comparison Brackets (Z-CI vs t-CI) */}
+                  {showCiBrackets && (
+                    <g transform="translate(0, 140)">
+                      <line x1="-280" y1="0" x2="280" y2="0" stroke="rgba(51, 65, 85, 0.4)" strokeWidth="1" strokeDasharray="2 2" />
+                      {/* Z-CI Bracket (Cyan) */}
+                      <g>
+                        <line x1={gaussHypoAnalysis.zCiLow * 65} y1="-6" x2={gaussHypoAnalysis.zCiHigh * 65} y2="-6" stroke="#38bdf8" strokeWidth="2.2" />
+                        <line x1={gaussHypoAnalysis.zCiLow * 65} y1="-10" x2={gaussHypoAnalysis.zCiLow * 65} y2="-2" stroke="#38bdf8" strokeWidth="1.8" />
+                        <line x1={gaussHypoAnalysis.zCiHigh * 65} y1="-10" x2={gaussHypoAnalysis.zCiHigh * 65} y2="-2" stroke="#38bdf8" strokeWidth="1.8" />
+                        <text x={(gaussHypoAnalysis.zCiLow + gaussHypoAnalysis.zCiHigh) * 32.5} y="-9" fill="#38bdf8" fontSize="8" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
+                          {ciConfidence}% Z-CI: [{(gaussHypoAnalysis.zCiLow).toFixed(2)}, {(gaussHypoAnalysis.zCiHigh).toFixed(2)}]
+                        </text>
+                      </g>
+                      {/* t-CI Bracket (Amber) */}
+                      <g>
+                        <line x1={gaussHypoAnalysis.tCiLow * 65} y1="12" x2={gaussHypoAnalysis.tCiHigh * 65} y2="12" stroke="#f59e0b" strokeWidth="2.2" />
+                        <line x1={gaussHypoAnalysis.tCiLow * 65} y1="8" x2={gaussHypoAnalysis.tCiLow * 65} y2="16" stroke="#f59e0b" strokeWidth="1.8" />
+                        <line x1={gaussHypoAnalysis.tCiHigh * 65} y1="8" x2={gaussHypoAnalysis.tCiHigh * 65} y2="16" stroke="#f59e0b" strokeWidth="1.8" />
+                        <text x={(gaussHypoAnalysis.tCiLow + gaussHypoAnalysis.tCiHigh) * 32.5} y="23" fill="#f59e0b" fontSize="8" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
+                          {ciConfidence}% t-CI: [{(gaussHypoAnalysis.tCiLow).toFixed(2)}, {(gaussHypoAnalysis.tCiHigh).toFixed(2)}] (+{gaussHypoAnalysis.ciInflationPct.toFixed(1)}% wider)
+                        </text>
+                      </g>
+                    </g>
+                  )}
+
                   {/* Student-t PDF Curve */}
                   <path
                     d={(() => {
@@ -6203,6 +10010,31 @@ export const TestDiagramsStudioView: React.FC = () => {
                     strokeWidth="3.5"
                   />
 
+                  {/* Hypothesis Testing Sample Mean Pin & Verdict Overlay */}
+                  {showHypoTestOverlay && (
+                    <g>
+                      {(() => {
+                        const xPos = hypoSampleMean * 65;
+                        const pdfY = 120 - calcStudentTPdf(hypoSampleMean, activeNu, gaussMean, gaussStd) * 450;
+                        return (
+                          <g>
+                            <line x1={xPos} y1="120" x2={xPos} y2={pdfY} stroke={gaussHypoAnalysis.isRejectedT ? '#f87171' : '#34d399'} strokeWidth="2.5" strokeDasharray="3 2" />
+                            <circle cx={xPos} cy={pdfY} r="7" fill={gaussHypoAnalysis.isRejectedT ? '#f87171' : '#34d399'} stroke="#ffffff" strokeWidth="2" />
+                            <g transform={`translate(${Math.max(-280, Math.min(160, xPos - 60))}, ${Math.max(-140, pdfY - 32)})`}>
+                              <rect x="0" y="0" width="130" height="24" rx="4" fill="rgba(15, 23, 42, 0.94)" stroke={gaussHypoAnalysis.isRejectedT ? '#f87171' : '#34d399'} strokeWidth="1.2" />
+                              <text x="6" y="10" fill={gaussHypoAnalysis.isRejectedT ? '#f87171' : '#34d399'} fontSize="7.5" fontWeight="bold" fontFamily="monospace">
+                                x̄={hypoSampleMean.toFixed(2)} • t={gaussHypoAnalysis.tStat.toFixed(2)}
+                              </text>
+                              <text x="6" y="20" fill="#cbd5e1" fontSize="7" fontFamily="monospace">
+                                p={gaussHypoAnalysis.pValT.toFixed(4)} ({gaussHypoAnalysis.isRejectedT ? 'REJECT H₀' : 'FAIL TO REJECT'})
+                              </text>
+                            </g>
+                          </g>
+                        );
+                      })()}
+                    </g>
+                  )}
+
                   {/* Test Value x0 Marker & Drop-Line */}
                   {(() => {
                     const py = 120 - calcGaussianPdf(injectGaussX0, gaussMean, gaussStd) * 450;
@@ -6228,48 +10060,347 @@ export const TestDiagramsStudioView: React.FC = () => {
           {/* PHASE 2: SVC VISUALIZER */}
           {activeModuleId === 'svc_classifier' && (
             <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
+              {/* On-Canvas Quick Display Controls (Formulas & Point Labels Toggles) */}
+              <div
+                style={{
+                  position: 'absolute',
+                  top: '12px',
+                  right: '12px',
+                  zIndex: 20,
+                  display: 'flex',
+                  gap: '6px',
+                  pointerEvents: 'auto'
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={() => setShowSvcFormulaHud(prev => !prev)}
+                  style={{
+                    background: showSvcFormulaHud ? 'rgba(15, 23, 42, 0.88)' : 'rgba(30, 41, 59, 0.80)',
+                    border: `1px solid ${showSvcFormulaHud ? 'rgba(56, 189, 248, 0.5)' : 'rgba(148, 163, 184, 0.3)'}`,
+                    color: showSvcFormulaHud ? '#38bdf8' : '#94a3b8',
+                    borderRadius: '6px',
+                    padding: '3px 8px',
+                    fontSize: '0.62rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    backdropFilter: 'blur(8px)',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.35)'
+                  }}
+                  title="Toggle Math Formula & Telemetry HUD on canvas"
+                >
+                  <span>📐 Math HUD:</span>
+                  <b>{showSvcFormulaHud ? 'ON' : 'OFF'}</b>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowSvcPointLabels(prev => !prev)}
+                  style={{
+                    background: showSvcPointLabels ? 'rgba(15, 23, 42, 0.88)' : 'rgba(30, 41, 59, 0.80)',
+                    border: `1px solid ${showSvcPointLabels ? 'rgba(251, 191, 36, 0.5)' : 'rgba(148, 163, 184, 0.3)'}`,
+                    color: showSvcPointLabels ? '#fbbf24' : '#94a3b8',
+                    borderRadius: '6px',
+                    padding: '3px 8px',
+                    fontSize: '0.62rem',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    backdropFilter: 'blur(8px)',
+                    boxShadow: '0 2px 8px rgba(0,0,0,0.35)'
+                  }}
+                  title="Toggle static data point labels and slack tags to prevent obscuring point clusters"
+                >
+                  <span>🏷️ Point Labels:</span>
+                  <b>{showSvcPointLabels ? 'ON' : 'OFF (CLEAN)'}</b>
+                </button>
+              </div>
+
               {svcDimension === '1d_line' ? (
                 /* ─── 1D NUMBER LINE SEPARATOR ─── */
-                <svg viewBox="-320 -240 640 480" style={{ width: '100%', height: '100%', background: currentCanvasTheme.bg || '#090d16', userSelect: 'none' }}>
+                <svg
+                  ref={svcSvgRef}
+                  viewBox="-320 -240 640 480"
+                  onPointerMove={handleSvcPointerMove}
+                  onPointerUp={handleSvcPointerUp}
+                  onPointerCancel={handleSvcPointerUp}
+                  style={{ width: '100%', height: '100%', background: currentCanvasTheme.bg || '#090d16', userSelect: 'none', touchAction: 'none' }}
+                >
+                  {/* Axis line */}
                   <line x1="-300" y1="0" x2="300" y2="0" stroke="rgba(148, 163, 184, 0.6)" strokeWidth="2" />
-                  {/* Margin Band */}
-                  <rect x={-svcMarginW * 40 - svcBiasB * 40} y="-60" width={svcMarginW * 80} height="120" fill="rgba(56, 189, 248, 0.15)" stroke="#38bdf8" strokeWidth="1.5" strokeDasharray="3 3" />
-                  {/* Separator Threshold */}
-                  <line x1={-svcBiasB * 40} y1="-90" x2={-svcBiasB * 40} y2="90" stroke="#f59e0b" strokeWidth="3.5" />
-                  <text x={-svcBiasB * 40} y="-100" fill="#f59e0b" fontSize="11" fontWeight="bold" fontFamily="monospace" textAnchor="middle">Threshold (x = {(-svcBiasB).toFixed(2)})</text>
-                  {/* 1D Points */}
-                  {svcAnalysis.pointsWithStatus.map(p => (
-                    <g key={`svc-1d-${p.id}`}>
-                      {p.isSupportVector && (
-                        <circle cx={p.x1 * 60} cy={p.label === 1 ? -30 : 30} r="14" stroke="#fbbf24" strokeWidth="2" strokeDasharray="3 2" fill="none" />
-                      )}
-                      <circle cx={p.x1 * 60} cy={p.label === 1 ? -30 : 30} r="7" fill={p.label === 1 ? '#34d399' : '#f87171'} stroke="#ffffff" strokeWidth="1.8" />
+                  {/* Axis tick marks */}
+                  {[-5, -4, -3, -2, -1, 0, 1, 2, 3, 4, 5].map(tick => (
+                    <g key={`svc-1d-tick-${tick}`} transform={`translate(${tick * 55}, 0)`}>
+                      <line x1="0" y1="-6" x2="0" y2="6" stroke="rgba(148, 163, 184, 0.4)" strokeWidth="1.5" />
+                      <text y="20" fill="var(--text-muted, #94a3b8)" fontSize="8.5" fontFamily="monospace" textAnchor="middle">{tick}</text>
                     </g>
                   ))}
-                </svg>
-              ) : svcDimension === '3d_plane' ? (
-                /* ─── 3D SEPARATING PLANE PROJECTION ─── */
-                <svg viewBox="-320 -240 640 480" style={{ width: '100%', height: '100%', background: currentCanvasTheme.bg || '#090d16', userSelect: 'none' }}>
-                  <polygon points="-240,120 240,60 180,-140 -280,-80" fill="rgba(56, 189, 248, 0.22)" stroke="#38bdf8" strokeWidth="2" />
-                  <line x1="-300" y1="0" x2="300" y2="0" stroke="rgba(148, 163, 184, 0.4)" strokeWidth="1" />
-                  <line x1="0" y1="-200" x2="0" y2="200" stroke="rgba(148, 163, 184, 0.4)" strokeWidth="1" />
+
+                  {/* Margin Band around threshold */}
+                  <rect
+                    x={(svcAnalysis.effectiveBias * 55) - (svcMarginW * 55) / 2}
+                    y="-80"
+                    width={svcMarginW * 55}
+                    height="160"
+                    fill="rgba(56, 189, 248, 0.14)"
+                    stroke="#38bdf8"
+                    strokeWidth="1.8"
+                    strokeDasharray="4 3"
+                    rx="4"
+                  />
+
+                  {/* Separator Threshold Line */}
+                  <line x1={svcAnalysis.effectiveBias * 55} y1="-105" x2={svcAnalysis.effectiveBias * 55} y2="105" stroke="#f59e0b" strokeWidth="3.5" />
+                  <text x={svcAnalysis.effectiveBias * 55} y="-115" fill="#f59e0b" fontSize="11" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
+                    Threshold (X₁ = {svcAnalysis.effectiveBias.toFixed(2)})
+                  </text>
+
+                  {/* Positive / Negative Rails */}
+                  <line x1="-300" y1="-45" x2="300" y2="-45" stroke="rgba(52, 211, 153, 0.2)" strokeWidth="1" strokeDasharray="3 3" />
+                  <line x1="-300" y1="45" x2="300" y2="45" stroke="rgba(248, 113, 113, 0.2)" strokeWidth="1" strokeDasharray="3 3" />
+                  <text x="-310" y="-41" fill="#34d399" fontSize="9" fontWeight="bold" fontFamily="monospace" textAnchor="end">Class +1</text>
+                  <text x="-310" y="49" fill="#f87171" fontSize="9" fontWeight="bold" fontFamily="monospace" textAnchor="end">Class -1</text>
+
+                  {/* 1D Points */}
                   {svcAnalysis.pointsWithStatus.map(p => {
-                    const px = p.x1 * 75 - p.x2 * 35;
-                    const py = -p.x2 * 50 - p.x1 * 20;
+                    const cx = p.x1 * 55;
+                    const cy = p.label === 1 ? -45 : 45;
                     return (
-                      <g key={`svc-3d-${p.id}`}>
-                        {p.isSupportVector && <circle cx={px} cy={py} r="14" stroke="#fbbf24" strokeWidth="2" strokeDasharray="3 2" fill="none" />}
-                        <circle cx={px} cy={py} r="7" fill={p.label === 1 ? '#34d399' : '#f87171'} stroke="#ffffff" strokeWidth="1.8" />
+                      <g
+                        key={`svc-1d-${p.id}`}
+                        style={{ cursor: draggingSvcPointId === p.id ? 'grabbing' : 'grab' }}
+                        onPointerDown={(e) => handleSvcPointerDown(e, p.id)}
+                        onPointerEnter={() => setHoveredSvcPointId(p.id)}
+                        onPointerLeave={() => setHoveredSvcPointId(null)}
+                      >
+                        {/* SV Halo */}
+                        {p.isSupportVector && (
+                          <>
+                            <circle cx={cx} cy={cy} r="16" stroke="#fbbf24" strokeWidth="2.2" strokeDasharray="4 2" fill="none" opacity="0.9" />
+                            <circle cx={cx} cy={cy} r="11" stroke="#fbbf24" strokeWidth="1.2" fill="none" />
+                          </>
+                        )}
+                        {/* Slack drop-line if violator */}
+                        {p.isMarginViolator && (
+                          <line x1={cx} y1={cy} x2={svcAnalysis.effectiveBias * 55} y2={cy} stroke="#ef4444" strokeWidth="1.8" strokeDasharray="2 2" />
+                        )}
+                        <circle cx={cx} cy={cy} r="8" fill={p.label === 1 ? '#34d399' : '#f87171'} stroke="#ffffff" strokeWidth="2" />
+
+                        {/* Point Label / Tag */}
+                        {showSvcPointLabels && (
+                          <text x={cx} y={p.label === 1 ? cy - 14 : cy + 20} fill="#cbd5e1" fontSize="7.5" fontFamily="monospace" textAnchor="middle">
+                            P{p.id} ({p.x1.toFixed(1)})
+                          </text>
+                        )}
+
+                        {/* Interactive On-Hover Micro-Tooltip */}
+                        {hoveredSvcPointId === p.id && (
+                          <g transform={`translate(${cx}, ${p.label === 1 ? cy - 24 : cy + 26})`}>
+                            <rect x="-42" y="-12" width="84" height="15" rx="3" fill="rgba(11, 17, 32, 0.95)" stroke="#fbbf24" strokeWidth="1.2" />
+                            <text x="0" y="-1" fill="#fbbf24" fontSize="7.5" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
+                              P{p.id} • X₁={p.x1.toFixed(2)}
+                            </text>
+                          </g>
+                        )}
                       </g>
                     );
                   })}
+
+                  {/* Top-Left Telemetry HUD Badge */}
+                  {showSvcFormulaHud ? (
+                    <g transform="translate(-305, -225)">
+                      <rect width="250" height="74" rx="6" fill="rgba(11, 17, 32, 0.90)" stroke="rgba(56, 189, 248, 0.35)" strokeWidth="1.2" />
+                      <text x="10" y="16" fill="var(--accent-cyan, #38bdf8)" fontSize="9" fontWeight="bold" fontFamily="monospace">
+                        🛡️ 1D THRESHOLD CLASSIFIER
+                      </text>
+                      <g onClick={() => setShowSvcFormulaHud(false)} style={{ cursor: 'pointer' }}>
+                        <rect x="195" y="6" width="48" height="14" rx="3" fill="rgba(148, 163, 184, 0.15)" stroke="rgba(148, 163, 184, 0.3)" strokeWidth="0.8" />
+                        <text x="219" y="16" fill="#94a3b8" fontSize="7.5" fontWeight="bold" fontFamily="monospace" textAnchor="middle">✕ Hide</text>
+                      </g>
+                      <text x="10" y="32" fill="#cbd5e1" fontSize="8.5" fontFamily="monospace">
+                        Decision Rule: f(x) = sign(X₁ {svcAnalysis.effectiveBias >= 0 ? '- ' + svcAnalysis.effectiveBias.toFixed(2) : '+ ' + (-svcAnalysis.effectiveBias).toFixed(2)})
+                      </text>
+                      <text x="10" y="48" fill="#fbbf24" fontSize="8.5" fontFamily="monospace">
+                        Margin M = {svcMarginW.toFixed(2)} • Box C = {svcC.toFixed(1)}
+                      </text>
+                      <text x="10" y="64" fill={svcAnalysis.marginViolatorCount > 0 ? '#f87171' : '#34d399'} fontSize="8" fontWeight="bold" fontFamily="monospace">
+                        SVs: {svcAnalysis.supportVectorCount}/{svcPoints.length} • Slack Violators: {svcAnalysis.marginViolatorCount}
+                      </text>
+                    </g>
+                  ) : (
+                    <g onClick={() => setShowSvcFormulaHud(true)} style={{ cursor: 'pointer' }} transform="translate(-305, -225)">
+                      <rect width="112" height="22" rx="4" fill="rgba(11, 17, 32, 0.85)" stroke="rgba(56, 189, 248, 0.5)" strokeWidth="1" />
+                      <text x="8" y="15" fill="#38bdf8" fontSize="8.5" fontWeight="bold" fontFamily="monospace">📜 Show Math HUD</text>
+                    </g>
+                  )}
                 </svg>
+              ) : (svcDimension === '3d_plane' || svcDimension === '4d_slice') ? (
+                /* ─── 3D & 4D INTERACTIVE PERSPECTIVE CANVAS ENGINE ─── */
+                <div
+                  style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}
+                  onMouseDown={(e) => {
+                    setIsDraggingSvc3D(true);
+                    dragSvc3dStartRef.current = { x: e.clientX, y: e.clientY, rx: svc3dRotX, ry: svc3dRotY };
+                  }}
+                  onMouseMove={(e) => {
+                    if (!isDraggingSvc3D) return;
+                    const dx = e.clientX - dragSvc3dStartRef.current.x;
+                    const dy = e.clientY - dragSvc3dStartRef.current.y;
+                    setSvc3dRotY(dragSvc3dStartRef.current.ry + dx * 0.5);
+                    setSvc3dRotX(Math.max(-85, Math.min(85, dragSvc3dStartRef.current.rx - dy * 0.5)));
+                  }}
+                  onMouseUp={() => setIsDraggingSvc3D(false)}
+                  onMouseLeave={() => setIsDraggingSvc3D(false)}
+                  onWheel={(e) => {
+                    e.preventDefault();
+                    setSvc3dZoom(prev => Math.max(0.5, Math.min(2.5, prev - e.deltaY * 0.001)));
+                  }}
+                >
+                  <canvas
+                    ref={canvasSvc3dRef}
+                    width={720}
+                    height={480}
+                    style={{ width: '100%', height: '100%', display: 'block', cursor: isDraggingSvc3D ? 'grabbing' : 'grab' }}
+                  />
+
+                  {/* 3D & 4D Interactive Telemetry & Controls Badge */}
+                  {showSvcFormulaHud ? (
+                    <div
+                      style={{
+                        position: 'absolute',
+                        top: '12px',
+                        left: '12px',
+                        background: 'rgba(11, 17, 32, 0.90)',
+                        padding: '8px 14px',
+                        borderRadius: '8px',
+                        border: `1px solid ${svcDimension === '4d_slice' ? 'rgba(236, 72, 153, 0.5)' : 'rgba(168, 85, 247, 0.5)'}`,
+                        fontSize: '0.72rem',
+                        fontFamily: 'monospace',
+                        color: '#e2e8f0',
+                        boxShadow: '0 4px 14px rgba(0,0,0,0.4)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '4px',
+                        pointerEvents: 'auto'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ fontWeight: 800, color: svcDimension === '4d_slice' ? '#ec4899' : '#a855f7' }}>
+                          {svcDimension === '4d_slice'
+                            ? `🌌 4D Hyperplane Slice [X₄=${(svc4dAutoSlice || isBendingAnim ? svc4dSliceX4 + Math.sin(timeT * 1.5) * 1.8 : svc4dSliceX4).toFixed(2)}]`
+                            : `🔮 3D Feature Space Lift: ${svc3dFeatureMap === 'paraboloid' ? 'Paraboloid (X₁²+X₂²)' : svc3dFeatureMap === 'rbf_pot' ? 'RBF Potential' : 'Decision Output'}`}
+                        </span>
+                        <div style={{ display: 'flex', gap: '4px' }}>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSvc3dRotX(26);
+                              setSvc3dRotY(40);
+                              setSvc3dZoom(1.0);
+                            }}
+                            style={{
+                              background: svcDimension === '4d_slice' ? 'rgba(236, 72, 153, 0.2)' : 'rgba(168, 85, 247, 0.2)',
+                              border: `1px solid ${svcDimension === '4d_slice' ? 'rgba(236, 72, 153, 0.4)' : 'rgba(168, 85, 247, 0.4)'}`,
+                              color: svcDimension === '4d_slice' ? '#f472b6' : '#c084fc',
+                              borderRadius: '4px',
+                              padding: '1px 6px',
+                              fontSize: '0.62rem',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            Reset Cam
+                          </button>
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setShowSvcFormulaHud(false);
+                            }}
+                            style={{
+                              background: 'rgba(148, 163, 184, 0.15)',
+                              border: '1px solid rgba(148, 163, 184, 0.3)',
+                              color: '#94a3b8',
+                              borderRadius: '4px',
+                              padding: '1px 5px',
+                              fontSize: '0.62rem',
+                              cursor: 'pointer'
+                            }}
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      </div>
+                      <div style={{ fontSize: '0.62rem', color: '#94a3b8', display: 'flex', gap: '10px' }}>
+                        <span>Pitch: {svc3dRotX.toFixed(0)}°</span>
+                        <span>Yaw: {svc3dRotY.toFixed(0)}°</span>
+                        <span>Zoom: {(svc3dZoom * 100).toFixed(0)}%</span>
+                        {svcDimension === '4d_slice' ? (
+                          <>
+                            <span style={{ color: '#ec4899' }}>Slice Window: ±{svc4dSliceThickness.toFixed(1)}</span>
+                            <span style={{ color: svc4dAutoSlice ? '#34d399' : '#94a3b8' }}>Auto-Sweep: {svc4dAutoSlice ? 'ON' : 'OFF'}</span>
+                          </>
+                        ) : (
+                          <>
+                            <span style={{ color: '#fbbf24' }}>SVs: {svcAnalysis.supportVectorCount}</span>
+                            <span style={{ color: '#34d399' }}>Acc: {svcAnalysis.accuracy.toFixed(1)}%</span>
+                          </>
+                        )}
+                      </div>
+                      <div style={{ fontSize: '0.58rem', color: '#64748b' }}>
+                        🖱️ Drag to rotate • Scroll wheel to zoom • Top toolbar Orbit/Wave supported
+                      </div>
+                    </div>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowSvcFormulaHud(true)}
+                      style={{
+                        position: 'absolute',
+                        top: '12px',
+                        left: '12px',
+                        background: 'rgba(11, 17, 32, 0.88)',
+                        border: `1px solid ${svcDimension === '4d_slice' ? 'rgba(236, 72, 153, 0.5)' : 'rgba(168, 85, 247, 0.5)'}`,
+                        color: svcDimension === '4d_slice' ? '#f472b6' : '#c084fc',
+                        borderRadius: '6px',
+                        padding: '4px 8px',
+                        fontSize: '0.62rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        boxShadow: '0 2px 8px rgba(0,0,0,0.35)',
+                        pointerEvents: 'auto'
+                      }}
+                    >
+                      <span>📜 Show {svcDimension === '4d_slice' ? '4D Slicer HUD' : '3D Telemetry HUD'}</span>
+                    </button>
+                  )}
+                </div>
               ) : (
-                /* ─── 2D MAXIMUM MARGIN HYPERPLANE & RBF CONTOUR HEATMAP ─── */
-                <svg viewBox="-320 -240 640 480" style={{ width: '100%', height: '100%', background: currentCanvasTheme.bg || '#090d16', userSelect: 'none' }}>
-                  {/* RBF Non-Linear Contour Heatmap Grid */}
-                  {svcKernel === 'rbf' && (
-                    <g opacity="0.45">
+                /* ─── 2D MAXIMUM MARGIN HYPERPLANE & CONTINUOUS CONTOUR VISUALIZER ─── */
+                <svg
+                  ref={svcSvgRef}
+                  viewBox="-320 -240 640 480"
+                  onPointerMove={handleSvcPointerMove}
+                  onPointerUp={handleSvcPointerUp}
+                  onPointerCancel={handleSvcPointerUp}
+                  style={{ width: '100%', height: '100%', background: currentCanvasTheme.bg || '#090d16', userSelect: 'none', touchAction: 'none' }}
+                >
+                  <defs>
+                    <marker id="svc-w-arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+                      <path d="M 0 0 L 8 4 L 0 8 z" fill="#f59e0b" />
+                    </marker>
+                  </defs>
+
+                  {/* Soft 2D Non-Linear Contour Heatmap Grid */}
+                  {(svcKernel === 'rbf' || svcKernel === 'poly') && (
+                    <g opacity="0.38" style={{ pointerEvents: 'none' }}>
                       {(() => {
                         const cells = [];
                         const cols = 28;
@@ -6278,20 +10409,24 @@ export const TestDiagramsStudioView: React.FC = () => {
                         const dy = 480 / rows;
                         for (let c = 0; c < cols; c++) {
                           for (let r = 0; r < rows; r++) {
-                            const vx = -4.0 + (c / cols) * 8.0;
-                            const vy = 3.0 - (r / rows) * 6.0;
+                            const vx = -5.33 + (c / cols) * 10.66;
+                            const vy = 4.0 - (r / rows) * 8.0;
                             let fVal = 0;
-                            svcPoints.forEach(other => {
-                              const dist2 = (vx - other.x1) * (vx - other.x1) + (vy - other.x2) * (vy - other.x2);
-                              fVal += other.label * Math.exp(-svcGamma * dist2);
-                            });
-                            fVal += svcBiasB;
+                            if (svcKernel === 'rbf') {
+                              svcPoints.forEach(other => {
+                                const dist2 = (vx - other.x1) * (vx - other.x1) + (vy - other.x2) * (vy - other.x2);
+                                fVal += other.label * Math.exp(-svcGamma * dist2);
+                              });
+                              fVal += svcAnalysis.effectiveBias;
+                            } else {
+                              fVal = vy - (Math.pow(vx * 0.7, svcPolyDegree) * 0.3 + svcAnalysis.effectiveBias);
+                            }
                             const prob = 1 / (1 + Math.exp(-fVal * 2));
                             const red = Math.round(248 * (1 - prob));
                             const green = Math.round(211 * prob);
                             const blue = Math.round(153);
                             cells.push(
-                              <rect key={`rbf-c-${c}-${r}`} x={-320 + c * dx} y={-240 + r * dy} width={dx + 0.5} height={dy + 0.5} fill={`rgb(${red}, ${green}, ${blue})`} opacity={Math.abs(prob - 0.5) * 1.6} />
+                              <rect key={`rbf-c-${c}-${r}`} x={-320 + c * dx} y={-240 + r * dy} width={dx + 0.5} height={dy + 0.5} fill={`rgb(${red}, ${green}, ${blue})`} opacity={Math.abs(prob - 0.5) * 1.5} />
                             );
                           }
                         }
@@ -6300,78 +10435,227 @@ export const TestDiagramsStudioView: React.FC = () => {
                     </g>
                   )}
 
-                  {/* Axes */}
-                  <line x1="-320" y1="0" x2="320" y2="0" stroke="rgba(148, 163, 184, 0.4)" strokeWidth="1.5" />
-                  <line x1="0" y1="-240" x2="0" y2="240" stroke="rgba(148, 163, 184, 0.4)" strokeWidth="1.5" />
+                  {/* Grid Lines & Axes */}
+                  <g style={{ pointerEvents: 'none' }}>
+                    <line x1="-320" y1="0" x2="320" y2="0" stroke="rgba(148, 163, 184, 0.3)" strokeWidth="1.2" />
+                    <line x1="0" y1="-240" x2="0" y2="240" stroke="rgba(148, 163, 184, 0.3)" strokeWidth="1.2" />
+                  </g>
 
                   {/* Linear Hyperplane & Margin Gutters */}
                   {svcKernel === 'linear' && (
-                    <>
-                      {/* Margin Ribbon Polygon */}
-                      <polygon
-                        points={`-300,${-(1.2 * -3.75 + svcBiasB + svcMarginW) * 50} 300,${-(1.2 * 3.75 + svcBiasB + svcMarginW) * 50} 300,${-(1.2 * 3.75 + svcBiasB - svcMarginW) * 50} -300,${-(1.2 * -3.75 + svcBiasB - svcMarginW) * 50}`}
-                        fill="rgba(56, 189, 248, 0.12)"
-                      />
-                      {/* Dashed Margin Gutters */}
-                      <line x1="-300" y1={-(1.2 * -3.75 + svcBiasB + svcMarginW) * 50} x2="300" y2={-(1.2 * 3.75 + svcBiasB + svcMarginW) * 50} stroke="#38bdf8" strokeWidth="1.8" strokeDasharray="4 4" />
-                      <line x1="-300" y1={-(1.2 * -3.75 + svcBiasB - svcMarginW) * 50} x2="300" y2={-(1.2 * 3.75 + svcBiasB - svcMarginW) * 50} stroke="#38bdf8" strokeWidth="1.8" strokeDasharray="4 4" />
-                      {/* Solid Maximum Margin Hyperplane */}
-                      <line x1="-300" y1={-(1.2 * -3.75 + svcBiasB) * 50} x2="300" y2={-(1.2 * 3.75 + svcBiasB) * 50} stroke="#f59e0b" strokeWidth="3.5" />
-                    </>
-                  )}
-
-                  {/* Polynomial Boundary Curve */}
-                  {svcKernel === 'poly' && (
-                    <path
-                      d={(() => {
-                        let path = '';
-                        for (let px = -300; px <= 300; px += 6) {
-                          const x1 = px / 75;
-                          // Approx poly boundary curve
-                          const y2 = Math.pow(x1, svcPolyDegree) * 0.25 - svcBiasB;
-                          const py = -y2 * 55;
-                          if (px === -300) path += `M ${px} ${py}`;
-                          else path += ` L ${px} ${py}`;
-                        }
-                        return path;
+                    <g style={{ pointerEvents: 'none' }}>
+                      {/* Margin Ribbon Polygon & Gutters */}
+                      {(() => {
+                        const xA = -5.5;
+                        const xB = 5.5;
+                        const marginOffset = (svcMarginW * 1.56205) / 2;
+                        const effectiveB = -svcAnalysis.effectiveBias;
+                        const pyCenterA = -(1.2 * xA + effectiveB) * 60;
+                        const pyCenterB = -(1.2 * xB + effectiveB) * 60;
+                        const pyUpperA = -(1.2 * xA + effectiveB - marginOffset) * 60;
+                        const pyUpperB = -(1.2 * xB + effectiveB - marginOffset) * 60;
+                        const pyLowerA = -(1.2 * xA + effectiveB + marginOffset) * 60;
+                        const pyLowerB = -(1.2 * xB + effectiveB + marginOffset) * 60;
+                        return (
+                          <>
+                            <polygon
+                              points={`${xA * 60},${pyLowerA} ${xB * 60},${pyLowerB} ${xB * 60},${pyUpperB} ${xA * 60},${pyUpperA}`}
+                              fill="rgba(56, 189, 248, 0.12)"
+                            />
+                            <line x1={xA * 60} y1={pyUpperA} x2={xB * 60} y2={pyUpperB} stroke="#38bdf8" strokeWidth="1.8" strokeDasharray="4 4" />
+                            <line x1={xA * 60} y1={pyLowerA} x2={xB * 60} y2={pyLowerB} stroke="#38bdf8" strokeWidth="1.8" strokeDasharray="4 4" />
+                            <line x1={xA * 60} y1={pyCenterA} x2={xB * 60} y2={pyCenterB} stroke="#f59e0b" strokeWidth="3.5" />
+                          </>
+                        );
                       })()}
-                      fill="none"
-                      stroke="#a855f7"
-                      strokeWidth="3.5"
-                    />
+
+                      {/* Weight Vector w Arrow (Normal to Hyperplane) */}
+                      {(() => {
+                        const ox = 0;
+                        const effectiveB = -svcAnalysis.effectiveBias;
+                        const oy = -effectiveB * 60;
+                        const arrowLen = 50;
+                        const nx = (-1.2 / 1.56205) * arrowLen;
+                        const ny = (-1.0 / 1.56205) * arrowLen;
+                        return (
+                          <g>
+                            <line x1={ox} y1={oy} x2={ox + nx} y2={oy + ny} stroke="#f59e0b" strokeWidth="2.5" markerEnd="url(#svc-w-arrow)" />
+                            <circle cx={ox} cy={oy} r="3.5" fill="#f59e0b" />
+                            <rect x={ox + nx - 128} y={oy + ny - 14} width="124" height="18" rx="3" fill="rgba(15, 23, 42, 0.88)" stroke="rgba(245, 158, 11, 0.5)" strokeWidth="1" />
+                            <text x={ox + nx - 66} y={oy + ny - 2} fill="#f59e0b" fontSize="8.5" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
+                              w=[-1.2, 1.0]ᵀ (||w||=1.56)
+                            </text>
+                          </g>
+                        );
+                      })()}
+                    </g>
                   )}
 
-                  {/* Sample Points, Support Vector Glowing Halos & Red Slack Drop-Lines */}
+                  {/* Smooth Marching Contours for Non-Linear Kernels (RBF & Polynomial) */}
+                  {(svcKernel === 'rbf' || svcKernel === 'poly') && (
+                    <g style={{ pointerEvents: 'none' }}>
+                      {/* Margin Lower Contour f(x) = -1 (Red Dash) */}
+                      {svcAnalysis.marchingLowerMarginContour && (
+                        <path
+                          d={svcAnalysis.marchingLowerMarginContour}
+                          fill="none"
+                          stroke="#f87171"
+                          strokeWidth="1.8"
+                          strokeDasharray="4 3"
+                          opacity="0.8"
+                        />
+                      )}
+                      {/* Margin Upper Contour f(x) = +1 (Cyan Dash) */}
+                      {svcAnalysis.marchingUpperMarginContour && (
+                        <path
+                          d={svcAnalysis.marchingUpperMarginContour}
+                          fill="none"
+                          stroke="#38bdf8"
+                          strokeWidth="1.8"
+                          strokeDasharray="4 3"
+                          opacity="0.8"
+                        />
+                      )}
+                      {/* Central Zero Decision Contour f(x) = 0 (Solid Amber) */}
+                      {svcAnalysis.marchingZeroContour && (
+                        <path
+                          d={svcAnalysis.marchingZeroContour}
+                          fill="none"
+                          stroke="#f59e0b"
+                          strokeWidth="3.5"
+                          strokeLinecap="round"
+                        />
+                      )}
+                    </g>
+                  )}
+
+                  {/* Sample Points, Support Vector Glowing Halos & Exact Perpendicular Slack Drop-Lines */}
                   {svcAnalysis.pointsWithStatus.map(p => {
-                    const px = p.x1 * 75;
-                    const py = -p.x2 * 55;
-                    const targetMarginPy = -(1.2 * p.x1 + svcBiasB + (p.label === 1 ? svcMarginW : -svcMarginW)) * 50;
+                    const px = p.x1 * 60;
+                    const py = -p.x2 * 60;
+                    const projPx = (p.projX1 ?? p.x1) * 60;
+                    const projPy = -((p.projX2 ?? p.x2) * 60);
 
                     return (
-                      <g key={`svc-pt-${p.id}`}>
-                        {/* Red Slack Variable Error Drop-Line for Margin Violators */}
+                      <g
+                        key={`svc-pt-${p.id}`}
+                        style={{ cursor: draggingSvcPointId === p.id ? 'grabbing' : 'grab', pointerEvents: 'all' }}
+                        onPointerDown={(e) => handleSvcPointerDown(e, p.id)}
+                        onPointerEnter={() => setHoveredSvcPointId(p.id)}
+                        onPointerLeave={() => setHoveredSvcPointId(null)}
+                      >
+                        {/* Red Perpendicular Slack Variable Error Drop-Line for Margin Violators */}
                         {p.isMarginViolator && svcKernel === 'linear' && (
                           <g>
-                            <line x1={px} y1={py} x2={px} y2={targetMarginPy} stroke="#ef4444" strokeWidth="1.8" strokeDasharray="3 3" />
-                            <text x={px + 6} y={(py + targetMarginPy) / 2} fill="#ef4444" fontSize="8.5" fontWeight="bold" fontFamily="monospace">
-                              ξ={p.slack.toFixed(2)}
-                            </text>
+                            <line x1={px} y1={py} x2={projPx} y2={projPy} stroke="#ef4444" strokeWidth="2.0" strokeDasharray="3 3" />
+                            <circle cx={projPx} cy={projPy} r="3" fill="#ef4444" opacity="0.8" />
+                            {(showSvcPointLabels || hoveredSvcPointId === p.id) && (
+                              <text x={(px + projPx) / 2 + 5} y={(py + projPy) / 2 - 3} fill="#ef4444" fontSize="8" fontWeight="bold" fontFamily="monospace">
+                                ξ={p.slack.toFixed(2)}
+                              </text>
+                            )}
                           </g>
                         )}
 
                         {/* Active Support Vector Golden Concentric Ring */}
                         {p.isSupportVector && (
                           <>
-                            <circle cx={px} cy={py} r="15" stroke="#fbbf24" strokeWidth="2.2" strokeDasharray="4 2" fill="none" opacity="0.9" />
+                            <circle cx={px} cy={py} r="15" stroke="#fbbf24" strokeWidth="2.2" strokeDasharray="4 2" fill="none" opacity="0.95" />
                             <circle cx={px} cy={py} r="10" stroke="#fbbf24" strokeWidth="1.2" fill="none" />
+                            {p.svCategory === 'bounded_sv' && (
+                              <circle cx={px} cy={py} r="19" stroke="#ef4444" strokeWidth="1.0" strokeDasharray="2 2" fill="none" opacity="0.7" />
+                            )}
                           </>
                         )}
 
                         {/* Core Point Dot */}
-                        <circle cx={px} cy={py} r="6.5" fill={p.label === 1 ? '#34d399' : '#f87171'} stroke="#ffffff" strokeWidth="1.8" />
+                        <circle cx={px} cy={py} r="7" fill={p.label === 1 ? '#34d399' : '#f87171'} stroke="#ffffff" strokeWidth="1.8" />
+
+                        {/* Optional Static Point Tag (When showSvcPointLabels is ON) */}
+                        {showSvcPointLabels && (
+                          <g transform={`translate(${px}, ${py - 12})`}>
+                            <text
+                              x="0"
+                              y="0"
+                              fill="#cbd5e1"
+                              fontSize="7"
+                              fontWeight="bold"
+                              fontFamily="monospace"
+                              textAnchor="middle"
+                              style={{ textShadow: '0 1px 3px rgba(0,0,0,0.9)' }}
+                            >
+                              P{p.id} ({p.x1.toFixed(1)},{p.x2.toFixed(1)})
+                            </text>
+                          </g>
+                        )}
+
+                        {/* Interactive Floating Hover Micro-Tooltip */}
+                        {hoveredSvcPointId === p.id && (
+                          <g transform={`translate(${px}, ${py - 22})`}>
+                            <rect
+                              x="-62"
+                              y="-15"
+                              width="124"
+                              height="16"
+                              rx="4"
+                              fill="rgba(11, 17, 32, 0.95)"
+                              stroke="#fbbf24"
+                              strokeWidth="1.2"
+                            />
+                            <text
+                              x="0"
+                              y="-3"
+                              fill="#fbbf24"
+                              fontSize="7.5"
+                              fontWeight="bold"
+                              fontFamily="monospace"
+                              textAnchor="middle"
+                            >
+                              P{p.id} • y={p.label > 0 ? '+1' : '-1'} • α={p.alpha.toFixed(2)}{p.slack > 0 ? ` • ξ=${p.slack.toFixed(2)}` : ''}
+                            </text>
+                          </g>
+                        )}
                       </g>
                     );
                   })}
+
+                  {/* Glassmorphic LaTeX Mathematical Formula HUD */}
+                  {showSvcFormulaHud ? (
+                    <g transform="translate(-305, -225)">
+                      <rect width="265" height="96" rx="7" fill="rgba(11, 17, 32, 0.88)" stroke="rgba(56, 189, 248, 0.35)" strokeWidth="1.2" />
+                      <text x="10" y="18" fill="var(--accent-cyan, #38bdf8)" fontSize="9" fontWeight="bold" fontFamily="monospace">
+                        🛡️ SUPPORT VECTOR CLASSIFIER (SVC)
+                      </text>
+                      <g onClick={() => setShowSvcFormulaHud(false)} style={{ cursor: 'pointer' }}>
+                        <rect x="210" y="7" width="48" height="14" rx="3" fill="rgba(148, 163, 184, 0.15)" stroke="rgba(148, 163, 184, 0.3)" strokeWidth="0.8" />
+                        <text x="234" y="17" fill="#94a3b8" fontSize="7.5" fontWeight="bold" fontFamily="monospace" textAnchor="middle">✕ Hide</text>
+                      </g>
+                      <text x="10" y="34" fill="#cbd5e1" fontSize="8.5" fontFamily="monospace">
+                        {svcKernel === 'linear'
+                          ? `Boundary: wᵀx + b = 0 ⇔ -1.2X₁ + X₂ - (${svcBiasB.toFixed(2)}) = 0`
+                          : svcKernel === 'rbf'
+                          ? `Kernel: K(x, x') = exp(-γ||x-x'||²)  [γ = ${svcGamma.toFixed(2)}]`
+                          : `Kernel: K(x, x') = (xᵀx' + 1)^d  [d = ${svcPolyDegree}]`}
+                      </text>
+                      <text x="10" y="50" fill="#fbbf24" fontSize="8.5" fontFamily="monospace">
+                        Margin: M = 2/||w|| = {svcMarginW.toFixed(2)}  •  Loss: C = {svcC.toFixed(1)}
+                      </text>
+                      <text x="10" y="66" fill="#94a3b8" fontSize="8" fontFamily="monospace">
+                        Obj: min ½||w||² + C Σ ξᵢ  (s.t. yᵢ(wᵀxᵢ+b) ≥ 1 - ξᵢ)
+                      </text>
+                      <text x="10" y="80" fill={svcAnalysis.marginViolatorCount > 0 ? '#f87171' : '#34d399'} fontSize="8" fontWeight="bold" fontFamily="monospace">
+                        SVs: {svcAnalysis.supportVectorCount}/{svcPoints.length}  •  Violators: {svcAnalysis.marginViolatorCount}  •  Σ ξᵢ = {svcAnalysis.totalSlack.toFixed(2)}
+                      </text>
+                      <text x="10" y="91" fill="#38bdf8" fontSize="7.5" fontFamily="monospace">
+                        Acc: {svcAnalysis.accuracy.toFixed(1)}% • Prec: {svcAnalysis.precision.toFixed(1)}% • Rec: {svcAnalysis.recall.toFixed(1)}% • F1: {svcAnalysis.f1Score.toFixed(1)}%
+                      </text>
+                    </g>
+                  ) : (
+                    <g onClick={() => setShowSvcFormulaHud(true)} style={{ cursor: 'pointer' }} transform="translate(-305, -225)">
+                      <rect width="118" height="22" rx="4" fill="rgba(11, 17, 32, 0.85)" stroke="rgba(56, 189, 248, 0.5)" strokeWidth="1" />
+                      <text x="8" y="15" fill="#38bdf8" fontSize="8.5" fontWeight="bold" fontFamily="monospace">📜 Show Math HUD</text>
+                    </g>
+                  )}
                 </svg>
               )}
             </div>
@@ -7439,37 +11723,553 @@ export const TestDiagramsStudioView: React.FC = () => {
 
           {/* PHASE 5: DYNAMIC CALCULUS VISUALIZER */}
           {activeModuleId === 'jsxgraph_calculus' && (
-            <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
-              <svg viewBox="-320 -240 640 480" style={{ width: '100%', height: '100%', background: currentCanvasTheme.bg || '#090d16' }}>
-                <line x1="-320" y1="0" x2="320" y2="0" stroke="rgba(148, 163, 184, 0.5)" strokeWidth="1.5" />
-                <line x1="0" y1="-240" x2="0" y2="240" stroke="rgba(148, 163, 184, 0.5)" strokeWidth="1.5" />
-                <path
-                  d={(() => {
-                    let path = '';
-                    for (let px = -300; px <= 300; px += 4) {
-                      const x = px / 80;
-                      const y = evalCalcFunction(x);
-                      const py = -y * 80;
-                      if (px === -300) path += `M ${px} ${py}`;
-                      else path += ` L ${px} ${py}`;
+            <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', userSelect: 'none' }}>
+              <svg
+                viewBox="-320 -240 640 480"
+                style={{ width: '100%', height: '100%', background: currentCanvasTheme.bg || '#090d16', cursor: 'crosshair' }}
+                onClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const clickX = e.clientX - rect.left;
+                  const svgX = (clickX / rect.width) * 640 - 320;
+                  const mathX = Math.max(-2.8, Math.min(2.8, Number((svgX / 80).toFixed(2))));
+                  if (calcMode === 'tangent_secant' || calcMode === 'derivatives') {
+                    setCalcX0(mathX);
+                  }
+                }}
+              >
+                <defs>
+                  {/* Clip Path for Safe Plot Bounding */}
+                  <clipPath id="calcPlotClip">
+                    <rect x="-310" y="-230" width="620" height="460" rx="8" />
+                  </clipPath>
+
+                  {/* Gradient for Riemann Bars */}
+                  <linearGradient id="riemannBarGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="rgba(52, 211, 153, 0.45)" />
+                    <stop offset="100%" stopColor="rgba(5, 150, 105, 0.15)" />
+                  </linearGradient>
+
+                  {/* Gradient for Negative Riemann Bars */}
+                  <linearGradient id="riemannBarNegGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="rgba(244, 63, 94, 0.15)" />
+                    <stop offset="100%" stopColor="rgba(244, 63, 94, 0.45)" />
+                  </linearGradient>
+
+                  {/* Gradient for Differential Triangle */}
+                  <linearGradient id="slopeTriangleGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="rgba(245, 158, 11, 0.35)" />
+                    <stop offset="100%" stopColor="rgba(236, 72, 153, 0.2)" />
+                  </linearGradient>
+
+                  {/* Gradient for Definite Integral Silhouette */}
+                  <linearGradient id="exactAreaGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stopColor="rgba(56, 189, 248, 0.25)" />
+                    <stop offset="100%" stopColor="rgba(56, 189, 248, 0.04)" />
+                  </linearGradient>
+                </defs>
+
+                <g clipPath="url(#calcPlotClip)">
+                  {/* 1. Background Coordinate Grid Lines */}
+                  {[-3, -2, -1, 1, 2, 3].map(gx => (
+                    <g key={`cgrid-x-${gx}`}>
+                      <line x1={gx * 80} y1="-230" x2={gx * 80} y2="230" stroke="rgba(51, 65, 85, 0.45)" strokeWidth="0.8" strokeDasharray="3 3" />
+                      <text x={gx * 80} y="14" fill="rgba(148, 163, 184, 0.7)" fontSize="8.5" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
+                        {gx > 0 ? `+${gx}` : gx}
+                      </text>
+                    </g>
+                  ))}
+
+                  {[-2.5, -2, -1.5, -1, -0.5, 0.5, 1, 1.5, 2, 2.5].map(gy => (
+                    <g key={`cgrid-y-${gy}`}>
+                      <line x1="-310" y1={-gy * 80} x2="310" y2={-gy * 80} stroke="rgba(51, 65, 85, 0.35)" strokeWidth="0.8" strokeDasharray="3 3" />
+                      {Math.abs(gy % 1) < 0.01 && (
+                        <text x="-8" y={-gy * 80 + 3} fill="rgba(148, 163, 184, 0.7)" fontSize="8.5" fontWeight="bold" fontFamily="monospace" textAnchor="end">
+                          {gy > 0 ? `+${gy}` : gy}
+                        </text>
+                      )}
+                    </g>
+                  ))}
+
+                  {/* Primary Axes */}
+                  <line x1="-310" y1="0" x2="310" y2="0" stroke="rgba(148, 163, 184, 0.6)" strokeWidth="1.6" />
+                  <line x1="0" y1="-230" x2="0" y2="230" stroke="rgba(148, 163, 184, 0.6)" strokeWidth="1.6" />
+                  <text x="300" y="-8" fill="rgba(148, 163, 184, 0.9)" fontSize="9.5" fontWeight="bold" fontFamily="monospace">+X</text>
+                  <text x="8" y="-218" fill="rgba(148, 163, 184, 0.9)" fontSize="9.5" fontWeight="bold" fontFamily="monospace">+Y (f)</text>
+
+                  {/* ─────────────────────────────────────────────────────────────
+                      MODE 2: RIEMANN SUMS & DEFINITE INTEGRALS
+                     ───────────────────────────────────────────────────────────── */}
+                  {calcMode === 'riemann_sums' && (() => {
+                    const effA = Math.min(calcBoundA, calcBoundB);
+                    const effB = Math.max(calcBoundA, calcBoundB);
+                    const n = calcIntegralN;
+                    const dx = (effB - effA) / n;
+                    const bars = [];
+
+                    for (let i = 0; i < n; i++) {
+                      const xL = effA + i * dx;
+                      const xR = effA + (i + 1) * dx;
+                      const pxL = xL * 80;
+                      const pxR = xR * 80;
+                      const pWidth = pxR - pxL;
+
+                      if (riemannMethod === 'trapezoid') {
+                        const yL = evalCalcFunction(xL, calcPreset);
+                        const yR = evalCalcFunction(xR, calcPreset);
+                        const pyL = -yL * 80;
+                        const pyR = -yR * 80;
+
+                        bars.push(
+                          <g key={`r-trap-${i}`}>
+                            <polygon
+                              points={`${pxL},0 ${pxL},${pyL} ${pxR},${pyR} ${pxR},0`}
+                              fill="url(#riemannBarGrad)"
+                              stroke="#34d399"
+                              strokeWidth="1.2"
+                              opacity="0.85"
+                            />
+                            <line x1={pxL} y1={pyL} x2={pxR} y2={pyR} stroke="#10b981" strokeWidth="2" />
+                          </g>
+                        );
+                      } else if (riemannMethod === 'simpson') {
+                        const xMid = (xL + xR) / 2;
+                        const yL = evalCalcFunction(xL, calcPreset);
+                        const yMid = evalCalcFunction(xMid, calcPreset);
+                        const yR = evalCalcFunction(xR, calcPreset);
+                        const pyL = -yL * 80;
+                        const pyMid = -yMid * 80;
+                        const pyR = -yR * 80;
+                        const pxMid = xMid * 80;
+
+                        bars.push(
+                          <g key={`r-simp-${i}`}>
+                            <path
+                              d={`M ${pxL} 0 L ${pxL} ${pyL} Q ${pxMid} ${2 * pyMid - 0.5 * (pyL + pyR)} ${pxR} ${pyR} L ${pxR} 0 Z`}
+                              fill="url(#riemannBarGrad)"
+                              stroke="#38bdf8"
+                              strokeWidth="1.2"
+                              opacity="0.85"
+                            />
+                            <circle cx={pxMid} cy={pyMid} r="2.5" fill="#38bdf8" />
+                          </g>
+                        );
+                      } else {
+                        // Left, Right, Midpoint rectangular bars
+                        let sampleX = xL;
+                        if (riemannMethod === 'right') sampleX = xR;
+                        else if (riemannMethod === 'midpoint') sampleX = (xL + xR) / 2;
+
+                        const sampleY = evalCalcFunction(sampleX, calcPreset);
+                        const py = -sampleY * 80;
+                        const isNeg = sampleY < 0;
+
+                        bars.push(
+                          <g key={`r-bar-${i}`}>
+                            <rect
+                              x={pxL}
+                              y={isNeg ? 0 : py}
+                              width={pWidth}
+                              height={Math.abs(py)}
+                              fill={isNeg ? "url(#riemannBarNegGrad)" : "url(#riemannBarGrad)"}
+                              stroke={isNeg ? "#f43f5e" : "#34d399"}
+                              strokeWidth="1.2"
+                              opacity="0.85"
+                            />
+                            <line x1={pxL} y1={py} x2={pxR} y2={py} stroke={isNeg ? "#fb7185" : "#6ee7b7"} strokeWidth="2" />
+                            <circle cx={sampleX * 80} cy={py} r="2.8" fill={isNeg ? "#fb7185" : "#34d399"} stroke="#ffffff" strokeWidth="1" />
+                          </g>
+                        );
+                      }
                     }
-                    return path;
+
+                    return (
+                      <g>
+                        {/* Shaded Exact Integral Area Silhouette */}
+                        <path
+                          d={(() => {
+                            let p = `M ${effA * 80} 0`;
+                            for (let px = effA * 80; px <= effB * 80; px += 2) {
+                              const x = px / 80;
+                              const y = evalCalcFunction(x, calcPreset);
+                              p += ` L ${px} ${-y * 80}`;
+                            }
+                            p += ` L ${effB * 80} 0 Z`;
+                            return p;
+                          })()}
+                          fill="url(#exactAreaGrad)"
+                        />
+
+                        {/* Partition Bars */}
+                        {bars}
+
+                        {/* Integration Boundary Lines x=a and x=b */}
+                        <g>
+                          <line x1={effA * 80} y1="-210" x2={effA * 80} y2="210" stroke="#38bdf8" strokeWidth="1.8" strokeDasharray="4 3" />
+                          <rect x={effA * 80 - 24} y="-226" width="48" height="18" rx="4" fill="rgba(15, 23, 42, 0.92)" stroke="#38bdf8" strokeWidth="1.2" />
+                          <text x={effA * 80} y="-214" fill="#38bdf8" fontSize="8.5" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
+                            a={effA.toFixed(1)}
+                          </text>
+
+                          <line x1={effB * 80} y1="-210" x2={effB * 80} y2="210" stroke="#ec4899" strokeWidth="1.8" strokeDasharray="4 3" />
+                          <rect x={effB * 80 - 24} y="-226" width="48" height="18" rx="4" fill="rgba(15, 23, 42, 0.92)" stroke="#ec4899" strokeWidth="1.2" />
+                          <text x={effB * 80} y="-214" fill="#ec4899" fontSize="8.5" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
+                            b={effB.toFixed(1)}
+                          </text>
+                        </g>
+                      </g>
+                    );
                   })()}
-                  fill="none"
-                  stroke="#38bdf8"
-                  strokeWidth="3.2"
-                />
-                {(() => {
-                  const y0 = evalCalcFunction(calcX0);
-                  const slope = evalCalcDerivative(calcX0);
-                  return (
-                    <>
-                      <line x1={(calcX0 - 1.6) * 80} y1={-(y0 - 1.6 * slope) * 80} x2={(calcX0 + 1.6) * 80} y2={-(y0 + 1.6 * slope) * 80} stroke="#f59e0b" strokeWidth="2.8" />
-                      <circle cx={calcX0 * 80} cy={-y0 * 80} r="6" fill="#f59e0b" stroke="#ffffff" strokeWidth="2" />
-                    </>
-                  );
-                })()}
+
+                  {/* ─────────────────────────────────────────────────────────────
+                      MODE 3: DERIVATIVES (f' and f'' CURVES & EXTREMA)
+                     ───────────────────────────────────────────────────────────── */}
+                  {calcMode === 'derivatives' && (
+                    <g>
+                      {/* 1. First Derivative f'(x) Curve (Emerald Dashed) */}
+                      {showDeriv1Curve && (
+                        <path
+                          d={(() => {
+                            let p = '';
+                            for (let px = -300; px <= 300; px += 3) {
+                              const x = px / 80;
+                              const y = evalCalcDerivative(x, calcPreset);
+                              const py = -y * 80;
+                              if (px === -300) p += `M ${px} ${py}`;
+                              else p += ` L ${px} ${py}`;
+                            }
+                            return p;
+                          })()}
+                          fill="none"
+                          stroke="#10b981"
+                          strokeWidth="2.4"
+                          strokeDasharray="5 3"
+                          opacity="0.85"
+                        />
+                      )}
+
+                      {/* 2. Second Derivative f''(x) Curve (Purple Dotted) */}
+                      {showDeriv2Curve && (
+                        <path
+                          d={(() => {
+                            let p = '';
+                            for (let px = -300; px <= 300; px += 3) {
+                              const x = px / 80;
+                              const y = evalCalcSecondDerivative(x, calcPreset);
+                              const py = -y * 80;
+                              if (px === -300) p += `M ${px} ${py}`;
+                              else p += ` L ${px} ${py}`;
+                            }
+                            return p;
+                          })()}
+                          fill="none"
+                          stroke="#c084fc"
+                          strokeWidth="2.0"
+                          strokeDasharray="2 3"
+                          opacity="0.75"
+                        />
+                      )}
+
+                      {/* 3. Critical Stationary & Inflection Points */}
+                      {getCalcKeyPoints(calcPreset).map((kp, kIdx) => {
+                        if (kp.type === 'inflection' && !showInflectionPoints) return null;
+                        if ((kp.type === 'max' || kp.type === 'min') && !showCritPoints) return null;
+
+                        const kpx = kp.x * 80;
+                        const kpy = -kp.y * 80;
+                        const isMax = kp.type === 'max';
+                        const isMin = kp.type === 'min';
+                        const color = isMax ? '#fbbf24' : isMin ? '#34d399' : '#38bdf8';
+
+                        return (
+                          <g key={`kp-${kIdx}`} transform={`translate(${kpx}, ${kpy})`}>
+                            <line x1="0" y1="0" x2="0" y2={isMax ? -22 : 22} stroke={color} strokeWidth="1.4" strokeDasharray="2 2" />
+                            <circle cx="0" cy="0" r="4.5" fill={color} stroke="#ffffff" strokeWidth="1.5" />
+                            <rect
+                              x="-42"
+                              y={isMax ? -36 : 10}
+                              width="84"
+                              height="16"
+                              rx="3"
+                              fill="rgba(11, 17, 32, 0.94)"
+                              stroke={color}
+                              strokeWidth="1.1"
+                            />
+                            <text
+                              x="0"
+                              y={isMax ? -25 : 21}
+                              fill={color}
+                              fontSize="7.5"
+                              fontWeight="bold"
+                              fontFamily="monospace"
+                              textAnchor="middle"
+                            >
+                              {kp.label}
+                            </text>
+                          </g>
+                        );
+                      })}
+                    </g>
+                  )}
+
+                  {/* ─────────────────────────────────────────────────────────────
+                      PRIMARY FUNCTION CURVE f(x) (Cyan Glowing Ribbon)
+                     ───────────────────────────────────────────────────────────── */}
+                  <path
+                    d={(() => {
+                      let path = '';
+                      for (let px = -300; px <= 300; px += 3) {
+                        const x = px / 80;
+                        const y = evalCalcFunction(x, calcPreset);
+                        const py = -y * 80;
+                        if (px === -300) path += `M ${px} ${py}`;
+                        else path += ` L ${px} ${py}`;
+                      }
+                      return path;
+                    })()}
+                    fill="none"
+                    stroke="#38bdf8"
+                    strokeWidth="3.4"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+
+                  {/* ─────────────────────────────────────────────────────────────
+                      MODE 1: SECANT LIMIT (h → 0) & DIFFERENTIAL TRIANGLE
+                     ───────────────────────────────────────────────────────────── */}
+                  {calcMode === 'tangent_secant' && (() => {
+                    const x0 = calcX0;
+                    const x1 = calcX0 + calcH;
+                    const y0 = evalCalcFunction(x0, calcPreset);
+                    const y1 = evalCalcFunction(x1, calcPreset);
+                    const mTan = evalCalcDerivative(x0, calcPreset);
+                    const mSec = (y1 - y0) / calcH;
+
+                    const px0 = x0 * 80;
+                    const py0 = -y0 * 80;
+                    const px1 = x1 * 80;
+                    const py1 = -y1 * 80;
+
+                    // Tangent line endpoints
+                    const span = 2.4;
+                    const tX1 = (x0 - span) * 80;
+                    const tY1 = -(y0 - span * mTan) * 80;
+                    const tX2 = (x0 + span) * 80;
+                    const tY2 = -(y0 + span * mTan) * 80;
+
+                    // Secant line endpoints
+                    const sX1 = (x0 - span) * 80;
+                    const sY1 = -(y0 - span * mSec) * 80;
+                    const sX2 = (x0 + span) * 80;
+                    const sY2 = -(y0 + span * mSec) * 80;
+
+                    return (
+                      <g>
+                        {/* 1. Shaded Differential Triangle Δx, Δy */}
+                        <polygon
+                          points={`${px0},${py0} ${px1},${py0} ${px1},${py1}`}
+                          fill="url(#slopeTriangleGrad)"
+                          stroke="rgba(245, 158, 11, 0.4)"
+                          strokeWidth="1.2"
+                          strokeDasharray="3 2"
+                        />
+
+                        {/* Horizontal Δx = h */}
+                        <line x1={px0} y1={py0} x2={px1} y2={py0} stroke="#34d399" strokeWidth="2.2" />
+                        <rect x={(px0 + px1) / 2 - 24} y={py0 > 0 ? py0 + 5 : py0 - 18} width="48" height="15" rx="3" fill="rgba(11, 17, 32, 0.9)" stroke="#34d399" strokeWidth="1" />
+                        <text x={(px0 + px1) / 2} y={py0 > 0 ? py0 + 15 : py0 - 7} fill="#34d399" fontSize="7.5" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
+                          Δx={calcH.toFixed(2)}
+                        </text>
+
+                        {/* Vertical Δy = f(x0+h) - f(x0) */}
+                        <line x1={px1} y1={py0} x2={px1} y2={py1} stroke="#ec4899" strokeWidth="2.2" />
+                        <rect x={px1 > 0 ? px1 + 6 : px1 - 56} y={(py0 + py1) / 2 - 8} width="50" height="15" rx="3" fill="rgba(11, 17, 32, 0.9)" stroke="#ec4899" strokeWidth="1" />
+                        <text x={px1 > 0 ? px1 + 31 : px1 - 31} y={(py0 + py1) / 2 + 3} fill="#ec4899" fontSize="7.5" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
+                          Δy={(y1 - y0).toFixed(2)}
+                        </text>
+
+                        {/* 2. Secant Line through P0 and P1 (Dashed Pink) */}
+                        <line x1={sX1} y1={sY1} x2={sX2} y2={sY2} stroke="#ec4899" strokeWidth="2.0" strokeDasharray="5 3" opacity="0.9" />
+
+                        {/* 3. Tangent Line through P0 (Solid Glowing Amber) */}
+                        <line x1={tX1} y1={tY1} x2={tX2} y2={tY2} stroke="#f59e0b" strokeWidth="3.0" opacity="0.95" />
+
+                        {/* 4. Secondary Secant Point P1(x0+h, y1) */}
+                        <circle cx={px1} cy={py1} r="5.5" fill="#ec4899" stroke="#ffffff" strokeWidth="1.8" />
+                        <rect x={px1 + 8} y={py1 - 10} width="72" height="18" rx="4" fill="rgba(15, 23, 42, 0.94)" stroke="#ec4899" strokeWidth="1.2" />
+                        <text x={px1 + 44} y={py1 + 2.5} fill="#ec4899" fontSize="8" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
+                          P₁({x1.toFixed(2)}, {y1.toFixed(2)})
+                        </text>
+
+                        {/* 5. Primary Tangent Point P0(x0, y0) */}
+                        <circle cx={px0} cy={py0} r="6.5" fill="#f59e0b" stroke="#ffffff" strokeWidth="2" />
+                        <rect x={px0 - 80} y={py0 - 10} width="72" height="18" rx="4" fill="rgba(15, 23, 42, 0.94)" stroke="#f59e0b" strokeWidth="1.2" />
+                        <text x={px0 - 44} y={py0 + 2.5} fill="#f59e0b" fontSize="8" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
+                          P₀({x0.toFixed(2)}, {y0.toFixed(2)})
+                        </text>
+                      </g>
+                    );
+                  })()}
+
+                  {/* ─────────────────────────────────────────────────────────────
+                      DERIVATIVE MODE TRACER BEAD (AT x0)
+                     ───────────────────────────────────────────────────────────── */}
+                  {calcMode === 'derivatives' && (() => {
+                    const x0 = calcX0;
+                    const y0 = evalCalcFunction(x0, calcPreset);
+                    const slope = evalCalcDerivative(x0, calcPreset);
+                    const px0 = x0 * 80;
+                    const py0 = -y0 * 80;
+                    const span = 1.8;
+
+                    return (
+                      <g>
+                        {/* Tangent line at tracer point */}
+                        <line
+                          x1={(x0 - span) * 80}
+                          y1={-(y0 - span * slope) * 80}
+                          x2={(x0 + span) * 80}
+                          y2={-(y0 + span * slope) * 80}
+                          stroke="#f59e0b"
+                          strokeWidth="2.6"
+                        />
+                        <circle cx={px0} cy={py0} r="6" fill="#f59e0b" stroke="#ffffff" strokeWidth="2" />
+                        <rect x={px0 + 8} y={py0 - 10} width="78" height="18" rx="4" fill="rgba(15, 23, 42, 0.94)" stroke="#f59e0b" strokeWidth="1.2" />
+                        <text x={px0 + 47} y={py0 + 2.5} fill="#f59e0b" fontSize="8" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
+                          f'({x0.toFixed(2)}) = {slope.toFixed(2)}
+                        </text>
+                      </g>
+                    );
+                  })()}
+                </g>
               </svg>
+
+              {/* ─────────────────────────────────────────────────────────────
+                  FLOATING GLASSMORPHIC FORMULA & LIMIT HUD
+                 ───────────────────────────────────────────────────────────── */}
+              <div
+                className="calc-hud-interactive"
+                style={{
+                  position: 'absolute',
+                  top: '12px',
+                  left: '12px',
+                  zIndex: 20,
+                  maxWidth: '340px',
+                  pointerEvents: 'auto'
+                }}
+                onClick={(e) => e.stopPropagation()}
+              >
+                {showCalcFormulaHud ? (
+                  <div
+                    style={{
+                      background: 'rgba(11, 17, 32, 0.88)',
+                      backdropFilter: 'blur(10px)',
+                      border: '1px solid rgba(56, 189, 248, 0.35)',
+                      borderRadius: '8px',
+                      padding: '8px 12px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '5px',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.4)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#38bdf8', letterSpacing: '0.04em' }}>
+                        {calcMode === 'tangent_secant' ? '⚡ SECANT-TO-TANGENT LIMIT' : calcMode === 'riemann_sums' ? '📐 RIEMANN DEFINITE INTEGRAL' : '📈 MULTI-ORDER DERIVATIVES'}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowCalcFormulaHud(false);
+                        }}
+                        style={{
+                          background: 'rgba(239, 68, 68, 0.2)',
+                          border: '1px solid rgba(239, 68, 68, 0.4)',
+                          color: '#f87171',
+                          borderRadius: '4px',
+                          padding: '1px 6px',
+                          fontSize: '0.58rem',
+                          fontWeight: 800,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        ✕ Hide HUD
+                      </button>
+                    </div>
+
+                    {/* Mode Equations */}
+                    {(() => {
+                      const telem = getCalcTelemetry(calcPreset, calcX0, calcH, calcBoundA, calcBoundB, calcIntegralN, riemannMethod);
+                      return (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', fontSize: '0.68rem', fontFamily: 'monospace' }}>
+                          <div style={{ color: '#38bdf8', fontWeight: 800 }}>{telem.formulaLatex}</div>
+                          {calcMode === 'tangent_secant' && (
+                            <>
+                              <div style={{ color: '#cbd5e1' }}>
+                                lim_{'{h→0}'} [f(x₀+h)-f(x₀)]/h = f'(x₀)
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#f59e0b' }}>
+                                <span>m_sec = {telem.secantSlope.toFixed(3)}</span>
+                                <span style={{ color: '#38bdf8' }}>m_tan = {telem.tangentSlope.toFixed(3)}</span>
+                                <span style={{ color: telem.secantError < 0.05 ? '#34d399' : '#f87171' }}>Δm = {telem.secantError.toFixed(3)}</span>
+                              </div>
+                            </>
+                          )}
+                          {calcMode === 'riemann_sums' && (
+                            <>
+                              <div style={{ color: '#38bdf8' }}>
+                                ∫_{'{' + calcBoundA.toFixed(1) + '}'}^{'{' + calcBoundB.toFixed(1) + '}'} f(x)dx = {telem.exactIntegral.toFixed(3)}
+                              </div>
+                              <div style={{ display: 'flex', justifyContent: 'space-between', color: '#10b981' }}>
+                                <span>{riemannMethod.toUpperCase()}_N = {telem.riemannSum.toFixed(3)}</span>
+                                <span style={{ color: telem.relativeErrorPct < 1 ? '#34d399' : '#fbbf24' }}>
+                                  ε = {telem.relativeErrorPct.toFixed(2)}%
+                                </span>
+                              </div>
+                            </>
+                          )}
+                          {calcMode === 'derivatives' && (
+                            <>
+                              <div style={{ color: '#10b981' }}>{telem.derivLatex}</div>
+                              <div style={{ color: '#c084fc' }}>{telem.deriv2Latex}</div>
+                            </>
+                          )}
+                        </div>
+                      );
+                    })()}
+
+                    <div style={{ fontSize: '0.58rem', color: 'var(--text-muted)', borderTop: '1px solid rgba(148, 163, 184, 0.15)', paddingTop: '3px' }}>
+                      Click Canvas to Reposition x₀ / Tangent Point
+                    </div>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowCalcFormulaHud(true);
+                    }}
+                    style={{
+                      background: 'rgba(11, 17, 32, 0.85)',
+                      backdropFilter: 'blur(8px)',
+                      border: '1px solid rgba(56, 189, 248, 0.4)',
+                      borderRadius: '20px',
+                      padding: '4px 10px',
+                      color: '#38bdf8',
+                      fontSize: '0.64rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)'
+                    }}
+                  >
+                    <span>📜</span>
+                    <span>Show Formulas & Integrals</span>
+                  </button>
+                )}
+              </div>
             </div>
           )}
 
@@ -7517,54 +12317,1099 @@ export const TestDiagramsStudioView: React.FC = () => {
             </div>
           )}
 
-          {/* PHASE 7: VECTOR FIELDS VISUALIZER */}
+          {/* PHASE 7: VECTOR FIELDS & PHASE SPACE ORBITS VISUALIZER */}
           {activeModuleId === 'vector_fields' && (
-            <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
+            <div
+              style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden', cursor: 'crosshair' }}
+              onClick={(e) => {
+                if ((e.target as HTMLElement).closest('.ode-hud-interactive')) return;
+                const rect = e.currentTarget.getBoundingClientRect();
+                const clickX = e.clientX - rect.left;
+                const clickY = e.clientY - rect.top;
+                // Convert viewport (0..rect.width, 0..rect.height) to SVG coordinate space (-320..320, -240..240)
+                const svgX = ((clickX / rect.width) * 640 - 320);
+                const svgY = ((clickY / rect.height) * 480 - 240);
+                const scale = 80;
+                const newX0 = Number(Math.max(-2.8, Math.min(2.8, svgX / scale)).toFixed(2));
+                const newY0 = Number(Math.max(-2.8, Math.min(2.8, -svgY / scale)).toFixed(2));
+                setPhaseX0(newX0);
+                setPhaseY0(newY0);
+              }}
+            >
+              {/* Glassmorphic On-Canvas Floating Formula HUD (HTML Overlay) */}
+              <div
+                className="ode-hud-interactive"
+                style={{
+                  position: 'absolute',
+                  top: '12px',
+                  left: '12px',
+                  zIndex: 25,
+                  pointerEvents: 'auto',
+                  userSelect: 'none'
+                }}
+              >
+                {showOdeFormulaHud ? (() => {
+                  const telem = getOdeTelemetry(odeSystem, dampingFactor, phaseX0, phaseY0);
+                  return (
+                    <div
+                      style={{
+                        background: 'rgba(11, 17, 32, 0.90)',
+                        backdropFilter: 'blur(10px)',
+                        border: '1px solid rgba(192, 132, 252, 0.45)',
+                        borderRadius: '8px',
+                        padding: '10px 12px',
+                        maxWidth: '310px',
+                        boxShadow: '0 6px 24px rgba(0, 0, 0, 0.45)',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '6px'
+                      }}
+                    >
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span style={{ fontSize: '0.78rem', fontWeight: 800, color: '#c084fc', letterSpacing: '0.04em' }}>
+                          🌀 {odeSystem.toUpperCase()} SYSTEM
+                        </span>
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setShowOdeFormulaHud(false);
+                          }}
+                          style={{
+                            padding: '2px 7px',
+                            borderRadius: '4px',
+                            background: 'rgba(244, 63, 94, 0.18)',
+                            border: '1px solid rgba(244, 63, 94, 0.6)',
+                            color: '#f43f5e',
+                            fontSize: '0.66rem',
+                            fontWeight: 800,
+                            cursor: 'pointer'
+                          }}
+                        >
+                          ✕ Hide HUD
+                        </button>
+                      </div>
+
+                      {/* LaTeX Differential Equations */}
+                      <div
+                        style={{
+                          background: 'rgba(15, 23, 42, 0.85)',
+                          border: '1px solid rgba(56, 189, 248, 0.25)',
+                          borderRadius: '5px',
+                          padding: '5px 8px',
+                          fontFamily: 'monospace',
+                          fontSize: '0.73rem',
+                          color: '#f8fafc',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '2px'
+                        }}
+                      >
+                        <span style={{ color: '#38bdf8' }}>{telem.eq1}</span>
+                        <span style={{ color: '#34d399' }}>{telem.eq2}</span>
+                      </div>
+
+                      {/* Energy & Jacobian */}
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '2px', fontSize: '0.67rem', fontFamily: 'monospace' }}>
+                        <span style={{ color: '#fbbf24' }}>{telem.energy}</span>
+                        <span style={{ color: '#94a3b8' }}>Jacobian: {telem.jacobian}</span>
+                      </div>
+
+                      <div style={{ fontSize: '0.65rem', color: '#64748b', fontFamily: 'monospace', borderTop: '1px solid rgba(51, 65, 85, 0.4)', paddingTop: '4px' }}>
+                        Start: ({phaseX0.toFixed(2)}, {phaseY0.toFixed(2)}) • Click Canvas to Drop
+                      </div>
+                    </div>
+                  );
+                })() : (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowOdeFormulaHud(true);
+                    }}
+                    style={{
+                      background: 'rgba(11, 17, 32, 0.90)',
+                      backdropFilter: 'blur(8px)',
+                      border: '1px solid rgba(192, 132, 252, 0.6)',
+                      borderRadius: '20px',
+                      padding: '5px 12px',
+                      color: '#c084fc',
+                      fontSize: '0.72rem',
+                      fontWeight: 800,
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      boxShadow: '0 4px 16px rgba(0, 0, 0, 0.35)'
+                    }}
+                  >
+                    <span>📜</span>
+                    <span>Show Formulas & Equations</span>
+                  </button>
+                )}
+              </div>
+
               <svg viewBox="-320 -240 640 480" style={{ width: '100%', height: '100%', background: currentCanvasTheme.bg || '#090d16' }}>
-                <line x1="-320" y1="0" x2="320" y2="0" stroke="rgba(148, 163, 184, 0.5)" strokeWidth="1.5" />
-                <line x1="0" y1="-240" x2="0" y2="240" stroke="rgba(148, 163, 184, 0.5)" strokeWidth="1.5" />
+                <defs>
+                  {/* Trajectory & Particle Glow */}
+                  <filter id="odeGlow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="3" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                  </filter>
+
+                  {/* Marker Arrow for Vectors */}
+                  <marker id="odeArrowCyan" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
+                    <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#38bdf8" />
+                  </marker>
+                  <marker id="odeArrowEmerald" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
+                    <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#34d399" />
+                  </marker>
+                  <marker id="odeArrowAmber" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
+                    <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#fbbf24" />
+                  </marker>
+                  <marker id="odeArrowRose" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse">
+                    <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="#f43f5e" />
+                  </marker>
+
+                  {/* RK4 Path Gradient */}
+                  <linearGradient id="rk4Grad" x1="0%" y1="0%" x2="100%" y2="100%">
+                    <stop offset="0%" stopColor="#fbbf24" stopOpacity="1" />
+                    <stop offset="60%" stopColor="#34d399" stopOpacity="0.9" />
+                    <stop offset="100%" stopColor="#38bdf8" stopOpacity="0.8" />
+                  </linearGradient>
+                </defs>
+
+                {/* 1. COORDINATE GRID & AXES */}
+                <g opacity="0.35">
+                  {[-3, -2, -1, 1, 2, 3].map(tick => (
+                    <g key={`x-grid-${tick}`}>
+                      <line x1={tick * 80} y1="-230" x2={tick * 80} y2="230" stroke="rgba(148, 163, 184, 0.25)" strokeWidth="1" strokeDasharray="3 3" />
+                      <text x={tick * 80} y="15" fill="#94a3b8" fontSize="8.5" fontFamily="monospace" textAnchor="middle">{tick > 0 ? `+${tick}` : tick}</text>
+                    </g>
+                  ))}
+                  {[-2, -1, 1, 2].map(tick => (
+                    <g key={`y-grid-${tick}`}>
+                      <line x1="-310" y1={-tick * 80} x2="310" y2={-tick * 80} stroke="rgba(148, 163, 184, 0.25)" strokeWidth="1" strokeDasharray="3 3" />
+                      <text x="-12" y={-tick * 80 + 3} fill="#94a3b8" fontSize="8.5" fontFamily="monospace" textAnchor="end">{tick > 0 ? `+${tick}` : tick}</text>
+                    </g>
+                  ))}
+                </g>
+
+                {/* Primary Axes */}
+                <line x1="-315" y1="0" x2="315" y2="0" stroke="rgba(148, 163, 184, 0.65)" strokeWidth="1.6" />
+                <line x1="0" y1="-235" x2="0" y2="235" stroke="rgba(148, 163, 184, 0.65)" strokeWidth="1.6" />
+                <text x="305" y="-8" fill="#38bdf8" fontSize="9.5" fontWeight="bold" fontFamily="monospace">+X</text>
+                <text x="8" y="-225" fill="#38bdf8" fontSize="9.5" fontWeight="bold" fontFamily="monospace">+Y (ẋ)</text>
+
+                {/* 2. VECTOR FIELD ARROWS GRID */}
                 {(() => {
+                  const scale = 80;
+                  const step = odeGridDensity === 'coarse' ? 0.6 : odeGridDensity === 'fine' ? 0.28 : 0.42;
+                  const arrowLen = odeGridDensity === 'fine' ? 12 : 16;
                   const arrows = [];
-                  for (let x = -2.4; x <= 2.4; x += 0.6) {
-                    for (let y = -1.8; y <= 1.8; y += 0.6) {
-                      const dx = y;
-                      const dy = -Math.sin(x) - dampingFactor * y;
-                      const len = Math.sqrt(dx * dx + dy * dy) || 1;
-                      const ndx = (dx / len) * 16;
-                      const ndy = (dy / len) * 16;
+
+                  for (let gx = -3.4; gx <= 3.4; gx += step) {
+                    for (let gy = -2.6; gy <= 2.6; gy += step) {
+                      const deriv = evalOdeDerivatives(gx, gy, odeSystem, dampingFactor);
+                      const speed = Math.hypot(deriv.dx, deriv.dy);
+                      if (speed < 0.001) continue;
+
+                      const udx = (deriv.dx / speed);
+                      const udy = (deriv.dy / speed);
+
+                      const px = gx * scale;
+                      const py = -gy * scale;
+                      const tipX = px + udx * arrowLen;
+                      const tipY = py - udy * arrowLen;
+
+                      let strokeColor = '#38bdf8';
+                      let markerUrl = 'url(#odeArrowCyan)';
+                      if (speed > 2.5) {
+                        strokeColor = '#f43f5e';
+                        markerUrl = 'url(#odeArrowRose)';
+                      } else if (speed > 1.4) {
+                        strokeColor = '#fbbf24';
+                        markerUrl = 'url(#odeArrowAmber)';
+                      } else if (speed > 0.6) {
+                        strokeColor = '#34d399';
+                        markerUrl = 'url(#odeArrowEmerald)';
+                      }
+
                       arrows.push(
-                        <line key={`${x}-${y}`} x1={x * 80} y1={-y * 80} x2={x * 80 + ndx} y2={-y * 80 - ndy} stroke="rgba(56, 189, 248, 0.6)" strokeWidth="1.4" />
+                        <g key={`arrow-${gx.toFixed(2)}-${gy.toFixed(2)}`} opacity="0.65">
+                          <line
+                            x1={px - udx * (arrowLen * 0.4)}
+                            y1={py + udy * (arrowLen * 0.4)}
+                            x2={tipX}
+                            y2={tipY}
+                            stroke={strokeColor}
+                            strokeWidth="1.4"
+                            markerEnd={markerUrl}
+                          />
+                        </g>
                       );
                     }
                   }
                   return arrows;
                 })()}
+
+                {/* 3. NULLCLINES OVERLAY (ẋ = 0 and ẏ = 0) */}
+                {showOdeNullclines && (() => {
+                  const scale = 80;
+                  return (
+                    <g opacity="0.85">
+                      {/* X-Nullcline (ẋ = 0) where arrows are purely vertical */}
+                      <line x1="-310" y1="0" x2="310" y2="0" stroke="#10b981" strokeWidth="2" strokeDasharray="5 3" />
+                      <g transform="translate(220, -10)">
+                        <rect x="0" y="0" width="76" height="15" rx="3" fill="rgba(15, 23, 42, 0.88)" stroke="#10b981" strokeWidth="1" />
+                        <text x="38" y="11" fill="#10b981" fontSize="8" fontWeight="bold" fontFamily="monospace" textAnchor="middle">ẋ = 0 Nullcline</text>
+                      </g>
+
+                      {/* Y-Nullcline (ẏ = 0) where arrows are purely horizontal */}
+                      {odeSystem === 'pendulum' && dampingFactor > 0.01 && (
+                        <path
+                          d={(() => {
+                            let p = '';
+                            for (let px = -3.4; px <= 3.4; px += 0.05) {
+                              const ny = -Math.sin(px) / dampingFactor;
+                              const sx = px * scale;
+                              const sy = -ny * scale;
+                              if (sy >= -240 && sy <= 240) {
+                                if (!p) p += `M ${sx} ${sy}`;
+                                else p += ` L ${sx} ${sy}`;
+                              }
+                            }
+                            return p;
+                          })()}
+                          fill="none"
+                          stroke="#f43f5e"
+                          strokeWidth="2"
+                          strokeDasharray="5 3"
+                        />
+                      )}
+                      {odeSystem === 'vanderpol' && (
+                        <path
+                          d={(() => {
+                            let p = '';
+                            for (let px = -2.8; px <= 2.8; px += 0.05) {
+                              if (Math.abs(1 - px * px) < 0.08) continue;
+                              const ny = px / (dampingFactor * (1 - px * px));
+                              const sx = px * scale;
+                              const sy = -ny * scale;
+                              if (sy >= -240 && sy <= 240) {
+                                if (!p) p += `M ${sx} ${sy}`;
+                                else p += ` L ${sx} ${sy}`;
+                              }
+                            }
+                            return p;
+                          })()}
+                          fill="none"
+                          stroke="#f43f5e"
+                          strokeWidth="2"
+                          strokeDasharray="5 3"
+                        />
+                      )}
+                      {odeSystem === 'duffing' && dampingFactor > 0.01 && (
+                        <path
+                          d={(() => {
+                            let p = '';
+                            for (let px = -2.4; px <= 2.4; px += 0.05) {
+                              const ny = (px - Math.pow(px, 3)) / dampingFactor;
+                              const sx = px * scale;
+                              const sy = -ny * scale;
+                              if (sy >= -240 && sy <= 240) {
+                                if (!p) p += `M ${sx} ${sy}`;
+                                else p += ` L ${sx} ${sy}`;
+                              }
+                            }
+                            return p;
+                          })()}
+                          fill="none"
+                          stroke="#f43f5e"
+                          strokeWidth="2"
+                          strokeDasharray="5 3"
+                        />
+                      )}
+                    </g>
+                  );
+                })()}
+
+                {/* 4. STREAMING ADVECTION PARTICLES */}
+                {showOdeStreamlines && (() => {
+                  const scale = 80;
+                  const particleSeeds = [
+                    { x: -2.0, y: 1.2 }, { x: -1.5, y: -1.2 }, { x: 0.8, y: 1.6 }, { x: 1.8, y: -1.0 },
+                    { x: -0.8, y: 0.9 }, { x: 0.5, y: -0.8 }, { x: -2.2, y: -0.5 }, { x: 2.2, y: 0.8 },
+                    { x: -1.0, y: 1.8 }, { x: 1.2, y: 1.1 }, { x: -0.3, y: -1.6 }, { x: 1.5, y: -1.8 }
+                  ];
+
+                  return particleSeeds.map((seed, sIdx) => {
+                    // Integrate a micro-trail of 8 steps along velocity field
+                    const offsetT = (timeT * 1.5 + sIdx * 0.45) % 2.5;
+                    const trail = computeRk4Trajectory(seed.x, seed.y, odeSystem, dampingFactor, 18, 0.04);
+                    const headIdx = Math.min(trail.length - 1, Math.floor((offsetT / 2.5) * (trail.length - 1)));
+                    const headPt = trail[headIdx];
+                    if (!headPt) return null;
+
+                    return (
+                      <g key={`particle-${sIdx}`}>
+                        <circle
+                          cx={headPt.x * scale}
+                          cy={-headPt.y * scale}
+                          r="3"
+                          fill="#38bdf8"
+                          opacity="0.8"
+                          filter="url(#odeGlow)"
+                        />
+                      </g>
+                    );
+                  });
+                })()}
+
+                {/* 5. NUMERICAL RK4 PHASE TRAJECTORY */}
+                {showOdeTrajectory && (() => {
+                  const scale = 80;
+                  const trajectory = computeRk4Trajectory(phaseX0, phaseY0, odeSystem, dampingFactor, 360, 0.022);
+
+                  let pathD = '';
+                  trajectory.forEach((pt, idx) => {
+                    const sx = pt.x * scale;
+                    const sy = -pt.y * scale;
+                    if (idx === 0) pathD += `M ${sx} ${sy}`;
+                    else pathD += ` L ${sx} ${sy}`;
+                  });
+
+                  // Live animated tracer bead index along the trajectory
+                  const activeBeadIdx = Math.min(
+                    trajectory.length - 1,
+                    Math.floor(((timeT * 2.0) % 5.0 / 5.0) * (trajectory.length - 1))
+                  );
+                  const beadPt = trajectory[activeBeadIdx] || trajectory[0];
+                  const beadV = evalOdeDerivatives(beadPt.x, beadPt.y, odeSystem, dampingFactor);
+                  const beadSpeed = Math.hypot(beadV.dx, beadV.dy) || 1;
+
+                  return (
+                    <g>
+                      {/* Flowing Trajectory Ribbon */}
+                      <path
+                        d={pathD}
+                        fill="none"
+                        stroke="url(#rk4Grad)"
+                        strokeWidth="2.8"
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        filter="url(#odeGlow)"
+                      />
+
+                      {/* Direction Flow Arrows along Trajectory */}
+                      {trajectory.filter((_, idx) => idx > 0 && idx % 45 === 0).map((pt, aIdx) => {
+                        const nextPt = trajectory[aIdx * 45 + 1] || pt;
+                        const dx = nextPt.x - pt.x;
+                        const dy = nextPt.y - pt.y;
+                        const len = Math.hypot(dx, dy) || 1;
+                        return (
+                          <line
+                            key={`traj-arrow-${aIdx}`}
+                            x1={pt.x * scale}
+                            y1={-pt.y * scale}
+                            x2={pt.x * scale + (dx / len) * 10}
+                            y2={-pt.y * scale - (dy / len) * 10}
+                            stroke="#fbbf24"
+                            strokeWidth="2"
+                            markerEnd="url(#odeArrowAmber)"
+                          />
+                        );
+                      })}
+
+                      {/* Initial Condition Marker (X₀, Y₀) */}
+                      <g transform={`translate(${phaseX0 * scale}, ${-phaseY0 * scale})`}>
+                        <circle cx="0" cy="0" r="10" fill="rgba(251, 191, 36, 0.3)" />
+                        <circle cx="0" cy="0" r="5.5" fill="#fbbf24" stroke="#ffffff" strokeWidth="2" />
+                        <g transform="translate(10, -12)">
+                          <rect x="0" y="0" width="92" height="17" rx="3" fill="rgba(15, 23, 42, 0.92)" stroke="#fbbf24" strokeWidth="1" />
+                          <text x="46" y="12" fill="#fbbf24" fontSize="8" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
+                            Start ({phaseX0.toFixed(2)}, {phaseY0.toFixed(2)})
+                          </text>
+                        </g>
+                      </g>
+
+                      {/* Live Animated Tracer Node */}
+                      <g transform={`translate(${beadPt.x * scale}, ${-beadPt.y * scale})`}>
+                        <circle cx="0" cy="0" r="7" fill="rgba(52, 211, 153, 0.35)" />
+                        <circle cx="0" cy="0" r="4.5" fill="#34d399" stroke="#ffffff" strokeWidth="1.8" />
+                        {/* Tangent Velocity Vector */}
+                        <line
+                          x1="0"
+                          y1="0"
+                          x2={(beadV.dx / beadSpeed) * 24}
+                          y2={-(beadV.dy / beadSpeed) * 24}
+                          stroke="#34d399"
+                          strokeWidth="2"
+                          markerEnd="url(#odeArrowEmerald)"
+                        />
+                        <g transform="translate(10, 14)">
+                          <rect x="0" y="0" width="110" height="16" rx="3" fill="rgba(15, 23, 42, 0.92)" stroke="#34d399" strokeWidth="1" />
+                          <text x="55" y="11.5" fill="#34d399" fontSize="7.5" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
+                            ({beadPt.x.toFixed(2)}, {beadPt.y.toFixed(2)}) • |v|={beadSpeed.toFixed(2)}
+                          </text>
+                        </g>
+                      </g>
+                    </g>
+                  );
+                })()}
+
+                {/* 6. FIXED EQUILIBRIUM POINTS & STABILITY CLASSIFICATION */}
+                {showOdeFixedPoints && (() => {
+                  const scale = 80;
+                  const fixPts = getOdeFixedPoints(odeSystem, dampingFactor);
+
+                  return fixPts.map((fp, idx) => {
+                    const sx = fp.x * scale;
+                    const sy = -fp.y * scale;
+                    let dotColor = '#34d399';
+                    if (fp.type === 'source') dotColor = '#38bdf8';
+                    else if (fp.type === 'saddle') dotColor = '#fbbf24';
+                    else if (fp.type === 'center') dotColor = '#a855f7';
+
+                    return (
+                      <g key={`fixpt-${idx}`} transform={`translate(${sx}, ${sy})`}>
+                        {/* Pulsing Aura */}
+                        <circle cx="0" cy="0" r={8 + Math.sin(timeT * 3.5 + idx) * 1.5} fill="none" stroke={dotColor} strokeWidth="1.5" />
+                        <circle cx="0" cy="0" r="4.5" fill={dotColor} stroke="#ffffff" strokeWidth="1.5" />
+                        {/* Tooltip Badge */}
+                        <g transform="translate(8, -12)">
+                          <rect x="0" y="0" width="130" height="16" rx="3" fill="rgba(15, 23, 42, 0.92)" stroke={dotColor} strokeWidth="1" />
+                          <text x="65" y="11.5" fill={dotColor} fontSize="7.5" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
+                            {fp.badge}
+                          </text>
+                        </g>
+                      </g>
+                    );
+                  });
+                })()}
               </svg>
             </div>
           )}
 
-          {/* PHASE 8: FORMULA SANDBOX VISUALIZER */}
+          {/* PHASE 8: MULTIVARIABLE FORMULA SANDBOX VISUALIZER */}
           {activeModuleId === 'formula_sandbox' && (
-            <div style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}>
+            <div
+              style={{ width: '100%', height: '100%', position: 'relative', overflow: 'hidden' }}
+              onWheel={(e) => {
+                e.preventDefault();
+                setSandboxZoom(prev => Math.max(0.5, Math.min(2.2, Number((prev - e.deltaY * 0.0012).toFixed(2)))));
+              }}
+            >
               <svg viewBox="-320 -240 640 480" style={{ width: '100%', height: '100%', background: currentCanvasTheme.bg || '#090d16' }}>
-                <line x1="-320" y1="0" x2="320" y2="0" stroke="rgba(148, 163, 184, 0.5)" strokeWidth="1.5" />
-                <line x1="0" y1="-240" x2="0" y2="240" stroke="rgba(148, 163, 184, 0.5)" strokeWidth="1.5" />
-                <path
-                  d={(() => {
-                    let path = '';
-                    for (let px = -300; px <= 300; px += 3) {
-                      const x = px / 60;
-                      const y = paramA * Math.sin(paramK * x + paramB);
-                      const py = -y * 80;
-                      if (px === -300) path += `M ${px} ${py}`;
-                      else path += ` L ${px} ${py}`;
-                    }
-                    return path;
-                  })()}
-                  fill="none"
-                  stroke="#34d399"
-                  strokeWidth="3.2"
-                />
+                <defs>
+                  {/* Glowing Filter */}
+                  <filter id="sandboxGlow" x="-20%" y="-20%" width="140%" height="140%">
+                    <feGaussianBlur stdDeviation="3.5" result="blur" />
+                    <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                  </filter>
+                  {/* Shaded Area Gradients */}
+                  <linearGradient id="sbGradC1" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#34d399" stopOpacity="0.32" />
+                    <stop offset="100%" stopColor="#34d399" stopOpacity="0.02" />
+                  </linearGradient>
+                  <linearGradient id="sbGradC2" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#38bdf8" stopOpacity="0.28" />
+                    <stop offset="100%" stopColor="#38bdf8" stopOpacity="0.02" />
+                  </linearGradient>
+                  <linearGradient id="sbGradC3" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#ec4899" stopOpacity="0.28" />
+                    <stop offset="100%" stopColor="#ec4899" stopOpacity="0.02" />
+                  </linearGradient>
+                  <linearGradient id="sbGradSum" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#fbbf24" stopOpacity="0.35" />
+                    <stop offset="100%" stopColor="#fbbf24" stopOpacity="0.02" />
+                  </linearGradient>
+                  {/* Polar Sector Radial Gradient */}
+                  <radialGradient id="sbPolarGrad" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stopColor="#34d399" stopOpacity="0.35" />
+                    <stop offset="85%" stopColor="#38bdf8" stopOpacity="0.12" />
+                    <stop offset="100%" stopColor="#38bdf8" stopOpacity="0.0" />
+                  </radialGradient>
+                  {/* Viewport Plot Bounding Box ClipPath */}
+                  <clipPath id="sbPlotClip">
+                    <rect x="-312" y="-232" width="624" height="464" rx="8" />
+                  </clipPath>
+                </defs>
+
+                {(() => {
+                  const scale = 72 * sandboxZoom;
+                  const phaseShift = isSimulating ? timeT * 0.9 : 0;
+
+                  return (
+                    <g>
+                      {/* 1. COORDINATE GRID SYSTEMS */}
+                      {showGridRings && sandboxCoordType === 'cartesian' && (
+                        <g opacity="0.8">
+                          {/* Horizontal Grid lines */}
+                          {[-3, -2, -1, 1, 2, 3].map((yVal) => {
+                            const py = -yVal * scale;
+                            return (
+                              <g key={`cg-h-${yVal}`}>
+                                <line x1="-310" y1={py} x2="310" y2={py} stroke="rgba(51, 65, 85, 0.4)" strokeWidth="1" strokeDasharray="3 3" />
+                                <text x="-314" y={py + 3.5} fill="rgba(148, 163, 184, 0.6)" fontSize="9" fontWeight="bold" fontFamily="monospace" textAnchor="end">
+                                  {yVal > 0 ? `+${yVal}` : yVal}
+                                </text>
+                              </g>
+                            );
+                          })}
+                          {/* Vertical Grid lines (at multiples of pi/2) */}
+                          {[-Math.PI, -Math.PI / 2, Math.PI / 2, Math.PI, (3 * Math.PI) / 2, 2 * Math.PI].map((xVal, idx) => {
+                            const px = xVal * scale;
+                            if (px < -310 || px > 310) return null;
+                            const label = idx === 0 ? '-π' : idx === 1 ? '-π/2' : idx === 2 ? 'π/2' : idx === 3 ? 'π' : idx === 4 ? '3π/2' : '2π';
+                            return (
+                              <g key={`cg-v-${idx}`}>
+                                <line x1={px} y1="-230" x2={px} y2="230" stroke="rgba(51, 65, 85, 0.4)" strokeWidth="1" strokeDasharray="3 3" />
+                                <text x={px} y="235" fill="rgba(148, 163, 184, 0.6)" fontSize="9" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
+                                  {label}
+                                </text>
+                              </g>
+                            );
+                          })}
+                        </g>
+                      )}
+
+                      {showGridRings && (sandboxCoordType === 'polar' || sandboxCoordType === 'parametric') && (
+                        <g opacity="0.8">
+                          {/* Concentric Polar Circles */}
+                          {[0.5, 1.0, 1.5, 2.0, 2.5, 3.0].map((rVal) => {
+                            const rPx = rVal * scale;
+                            if (rPx > 310) return null;
+                            return (
+                              <g key={`pg-r-${rVal}`}>
+                                <circle cx="0" cy="0" r={rPx} fill="none" stroke="rgba(51, 65, 85, 0.45)" strokeWidth="1" strokeDasharray={rVal === 1.0 || rVal === 2.0 ? "" : "3 3"} />
+                                <text x={rPx + 3} y="-4" fill="rgba(148, 163, 184, 0.55)" fontSize="8.5" fontWeight="bold" fontFamily="monospace">
+                                  r={rVal.toFixed(1)}
+                                </text>
+                              </g>
+                            );
+                          })}
+                          {/* Radial Angle Spokes */}
+                          {[0, 30, 45, 60, 90, 120, 135, 150, 180, 210, 225, 240, 270, 300, 315, 330].map((deg) => {
+                            const rad = (deg * Math.PI) / 180;
+                            const rMax = 230;
+                            const sx = Math.cos(rad) * rMax;
+                            const sy = -Math.sin(rad) * rMax;
+                            const isMajor = deg % 90 === 0;
+                            const isSemi = deg % 45 === 0;
+                            return (
+                              <g key={`pg-deg-${deg}`}>
+                                <line x1="0" y1="0" x2={sx} y2={sy} stroke={isMajor ? "rgba(148, 163, 184, 0.3)" : "rgba(51, 65, 85, 0.25)"} strokeWidth={isMajor ? 1.2 : 0.8} strokeDasharray={isMajor ? "" : "2 2"} />
+                                {isSemi && (
+                                  <text x={sx * 0.92} y={sy * 0.92} fill="rgba(148, 163, 184, 0.45)" fontSize="8" fontFamily="monospace" textAnchor="middle">
+                                    {deg}°
+                                  </text>
+                                )}
+                              </g>
+                            );
+                          })}
+                        </g>
+                      )}
+
+                      {/* Main Coordinate Axis Lines */}
+                      <g>
+                        <line x1="-310" y1="0" x2="310" y2="0" stroke="rgba(148, 163, 184, 0.6)" strokeWidth="1.6" />
+                        <line x1="0" y1="-230" x2="0" y2="230" stroke="rgba(148, 163, 184, 0.6)" strokeWidth="1.6" />
+                        <text x="305" y="-6" fill="rgba(148, 163, 184, 0.9)" fontSize="9.5" fontWeight="bold" fontFamily="monospace" textAnchor="end">
+                          {sandboxCoordType === 'polar' ? '+X (0°)' : '+X'}
+                        </text>
+                        <text x="6" y="-218" fill="rgba(148, 163, 184, 0.9)" fontSize="9.5" fontWeight="bold" fontFamily="monospace">
+                          {sandboxCoordType === 'polar' ? '+Y (90°)' : '+Y'}
+                        </text>
+                      </g>
+
+                      {/* 2. PLOT CURVES WITH BOUNDED CLIP-PATH */}
+                      <g clipPath="url(#sbPlotClip)">
+                        {/* A. CARTESIAN MODE y = f(x) */}
+                        {sandboxCoordType === 'cartesian' && (
+                          <g>
+                            {/* Shaded Area Under Curve 1 */}
+                            {showAreaShading && showCurve1 && (
+                              <path
+                                d={(() => {
+                                  let path = 'M -300 0';
+                                  for (let px = -300; px <= 300; px += 3) {
+                                    const x = px / scale;
+                                    const y = evalCartesian(x, 1, cartesianPreset);
+                                    const py = -y * scale;
+                                    path += ` L ${px} ${py}`;
+                                  }
+                                  path += ' L 300 0 Z';
+                                  return path;
+                                })()}
+                                fill="url(#sbGradC1)"
+                              />
+                            )}
+
+                            {/* Curve 3 (Envelope / 2nd Derivative) */}
+                            {showCurve3 && (
+                              <path
+                                d={(() => {
+                                  let path = '';
+                                  for (let px = -300; px <= 300; px += 3) {
+                                    const x = px / scale;
+                                    const y = evalCartesian(x, 3, cartesianPreset);
+                                    const py = -y * scale;
+                                    if (px === -300) path += `M ${px} ${py}`;
+                                    else path += ` L ${px} ${py}`;
+                                  }
+                                  return path;
+                                })()}
+                                fill="none"
+                                stroke="#ec4899"
+                                strokeWidth="2.0"
+                                strokeDasharray="4 3"
+                                opacity="0.85"
+                              />
+                            )}
+
+                            {/* Curve 2 (Modulation / Derivative) */}
+                            {showCurve2 && (
+                              <path
+                                d={(() => {
+                                  let path = '';
+                                  for (let px = -300; px <= 300; px += 3) {
+                                    const x = px / scale;
+                                    const y = evalCartesian(x, 2, cartesianPreset);
+                                    const py = -y * scale;
+                                    if (px === -300) path += `M ${px} ${py}`;
+                                    else path += ` L ${px} ${py}`;
+                                  }
+                                  return path;
+                                })()}
+                                fill="none"
+                                stroke="#38bdf8"
+                                strokeWidth="2.4"
+                                strokeDasharray={cartesianPreset === 'damped' || cartesianPreset === 'gaussian' ? "4 3" : ""}
+                                opacity="0.9"
+                              />
+                            )}
+
+                            {/* Curve 1 (Primary Function) */}
+                            {showCurve1 && (
+                              <path
+                                d={(() => {
+                                  let path = '';
+                                  for (let px = -300; px <= 300; px += 2) {
+                                    const x = px / scale;
+                                    const y = evalCartesian(x, 1, cartesianPreset);
+                                    const py = -y * scale;
+                                    if (px === -300) path += `M ${px} ${py}`;
+                                    else path += ` L ${px} ${py}`;
+                                  }
+                                  return path;
+                                })()}
+                                fill="none"
+                                stroke="#34d399"
+                                strokeWidth="3.4"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                filter="url(#sandboxGlow)"
+                              />
+                            )}
+
+                            {/* Composite Superposition (Sum = C1 + C2) */}
+                            {showCompositeSum && (
+                              <path
+                                d={(() => {
+                                  let path = '';
+                                  for (let px = -300; px <= 300; px += 2) {
+                                    const x = px / scale;
+                                    const y = evalCartesian(x, 1, cartesianPreset) + evalCartesian(x, 2, cartesianPreset);
+                                    const py = -y * scale;
+                                    if (px === -300) path += `M ${px} ${py}`;
+                                    else path += ` L ${px} ${py}`;
+                                  }
+                                  return path;
+                                })()}
+                                fill="none"
+                                stroke="#fbbf24"
+                                strokeWidth="3.8"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeDasharray="6 2"
+                              />
+                            )}
+
+                            {/* Roots & Critical Points Extrema Overlay */}
+                            {showRootsAndExtrema && (
+                              <g>
+                                {/* Zero Crossings / Roots */}
+                                {sandboxKeyPoints.roots.map((root, rIdx) => {
+                                  const rpx = root.x * scale;
+                                  if (rpx < -305 || rpx > 305) return null;
+                                  return (
+                                    <g key={`root-${rIdx}`}>
+                                      <circle cx={rpx} cy="0" r="4.5" fill="#38bdf8" stroke="#ffffff" strokeWidth="1.5" />
+                                      <text x={rpx} y="14" fill="#38bdf8" fontSize="8" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
+                                        x={root.x.toFixed(2)}
+                                      </text>
+                                    </g>
+                                  );
+                                })}
+
+                                {/* Local Extrema / Stationary Points */}
+                                {sandboxKeyPoints.extrema.map((ext, eIdx) => {
+                                  const epx = ext.x * scale;
+                                  const epy = -ext.y * scale;
+                                  if (epx < -305 || epx > 305 || epy < -225 || epy > 225) return null;
+                                  const extColor = ext.type === 'max' ? '#fb923c' : ext.type === 'min' ? '#a855f7' : '#fbbf24';
+                                  return (
+                                    <g key={`ext-${eIdx}`}>
+                                      <circle cx={epx} cy={epy} r="5" fill={extColor} stroke="#ffffff" strokeWidth="1.8" />
+                                      <circle cx={epx} cy={epy} r="8" fill="none" stroke={extColor} strokeWidth="1" opacity="0.6" />
+                                      <g transform={`translate(${epx}, ${epy + (ext.type === 'max' ? -10 : 16)})`}>
+                                        <rect x="-36" y="-8" width="72" height="15" rx="3" fill="rgba(15, 23, 42, 0.9)" stroke={extColor} strokeWidth="0.8" />
+                                        <text x="0" y="2.5" fill={extColor} fontSize="7.5" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
+                                          {ext.type === 'max' ? '▲ MAX' : '▼ MIN'} ({ext.x.toFixed(1)}, {ext.y.toFixed(1)})
+                                        </text>
+                                      </g>
+                                    </g>
+                                  );
+                                })}
+                              </g>
+                            )}
+                          </g>
+                        )}
+
+                        {/* B. POLAR MODE r = f(θ) */}
+                        {sandboxCoordType === 'polar' && (
+                          <g>
+                            {/* Polar Sector Shading */}
+                            {showAreaShading && showCurve1 && (
+                              <path
+                                d={(() => {
+                                  let path = 'M 0 0';
+                                  const steps = 360;
+                                  for (let i = 0; i <= steps; i++) {
+                                    const th = (i / steps) * 2 * Math.PI;
+                                    const r = Math.max(0, evalPolar(th, 1, polarPreset));
+                                    const px = r * Math.cos(th) * scale;
+                                    const py = -r * Math.sin(th) * scale;
+                                    path += ` L ${px} ${py}`;
+                                  }
+                                  path += ' Z';
+                                  return path;
+                                })()}
+                                fill="url(#sbPolarGrad)"
+                              />
+                            )}
+
+                            {/* Polar Curve 3 */}
+                            {showCurve3 && (
+                              <path
+                                d={(() => {
+                                  let path = '';
+                                  const steps = 360;
+                                  for (let i = 0; i <= steps; i++) {
+                                    const th = (i / steps) * 2 * Math.PI;
+                                    const r = Math.max(0, evalPolar(th, 3, polarPreset));
+                                    const px = r * Math.cos(th) * scale;
+                                    const py = -r * Math.sin(th) * scale;
+                                    if (i === 0) path += `M ${px} ${py}`;
+                                    else path += ` L ${px} ${py}`;
+                                  }
+                                  return path;
+                                })()}
+                                fill="none"
+                                stroke="#ec4899"
+                                strokeWidth="2.0"
+                                strokeDasharray="4 3"
+                                opacity="0.85"
+                              />
+                            )}
+
+                            {/* Polar Curve 2 */}
+                            {showCurve2 && (
+                              <path
+                                d={(() => {
+                                  let path = '';
+                                  const steps = 360;
+                                  for (let i = 0; i <= steps; i++) {
+                                    const th = (i / steps) * 2 * Math.PI;
+                                    const r = Math.max(0, evalPolar(th, 2, polarPreset));
+                                    const px = r * Math.cos(th) * scale;
+                                    const py = -r * Math.sin(th) * scale;
+                                    if (i === 0) path += `M ${px} ${py}`;
+                                    else path += ` L ${px} ${py}`;
+                                  }
+                                  return path;
+                                })()}
+                                fill="none"
+                                stroke="#38bdf8"
+                                strokeWidth="2.4"
+                                opacity="0.9"
+                              />
+                            )}
+
+                            {/* Polar Curve 1 (Primary) */}
+                            {showCurve1 && (
+                              <path
+                                d={(() => {
+                                  let path = '';
+                                  const steps = 480;
+                                  for (let i = 0; i <= steps; i++) {
+                                    const th = (i / steps) * (polarPreset === 'spiral' ? 4 * Math.PI : 2 * Math.PI);
+                                    const r = Math.max(0, evalPolar(th, 1, polarPreset));
+                                    const px = r * Math.cos(th) * scale;
+                                    const py = -r * Math.sin(th) * scale;
+                                    if (i === 0) path += `M ${px} ${py}`;
+                                    else path += ` L ${px} ${py}`;
+                                  }
+                                  return path;
+                                })()}
+                                fill="none"
+                                stroke="#34d399"
+                                strokeWidth="3.4"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                filter="url(#sandboxGlow)"
+                              />
+                            )}
+                          </g>
+                        )}
+
+                        {/* C. PARAMETRIC MODE (x(t), y(t)) */}
+                        {sandboxCoordType === 'parametric' && (
+                          <g>
+                            {/* Parametric Curve 3 */}
+                            {showCurve3 && (
+                              <path
+                                d={(() => {
+                                  let path = '';
+                                  const steps = 400;
+                                  for (let i = 0; i <= steps; i++) {
+                                    const t = (i / steps) * 2 * Math.PI;
+                                    const pt = evalParametric(t, 3, parametricPreset);
+                                    const px = pt.x * scale;
+                                    const py = -pt.y * scale;
+                                    if (i === 0) path += `M ${px} ${py}`;
+                                    else path += ` L ${px} ${py}`;
+                                  }
+                                  return path;
+                                })()}
+                                fill="none"
+                                stroke="#ec4899"
+                                strokeWidth="2.0"
+                                strokeDasharray="4 3"
+                                opacity="0.85"
+                              />
+                            )}
+
+                            {/* Parametric Curve 2 */}
+                            {showCurve2 && (
+                              <path
+                                d={(() => {
+                                  let path = '';
+                                  const steps = 400;
+                                  for (let i = 0; i <= steps; i++) {
+                                    const t = (i / steps) * 2 * Math.PI;
+                                    const pt = evalParametric(t, 2, parametricPreset);
+                                    const px = pt.x * scale;
+                                    const py = -pt.y * scale;
+                                    if (i === 0) path += `M ${px} ${py}`;
+                                    else path += ` L ${px} ${py}`;
+                                  }
+                                  return path;
+                                })()}
+                                fill="none"
+                                stroke="#38bdf8"
+                                strokeWidth="2.4"
+                                opacity="0.9"
+                              />
+                            )}
+
+                            {/* Parametric Curve 1 (Primary) */}
+                            {showCurve1 && (
+                              <path
+                                d={(() => {
+                                  let path = '';
+                                  const steps = 500;
+                                  const maxT = parametricPreset === 'hypotrochoid' || parametricPreset === 'cycloid' ? 4 * Math.PI : 2 * Math.PI;
+                                  for (let i = 0; i <= steps; i++) {
+                                    const t = (i / steps) * maxT;
+                                    const pt = evalParametric(t, 1, parametricPreset);
+                                    const px = pt.x * scale;
+                                    const py = -pt.y * scale;
+                                    if (i === 0) path += `M ${px} ${py}`;
+                                    else path += ` L ${px} ${py}`;
+                                  }
+                                  return path;
+                                })()}
+                                fill="none"
+                                stroke="#34d399"
+                                strokeWidth="3.4"
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                filter="url(#sandboxGlow)"
+                              />
+                            )}
+                          </g>
+                        )}
+                      </g>
+
+                      {/* 3. LIVE TRACER BEAD, TANGENT, VELOCITY VECTOR & OSCULATING CIRCLE */}
+                      {showTracerDot && (() => {
+                        let tPos = { px: 0, py: 0, rawX: 0, rawY: 0, vx: 0, vy: 0, label: '', kappa: 0, oscR: 0, oscCx: 0, oscCy: 0 };
+
+                        if (sandboxCoordType === 'cartesian') {
+                          const xTrace = -3.0 + (((phaseShift * 0.7) % 6.0) + 6.0) % 6.0;
+                          const yTrace = evalCartesian(xTrace, 1, cartesianPreset);
+                          const delta = 0.01;
+                          const yNext = evalCartesian(xTrace + delta, 1, cartesianPreset);
+                          const yPrev = evalCartesian(xTrace - delta, 1, cartesianPreset);
+                          const dy = (yNext - yPrev) / (2 * delta);
+                          const d2y = (yNext - 2 * yTrace + yPrev) / (delta * delta);
+                          const len = Math.sqrt(1 + dy * dy) || 1;
+
+                          // Curvature κ = |f''| / (1 + f'^2)^(3/2)
+                          const kappa = Math.abs(d2y) / Math.pow(1 + dy * dy, 1.5);
+                          const oscR = Math.min(240, (1 / Math.max(0.004, kappa)) * scale);
+                          const normSign = d2y >= 0 ? 1 : -1;
+                          const oscCx = xTrace * scale - normSign * (dy / len) * oscR;
+                          const oscCy = -yTrace * scale - normSign * (1 / len) * oscR;
+
+                          tPos = {
+                            px: xTrace * scale,
+                            py: -yTrace * scale,
+                            rawX: xTrace,
+                            rawY: yTrace,
+                            vx: (1 / len) * 36,
+                            vy: (-dy / len) * 36,
+                            label: `(${xTrace.toFixed(2)}, ${yTrace.toFixed(2)}) • f'=${dy.toFixed(2)}`,
+                            kappa,
+                            oscR,
+                            oscCx,
+                            oscCy
+                          };
+                        } else if (sandboxCoordType === 'polar') {
+                          const th = (phaseShift * 0.8) % (2 * Math.PI);
+                          const r = Math.max(0, evalPolar(th, 1, polarPreset));
+                          const xTrace = r * Math.cos(th);
+                          const yTrace = r * Math.sin(th);
+                          const delta = 0.01;
+                          const rNext = evalPolar(th + delta, 1, polarPreset);
+                          const rPrev = evalPolar(th - delta, 1, polarPreset);
+                          const vxRaw = (rNext * Math.cos(th + delta) - rPrev * Math.cos(th - delta)) / (2 * delta);
+                          const vyRaw = (rNext * Math.sin(th + delta) - rPrev * Math.sin(th - delta)) / (2 * delta);
+                          const len = Math.sqrt(vxRaw * vxRaw + vyRaw * vyRaw) || 1;
+                          tPos = {
+                            px: xTrace * scale,
+                            py: -yTrace * scale,
+                            rawX: xTrace,
+                            rawY: yTrace,
+                            vx: (vxRaw / len) * 36,
+                            vy: (-vyRaw / len) * 36,
+                            label: `r=${r.toFixed(2)}, θ=${((th * 180) / Math.PI).toFixed(0)}°`,
+                            kappa: 0.5,
+                            oscR: 45 * sandboxZoom,
+                            oscCx: xTrace * scale - (vyRaw / len) * 45 * sandboxZoom,
+                            oscCy: -yTrace * scale + (vxRaw / len) * 45 * sandboxZoom
+                          };
+                        } else {
+                          const maxT = parametricPreset === 'hypotrochoid' || parametricPreset === 'cycloid' ? 4 * Math.PI : 2 * Math.PI;
+                          const tVal = (phaseShift * 0.8) % maxT;
+                          const pt = evalParametric(tVal, 1, parametricPreset);
+                          const delta = 0.01;
+                          const ptNext = evalParametric(tVal + delta, 1, parametricPreset);
+                          const ptPrev = evalParametric(tVal - delta, 1, parametricPreset);
+                          const vxRaw = (ptNext.x - ptPrev.x) / (2 * delta);
+                          const vyRaw = (ptNext.y - ptPrev.y) / (2 * delta);
+                          const len = Math.sqrt(vxRaw * vxRaw + vyRaw * vyRaw) || 1;
+                          tPos = {
+                            px: pt.x * scale,
+                            py: -pt.y * scale,
+                            rawX: pt.x,
+                            rawY: pt.y,
+                            vx: (vxRaw / len) * 36,
+                            vy: (-vyRaw / len) * 36,
+                            label: `(${pt.x.toFixed(2)}, ${pt.y.toFixed(2)}) • t=${tVal.toFixed(2)}`,
+                            kappa: 0.6,
+                            oscR: 40 * sandboxZoom,
+                            oscCx: pt.x * scale - (vyRaw / len) * 40 * sandboxZoom,
+                            oscCy: -pt.y * scale + (vxRaw / len) * 40 * sandboxZoom
+                          };
+                        }
+
+                        return (
+                          <g>
+                            {/* Drop-line to Axis */}
+                            <line x1={tPos.px} y1={tPos.py} x2={tPos.px} y2="0" stroke="rgba(251, 191, 36, 0.45)" strokeWidth="1.2" strokeDasharray="3 3" />
+
+                            {/* Velocity & Tangent Vector v(t) */}
+                            {showTangentVector && (
+                              <g>
+                                <line x1={tPos.px} y1={tPos.py} x2={tPos.px + tPos.vx} y2={tPos.py + tPos.vy} stroke="#38bdf8" strokeWidth="2.4" />
+                                <circle cx={tPos.px + tPos.vx} cy={tPos.py + tPos.vy} r="3" fill="#38bdf8" />
+                                {/* Orthogonal Normal Vector N */}
+                                <line x1={tPos.px} y1={tPos.py} x2={tPos.px - tPos.vy * 0.65} y2={tPos.py + tPos.vx * 0.65} stroke="#ec4899" strokeWidth="1.8" />
+                              </g>
+                            )}
+
+                            {/* Osculating Circle κ(t) & Center of Curvature */}
+                            {showOsculatingCircle && tPos.oscR > 2 && tPos.oscR < 320 && (
+                              <g opacity="0.9">
+                                <circle
+                                  cx={tPos.oscCx}
+                                  cy={tPos.oscCy}
+                                  r={tPos.oscR}
+                                  fill="rgba(236, 72, 153, 0.07)"
+                                  stroke="#ec4899"
+                                  strokeWidth="1.6"
+                                  strokeDasharray="4 3"
+                                />
+                                <line
+                                  x1={tPos.px}
+                                  y1={tPos.py}
+                                  x2={tPos.oscCx}
+                                  y2={tPos.oscCy}
+                                  stroke="#ec4899"
+                                  strokeWidth="1.2"
+                                  strokeDasharray="2 2"
+                                />
+                                <circle cx={tPos.oscCx} cy={tPos.oscCy} r="3.5" fill="#ec4899" stroke="#ffffff" strokeWidth="1" />
+                                <g transform={`translate(${tPos.oscCx + 6}, ${tPos.oscCy - 6})`}>
+                                  <rect x="0" y="0" width="85" height="15" rx="3" fill="rgba(15, 23, 42, 0.9)" stroke="#ec4899" strokeWidth="0.8" />
+                                  <text x="42" y="10.5" fill="#ec4899" fontSize="7.5" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
+                                    κ={(tPos.kappa || 0.5).toFixed(2)} (R={Math.round(tPos.oscR)}px)
+                                  </text>
+                                </g>
+                              </g>
+                            )}
+
+                            {/* Tracer Bead */}
+                            <circle cx={tPos.px} cy={tPos.py} r="8" fill="rgba(251, 191, 36, 0.3)" />
+                            <circle cx={tPos.px} cy={tPos.py} r="5" fill="#fbbf24" stroke="#ffffff" strokeWidth="2" />
+
+                            {/* Live Floating Coordinate Callout */}
+                            <g transform={`translate(${tPos.px + 10}, ${tPos.py - 14})`}>
+                              <rect x="0" y="0" width="135" height="22" rx="4" fill="rgba(15, 23, 42, 0.92)" stroke="#fbbf24" strokeWidth="1.2" />
+                              <text x="67" y="14" fill="#fbbf24" fontSize="8.5" fontWeight="bold" fontFamily="monospace" textAnchor="middle">
+                                {tPos.label}
+                              </text>
+                            </g>
+                          </g>
+                        );
+                      })()}
+
+                      {/* 4. ON-CANVAS MATHEMATICAL HUD BADGE */}
+                      <g transform="translate(-305, -225)">
+                        <rect x="0" y="0" width="280" height="42" rx="6" fill="rgba(15, 23, 42, 0.92)" stroke="rgba(56, 189, 248, 0.4)" strokeWidth="1" />
+                        <text x="12" y="16" fill="#38bdf8" fontSize="10.5" fontWeight="bold" fontFamily="monospace">
+                          🪐 {sandboxCoordType.toUpperCase()}: {sandboxCoordType === 'cartesian' ? cartesianPreset.toUpperCase() : sandboxCoordType === 'polar' ? polarPreset.toUpperCase() : parametricPreset.toUpperCase()}
+                        </text>
+                        <text x="12" y="32" fill="#cbd5e1" fontSize="9" fontFamily="monospace">
+                          k = {paramK.toFixed(1)} • a = {paramA.toFixed(1)} • b = {paramB.toFixed(2)} • Zoom = {Math.round(sandboxZoom * 100)}%
+                        </text>
+                      </g>
+                    </g>
+                  );
+                })()}
               </svg>
             </div>
           )}
