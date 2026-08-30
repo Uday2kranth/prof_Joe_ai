@@ -25,7 +25,7 @@ import { Hero3DPreviewShowcase } from './Hero3DPreviewShowcase';
 
 
 interface DemoLandingHubProps {
-  onSelectWorkspace: (workspaceId: 'chat' | 'personas' | 'fun_personas' | 'examprep' | 'diagrams' | 'system_prompts' | 'prompts' | 'cubes' | 'extractor_studio' | 'code_lab' | 'lecture_notes' | 'sandbox' | 'dsa_lab' | 'flashcards_studio' | 'quiz_arena' | 'pinned_archive' | 'test_diagrams' | 'deep_learning_studio') => void;
+  onSelectWorkspace: (workspaceId: 'chat' | 'personas' | 'fun_personas' | 'examprep' | 'diagrams' | 'system_prompts' | 'prompts' | 'cubes' | 'extractor_studio' | 'code_lab' | 'lecture_notes' | 'sandbox' | 'dsa_lab' | 'flashcards_studio' | 'quiz_arena' | 'pinned_archive' | 'test_diagrams' | 'deep_learning_studio' | 'master_syllabus') => void;
   onOpenSettings: () => void;
   onOpenSettingsStudio?: () => void;
   theme: 'dark' | 'light';
@@ -271,6 +271,33 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
             </div>
           </div>
 
+          {/* Card: Unified Master Syllabus & Roadmaps */}
+          <div 
+            className="hub-portal-card master-syllabus-portal"
+            onClick={() => onSelectWorkspace('master_syllabus')}
+            style={{
+              borderColor: 'rgba(56, 189, 248, 0.45)',
+              background: 'linear-gradient(135deg, rgba(15, 23, 42, 0.85), rgba(30, 41, 59, 0.75))'
+            }}
+          >
+            <div className="portal-card-header">
+              <div className="portal-icon-badge cyan-bg">
+                <Compass size={24} />
+              </div>
+              <span className="portal-tag cyan-tag">Tier-1 Curriculum & Paths</span>
+            </div>
+            <div className="portal-card-body">
+              <h3>Syllabus & Roadmaps 🗺️</h3>
+              <p>Exhaustive subject-wise & education-level syllabus breakdown (Foundations ➔ B.Tech ➔ M.Tech ➔ Ph.D.) + interactive career roadmap generator.</p>
+            </div>
+            <div className="portal-card-footer">
+              <button type="button" className="launch-portal-btn">
+                <span>Explore Syllabus & Roadmaps</span>
+                <ArrowRight size={14} className="launch-arrow" />
+              </button>
+            </div>
+          </div>
+
           {/* Card: Flashcard Study Studio */}
           <div 
             className="hub-portal-card flashcards-portal"
@@ -380,7 +407,7 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
             </div>
             <div className="portal-card-body">
               <h3>Interactive Sandbox & Whiteboard</h3>
-              <p>Smart Teaching Board & 120+ Gizmos, Data Science & Neural AI Simulator, Statistical Lab, KaTeX Academic Board & Excalidraw.</p>
+              <p>Smart Teaching Board & 120+ Gizmos, KaTeX Academic Chalkboards, Excalidraw Vector Canvas & 1-Click Studio Gateways.</p>
             </div>
             <div className="portal-card-footer">
               <button type="button" className="launch-portal-btn">

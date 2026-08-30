@@ -12,6 +12,7 @@ export interface PrintCustomConfig {
   showDateTag: boolean;
   showWorkspaceTag: boolean;
   showFooter: boolean;
+  showPageNumbers: boolean;
   marginPreset: 'standard' | 'compact' | 'none';
   hideDividers: boolean;
   paperSize: 'a4' | 'letter';
@@ -43,6 +44,7 @@ export const DEFAULT_PRINT_CONFIG: PrintCustomConfig = {
   showDateTag: true,
   showWorkspaceTag: true,
   showFooter: true,
+  showPageNumbers: true,
   marginPreset: 'standard',
   hideDividers: false,
   paperSize: 'a4',
@@ -95,13 +97,13 @@ export function getPrintHeaderMode(): PrintHeaderMode {
 
 export function setPrintHeaderMode(mode: PrintHeaderMode): void {
   if (mode === 'academic') {
-    savePrintCustomConfig({ preset: 'academic', showHeader: true, showModelTag: true, showDateTag: true, showWorkspaceTag: true, showFooter: true, inkMode: 'rich', marginPreset: 'standard', hideDividers: false });
+    savePrintCustomConfig({ preset: 'academic', showHeader: true, showModelTag: true, showDateTag: true, showWorkspaceTag: true, showFooter: true, showPageNumbers: true, inkMode: 'rich', marginPreset: 'standard', hideDividers: false });
   } else if (mode === 'clean') {
-    savePrintCustomConfig({ preset: 'clean', showHeader: false, showModelTag: false, showDateTag: false, showWorkspaceTag: false, showFooter: false, inkMode: 'rich' });
+    savePrintCustomConfig({ preset: 'clean', showHeader: false, showModelTag: false, showDateTag: false, showWorkspaceTag: false, showFooter: false, showPageNumbers: false, inkMode: 'rich' });
   } else if (mode === 'eco') {
-    savePrintCustomConfig({ preset: 'eco', showHeader: true, showModelTag: false, showDateTag: true, showWorkspaceTag: false, showFooter: true, inkMode: 'eco', hideDividers: true });
+    savePrintCustomConfig({ preset: 'eco', showHeader: true, showModelTag: false, showDateTag: true, showWorkspaceTag: false, showFooter: true, showPageNumbers: true, inkMode: 'eco', hideDividers: true });
   } else if (mode === 'branded') {
-    savePrintCustomConfig({ preset: 'branded', showHeader: true, showModelTag: true, showDateTag: true, showWorkspaceTag: true, showFooter: true });
+    savePrintCustomConfig({ preset: 'branded', showHeader: true, showModelTag: true, showDateTag: true, showWorkspaceTag: true, showFooter: true, showPageNumbers: true });
   } else {
     savePrintCustomConfig({ preset: 'custom' });
   }
@@ -656,7 +658,7 @@ export function buildPrintHtmlDocument(
           
           @page {
             size: ${paperSizeRule};
-            ${config.marginPreset === 'none' ? 'margin: 0;' : config.marginPreset === 'compact' ? 'margin: 4mm 6mm 6mm 6mm;' : 'margin: 12mm 14mm 14mm 14mm;'}
+            margin: 0;
           }
 
           * {
@@ -673,8 +675,9 @@ export function buildPrintHtmlDocument(
             background-color: ${effectiveBgColor};
             color: ${effectiveTextColor};
             ${fontSizeCss}
-            ${config.marginPreset === 'none' ? 'padding: 8px 12px;' : config.marginPreset === 'compact' ? 'padding: 12px 16px;' : 'padding: 24px 32px;'}
+            padding: ${config.marginPreset === 'none' ? '2mm 4mm' : config.marginPreset === 'compact' ? '4mm 6mm' : '8mm 10mm'};
             margin: 0;
+            counter-reset: page 0;
           }
 
           ${config.watermarkText?.trim() ? `
@@ -720,8 +723,8 @@ export function buildPrintHtmlDocument(
             .markdown-content th { background: #ffffff !important; border: 1px solid #000000 !important; }
             .print-header { border-bottom: 2px solid #000000 !important; }
           ` : `
-            .markdown-content pre { background: #f8fafc; border: 1px solid #cbd5e1; }
-            .markdown-content code { background: #f1f5f9; }
+            .markdown-content pre { background: ${config.paperBgColor && config.paperBgColor.toLowerCase() !== '#ffffff' ? 'rgba(0, 0, 0, 0.04)' : '#f8fafc'} !important; border: 1px solid rgba(148, 163, 184, 0.35); }
+            .markdown-content code { background: ${config.paperBgColor && config.paperBgColor.toLowerCase() !== '#ffffff' ? 'rgba(0, 0, 0, 0.05)' : '#f1f5f9'} !important; }
             .markdown-content th { background: rgba(2, 132, 199, 0.1); color: ${effectiveHeaderColor}; }
           `}
 
@@ -961,10 +964,14 @@ export function buildPrintHtmlDocument(
           @media print {
             html, body {
               width: 100% !important;
-              padding: 0 !important;
+              min-height: 100vh !important;
+              padding: ${config.marginPreset === 'none' ? '2mm 4mm' : config.marginPreset === 'compact' ? '4mm 6mm' : '8mm 10mm'} !important;
               margin: 0 !important;
-              background: #ffffff !important;
-              color: #0f172a !important;
+              background: ${effectiveBgColor} !important;
+              background-color: ${effectiveBgColor} !important;
+              color: ${effectiveTextColor} !important;
+              -webkit-print-color-adjust: exact !important;
+              print-color-adjust: exact !important;
             }
 
             .markdown-content h1, 
@@ -973,14 +980,18 @@ export function buildPrintHtmlDocument(
             .markdown-content h4, 
             .markdown-content h5, 
             .markdown-content h6 {
-              color: #0f172a !important;
+              color: ${effectiveTextColor} !important;
               page-break-after: avoid !important;
               break-after: avoid !important;
             }
 
+            .markdown-content strong {
+              color: ${effectiveHeaderColor} !important;
+            }
+
             .markdown-content pre {
-              background: #f8fafc !important;
-              border: 1px solid #cbd5e1 !important;
+              background: ${config.inkMode === 'eco' ? '#ffffff' : (config.paperBgColor && config.paperBgColor.toLowerCase() !== '#ffffff' ? 'rgba(0, 0, 0, 0.04)' : '#f8fafc')} !important;
+              border: 1px solid rgba(148, 163, 184, 0.35) !important;
               white-space: pre-wrap !important;
               word-break: break-word !important;
               overflow-wrap: break-word !important;
@@ -990,6 +1001,7 @@ export function buildPrintHtmlDocument(
             }
 
             .markdown-content code {
+              background: ${config.inkMode === 'eco' ? '#ffffff' : (config.paperBgColor && config.paperBgColor.toLowerCase() !== '#ffffff' ? 'rgba(0, 0, 0, 0.05)' : '#f1f5f9')} !important;
               white-space: pre-wrap !important;
               word-break: break-word !important;
               overflow-wrap: break-word !important;
@@ -1023,6 +1035,32 @@ export function buildPrintHtmlDocument(
               box-shadow: none !important;
               border: 1px solid #e2e8f0 !important;
             }
+
+            ${config.showPageNumbers ? `
+            .print-page-counter-dock {
+              display: block !important;
+              position: fixed !important;
+              bottom: 8px !important;
+              right: 18px !important;
+              font-size: 8pt !important;
+              color: #94a3b8 !important;
+              z-index: 99999 !important;
+              pointer-events: none !important;
+              font-family: ${fontFamilyCss};
+              counter-increment: page;
+            }
+            .print-page-counter-dock::after {
+              content: "Page " counter(page);
+            }
+            ` : `
+            .print-page-counter-dock {
+              display: none !important;
+            }
+            `}
+          }
+
+          .print-page-counter-dock {
+            display: none;
           }
         </style>
       </head>
@@ -1033,6 +1071,7 @@ export function buildPrintHtmlDocument(
           ${parsedHtml}
         </div>
         ${footerHtml}
+        ${config.showPageNumbers ? '<div class="print-page-counter-dock"></div>' : ''}
       </body>
     </html>
   `;

@@ -30,10 +30,16 @@
   --font-mono: 'Fira Code', monospace;
 }
 
-/* 🌌 6 Global Workspace Atmospheres & Unified Button Design Tokens */
-[data-atmosphere="cyber_osmania"],
-.app-container[data-atmosphere="cyber_osmania"],
-:root:not([data-atmosphere]) {
+/* 🌌 6 Global Workspace Atmospheres with Complete Independent Dark & Light Modes */
+
+/* ==========================================================================
+   1. CYBER OSMANIA (Electric Cyan & Sapphire Blue)
+   ========================================================================== */
+/* 🌙 Cyber Osmania - Dark Mode */
+[data-atmosphere="cyber_osmania"]:not([data-theme="light"]),
+.app-container[data-atmosphere="cyber_osmania"]:not([data-theme="light"]),
+[data-theme="dark"][data-atmosphere="cyber_osmania"],
+:root:not([data-atmosphere]):not([data-theme="light"]) {
   --bg-primary: #020617;
   --bg-secondary: #0b1120;
   --bg-tertiary: #1e293b;
@@ -81,7 +87,7 @@
   --input-dock-bg: rgba(11, 17, 32, 0.94);
   --input-dock-border: rgba(6, 182, 212, 0.25);
 
-  /* 💬 Handpicked Atmosphere Chat Bubble Palette */
+  /* 💬 Chat Bubble Palette */
   --bubble-user-bg: linear-gradient(135deg, rgba(6, 182, 212, 0.32), rgba(59, 130, 246, 0.32));
   --bubble-user-border: rgba(6, 182, 212, 0.5);
   --bubble-user-text: #f8fafc;
@@ -91,8 +97,73 @@
   --bubble-blur: 14px;
 }
 
-[data-atmosphere="midnight_academy"],
-.app-container[data-atmosphere="midnight_academy"] {
+/* ☀️ Cyber Osmania - Light Mode */
+[data-theme="light"][data-atmosphere="cyber_osmania"],
+[data-theme="light"]:not([data-atmosphere]) {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f1f5f9;
+  --header-bg: rgba(255, 255, 255, 0.94);
+  --header-border: rgba(2, 132, 199, 0.18);
+  --card-bg: rgba(255, 255, 255, 0.92);
+  --card-border: rgba(2, 132, 199, 0.18);
+  --card-shadow: 0 10px 30px rgba(2, 132, 199, 0.08);
+  --dropdown-bg: rgba(255, 255, 255, 0.98);
+  --dropdown-border: rgba(2, 132, 199, 0.35);
+  --dropdown-text: #0f172a;
+  --horizon-glow: rgba(2, 132, 199, 0.40);
+  --horizon-subtle: rgba(56, 189, 248, 0.20);
+  --cursor-glow: rgba(2, 132, 199, 0.50);
+  --cursor-subtle: rgba(56, 189, 248, 0.25);
+  --accent-cyan: #0284c7;
+  --accent-cyan-hover: #0369a1;
+  --accent-blue: #0ea5e9;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --border-color: rgba(2, 132, 199, 0.14);
+
+  /* 🔘 Unified Button Tokens */
+  --btn-primary-bg: linear-gradient(135deg, #0284c7, #06b6d4);
+  --btn-primary-text: #ffffff;
+  --btn-primary-border: #0284c7;
+  --btn-secondary-bg: #ffffff;
+  --btn-secondary-border: rgba(2, 132, 199, 0.25);
+  --btn-secondary-text: #0f172a;
+  --btn-secondary-hover: rgba(2, 132, 199, 0.08);
+  --btn-ghost-hover: rgba(2, 132, 199, 0.06);
+  --bento-tile-bg: rgba(255, 255, 255, 0.95);
+  --bento-tile-border: rgba(2, 132, 199, 0.18);
+  --bento-glow-color: 2, 132, 199;
+  --pill-bg: rgba(2, 132, 199, 0.10);
+  --pill-border: rgba(2, 132, 199, 0.25);
+  --pill-text: #0284c7;
+  --pill-active-bg: rgba(2, 132, 199, 0.18);
+  --pill-active-text: #0284c7;
+  --tab-active-bg: linear-gradient(135deg, #0284c7, #06b6d4);
+  --tab-active-text: #ffffff;
+  --tab-active-shadow: 0 4px 15px rgba(2, 132, 199, 0.25);
+  --dock-item-active-bg: linear-gradient(135deg, rgba(2, 132, 199, 0.15), rgba(6, 182, 212, 0.15));
+  --input-dock-bg: rgba(255, 255, 255, 0.96);
+  --input-dock-border: rgba(2, 132, 199, 0.22);
+
+  /* 💬 Chat Bubble Palette */
+  --bubble-user-bg: linear-gradient(135deg, #0284c7, #06b6d4);
+  --bubble-user-border: #0284c7;
+  --bubble-user-text: #ffffff;
+  --bubble-ai-bg: #ffffff;
+  --bubble-ai-border: rgba(2, 132, 199, 0.2);
+  --bubble-ai-text: #0f172a;
+  --bubble-blur: 0px;
+}
+
+/* ==========================================================================
+   2. MIDNIGHT ACADEMY (Royal Violet & Nocturnal Lavender)
+   ========================================================================== */
+/* 🌙 Midnight Academy - Dark Mode */
+[data-atmosphere="midnight_academy"]:not([data-theme="light"]),
+.app-container[data-atmosphere="midnight_academy"]:not([data-theme="light"]),
+[data-theme="dark"][data-atmosphere="midnight_academy"] {
   --bg-primary: #0a081e;
   --bg-secondary: #131032;
   --bg-tertiary: #221c4e;
@@ -140,7 +211,7 @@
   --input-dock-bg: rgba(19, 16, 50, 0.94);
   --input-dock-border: rgba(168, 85, 247, 0.28);
 
-  /* 💬 Handpicked Atmosphere Chat Bubble Palette */
+  /* 💬 Chat Bubble Palette */
   --bubble-user-bg: linear-gradient(135deg, rgba(168, 85, 247, 0.35), rgba(147, 51, 234, 0.35));
   --bubble-user-border: rgba(168, 85, 247, 0.55);
   --bubble-user-text: #faf5ff;
@@ -150,13 +221,79 @@
   --bubble-blur: 14px;
 }
 
-[data-atmosphere="emerald_scholar"],
-.app-container[data-atmosphere="emerald_scholar"] {
+/* ☀️ Midnight Academy - Light Mode */
+[data-theme="light"][data-atmosphere="midnight_academy"],
+[data-theme="light"][data-atmosphere="oxford_daylight"],
+[data-atmosphere="oxford_daylight"]:not([data-theme="dark"]) {
+  --bg-primary: #faf5ff;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #f3e8ff;
+  --header-bg: rgba(255, 255, 255, 0.94);
+  --header-border: rgba(124, 58, 237, 0.18);
+  --card-bg: rgba(255, 255, 255, 0.92);
+  --card-border: rgba(124, 58, 237, 0.18);
+  --card-shadow: 0 10px 30px rgba(124, 58, 237, 0.08);
+  --dropdown-bg: rgba(255, 255, 255, 0.98);
+  --dropdown-border: rgba(124, 58, 237, 0.35);
+  --dropdown-text: #0f172a;
+  --horizon-glow: rgba(124, 58, 237, 0.45);
+  --horizon-subtle: rgba(167, 139, 250, 0.25);
+  --cursor-glow: rgba(109, 40, 217, 0.55);
+  --cursor-subtle: rgba(139, 92, 246, 0.30);
+  --accent-cyan: #7c3aed;
+  --accent-cyan-hover: #6d28d9;
+  --accent-blue: #8b5cf6;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --border-color: rgba(124, 58, 237, 0.14);
+
+  /* 🔘 Unified Button Tokens */
+  --btn-primary-bg: linear-gradient(135deg, #7c3aed, #6d28d9);
+  --btn-primary-text: #ffffff;
+  --btn-primary-border: #7c3aed;
+  --btn-secondary-bg: #ffffff;
+  --btn-secondary-border: rgba(124, 58, 237, 0.25);
+  --btn-secondary-text: #0f172a;
+  --btn-secondary-hover: rgba(124, 58, 237, 0.08);
+  --btn-ghost-hover: rgba(124, 58, 237, 0.06);
+  --bento-tile-bg: rgba(255, 255, 255, 0.95);
+  --bento-tile-border: rgba(124, 58, 237, 0.18);
+  --bento-glow-color: 124, 58, 237;
+  --pill-bg: rgba(124, 58, 237, 0.10);
+  --pill-border: rgba(124, 58, 237, 0.25);
+  --pill-text: #7c3aed;
+  --pill-active-bg: rgba(124, 58, 237, 0.18);
+  --pill-active-text: #7c3aed;
+  --tab-active-bg: linear-gradient(135deg, #7c3aed, #6d28d9);
+  --tab-active-text: #ffffff;
+  --tab-active-shadow: 0 4px 15px rgba(124, 58, 237, 0.25);
+  --dock-item-active-bg: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(139, 92, 246, 0.15));
+  --input-dock-bg: rgba(255, 255, 255, 0.96);
+  --input-dock-border: rgba(124, 58, 237, 0.22);
+
+  /* 💬 Chat Bubble Palette */
+  --bubble-user-bg: linear-gradient(135deg, #7c3aed, #6d28d9);
+  --bubble-user-border: #7c3aed;
+  --bubble-user-text: #ffffff;
+  --bubble-ai-bg: #ffffff;
+  --bubble-ai-border: rgba(124, 58, 237, 0.2);
+  --bubble-ai-text: #0f172a;
+  --bubble-blur: 0px;
+}
+
+/* ==========================================================================
+   3. EMERALD SCHOLAR (Academic Mint & Forest Green)
+   ========================================================================== */
+/* 🌙 Emerald Scholar - Dark Mode */
+[data-atmosphere="emerald_scholar"]:not([data-theme="light"]),
+.app-container[data-atmosphere="emerald_scholar"]:not([data-theme="light"]),
+[data-theme="dark"][data-atmosphere="emerald_scholar"] {
   --bg-primary: #021a12;
   --bg-secondary: #062b20;
   --bg-tertiary: #0c4333;
   --header-bg: rgba(2, 26, 18, 0.92);
-  --header-border: rgba(168, 85, 247, 0.25);
+  --header-border: rgba(16, 185, 129, 0.25);
   --card-bg: rgba(6, 43, 32, 0.88);
   --card-border: rgba(16, 185, 129, 0.2);
   --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
@@ -199,7 +336,7 @@
   --input-dock-bg: rgba(6, 43, 32, 0.94);
   --input-dock-border: rgba(16, 185, 129, 0.28);
 
-  /* 💬 Handpicked Atmosphere Chat Bubble Palette */
+  /* 💬 Chat Bubble Palette */
   --bubble-user-bg: linear-gradient(135deg, rgba(16, 185, 129, 0.35), rgba(5, 150, 105, 0.35));
   --bubble-user-border: rgba(16, 185, 129, 0.55);
   --bubble-user-text: #f0fdf4;
@@ -209,8 +346,72 @@
   --bubble-blur: 14px;
 }
 
-[data-atmosphere="obsidian_oled"],
-.app-container[data-atmosphere="obsidian_oled"] {
+/* ☀️ Emerald Scholar - Light Mode */
+[data-theme="light"][data-atmosphere="emerald_scholar"] {
+  --bg-primary: #f0fdf4;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #dcfce7;
+  --header-bg: rgba(255, 255, 255, 0.94);
+  --header-border: rgba(5, 150, 105, 0.18);
+  --card-bg: rgba(255, 255, 255, 0.92);
+  --card-border: rgba(5, 150, 105, 0.18);
+  --card-shadow: 0 10px 30px rgba(5, 150, 105, 0.08);
+  --dropdown-bg: rgba(255, 255, 255, 0.98);
+  --dropdown-border: rgba(5, 150, 105, 0.35);
+  --dropdown-text: #0f172a;
+  --horizon-glow: rgba(5, 150, 105, 0.40);
+  --horizon-subtle: rgba(52, 211, 153, 0.20);
+  --cursor-glow: rgba(5, 150, 105, 0.50);
+  --cursor-subtle: rgba(52, 211, 153, 0.25);
+  --accent-cyan: #059669;
+  --accent-cyan-hover: #047857;
+  --accent-blue: #10b981;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --border-color: rgba(5, 150, 105, 0.14);
+
+  /* 🔘 Unified Button Tokens */
+  --btn-primary-bg: linear-gradient(135deg, #059669, #10b981);
+  --btn-primary-text: #ffffff;
+  --btn-primary-border: #059669;
+  --btn-secondary-bg: #ffffff;
+  --btn-secondary-border: rgba(5, 150, 105, 0.25);
+  --btn-secondary-text: #0f172a;
+  --btn-secondary-hover: rgba(5, 150, 105, 0.08);
+  --btn-ghost-hover: rgba(5, 150, 105, 0.06);
+  --bento-tile-bg: rgba(255, 255, 255, 0.95);
+  --bento-tile-border: rgba(5, 150, 105, 0.18);
+  --bento-glow-color: 5, 150, 105;
+  --pill-bg: rgba(5, 150, 105, 0.10);
+  --pill-border: rgba(5, 150, 105, 0.25);
+  --pill-text: #059669;
+  --pill-active-bg: rgba(5, 150, 105, 0.18);
+  --pill-active-text: #059669;
+  --tab-active-bg: linear-gradient(135deg, #059669, #10b981);
+  --tab-active-text: #ffffff;
+  --tab-active-shadow: 0 4px 15px rgba(5, 150, 105, 0.25);
+  --dock-item-active-bg: linear-gradient(135deg, rgba(5, 150, 105, 0.15), rgba(16, 185, 129, 0.15));
+  --input-dock-bg: rgba(255, 255, 255, 0.96);
+  --input-dock-border: rgba(5, 150, 105, 0.22);
+
+  /* 💬 Chat Bubble Palette */
+  --bubble-user-bg: linear-gradient(135deg, #059669, #10b981);
+  --bubble-user-border: #059669;
+  --bubble-user-text: #ffffff;
+  --bubble-ai-bg: #ffffff;
+  --bubble-ai-border: rgba(5, 150, 105, 0.2);
+  --bubble-ai-text: #0f172a;
+  --bubble-blur: 0px;
+}
+
+/* ==========================================================================
+   4. OBSIDIAN OLED (Pure High-Contrast Monochrome / Slate)
+   ========================================================================== */
+/* 🌙 Obsidian OLED - Dark Mode */
+[data-atmosphere="obsidian_oled"]:not([data-theme="light"]),
+.app-container[data-atmosphere="obsidian_oled"]:not([data-theme="light"]),
+[data-theme="dark"][data-atmosphere="obsidian_oled"] {
   --bg-primary: #000000;
   --bg-secondary: #0d0d0d;
   --bg-tertiary: #171717;
@@ -258,7 +459,7 @@
   --input-dock-bg: rgba(13, 13, 13, 0.96);
   --input-dock-border: rgba(255, 255, 255, 0.18);
 
-  /* 💬 Handpicked Atmosphere Chat Bubble Palette */
+  /* 💬 Chat Bubble Palette */
   --bubble-user-bg: #111827;
   --bubble-user-border: rgba(56, 189, 248, 0.5);
   --bubble-user-text: #ffffff;
@@ -268,124 +469,431 @@
   --bubble-blur: 0px;
 }
 
-[data-atmosphere="oxford_daylight"],
-.app-container[data-atmosphere="oxford_daylight"],
-[data-theme="light"]:not([data-atmosphere]),
-[data-theme="light"][data-atmosphere="oxford_daylight"] {
-  --bg-primary: #f8fafc;
+/* ☀️ Obsidian OLED - Light Mode (High Contrast Minimalist Monochrome) */
+[data-theme="light"][data-atmosphere="obsidian_oled"] {
+  --bg-primary: #f4f4f5;
   --bg-secondary: #ffffff;
-  --bg-tertiary: #f1f5f9;
+  --bg-tertiary: #e4e4e7;
+  --header-bg: rgba(255, 255, 255, 0.96);
+  --header-border: rgba(0, 0, 0, 0.14);
+  --card-bg: rgba(255, 255, 255, 0.95);
+  --card-border: rgba(0, 0, 0, 0.14);
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
+  --dropdown-bg: #ffffff;
+  --dropdown-border: rgba(0, 0, 0, 0.25);
+  --dropdown-text: #09090b;
+  --horizon-glow: rgba(0, 0, 0, 0.2);
+  --horizon-subtle: rgba(0, 0, 0, 0.05);
+  --cursor-glow: rgba(0, 0, 0, 0.35);
+  --cursor-subtle: rgba(0, 0, 0, 0.1);
+  --accent-cyan: #18181b;
+  --accent-cyan-hover: #09090b;
+  --accent-blue: #27272a;
+  --text-primary: #09090b;
+  --text-secondary: #27272a;
+  --text-muted: #52525b;
+  --border-color: rgba(0, 0, 0, 0.12);
+
+  /* 🔘 Unified Button Tokens */
+  --btn-primary-bg: linear-gradient(135deg, #18181b, #09090b);
+  --btn-primary-text: #ffffff;
+  --btn-primary-border: #18181b;
+  --btn-secondary-bg: #ffffff;
+  --btn-secondary-border: rgba(0, 0, 0, 0.2);
+  --btn-secondary-text: #09090b;
+  --btn-secondary-hover: rgba(0, 0, 0, 0.06);
+  --btn-ghost-hover: rgba(0, 0, 0, 0.05);
+  --bento-tile-bg: rgba(255, 255, 255, 0.98);
+  --bento-tile-border: rgba(0, 0, 0, 0.14);
+  --bento-glow-color: 0, 0, 0;
+  --pill-bg: rgba(0, 0, 0, 0.08);
+  --pill-border: rgba(0, 0, 0, 0.18);
+  --pill-text: #18181b;
+  --pill-active-bg: rgba(0, 0, 0, 0.15);
+  --pill-active-text: #09090b;
+  --tab-active-bg: linear-gradient(135deg, #18181b, #09090b);
+  --tab-active-text: #ffffff;
+  --tab-active-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+  --dock-item-active-bg: linear-gradient(135deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.18));
+  --input-dock-bg: rgba(255, 255, 255, 0.98);
+  --input-dock-border: rgba(0, 0, 0, 0.16);
+
+  /* 💬 Chat Bubble Palette */
+  --bubble-user-bg: #18181b;
+  --bubble-user-border: #09090b;
+  --bubble-user-text: #ffffff;
+  --bubble-ai-bg: #ffffff;
+  --bubble-ai-border: rgba(0, 0, 0, 0.15);
+  --bubble-ai-text: #09090b;
+  --bubble-blur: 0px;
+}
+
+/* ==========================================================================
+   5. AMBER PARCHMENT (Warm Espresso & Golden Amber)
+  /* 🌙 Amber Parchment - Dark Mode (Deep Midnight Espresso & Happy Emoji Yellow Glow) */
+[data-atmosphere="amber_parchment"]:not([data-theme="light"]),
+.app-container[data-atmosphere="amber_parchment"]:not([data-theme="light"]),
+[data-theme="dark"][data-atmosphere="amber_parchment"] {
+  --bg-primary: #120e03;
+  --bg-secondary: #1c1505;
+  --bg-tertiary: #2a1f08;
+  --header-bg: rgba(18, 14, 3, 0.94);
+  --header-border: rgba(234, 179, 8, 0.25);
+  --card-bg: rgba(28, 21, 5, 0.88);
+  --card-border: rgba(234, 179, 8, 0.22);
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.6);
+  --dropdown-bg: rgba(35, 26, 7, 0.96);
+  --dropdown-border: rgba(234, 179, 8, 0.45);
+  --dropdown-text: #fefce8;
+  --horizon-glow: rgba(234, 179, 8, 0.18);
+  --horizon-subtle: rgba(250, 204, 21, 0.06);
+  --cursor-glow: rgba(234, 179, 8, 0.22);
+  --cursor-subtle: rgba(250, 204, 21, 0.08);
+  --accent-cyan: #eab308;
+  --accent-cyan-hover: #ca8a04;
+  --accent-blue: #facc15;
+  --text-primary: #fefce8;
+  --text-secondary: #fef08a;
+  --text-muted: #fde047;
+  --border-color: rgba(234, 179, 8, 0.18);
+
+  /* 🔘 Unified Button Tokens */
+  --btn-primary-bg: linear-gradient(135deg, #eab308, #ca8a04);
+  --btn-primary-text: #000000;
+  --btn-primary-border: #eab308;
+  --btn-secondary-bg: rgba(35, 26, 7, 0.85);
+  --btn-secondary-border: rgba(234, 179, 8, 0.35);
+  --btn-secondary-text: #fefce8;
+  --btn-secondary-hover: rgba(234, 179, 8, 0.2);
+  --btn-ghost-hover: rgba(234, 179, 8, 0.14);
+  --bento-tile-bg: rgba(28, 21, 5, 0.88);
+  --bento-tile-border: rgba(234, 179, 8, 0.22);
+  --bento-glow-color: 234, 179, 8;
+  --pill-bg: rgba(234, 179, 8, 0.15);
+  --pill-border: rgba(234, 179, 8, 0.4);
+  --pill-text: #fde047;
+  --pill-active-bg: rgba(234, 179, 8, 0.28);
+  --pill-active-text: #ffffff;
+  --tab-active-bg: linear-gradient(135deg, #eab308, #ca8a04);
+  --tab-active-text: #000000;
+  --tab-active-shadow: 0 4px 15px rgba(234, 179, 8, 0.35);
+  --dock-item-active-bg: linear-gradient(135deg, rgba(234, 179, 8, 0.35), rgba(202, 138, 4, 0.35));
+  --input-dock-bg: rgba(28, 21, 5, 0.94);
+  --input-dock-border: rgba(234, 179, 8, 0.28);
+
+  /* 💬 Chat Bubble Palette */
+  --bubble-user-bg: linear-gradient(135deg, rgba(234, 179, 8, 0.4), rgba(202, 138, 4, 0.4));
+  --bubble-user-border: rgba(234, 179, 8, 0.6);
+  --bubble-user-text: #fefce8;
+  --bubble-ai-bg: rgba(28, 21, 5, 0.88);
+  --bubble-ai-border: rgba(234, 179, 8, 0.25);
+  --bubble-ai-text: #fefce8;
+  --bubble-blur: 14px;
+}
+
+/* ☀️ Amber Parchment - Light Mode (Soft Butter-Cream Canvas & Happy Emoji Yellow Accents) */
+[data-theme="light"][data-atmosphere="amber_parchment"],
+[data-atmosphere="amber_parchment"]:not([data-theme="dark"]) {
+  --bg-primary: #fefce8;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #fef9c3;
   --header-bg: rgba(255, 255, 255, 0.94);
-  --header-border: rgba(30, 58, 138, 0.15);
-  --card-bg: rgba(255, 255, 255, 0.88);
-  --card-border: rgba(124, 58, 237, 0.18);
-  --card-shadow: 0 10px 30px rgba(124, 58, 237, 0.08);
+  --header-border: rgba(202, 138, 4, 0.2);
+  --card-bg: rgba(255, 255, 255, 0.92);
+  --card-border: rgba(202, 138, 4, 0.2);
+  --card-shadow: 0 10px 30px rgba(202, 138, 4, 0.08);
   --dropdown-bg: rgba(255, 255, 255, 0.98);
-  --dropdown-border: rgba(124, 58, 237, 0.35);
+  --dropdown-border: rgba(202, 138, 4, 0.35);
+  --dropdown-text: #1c1917;
+  --horizon-glow: rgba(234, 179, 8, 0.40);
+  --horizon-subtle: rgba(250, 204, 21, 0.20);
+  --cursor-glow: rgba(234, 179, 8, 0.50);
+  --cursor-subtle: rgba(250, 204, 21, 0.25);
+  --accent-cyan: #ca8a04;
+  --accent-cyan-hover: #a16207;
+  --accent-blue: #eab308;
+  --text-primary: #1c1917;
+  --text-secondary: #44403c;
+  --text-muted: #78716c;
+  --border-color: rgba(202, 138, 4, 0.14);
+
+  /* 🔘 Unified Button Tokens */
+  --btn-primary-bg: linear-gradient(135deg, #eab308, #ca8a04);
+  --btn-primary-text: #000000;
+  --btn-primary-border: #ca8a04;
+  --btn-secondary-bg: #ffffff;
+  --btn-secondary-border: rgba(202, 138, 4, 0.25);
+  --btn-secondary-text: #1c1917;
+  --btn-secondary-hover: rgba(234, 179, 8, 0.08);
+  --btn-ghost-hover: rgba(234, 179, 8, 0.06);
+  --bento-tile-bg: rgba(255, 255, 255, 0.95);
+  --bento-tile-border: rgba(202, 138, 4, 0.18);
+  --bento-glow-color: 234, 179, 8;
+  --pill-bg: rgba(234, 179, 8, 0.10);
+  --pill-border: rgba(202, 138, 4, 0.25);
+  --pill-text: #a16207;
+  --pill-active-bg: rgba(234, 179, 8, 0.18);
+  --pill-active-text: #713f12;
+  --tab-active-bg: linear-gradient(135deg, #eab308, #ca8a04);
+  --tab-active-text: #000000;
+  --tab-active-shadow: 0 4px 15px rgba(202, 138, 4, 0.25);
+  --dock-item-active-bg: linear-gradient(135deg, rgba(234, 179, 8, 0.15), rgba(202, 138, 4, 0.15));
+  --input-dock-bg: rgba(255, 255, 255, 0.96);
+  --input-dock-border: rgba(202, 138, 4, 0.22);
+
+  /* 💬 Chat Bubble Palette */
+  --bubble-user-bg: linear-gradient(135deg, #eab308, #ca8a04);
+  --bubble-user-border: #ca8a04;
+  --bubble-user-text: #000000;
+  --bubble-ai-bg: #ffffff;
+  --bubble-ai-border: rgba(202, 138, 4, 0.2);
+  --bubble-ai-text: #1c1917;
+  --bubble-blur: 0px;
+}
+
+/* ==========================================================================
+   6. CRIMSON ROSE (Velvet Ruby & Rose Academia)
+   ========================================================================== */
+/* 🌙 Crimson Rose - Dark Mode (Deep Velvet Wine & Luminous Ruby Glow) */
+[data-atmosphere="crimson_rose"]:not([data-theme="light"]),
+.app-container[data-atmosphere="crimson_rose"]:not([data-theme="light"]),
+[data-theme="dark"][data-atmosphere="crimson_rose"] {
+  --bg-primary: #150308;
+  --bg-secondary: #22060e;
+  --bg-tertiary: #330a16;
+  --header-bg: rgba(21, 3, 8, 0.92);
+  --header-border: rgba(244, 63, 94, 0.25);
+  --card-bg: rgba(34, 6, 14, 0.88);
+  --card-border: rgba(244, 63, 94, 0.2);
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --dropdown-bg: rgba(40, 8, 18, 0.96);
+  --dropdown-border: rgba(244, 63, 94, 0.45);
+  --dropdown-text: #fff1f2;
+  --horizon-glow: rgba(244, 63, 94, 0.16);
+  --horizon-subtle: rgba(251, 113, 133, 0.05);
+  --cursor-glow: rgba(244, 63, 94, 0.20);
+  --cursor-subtle: rgba(251, 113, 133, 0.06);
+  --accent-cyan: #f43f5e;
+  --accent-cyan-hover: #e11d48;
+  --accent-blue: #fb7185;
+  --text-primary: #fff1f2;
+  --text-secondary: #fecdd3;
+  --text-muted: #fda4af;
+  --border-color: rgba(244, 63, 94, 0.15);
+
+  /* 🔘 Unified Button Tokens */
+  --btn-primary-bg: linear-gradient(135deg, #f43f5e, #e11d48);
+  --btn-primary-text: #ffffff;
+  --btn-primary-border: #f43f5e;
+  --btn-secondary-bg: rgba(40, 8, 18, 0.85);
+  --btn-secondary-border: rgba(244, 63, 94, 0.35);
+  --btn-secondary-text: #fff1f2;
+  --btn-secondary-hover: rgba(244, 63, 94, 0.2);
+  --btn-ghost-hover: rgba(244, 63, 94, 0.14);
+  --bento-tile-bg: rgba(34, 6, 14, 0.88);
+  --bento-tile-border: rgba(244, 63, 94, 0.22);
+  --bento-glow-color: 244, 63, 94;
+  --pill-bg: rgba(244, 63, 94, 0.14);
+  --pill-border: rgba(244, 63, 94, 0.38);
+  --pill-text: #fda4af;
+  --pill-active-bg: rgba(244, 63, 94, 0.28);
+  --pill-active-text: #fff1f2;
+  --tab-active-bg: linear-gradient(135deg, #f43f5e, #e11d48);
+  --tab-active-text: #ffffff;
+  --tab-active-shadow: 0 4px 15px rgba(244, 63, 94, 0.35);
+  --dock-item-active-bg: linear-gradient(135deg, rgba(244, 63, 94, 0.35), rgba(225, 29, 72, 0.35));
+  --input-dock-bg: rgba(34, 6, 14, 0.94);
+  --input-dock-border: rgba(244, 63, 94, 0.28);
+
+  /* 💬 Chat Bubble Palette */
+  --bubble-user-bg: linear-gradient(135deg, rgba(244, 63, 94, 0.35), rgba(225, 29, 72, 0.35));
+  --bubble-user-border: rgba(244, 63, 94, 0.55);
+  --bubble-user-text: #fff1f2;
+  --bubble-ai-bg: rgba(34, 6, 14, 0.88);
+  --bubble-ai-border: rgba(244, 63, 94, 0.25);
+  --bubble-ai-text: #fff1f2;
+  --bubble-blur: 14px;
+}
+
+/* ☀️ Crimson Rose - Light Mode */
+[data-theme="light"][data-atmosphere="crimson_rose"] {
+  --bg-primary: #fff1f2;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #ffe4e6;
+  --header-bg: rgba(255, 255, 255, 0.94);
+  --header-border: rgba(225, 29, 72, 0.18);
+  --card-bg: rgba(255, 255, 255, 0.92);
+  --card-border: rgba(225, 29, 72, 0.18);
+  --card-shadow: 0 10px 30px rgba(225, 29, 72, 0.08);
+  --dropdown-bg: rgba(255, 255, 255, 0.98);
+  --dropdown-border: rgba(225, 29, 72, 0.35);
   --dropdown-text: #0f172a;
-  --horizon-glow: rgba(124, 58, 237, 0.45);
-  --horizon-subtle: rgba(167, 139, 250, 0.25);
-  --cursor-glow: rgba(109, 40, 217, 0.55);
-  --cursor-subtle: rgba(139, 92, 246, 0.30);
-  --accent-cyan: #7c3aed;
-  --accent-cyan-hover: #6d28d9;
-  --accent-blue: #8b5cf6;
+  --horizon-glow: rgba(225, 29, 72, 0.40);
+  --horizon-subtle: rgba(251, 113, 133, 0.20);
+  --cursor-glow: rgba(225, 29, 72, 0.50);
+  --cursor-subtle: rgba(244, 63, 94, 0.25);
+  --accent-cyan: #e11d48;
+  --accent-cyan-hover: #be123c;
+  --accent-blue: #f43f5e;
   --text-primary: #0f172a;
   --text-secondary: #334155;
   --text-muted: #64748b;
-  --border-color: rgba(124, 58, 237, 0.12);
+  --border-color: rgba(225, 29, 72, 0.14);
 
   /* 🔘 Unified Button Tokens */
-  --btn-primary-bg: linear-gradient(135deg, #7c3aed, #6d28d9);
+  --btn-primary-bg: linear-gradient(135deg, #e11d48, #f43f5e);
   --btn-primary-text: #ffffff;
-  --btn-primary-border: #7c3aed;
+  --btn-primary-border: #e11d48;
   --btn-secondary-bg: #ffffff;
-  --btn-secondary-border: rgba(124, 58, 237, 0.25);
+  --btn-secondary-border: rgba(225, 29, 72, 0.25);
   --btn-secondary-text: #0f172a;
-  --btn-secondary-hover: rgba(124, 58, 237, 0.08);
-  --btn-ghost-hover: rgba(124, 58, 237, 0.06);
+  --btn-secondary-hover: rgba(225, 29, 72, 0.08);
+  --btn-ghost-hover: rgba(225, 29, 72, 0.06);
   --bento-tile-bg: rgba(255, 255, 255, 0.95);
-  --bento-tile-border: rgba(124, 58, 237, 0.18);
-  --bento-glow-color: 124, 58, 237;
-  --pill-bg: rgba(124, 58, 237, 0.1);
-  --pill-border: rgba(124, 58, 237, 0.25);
-  --pill-text: #7c3aed;
-  --pill-active-bg: rgba(124, 58, 237, 0.16);
-  --pill-active-text: #7c3aed;
-  --tab-active-bg: linear-gradient(135deg, #7c3aed, #6d28d9);
+  --bento-tile-border: rgba(225, 29, 72, 0.18);
+  --bento-glow-color: 225, 29, 72;
+  --pill-bg: rgba(225, 29, 72, 0.10);
+  --pill-border: rgba(225, 29, 72, 0.25);
+  --pill-text: #e11d48;
+  --pill-active-bg: rgba(225, 29, 72, 0.18);
+  --pill-active-text: #e11d48;
+  --tab-active-bg: linear-gradient(135deg, #e11d48, #f43f5e);
   --tab-active-text: #ffffff;
-  --tab-active-shadow: 0 4px 15px rgba(124, 58, 237, 0.25);
-  --dock-item-active-bg: linear-gradient(135deg, rgba(124, 58, 237, 0.15), rgba(139, 92, 246, 0.15));
+  --tab-active-shadow: 0 4px 15px rgba(225, 29, 72, 0.25);
+  --dock-item-active-bg: linear-gradient(135deg, rgba(225, 29, 72, 0.15), rgba(244, 63, 94, 0.15));
   --input-dock-bg: rgba(255, 255, 255, 0.96);
-  --input-dock-border: rgba(124, 58, 237, 0.22);
+  --input-dock-border: rgba(225, 29, 72, 0.22);
 
-  /* 💬 Handpicked Atmosphere Chat Bubble Palette */
-  --bubble-user-bg: linear-gradient(135deg, #1e3a8a, #2563eb);
-  --bubble-user-border: #1e3a8a;
+  /* 💬 Chat Bubble Palette */
+  --bubble-user-bg: linear-gradient(135deg, #e11d48, #f43f5e);
+  --bubble-user-border: #e11d48;
   --bubble-user-text: #ffffff;
   --bubble-ai-bg: #ffffff;
-  --bubble-ai-border: rgba(30, 58, 138, 0.18);
+  --bubble-ai-border: rgba(225, 29, 72, 0.2);
   --bubble-ai-text: #0f172a;
   --bubble-blur: 0px;
 }
 
-[data-atmosphere="amber_parchment"],
-.app-container[data-atmosphere="amber_parchment"],
-[data-theme="light"][data-atmosphere="amber_parchment"] {
-  --bg-primary: #fbf7ee;
-  --bg-secondary: #fffdf8;
-  --bg-tertiary: #f4edd8;
-  --header-bg: rgba(251, 247, 238, 0.94);
-  --header-border: rgba(217, 119, 6, 0.2);
-  --card-bg: rgba(255, 253, 248, 0.88);
-  --card-border: rgba(234, 88, 12, 0.22);
-  --card-shadow: 0 10px 30px rgba(234, 88, 12, 0.10);
-  --dropdown-bg: rgba(255, 253, 248, 0.98);
-  --dropdown-border: rgba(234, 88, 12, 0.4);
-  --dropdown-text: #292524;
-  --horizon-glow: rgba(249, 115, 22, 0.48);
-  --horizon-subtle: rgba(251, 146, 60, 0.28);
-  --cursor-glow: rgba(234, 88, 12, 0.58);
-  --cursor-subtle: rgba(249, 115, 22, 0.32);
-  --accent-cyan: #ea580c;
-  --accent-cyan-hover: #c2410c;
-  --accent-blue: #f97316;
-  --text-primary: #292524;
-  --text-secondary: #44403c;
-  --text-muted: #78716c;
-  --border-color: rgba(234, 88, 12, 0.14);
+/* ==========================================================================
+   7. SAKURA PINK (Neon Pink & Blossom Rose)
+   ========================================================================== */
+/* 🌙 Sakura Pink - Dark Mode (Deep Night Blossom & Radiant Neon Pink) */
+[data-atmosphere="sakura_pink"]:not([data-theme="light"]),
+.app-container[data-atmosphere="sakura_pink"]:not([data-theme="light"]),
+[data-theme="dark"][data-atmosphere="sakura_pink"] {
+  --bg-primary: #140410;
+  --bg-secondary: #20071a;
+  --bg-tertiary: #300b27;
+  --header-bg: rgba(20, 4, 16, 0.92);
+  --header-border: rgba(236, 72, 153, 0.25);
+  --card-bg: rgba(32, 7, 26, 0.88);
+  --card-border: rgba(236, 72, 153, 0.2);
+  --card-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+  --dropdown-bg: rgba(38, 9, 31, 0.96);
+  --dropdown-border: rgba(236, 72, 153, 0.45);
+  --dropdown-text: #fdf2f8;
+  --horizon-glow: rgba(236, 72, 153, 0.16);
+  --horizon-subtle: rgba(244, 114, 182, 0.05);
+  --cursor-glow: rgba(236, 72, 153, 0.20);
+  --cursor-subtle: rgba(244, 114, 182, 0.06);
+  --accent-cyan: #ec4899;
+  --accent-cyan-hover: #db2777;
+  --accent-blue: #f472b6;
+  --text-primary: #fdf2f8;
+  --text-secondary: #fbcfe8;
+  --text-muted: #f472b6;
+  --border-color: rgba(236, 72, 153, 0.15);
 
   /* 🔘 Unified Button Tokens */
-  --btn-primary-bg: linear-gradient(135deg, #ea580c, #c2410c);
+  --btn-primary-bg: linear-gradient(135deg, #ec4899, #db2777);
   --btn-primary-text: #ffffff;
-  --btn-primary-border: #ea580c;
-  --btn-secondary-bg: #fffdf8;
-  --btn-secondary-border: rgba(234, 88, 12, 0.28);
-  --btn-secondary-text: #292524;
-  --btn-secondary-hover: rgba(234, 88, 12, 0.1);
-  --btn-ghost-hover: rgba(234, 88, 12, 0.08);
-  --bento-tile-bg: rgba(255, 253, 248, 0.95);
-  --bento-tile-border: rgba(234, 88, 12, 0.2);
-  --bento-glow-color: 234, 88, 12;
-  --pill-bg: rgba(234, 88, 12, 0.1);
-  --pill-border: rgba(234, 88, 12, 0.3);
-  --pill-text: #c2410c;
-  --pill-active-bg: rgba(234, 88, 12, 0.22);
-  --pill-active-text: #9a3412;
-  --tab-active-bg: linear-gradient(135deg, #ea580c, #c2410c);
+  --btn-primary-border: #ec4899;
+  --btn-secondary-bg: rgba(38, 9, 31, 0.85);
+  --btn-secondary-border: rgba(236, 72, 153, 0.35);
+  --btn-secondary-text: #fdf2f8;
+  --btn-secondary-hover: rgba(236, 72, 153, 0.2);
+  --btn-ghost-hover: rgba(236, 72, 153, 0.14);
+  --bento-tile-bg: rgba(32, 7, 26, 0.88);
+  --bento-tile-border: rgba(236, 72, 153, 0.22);
+  --bento-glow-color: 236, 72, 153;
+  --pill-bg: rgba(236, 72, 153, 0.14);
+  --pill-border: rgba(236, 72, 153, 0.38);
+  --pill-text: #f472b6;
+  --pill-active-bg: rgba(236, 72, 153, 0.28);
+  --pill-active-text: #fdf2f8;
+  --tab-active-bg: linear-gradient(135deg, #ec4899, #db2777);
   --tab-active-text: #ffffff;
-  --tab-active-shadow: 0 4px 15px rgba(234, 88, 12, 0.25);
-  --dock-item-active-bg: linear-gradient(135deg, rgba(234, 88, 12, 0.18), rgba(194, 65, 12, 0.18));
-  --input-dock-bg: rgba(255, 253, 248, 0.96);
-  --input-dock-border: rgba(234, 88, 12, 0.25);
+  --tab-active-shadow: 0 4px 15px rgba(236, 72, 153, 0.35);
+  --dock-item-active-bg: linear-gradient(135deg, rgba(236, 72, 153, 0.35), rgba(219, 39, 119, 0.35));
+  --input-dock-bg: rgba(32, 7, 26, 0.94);
+  --input-dock-border: rgba(236, 72, 153, 0.28);
 
-  /* 💬 Handpicked Atmosphere Chat Bubble Palette */
-  --bubble-user-bg: linear-gradient(135deg, #d97706, #b45309);
-  --bubble-user-border: #d97706;
+  /* 💬 Chat Bubble Palette */
+  --bubble-user-bg: linear-gradient(135deg, rgba(236, 72, 153, 0.35), rgba(219, 39, 119, 0.35));
+  --bubble-user-border: rgba(236, 72, 153, 0.55);
+  --bubble-user-text: #fdf2f8;
+  --bubble-ai-bg: rgba(32, 7, 26, 0.88);
+  --bubble-ai-border: rgba(236, 72, 153, 0.25);
+  --bubble-ai-text: #fdf2f8;
+  --bubble-blur: 14px;
+}
+
+/* ☀️ Sakura Pink - Light Mode */
+[data-theme="light"][data-atmosphere="sakura_pink"] {
+  --bg-primary: #fff0f5;
+  --bg-secondary: #ffffff;
+  --bg-tertiary: #ffe4ee;
+  --header-bg: rgba(255, 255, 255, 0.94);
+  --header-border: rgba(236, 72, 153, 0.18);
+  --card-bg: rgba(255, 255, 255, 0.92);
+  --card-border: rgba(236, 72, 153, 0.18);
+  --card-shadow: 0 10px 30px rgba(236, 72, 153, 0.08);
+  --dropdown-bg: rgba(255, 255, 255, 0.98);
+  --dropdown-border: rgba(236, 72, 153, 0.35);
+  --dropdown-text: #0f172a;
+  --horizon-glow: rgba(236, 72, 153, 0.40);
+  --horizon-subtle: rgba(244, 114, 182, 0.20);
+  --cursor-glow: rgba(236, 72, 153, 0.50);
+  --cursor-subtle: rgba(244, 114, 182, 0.25);
+  --accent-cyan: #ec4899;
+  --accent-cyan-hover: #db2777;
+  --accent-blue: #f472b6;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  --border-color: rgba(236, 72, 153, 0.14);
+
+  /* 🔘 Unified Button Tokens */
+  --btn-primary-bg: linear-gradient(135deg, #ec4899, #db2777);
+  --btn-primary-text: #ffffff;
+  --btn-primary-border: #ec4899;
+  --btn-secondary-bg: #ffffff;
+  --btn-secondary-border: rgba(236, 72, 153, 0.25);
+  --btn-secondary-text: #0f172a;
+  --btn-secondary-hover: rgba(236, 72, 153, 0.08);
+  --btn-ghost-hover: rgba(236, 72, 153, 0.06);
+  --bento-tile-bg: rgba(255, 255, 255, 0.95);
+  --bento-tile-border: rgba(236, 72, 153, 0.18);
+  --bento-glow-color: 236, 72, 153;
+  --pill-bg: rgba(236, 72, 153, 0.10);
+  --pill-border: rgba(236, 72, 153, 0.25);
+  --pill-text: #ec4899;
+  --pill-active-bg: rgba(236, 72, 153, 0.18);
+  --pill-active-text: #ec4899;
+  --tab-active-bg: linear-gradient(135deg, #ec4899, #db2777);
+  --tab-active-text: #ffffff;
+  --tab-active-shadow: 0 4px 15px rgba(236, 72, 153, 0.25);
+  --dock-item-active-bg: linear-gradient(135deg, rgba(236, 72, 153, 0.15), rgba(244, 114, 182, 0.15));
+  --input-dock-bg: rgba(255, 255, 255, 0.96);
+  --input-dock-border: rgba(236, 72, 153, 0.22);
+
+  /* 💬 Chat Bubble Palette */
+  --bubble-user-bg: linear-gradient(135deg, #ec4899, #db2777);
+  --bubble-user-border: #ec4899;
   --bubble-user-text: #ffffff;
-  --bubble-ai-bg: #fffdf8;
-  --bubble-ai-border: rgba(217, 119, 6, 0.25);
-  --bubble-ai-text: #292524;
+  --bubble-ai-bg: #ffffff;
+  --bubble-ai-border: rgba(236, 72, 153, 0.2);
+  --bubble-ai-text: #0f172a;
   --bubble-blur: 0px;
 }
 
@@ -3246,7 +3754,7 @@ body {
   font-size: 0.88rem;
 }
 
-/* 💻 Dynamic Code Syntax Theme Overrides */
+/* 💻 Dynamic Code Syntax Theme Overrides (10 Universal Themes) */
 [data-code-theme="onedark"] .markdown-body pre,
 [data-code-theme="onedark"] pre,
 [data-code-theme="onedark"] .code-lab-editor-area {
@@ -3296,7 +3804,7 @@ body {
 [data-code-theme="tokyo_night"] pre,
 [data-code-theme="tokyo_night"] .code-lab-editor-area {
   background: #1a1b26 !important;
-  color: #a9b1d6 !important;
+  color: #c0caf5 !important;
   border: 1px solid rgba(122, 162, 247, 0.3) !important;
   box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
 }
@@ -3310,7 +3818,7 @@ body {
 [data-code-theme="github_light"] .markdown-body pre,
 [data-code-theme="github_light"] pre,
 [data-code-theme="github_light"] .code-lab-editor-area {
-  background: #f6f8fa !important;
+  background: #ffffff !important;
   color: #24292f !important;
   border: 1px solid rgba(9, 105, 218, 0.3) !important;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
@@ -3326,7 +3834,7 @@ body {
 [data-code-theme="neon"] pre,
 [data-code-theme="neon"] .code-lab-editor-area {
   background: #0b0f19 !important;
-  color: #38bdf8 !important;
+  color: #e2e8f0 !important;
   border: 1px solid rgba(6, 182, 212, 0.55) !important;
   box-shadow: 0 0 16px rgba(6, 182, 212, 0.22);
 }
@@ -3337,18 +3845,78 @@ body {
   background: transparent !important;
 }
 
-[data-code-theme="hc_black"] .markdown-body pre,
-[data-code-theme="hc_black"] pre,
-[data-code-theme="hc_black"] .code-lab-editor-area {
-  background: #000000 !important;
-  color: #06b6d4 !important;
-  border: 2px solid #06b6d4 !important;
-  box-shadow: 0 0 14px rgba(6, 182, 212, 0.3);
+[data-code-theme="emerald_matrix"] .markdown-body pre,
+[data-code-theme="emerald_matrix"] pre,
+[data-code-theme="emerald_matrix"] .code-lab-editor-area {
+  background: #04160e !important;
+  color: #d1fae5 !important;
+  border: 1px solid rgba(16, 185, 129, 0.5) !important;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.25);
 }
-[data-code-theme="hc_black"] .markdown-body pre code,
-[data-code-theme="hc_black"] pre code,
-[data-code-theme="hc_black"] .code-lab-editor-area code {
-  color: #ffffff !important;
+[data-code-theme="emerald_matrix"] .markdown-body pre code,
+[data-code-theme="emerald_matrix"] pre code,
+[data-code-theme="emerald_matrix"] .code-lab-editor-area code {
+  color: #10b981 !important;
+  background: transparent !important;
+}
+
+[data-code-theme="dracula"] .markdown-body pre,
+[data-code-theme="dracula"] pre,
+[data-code-theme="dracula"] .code-lab-editor-area {
+  background: #19051d !important;
+  color: #ffd6fa !important;
+  border: 1px solid rgba(236, 72, 153, 0.6) !important;
+  box-shadow: 0 4px 18px rgba(236, 72, 153, 0.25);
+}
+[data-code-theme="dracula"] .markdown-body pre code,
+[data-code-theme="dracula"] pre code,
+[data-code-theme="dracula"] .code-lab-editor-area code {
+  color: #ff007f !important;
+  background: transparent !important;
+}
+
+[data-code-theme="cyber_pink"] .markdown-body pre,
+[data-code-theme="cyber_pink"] pre,
+[data-code-theme="cyber_pink"] .code-lab-editor-area {
+  background: #1c0b16 !important;
+  color: #ffe4e6 !important;
+  border: 1px solid rgba(251, 113, 133, 0.55) !important;
+  box-shadow: 0 4px 18px rgba(251, 113, 133, 0.22);
+}
+[data-code-theme="cyber_pink"] .markdown-body pre code,
+[data-code-theme="cyber_pink"] pre code,
+[data-code-theme="cyber_pink"] .code-lab-editor-area code {
+  color: #fb7185 !important;
+  background: transparent !important;
+}
+
+[data-code-theme="cobalt"] .markdown-body pre,
+[data-code-theme="cobalt"] pre,
+[data-code-theme="cobalt"] .code-lab-editor-area {
+  background: #0d1b2a !important;
+  color: #e0e1dd !important;
+  border: 1px solid rgba(0, 245, 212, 0.45) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+}
+[data-code-theme="cobalt"] .markdown-body pre code,
+[data-code-theme="cobalt"] pre code,
+[data-code-theme="cobalt"] .code-lab-editor-area code {
+  color: #00f5d4 !important;
+  background: transparent !important;
+}
+
+[data-code-theme="solarized_amber"] .markdown-body pre,
+[data-code-theme="solarized_amber"] pre,
+[data-code-theme="solarized_amber"] .code-lab-editor-area {
+  background: #18120c !important;
+  color: #fef3c7 !important;
+  border: 1px solid rgba(245, 158, 11, 0.45) !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+[data-code-theme="solarized_amber"] .markdown-body pre code,
+[data-code-theme="solarized_amber"] pre code,
+[data-code-theme="solarized_amber"] .code-lab-editor-area code {
+  color: #f59e0b !important;
   background: transparent !important;
 }
 
@@ -17318,5 +17886,260 @@ body {
 .canvas-3d-orbit-hint button:hover {
   background: rgba(56, 189, 248, 0.3);
 }
+
+/* ═════════════════════════════════════════════════════════════════════════
+   🗺️ UNIFIED SYLLABUS & ROADMAPS DESIGN SYSTEM
+   ═════════════════════════════════════════════════════════════════════════ */
+
+.syllabus-roadmaps-view {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--bg-primary, #020617);
+  color: var(--text-primary, #f8fafc);
+  font-family: var(--font-main, 'Inter', -apple-system, sans-serif);
+  overflow-x: hidden;
+}
+
+.syllabus-header-bar {
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 12px 24px;
+  background: var(--header-bg, rgba(2, 6, 23, 0.92));
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid var(--header-border, rgba(6, 182, 212, 0.2));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+}
+
+.syllabus-main-container {
+  flex: 1;
+  max-width: 1280px;
+  width: 100%;
+  margin: 0 auto;
+  padding: 20px 16px 40px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (min-width: 768px) {
+  .syllabus-main-container {
+    padding: 24px 24px 60px 24px;
+    gap: 24px;
+  }
+}
+
+/* 🍱 Bento Decks */
+.syllabus-bento-grid {
+  display: grid;
+  gap: 12px;
+  width: 100%;
+}
+
+.syllabus-bento-grid.streams {
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+}
+
+.syllabus-bento-grid.levels {
+  grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
+}
+
+.syllabus-bento-grid.career-paths {
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+}
+
+/* 📜 Granular Syllabus Topic Cards */
+.syllabus-topic-card {
+  display: flex;
+  flex-direction: column;
+  border-radius: 16px;
+  background: var(--card-bg, rgba(11, 17, 32, 0.88));
+  border: 1px solid var(--card-border, rgba(255, 255, 255, 0.08));
+  box-shadow: var(--card-shadow, 0 10px 30px rgba(0, 0, 0, 0.35));
+  overflow: hidden;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.syllabus-topic-card:hover {
+  border-color: rgba(6, 182, 212, 0.35);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.5), 0 0 20px rgba(6, 182, 212, 0.08);
+}
+
+.syllabus-topic-card.completed {
+  border-color: rgba(16, 185, 129, 0.35);
+  background: rgba(6, 78, 59, 0.12);
+}
+
+.syllabus-topic-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px 20px;
+  background: rgba(15, 23, 42, 0.6);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.syllabus-topic-body {
+  padding: 18px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Subtopics List */
+.syllabus-subtopics-box {
+  background: var(--bg-primary, #020617);
+  border-radius: 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.syllabus-subtopics-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 8px;
+  margin: 10px 0 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.syllabus-subtopic-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  background: var(--card-bg, rgba(15, 23, 42, 0.6));
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  font-size: 0.78rem;
+  color: var(--text-primary, #f8fafc);
+  line-height: 1.45;
+}
+
+.syllabus-subtopic-bullet {
+  color: var(--accent-cyan, #06b6d4);
+  font-weight: 800;
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  margin-top: 1px;
+}
+
+/* Formulas & KaTeX Containment */
+.syllabus-formula-box {
+  background: rgba(10, 8, 30, 0.7);
+  border-radius: 12px;
+  padding: 14px 16px;
+  border: 1px solid rgba(168, 85, 247, 0.25);
+}
+
+.syllabus-formula-item {
+  background: var(--bg-primary, #020617);
+  border-radius: 8px;
+  padding: 10px 14px;
+  margin-top: 8px;
+  border: 1px solid rgba(168, 85, 247, 0.15);
+  overflow-x: auto;
+}
+
+/* Metadata Row (Theorems & Textbooks) */
+.syllabus-meta-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+
+.syllabus-meta-box {
+  background: rgba(15, 23, 42, 0.5);
+  border-radius: 10px;
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.syllabus-meta-title {
+  font-size: 0.70rem;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-bottom: 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.syllabus-theorem-chip {
+  display: inline-block;
+  font-size: 0.70rem;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.28);
+  margin: 2px 4px 2px 0;
+}
+
+/* 🗺️ Milestone DAG Timeline */
+.milestone-dag-timeline {
+  position: relative;
+  margin-left: 12px;
+  padding-left: 28px;
+  border-left: 2px dashed rgba(99, 102, 241, 0.4);
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+@media (min-width: 640px) {
+  .milestone-dag-timeline {
+    margin-left: 18px;
+    padding-left: 36px;
+    gap: 24px;
+  }
+}
+
+.milestone-step-node {
+  position: absolute;
+  left: -43px;
+  top: 14px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.72rem;
+  font-weight: 900;
+  background: var(--bg-secondary, #0b1120);
+  color: var(--accent-cyan, #06b6d4);
+  border: 2px solid var(--accent-cyan, #06b6d4);
+  box-shadow: 0 0 12px rgba(6, 182, 212, 0.3);
+  z-index: 2;
+}
+
+@media (min-width: 640px) {
+  .milestone-step-node {
+    left: -53px;
+    width: 32px;
+    height: 32px;
+    font-size: 0.76rem;
+  }
+}
+
+.milestone-step-node.completed {
+  background: #10b981;
+  color: #020617;
+  border-color: #34d399;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.5);
+}
+
 
 

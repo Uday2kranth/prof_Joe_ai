@@ -679,6 +679,8 @@ ${currentPresetObj.instructionPrompt}
       }
     ];
 
+    const existing = (baseNotes || '').trim();
+
     try {
       const response = await sendChatMessage(
         selectedProvider,
@@ -692,7 +694,6 @@ ${currentPresetObj.instructionPrompt}
       );
 
       const newContent = response.content.trim();
-      const existing = (baseNotes || '').trim();
 
       // Continuous Multi-Chapter Note Appending (Pure client-side append)
       const combinedNotes = existing
@@ -718,13 +719,7 @@ ${currentPresetObj.instructionPrompt}
       ];
 
       updateCurrentSession({
-        notesContent: combinedNotes,
-        messages: updatedMessages,
         title: finalTitle,
-        subject: selectedSubject,
-        customSubjectName,
-        topic: targetTopic.trim(),
-        preset: activePreset,
         syllabusSnippet: syllabusContext,
         webSearch
       });
@@ -786,6 +781,10 @@ Begin IMMEDIATELY on Line 1 with the next chapter, delivering full theoretical r
       }
     ];
 
+    const existing = (generatedNotes || '').trim();
+    // Clean trailing [PAUSED ...] from existing notes so it forms a seamless textbook
+    const cleanedBase = existing.replace(/\n*\[PAUSED[\s\S]*?\]\s*$/i, '').trim();
+
     try {
       const response = await sendChatMessage(
         selectedProvider,
@@ -799,10 +798,6 @@ Begin IMMEDIATELY on Line 1 with the next chapter, delivering full theoretical r
       );
 
       const newContent = response.content.trim();
-      const existing = (generatedNotes || '').trim();
-
-      // Clean trailing [PAUSED ...] from existing notes so it forms a seamless textbook
-      const cleanedBase = existing.replace(/\n*\[PAUSED[\s\S]*?\]\s*$/i, '').trim();
 
       const combinedNotes = cleanedBase
         ? `${cleanedBase}\n\n---\n\n${newContent}`

@@ -110,6 +110,106 @@ const defineCustomThemes = (monaco: any) => {
         'editorCursor.foreground': '#0969da'
       }
     });
+
+    monaco.editor.defineTheme('emerald_matrix', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'comment', foreground: '065f46', fontStyle: 'italic' },
+        { token: 'keyword', foreground: '10b981' },
+        { token: 'string', foreground: '4ade80' },
+        { token: 'number', foreground: '6ee7b7' },
+        { token: 'type', foreground: '34d399' },
+        { token: 'function', foreground: '34d399' }
+      ],
+      colors: {
+        'editor.background': '#04160e',
+        'editor.foreground': '#d1fae5',
+        'editorLineNumber.foreground': '#064e3b',
+        'editorLineNumber.activeForeground': '#10b981',
+        'editorCursor.foreground': '#10b981'
+      }
+    });
+
+    monaco.editor.defineTheme('dracula', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'comment', foreground: '9333ea', fontStyle: 'italic' },
+        { token: 'keyword', foreground: 'ff007f' },
+        { token: 'string', foreground: 'ff70a6' },
+        { token: 'number', foreground: 'c084fc' },
+        { token: 'type', foreground: 'e879f9' },
+        { token: 'function', foreground: 'd946ef' }
+      ],
+      colors: {
+        'editor.background': '#19051d',
+        'editor.foreground': '#ffd6fa',
+        'editorLineNumber.foreground': '#581c87',
+        'editorLineNumber.activeForeground': '#ff007f',
+        'editorCursor.foreground': '#ff007f'
+      }
+    });
+
+    monaco.editor.defineTheme('cyber_pink', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'comment', foreground: '9f1239', fontStyle: 'italic' },
+        { token: 'keyword', foreground: 'fb7185' },
+        { token: 'string', foreground: 'fbcfe8' },
+        { token: 'number', foreground: 'fda4af' },
+        { token: 'type', foreground: 'f43f5e' },
+        { token: 'function', foreground: 'f43f5e' }
+      ],
+      colors: {
+        'editor.background': '#1c0b16',
+        'editor.foreground': '#ffe4e6',
+        'editorLineNumber.foreground': '#881337',
+        'editorLineNumber.activeForeground': '#fb7185',
+        'editorCursor.foreground': '#fb7185'
+      }
+    });
+
+    monaco.editor.defineTheme('cobalt', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'comment', foreground: '415a77', fontStyle: 'italic' },
+        { token: 'keyword', foreground: '00f5d4' },
+        { token: 'string', foreground: 'fee440' },
+        { token: 'number', foreground: '38bdf8' },
+        { token: 'type', foreground: '70e000' },
+        { token: 'function', foreground: '70e000' }
+      ],
+      colors: {
+        'editor.background': '#0d1b2a',
+        'editor.foreground': '#e0e1dd',
+        'editorLineNumber.foreground': '#1b263b',
+        'editorLineNumber.activeForeground': '#00f5d4',
+        'editorCursor.foreground': '#00f5d4'
+      }
+    });
+
+    monaco.editor.defineTheme('solarized_amber', {
+      base: 'vs-dark',
+      inherit: true,
+      rules: [
+        { token: 'comment', foreground: '78350f', fontStyle: 'italic' },
+        { token: 'keyword', foreground: 'f59e0b' },
+        { token: 'string', foreground: 'ea580c' },
+        { token: 'number', foreground: 'f43f5e' },
+        { token: 'type', foreground: 'fbbf24' },
+        { token: 'function', foreground: 'fbbf24' }
+      ],
+      colors: {
+        'editor.background': '#18120c',
+        'editor.foreground': '#fef3c7',
+        'editorLineNumber.foreground': '#451a03',
+        'editorLineNumber.activeForeground': '#f59e0b',
+        'editorCursor.foreground': '#f59e0b'
+      }
+    });
   } catch {}
 };
 
@@ -117,8 +217,7 @@ const mapTheme = (t?: string) => {
   if (!t) return 'onedark';
   if (t === 'vs-dark' || t === 'vscode_dark') return 'vs-dark';
   if (t === 'vs-light' || t === 'vs' || t === 'light') return 'vs';
-  if (t === 'hc-black' || t === 'hc_black') return 'hc-black';
-  return t; // 'onedark' | 'monokai' | 'tokyo_night' | 'github_light' | 'neon'
+  return t; // 'onedark' | 'monokai' | 'tokyo_night' | 'github_light' | 'neon' | 'emerald_matrix' | 'dracula' | 'cyber_pink' | 'cobalt' | 'solarized_amber'
 };
 
 export const MonacoEditorWrapper: React.FC<MonacoEditorWrapperProps> = ({ 

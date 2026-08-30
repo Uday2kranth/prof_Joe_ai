@@ -83,6 +83,7 @@ const server = http.createServer((req, res) => {
       const mockRes = {
         headers: {},
         statusCode: 200,
+        headersSent: false,
         setHeader(name, value) {
           this.headers[name] = value;
           res.setHeader(name, value);
@@ -90,6 +91,27 @@ const server = http.createServer((req, res) => {
         status(code) {
           this.statusCode = code;
           return this;
+        },
+        writeHead(code, headers) {
+          this.statusCode = code;
+          if (headers) Object.assign(this.headers, headers);
+          res.writeHead(this.statusCode, {
+            'Access-Control-Allow-Origin': '*',
+            'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+            'Access-Control-Allow-Headers': '*',
+            ...this.headers
+          });
+          this.headersSent = true;
+          return this;
+        },
+        write(data) {
+          if (!this.headersSent) {
+            this.writeHead(this.statusCode);
+          }
+          return res.write(data);
+        },
+        flush() {
+          if (res.flush) res.flush();
         },
         json(data) {
           res.writeHead(this.statusCode, {
@@ -99,10 +121,19 @@ const server = http.createServer((req, res) => {
             'Access-Control-Allow-Headers': '*',
             ...this.headers
           });
+          this.headersSent = true;
           res.end(JSON.stringify(data));
         },
         end(data) {
-          res.writeHead(this.statusCode, this.headers);
+          if (!this.headersSent) {
+            res.writeHead(this.statusCode, {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
+              'Access-Control-Allow-Headers': '*',
+              ...this.headers
+            });
+            this.headersSent = true;
+          }
           res.end(data);
         }
       };

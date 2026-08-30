@@ -35,7 +35,9 @@ import {
   Award,
   CheckCircle2,
   Flame,
-  Activity
+  Activity,
+  Sun,
+  Moon
 } from 'lucide-react';
 import { 
   getPrintCustomConfig, 
@@ -171,6 +173,30 @@ export const SettingsStudioView: React.FC<SettingsStudioViewProps> = ({
     setTimeout(() => setSaveFeedback(null), 2500);
   };
 
+  const [activeThemeMode, setActiveThemeMode] = useState<'light' | 'dark'>(() => {
+    return (localStorage.getItem('chatterbot_theme') || localStorage.getItem('theme') || 'dark') as 'light' | 'dark';
+  });
+
+  const handleSetThemeMode = (mode: 'light' | 'dark') => {
+    setActiveThemeMode(mode);
+    document.documentElement.setAttribute('data-theme', mode);
+    localStorage.setItem('chatterbot_theme', mode);
+    localStorage.setItem('theme', mode);
+
+    // Android Capacitor: Sync native status bar icon contrast
+    import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
+      StatusBar.setStyle({ style: mode === 'light' ? Style.Light : Style.Dark }).catch(() => {});
+      StatusBar.setBackgroundColor({ color: mode === 'light' ? '#f8fafc' : '#020617' }).catch(() => {});
+    }).catch(() => {});
+
+    window.dispatchEvent(new Event('chatterbot_theme_updated'));
+    window.dispatchEvent(new Event('chatterbot_code_style_updated'));
+    window.dispatchEvent(new Event('chatterbot_atmosphere_updated'));
+    window.dispatchEvent(new Event('storage'));
+    setSaveFeedback(`${mode === 'light' ? '☀️ Light' : '🌙 Dark'} Mode activated!`);
+    setTimeout(() => setSaveFeedback(null), 2500);
+  };
+
   const updateCodeStyle = (patch: Partial<CodeStyleConfig>) => {
     const next = { ...codeStyle, ...patch };
     setCodeStyle(next);
@@ -179,11 +205,6 @@ export const SettingsStudioView: React.FC<SettingsStudioViewProps> = ({
     if (patch.atmosphere) {
       document.documentElement.setAttribute('data-atmosphere', patch.atmosphere);
       localStorage.setItem('chatterbot_atmosphere', patch.atmosphere);
-      const isLightAtmo = patch.atmosphere === 'oxford_daylight' || patch.atmosphere === 'amber_parchment';
-      const targetTheme = isLightAtmo ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', targetTheme);
-      localStorage.setItem('chatterbot_theme', targetTheme);
-      localStorage.setItem('theme', targetTheme);
       window.dispatchEvent(new Event('chatterbot_atmosphere_updated'));
       window.dispatchEvent(new Event('storage'));
     }
@@ -227,6 +248,7 @@ export const SettingsStudioView: React.FC<SettingsStudioViewProps> = ({
         showDateTag: true,
         showWorkspaceTag: true,
         showFooter: true,
+        showPageNumbers: true,
         marginPreset: 'standard',
         hideDividers: false,
         inkMode: 'rich',
@@ -241,6 +263,7 @@ export const SettingsStudioView: React.FC<SettingsStudioViewProps> = ({
         showDateTag: false,
         showWorkspaceTag: false,
         showFooter: false,
+        showPageNumbers: false,
         marginPreset: 'standard',
         hideDividers: false,
         inkMode: 'rich'
@@ -253,6 +276,7 @@ export const SettingsStudioView: React.FC<SettingsStudioViewProps> = ({
         showDateTag: true,
         showWorkspaceTag: false,
         showFooter: true,
+        showPageNumbers: true,
         marginPreset: 'compact',
         hideDividers: true,
         inkMode: 'eco'
@@ -1283,6 +1307,16 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                     </label>
 
                     <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-tertiary)', borderRadius: '8px', fontSize: '0.78rem', cursor: 'pointer' }}>
+                      <span>Show Page Numbers (Page 1 of N)</span>
+                      <input
+                        type="checkbox"
+                        checked={printConfig.showPageNumbers}
+                        onChange={(e) => updateConfig({ showPageNumbers: e.target.checked, preset: 'custom' })}
+                        style={{ accentColor: 'var(--accent-cyan)' }}
+                      />
+                    </label>
+
+                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 12px', background: 'var(--bg-tertiary)', borderRadius: '8px', fontSize: '0.78rem', cursor: 'pointer' }}>
                       <span>Include Code Blocks</span>
                       <input
                         type="checkbox"
@@ -1463,9 +1497,9 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                       </div>
                     </div>
 
-                    {printConfig.showFooter && (
+                    {(printConfig.showFooter || printConfig.showPageNumbers) && (
                       <div style={{
-                        borderTop: '1px solid #e2e8f0',
+                        borderTop: printConfig.showFooter ? '1px solid #e2e8f0' : 'none',
                         paddingTop: '3px',
                         marginTop: '6px',
                         display: 'flex',
@@ -1473,8 +1507,8 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                         fontSize: '0.52rem',
                         color: '#94a3b8'
                       }}>
-                        <span>Prof. Joe AI Document</span>
-                        <span>Page 1 of 1</span>
+                        <span>{printConfig.showFooter ? (printConfig.customTitle || 'Prof. Joe AI Document') : ''}</span>
+                        <span>{printConfig.showPageNumbers ? 'Page 1 of 1' : ''}</span>
                       </div>
                     )}
                   </div>
@@ -1960,15 +1994,18 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
               { id: 'tokyo_night', label: 'Tokyo Night', desc: 'Midnight neon purple & cyan', bg: '#1a1b26', color: '#c0caf5', keywordColor: '#bb9af7', funcColor: '#7aa2f7', stringColor: '#9ece6a', numberColor: '#ff9e64', commentColor: '#565f89', borderColor: 'rgba(122, 162, 247, 0.4)' },
               { id: 'github_light', label: 'GitHub Light', desc: 'High-contrast academic white', bg: '#ffffff', color: '#24292f', keywordColor: '#cf222e', funcColor: '#8250df', stringColor: '#0a3069', numberColor: '#0550ae', commentColor: '#6e7781', borderColor: 'rgba(9, 105, 218, 0.4)' },
               { id: 'neon', label: 'Cyberpunk Neon', desc: 'Deep jet black with electric cyan', bg: '#0b0f19', color: '#e2e8f0', keywordColor: '#06b6d4', funcColor: '#38bdf8', stringColor: '#10b981', numberColor: '#f59e0b', commentColor: '#059669', borderColor: 'rgba(6, 182, 212, 0.6)' },
-              { id: 'hc_black', label: 'High Contrast', desc: 'Pure OLED black accessibility', bg: '#000000', color: '#ffffff', keywordColor: '#06b6d4', funcColor: '#38bdf8', stringColor: '#10b981', numberColor: '#facc15', commentColor: '#94a3b8', borderColor: '#06b6d4' }
+              { id: 'emerald_matrix', label: 'Emerald Matrix', desc: 'Terminal phosphor & hacker mint', bg: '#04160e', color: '#d1fae5', keywordColor: '#10b981', funcColor: '#34d399', stringColor: '#4ade80', numberColor: '#6ee7b7', commentColor: '#065f46', borderColor: 'rgba(16, 185, 129, 0.5)' },
+              { id: 'dracula', label: 'Electric Magenta', desc: 'Deep velvet magenta & vivid fuchsia', bg: '#19051d', color: '#ffd6fa', keywordColor: '#ff007f', funcColor: '#d946ef', stringColor: '#ff70a6', numberColor: '#c084fc', commentColor: '#9333ea', borderColor: 'rgba(236, 72, 153, 0.6)' },
+              { id: 'cyber_pink', label: 'Cyber Pink', desc: 'Electric neon pink & pastel rose glow', bg: '#1c0b16', color: '#ffe4e6', keywordColor: '#fb7185', funcColor: '#f43f5e', stringColor: '#fbcfe8', numberColor: '#fda4af', commentColor: '#9f1239', borderColor: 'rgba(251, 113, 133, 0.55)' },
+              { id: 'cobalt', label: 'Cobalt Sapphire', desc: 'Deep ocean navy with electric aqua', bg: '#0d1b2a', color: '#e0e1dd', keywordColor: '#00f5d4', funcColor: '#70e000', stringColor: '#fee440', numberColor: '#38bdf8', commentColor: '#415a77', borderColor: 'rgba(0, 245, 212, 0.45)' },
+              { id: 'solarized_amber', label: 'Solarized Amber', desc: 'Warm espresso with golden amber & ruby', bg: '#18120c', color: '#fef3c7', keywordColor: '#f59e0b', funcColor: '#fbbf24', stringColor: '#ea580c', numberColor: '#f43f5e', commentColor: '#78350f', borderColor: 'rgba(245, 158, 11, 0.45)' }
             ];
 
             const activeThemeId = (codeStyle.codeTheme || ideConfig.theme || 'onedark') as string;
             const currentThemeMeta = UNIFIED_CODE_THEMES.find(t => 
               t.id === activeThemeId || 
               (activeThemeId === 'vs-dark' && t.id === 'vscode_dark') || 
-              (activeThemeId === 'vs-light' && t.id === 'github_light') || 
-              (activeThemeId === 'hc-black' && t.id === 'hc_black')
+              (activeThemeId === 'vs-light' && t.id === 'github_light')
             ) || UNIFIED_CODE_THEMES[0];
 
             return (
@@ -1987,11 +2024,12 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                       </div>
                     </div>
                     <span style={{ fontSize: '0.72rem', color: 'var(--accent-cyan)', background: 'rgba(6, 182, 212, 0.12)', border: '1px solid rgba(6, 182, 212, 0.3)', padding: '4px 12px', borderRadius: '12px', fontWeight: 700 }}>
-                      Universal Theme Sync Active
+                      Universal Theme Sync Active • {UNIFIED_CODE_THEMES.length} Themes
                     </span>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '12px', width: '100%', boxSizing: 'border-box' }}>
+                  {/* Compact, Clean Responsive Grid */}
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 210px), 1fr))', gap: '10px', width: '100%', boxSizing: 'border-box' }}>
                     {UNIFIED_CODE_THEMES.map(th => {
                       const isSelected = currentThemeMeta.id === th.id;
                       return (
@@ -2003,8 +2041,8 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                             updateIdeConfig({ theme: th.id as any });
                           }}
                           style={{
-                            padding: '14px 16px',
-                            borderRadius: '12px',
+                            padding: '12px 14px',
+                            borderRadius: '10px',
                             border: isSelected ? '2px solid var(--accent-cyan)' : '1px solid var(--border-color)',
                             background: th.bg,
                             color: th.color,
@@ -2012,27 +2050,41 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                             textAlign: 'left',
                             display: 'flex',
                             flexDirection: 'column',
-                            gap: '8px',
-                            boxShadow: isSelected ? '0 0 16px rgba(6, 182, 212, 0.35)' : '0 2px 8px rgba(0,0,0,0.15)',
+                            gap: '6px',
+                            boxShadow: isSelected ? '0 0 14px rgba(6, 182, 212, 0.35)' : '0 2px 6px rgba(0,0,0,0.12)',
                             boxSizing: 'border-box',
                             transition: 'all 0.15s ease'
                           }}
                         >
-                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                            <div>
-                              <span style={{ fontWeight: 800, fontSize: '0.88rem' }}>{th.label}</span>
-                              <div style={{ fontSize: '0.68rem', opacity: 0.75, marginTop: '2px' }}>{th.desc}</div>
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                            <div style={{ minWidth: 0, flex: 1 }}>
+                              <div style={{ fontWeight: 800, fontSize: '0.82rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: th.color }}>
+                                {th.label}
+                              </div>
+                              <div style={{ fontSize: '0.64rem', opacity: 0.75, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', color: th.color }}>
+                                {th.desc}
+                              </div>
                             </div>
                             {isSelected && (
-                              <div style={{ width: '22px', height: '22px', borderRadius: '50%', background: 'var(--accent-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                                <Check size={14} style={{ color: '#000000', strokeWidth: 3 }} />
+                              <div style={{ width: '18px', height: '18px', borderRadius: '50%', background: 'var(--accent-cyan)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                                <Check size={12} style={{ color: '#000000', strokeWidth: 3 }} />
                               </div>
                             )}
                           </div>
-                          <code style={{ fontSize: '0.72rem', padding: '6px 8px', borderRadius: '6px', background: 'rgba(0,0,0,0.25)', fontFamily: 'monospace', display: 'flex', gap: '6px' }}>
+                          <code style={{ 
+                            fontSize: '0.70rem', 
+                            padding: '4px 6px', 
+                            borderRadius: '6px', 
+                            background: th.id === 'github_light' ? '#f0f4f8' : 'rgba(0,0,0,0.3)', 
+                            color: th.color, 
+                            fontFamily: 'monospace', 
+                            display: 'flex', 
+                            gap: '4px',
+                            border: `1px solid ${th.borderColor || 'transparent'}`
+                          }}>
                             <span style={{ color: th.keywordColor }}>def</span>
-                            <span style={{ color: th.funcColor }}>solve</span>():
-                            <span style={{ color: th.stringColor }}>'OU Exam'</span>
+                            <span style={{ color: th.funcColor }}>solve</span><span style={{ color: th.color }}>():</span>
+                            <span style={{ color: th.stringColor }}>'OU'</span>
                           </code>
                         </button>
                       );
@@ -2118,10 +2170,9 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                               border: ideConfig.fontSize === sz ? '1.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
                               background: ideConfig.fontSize === sz ? 'rgba(6, 182, 212, 0.18)' : 'var(--bg-primary)',
                               color: ideConfig.fontSize === sz ? 'var(--accent-cyan)' : 'var(--text-primary)',
-                              fontSize: '0.78rem',
+                              fontSize: '0.75rem',
                               fontWeight: 700,
                               cursor: 'pointer',
-                              textAlign: 'center',
                               boxSizing: 'border-box'
                             }}
                           >
@@ -2131,7 +2182,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                       </div>
                     </div>
 
-                    {/* Minimap & Tab Size */}
+                    {/* Minimap & Indentation */}
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px', borderRadius: '12px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', boxSizing: 'border-box' }}>
                       <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>MINIMAP & INDENTATION</label>
                       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '6px' }}>
@@ -2214,7 +2265,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                     </div>
                   </div>
 
-                  {/* 👁️ Live Interactive Code Editor Preview Window */}
+                  {/* 👁️ Live Interactive Code Editor Preview Window (100% Guaranteed Contrast in Light & Dark Mode) */}
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
                     <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)', letterSpacing: '0.04em' }}>
                       👁️ LIVE CODE EDITOR PREVIEW ({currentThemeMeta.label})
@@ -2223,6 +2274,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                       padding: '16px 20px',
                       borderRadius: '12px',
                       background: currentThemeMeta.bg,
+                      color: currentThemeMeta.color,
                       border: `1.5px solid ${currentThemeMeta.borderColor || 'rgba(6, 182, 212, 0.3)'}`,
                       display: 'flex',
                       flexDirection: 'column',
@@ -2231,7 +2283,13 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                       overflow: 'hidden',
                       boxSizing: 'border-box'
                     }}>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderBottom: '1px solid rgba(255,255,255,0.1)', paddingBottom: '8px' }}>
+                      <div style={{ 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'space-between', 
+                        borderBottom: currentThemeMeta.id === 'github_light' ? '1px solid rgba(0,0,0,0.1)' : '1px solid rgba(255,255,255,0.1)', 
+                        paddingBottom: '8px' 
+                      }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                           <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#ef4444', opacity: 0.8 }} />
                           <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: '#f59e0b', opacity: 0.8 }} />
@@ -2240,7 +2298,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                             dijkstra_shortest_path.py — {(ideConfig.editorEngine || 'monaco') === 'fast' ? 'Fast Lightweight Engine' : 'Monaco VS Code Engine'}
                           </span>
                         </div>
-                        <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontFamily: 'monospace' }}>
+                        <span style={{ fontSize: '0.68rem', color: currentThemeMeta.commentColor, fontFamily: 'monospace' }}>
                           {ideConfig.fontSize}px • {ideConfig.tabSize}sp • {ideConfig.wordWrap === 'on' ? 'Wrap' : 'Scroll'}
                         </span>
                       </div>
@@ -2251,10 +2309,11 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                         display: 'flex',
                         gap: '14px',
                         overflowX: 'auto',
-                        whiteSpace: ideConfig.wordWrap === 'on' ? 'pre-wrap' : 'pre'
+                        whiteSpace: ideConfig.wordWrap === 'on' ? 'pre-wrap' : 'pre',
+                        color: currentThemeMeta.color
                       }}>
                         {ideConfig.lineNumbers === 'on' && (
-                          <div style={{ display: 'flex', flexDirection: 'column', userSelect: 'none', opacity: 0.4, textAlign: 'right', color: currentThemeMeta.color, minWidth: '16px' }}>
+                          <div style={{ display: 'flex', flexDirection: 'column', userSelect: 'none', opacity: 0.5, textAlign: 'right', color: currentThemeMeta.color, minWidth: '16px' }}>
                             <span>1</span>
                             <span>2</span>
                             <span>3</span>
@@ -2262,12 +2321,12 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                             <span>5</span>
                           </div>
                         )}
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div><span style={{ color: currentThemeMeta.keywordColor }}>def</span> <span style={{ color: currentThemeMeta.funcColor }}>dijkstra</span>(graph, start):</div>
-                          <div style={{ paddingLeft: `${ideConfig.tabSize * 8}px` }}>distances = &#123;node: <span style={{ color: currentThemeMeta.numberColor }}>float</span>(<span style={{ color: currentThemeMeta.stringColor }}>'inf'</span>) <span style={{ color: currentThemeMeta.keywordColor }}>for</span> node <span style={{ color: currentThemeMeta.keywordColor }}>in</span> graph&#125;</div>
-                          <div style={{ paddingLeft: `${ideConfig.tabSize * 8}px` }}>distances[start] = <span style={{ color: currentThemeMeta.numberColor }}>0</span></div>
+                        <div style={{ flex: 1, minWidth: 0, color: currentThemeMeta.color }}>
+                          <div style={{ color: currentThemeMeta.color }}><span style={{ color: currentThemeMeta.keywordColor }}>def</span> <span style={{ color: currentThemeMeta.funcColor }}>dijkstra</span><span style={{ color: currentThemeMeta.color }}>(graph, start):</span></div>
+                          <div style={{ paddingLeft: `${ideConfig.tabSize * 8}px`, color: currentThemeMeta.color }}><span style={{ color: currentThemeMeta.color }}>distances = &#123;node: </span><span style={{ color: currentThemeMeta.numberColor }}>float</span><span style={{ color: currentThemeMeta.color }}>(</span><span style={{ color: currentThemeMeta.stringColor }}>'inf'</span><span style={{ color: currentThemeMeta.color }}>)</span> <span style={{ color: currentThemeMeta.keywordColor }}>for</span> <span style={{ color: currentThemeMeta.color }}>node</span> <span style={{ color: currentThemeMeta.keywordColor }}>in</span> <span style={{ color: currentThemeMeta.color }}>graph&#125;</span></div>
+                          <div style={{ paddingLeft: `${ideConfig.tabSize * 8}px`, color: currentThemeMeta.color }}><span style={{ color: currentThemeMeta.color }}>distances[start] = </span><span style={{ color: currentThemeMeta.numberColor }}>0</span></div>
                           <div style={{ paddingLeft: `${ideConfig.tabSize * 8}px` }}><span style={{ color: currentThemeMeta.commentColor }}># Dijkstra priority heap traversal</span></div>
-                          <div style={{ paddingLeft: `${ideConfig.tabSize * 8}px` }}><span style={{ color: currentThemeMeta.keywordColor }}>return</span> distances</div>
+                          <div style={{ paddingLeft: `${ideConfig.tabSize * 8}px`, color: currentThemeMeta.color }}><span style={{ color: currentThemeMeta.keywordColor }}>return</span> <span style={{ color: currentThemeMeta.color }}>distances</span></div>
                         </div>
                       </div>
                     </div>
@@ -2522,7 +2581,99 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
           {activeTab === 'theme' && (
             <div style={{ maxWidth: '1400px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
               
-              {/* Card 1: 🌌 Global Workspace Atmosphere (1-Click Color Suite) */}
+              {/* Card 0: 🌓 Global Appearance Mode (Light vs Dark) */}
+              <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <div style={{ width: '38px', height: '38px', borderRadius: '10px', background: 'rgba(6, 182, 212, 0.15)', border: '1px solid rgba(6, 182, 212, 0.3)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-cyan)' }}>
+                      {activeThemeMode === 'light' ? <Sun size={20} /> : <Moon size={20} />}
+                    </div>
+                    <div>
+                      <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700 }}>Appearance Mode (Light / Dark)</h3>
+                      <p style={{ margin: '2px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                        Choose your primary background canvas tone. All color themes adapt seamlessly to both modes.
+                      </p>
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.72rem', padding: '4px 10px', borderRadius: '20px', background: 'rgba(6, 182, 212, 0.15)', color: 'var(--accent-cyan)', fontWeight: 700, border: '1px solid rgba(6, 182, 212, 0.3)' }}>
+                    Active: {activeThemeMode === 'light' ? '☀️ LIGHT MODE' : '🌙 DARK MODE'}
+                  </span>
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '14px', marginTop: '6px' }}>
+                  {/* Light Mode Button */}
+                  <button
+                    type="button"
+                    onClick={() => handleSetThemeMode('light')}
+                    style={{
+                      padding: '16px 18px',
+                      borderRadius: '12px',
+                      border: activeThemeMode === 'light' ? '2px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                      background: activeThemeMode === 'light' ? 'rgba(6, 182, 212, 0.12)' : 'var(--bg-primary)',
+                      color: 'var(--text-primary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      boxShadow: activeThemeMode === 'light' ? '0 0 16px rgba(6, 182, 212, 0.25)' : 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: '#f8fafc', border: '2px solid #0284c7', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#0284c7' }}>
+                      <Sun size={22} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.92rem', color: activeThemeMode === 'light' ? 'var(--accent-cyan)' : 'var(--text-primary)' }}>
+                          ☀️ Light Mode
+                        </div>
+                        {activeThemeMode === 'light' && <Check size={16} style={{ color: 'var(--accent-cyan)' }} />}
+                      </div>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        Clean crisp white paper & dark readable text
+                      </div>
+                    </div>
+                  </button>
+
+                  {/* Dark Mode Button */}
+                  <button
+                    type="button"
+                    onClick={() => handleSetThemeMode('dark')}
+                    style={{
+                      padding: '16px 18px',
+                      borderRadius: '12px',
+                      border: activeThemeMode === 'dark' ? '2px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                      background: activeThemeMode === 'dark' ? 'rgba(6, 182, 212, 0.12)' : 'var(--bg-primary)',
+                      color: 'var(--text-primary)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      cursor: 'pointer',
+                      textAlign: 'left',
+                      boxShadow: activeThemeMode === 'dark' ? '0 0 16px rgba(6, 182, 212, 0.25)' : 'none',
+                      transition: 'all 0.15s ease'
+                    }}
+                  >
+                    <div style={{ width: '42px', height: '42px', borderRadius: '10px', background: '#020617', border: '2px solid #38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: '#38bdf8' }}>
+                      <Moon size={22} />
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '6px' }}>
+                        <div style={{ fontWeight: 700, fontSize: '0.92rem', color: activeThemeMode === 'dark' ? 'var(--accent-cyan)' : 'var(--text-primary)' }}>
+                          🌙 Dark Mode
+                        </div>
+                        {activeThemeMode === 'dark' && <Check size={16} style={{ color: 'var(--accent-cyan)' }} />}
+                      </div>
+                      <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: '2px' }}>
+                        Deep obsidian charcoal & glowing luminous accents
+                      </div>
+                    </div>
+                  </button>
+                </div>
+              </div>
+
+              {/* Card 1: 🌌 Global Workspace Color Atmosphere */}
               <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '10px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -2530,14 +2681,14 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                       <Palette size={20} />
                     </div>
                     <div>
-                      <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700 }}>Global Workspace Multi-Color Atmosphere</h3>
+                      <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 700 }}>Color Atmosphere & Accent Persona</h3>
                       <p style={{ margin: '2px 0 0 0', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                        Transform application backgrounds, sidebars, header navigation, and accent glow with 1 click.
+                        Select your distinctive accent highlights, buttons, tabs, and glowing borders.
                       </p>
                     </div>
                   </div>
                   <span style={{ fontSize: '0.72rem', padding: '4px 10px', borderRadius: '20px', background: 'rgba(6, 182, 212, 0.15)', color: 'var(--accent-cyan)', fontWeight: 700, border: '1px solid rgba(6, 182, 212, 0.3)' }}>
-                    Active: {(codeStyle.atmosphere || 'cyber_osmania').replace('_', ' ').toUpperCase()}
+                    Active Palette: {(codeStyle.atmosphere || 'cyber_osmania').replace('_', ' ').toUpperCase()}
                   </span>
                 </div>
 
@@ -2545,51 +2696,52 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                   {[
                     {
                       id: 'cyber_osmania',
-                      name: 'Cyber Osmania (Default)',
-                      desc: 'Deep slate navy with electric cyan glow',
-                      baseColor: '#020617',
-                      accentColor: '#06b6d4',
-                      isLight: false
+                      name: 'Cyber Osmania (Cyan)',
+                      desc: activeThemeMode === 'light' ? 'Crisp white canvas with electric cyan/blue buttons' : 'Deep slate navy with electric cyan glow',
+                      baseColor: activeThemeMode === 'light' ? '#f8fafc' : '#020617',
+                      accentColor: '#06b6d4'
                     },
                     {
                       id: 'midnight_academy',
-                      name: 'Midnight Academy',
-                      desc: 'Royal indigo with nocturnal lavender glow',
-                      baseColor: '#0a081e',
-                      accentColor: '#a855f7',
-                      isLight: false
+                      name: 'Midnight Academy (Violet)',
+                      desc: activeThemeMode === 'light' ? 'Soft lavender white paper with royal violet buttons' : 'Royal indigo with nocturnal lavender glow',
+                      baseColor: activeThemeMode === 'light' ? '#faf5ff' : '#0a081e',
+                      accentColor: '#a855f7'
                     },
                     {
                       id: 'emerald_scholar',
-                      name: 'Emerald Scholar',
-                      desc: 'Deep forest dark with academic mint glow',
-                      baseColor: '#021a12',
-                      accentColor: '#10b981',
-                      isLight: false
+                      name: 'Emerald Scholar (Green)',
+                      desc: activeThemeMode === 'light' ? 'Soft mint white canvas with deep emerald buttons' : 'Deep forest dark with academic mint glow',
+                      baseColor: activeThemeMode === 'light' ? '#f0fdf4' : '#021a12',
+                      accentColor: '#10b981'
                     },
                     {
                       id: 'obsidian_oled',
-                      name: 'Obsidian OLED',
-                      desc: 'Pure OLED black with high-contrast razor cyan',
-                      baseColor: '#000000',
-                      accentColor: '#38bdf8',
-                      isLight: false
-                    },
-                    {
-                      id: 'oxford_daylight',
-                      name: 'Oxford Daylight (Light)',
-                      desc: 'Warm ivory paper with Oxford navy typography',
-                      baseColor: '#f8fafc',
-                      accentColor: '#1e3a8a',
-                      isLight: true
+                      name: 'Obsidian OLED (Monochrome)',
+                      desc: activeThemeMode === 'light' ? 'Clean minimalist monochrome white & slate' : 'Pure OLED black with high-contrast razor cyan',
+                      baseColor: activeThemeMode === 'light' ? '#ffffff' : '#000000',
+                      accentColor: activeThemeMode === 'light' ? '#18181b' : '#38bdf8'
                     },
                     {
                       id: 'amber_parchment',
                       name: 'Amber Parchment (Warm)',
-                      desc: 'Vintage cream paper with warm amber gold',
-                      baseColor: '#fbf7ee',
-                      accentColor: '#d97706',
-                      isLight: true
+                      desc: activeThemeMode === 'light' ? 'Soft sunlit cream paper with happy emoji yellow buttons' : 'Deep espresso dark with glowing happy yellow & sunflower accents',
+                      baseColor: activeThemeMode === 'light' ? '#fefce8' : '#120e03',
+                      accentColor: '#eab308'
+                    },
+                    {
+                      id: 'crimson_rose',
+                      name: 'Crimson Rose (Ruby)',
+                      desc: activeThemeMode === 'light' ? 'Soft rose quartz paper with vivid crimson ruby buttons' : 'Deep velvet wine dark with luminous ruby glow',
+                      baseColor: activeThemeMode === 'light' ? '#fff1f2' : '#150308',
+                      accentColor: '#f43f5e'
+                    },
+                    {
+                      id: 'sakura_pink',
+                      name: 'Sakura Pink (Blossom)',
+                      desc: activeThemeMode === 'light' ? 'Soft pastel sakura pink with hot pink buttons' : 'Deep plum night dark with radiant blossom pink glow',
+                      baseColor: activeThemeMode === 'light' ? '#fff0f5' : '#140410',
+                      accentColor: '#ec4899'
                     }
                   ].map(atmo => {
                     const isSelected = (codeStyle.atmosphere || 'cyber_osmania') === atmo.id;
@@ -2829,7 +2981,7 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                     transition: 'all 0.25s ease'
                   }}
                   data-atmosphere={codeStyle.atmosphere || 'cyber_osmania'}
-                  data-theme={(codeStyle.atmosphere === 'oxford_daylight' || codeStyle.atmosphere === 'amber_parchment') ? 'light' : 'dark'}
+                  data-theme={activeThemeMode}
                 >
                   {/* VIEW 1: 💬 CHAT & MATH VIEW */}
                   {activePreviewTab === 'chat' && (

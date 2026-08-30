@@ -485,14 +485,19 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                   <Code size={16} style={{ color: 'var(--accent-cyan)' }} />
                   <span>Code Block Syntax Theme</span>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '6px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 110px), 1fr))', gap: '6px' }}>
                   {[
                     { id: 'onedark', label: 'One Dark Pro', bg: '#282c34', color: '#61afef' },
                     { id: 'vscode_dark', label: 'VS Code Dark+', bg: '#1e1e1e', color: '#4ec9b0' },
-                    { id: 'monokai', label: 'Monokai Pro', bg: '#2d2a2e', color: '#ffd866' },
+                    { id: 'monokai', label: 'Monokai Pro', bg: '#272822', color: '#ffd866' },
                     { id: 'tokyo_night', label: 'Tokyo Night', bg: '#1a1b26', color: '#7aa2f7' },
-                    { id: 'github_light', label: 'GitHub Light', bg: '#f6f8fa', color: '#0969da' },
-                    { id: 'neon', label: 'Cyberpunk Neon', bg: '#0b0f19', color: '#06b6d4' }
+                    { id: 'github_light', label: 'GitHub Light', bg: '#ffffff', color: '#0969da' },
+                    { id: 'neon', label: 'Cyberpunk Neon', bg: '#0b0f19', color: '#06b6d4' },
+                    { id: 'emerald_matrix', label: 'Emerald Matrix', bg: '#04160e', color: '#10b981' },
+                    { id: 'dracula', label: 'Electric Magenta', bg: '#19051d', color: '#ff007f' },
+                    { id: 'cyber_pink', label: 'Cyber Pink', bg: '#1c0b16', color: '#fb7185' },
+                    { id: 'cobalt', label: 'Cobalt Sapphire', bg: '#0d1b2a', color: '#00f5d4' },
+                    { id: 'solarized_amber', label: 'Solarized Amber', bg: '#18120c', color: '#f59e0b' }
                   ].map(th => (
                     <button
                       key={th.id}
@@ -506,7 +511,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                         color: th.color,
                         cursor: 'pointer',
                         textAlign: 'center',
-                        fontSize: '0.75rem',
+                        fontSize: '0.72rem',
                         fontWeight: 700,
                         transition: 'all 0.15s ease'
                       }}

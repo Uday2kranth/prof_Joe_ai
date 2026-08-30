@@ -1,19 +1,17 @@
 import React, { useState } from 'react';
 import {
-  FlaskConical, Activity, Sparkles, Layers, BarChart3
+  FlaskConical, Activity, Sparkles, Layers, BarChart3, ExternalLink, ArrowRight, Brain, Cpu
 } from 'lucide-react';
-import { NeuralSimulatorModule } from './sandbox/NeuralSimulatorModule';
-import { StatisticalOptimizationModule } from './sandbox/StatisticalOptimizationModule';
 import { WhiteboardModule } from './sandbox/WhiteboardModule';
 import { ExcalidrawModule } from './sandbox/ExcalidrawModule';
 import { SmartTeachingBoardModule } from './sandbox/SmartTeachingBoardModule';
 
 export type SandboxModuleType = 
   | 'smart_teaching_board'
-  | 'neural_physics'
-  | 'statistical_optimization'
   | 'academic_whiteboard'
-  | 'excalidraw';
+  | 'excalidraw'
+  | 'neural_physics'
+  | 'statistical_optimization';
 
 interface ErrorBoundaryProps {
   children: React.ReactNode;
@@ -76,8 +74,24 @@ class SandboxModuleErrorBoundary extends React.Component<ErrorBoundaryProps, Err
   }
 }
 
-export const InteractiveSandboxView: React.FC = () => {
+interface InteractiveSandboxViewProps {
+  onNavigateWorkspace?: (workspace: 'deep_learning_studio' | 'test_diagrams' | 'dsa_lab' | 'chat') => void;
+}
+
+export const InteractiveSandboxView: React.FC<InteractiveSandboxViewProps> = ({ onNavigateWorkspace }) => {
   const [activeModule, setActiveModule] = useState<SandboxModuleType>('smart_teaching_board');
+
+  const handleLaunchDeepLearning = () => {
+    if (onNavigateWorkspace) {
+      onNavigateWorkspace('deep_learning_studio');
+    }
+  };
+
+  const handleLaunchMathStudio = () => {
+    if (onNavigateWorkspace) {
+      onNavigateWorkspace('test_diagrams');
+    }
+  };
 
   return (
     <div className="interactive-sandbox-container">
@@ -104,8 +118,8 @@ export const InteractiveSandboxView: React.FC = () => {
             <div>
               <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexWrap: 'wrap' }}>
                 <h2 style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary, #f8fafc)', margin: 0 }}>
-                  <span className="module-label-desktop">Interactive Learning Sandbox & Whiteboard Lab</span>
-                  <span className="module-label-mobile">Interactive Sandbox</span>
+                  <span className="module-label-desktop">Interactive Teaching Board & Drawing Canvas Lab</span>
+                  <span className="module-label-mobile">Teaching Sandbox</span>
                 </h2>
                 <span
                   className="module-label-desktop"
@@ -124,11 +138,11 @@ export const InteractiveSandboxView: React.FC = () => {
                     whiteSpace: 'nowrap'
                   }}
                 >
-                  5 LAB MODULES ACTIVE
+                  TEACHING SUITE ACTIVE
                 </span>
               </div>
               <p className="sandbox-header-subtitle">
-                Hands-on experimentation deck for 120+ Teaching Gizmos, Neural Gradients, Statistical Optimization, KaTeX Chalkboards & Vector Whiteboards
+                Hands-on teaching deck for 120+ Gizmos, KaTeX Academic Chalkboards, and Vector Diagramming Surfaces
               </p>
             </div>
           </div>
@@ -158,10 +172,10 @@ export const InteractiveSandboxView: React.FC = () => {
             }}
           >
             <option value="smart_teaching_board">🌟 Smart Teaching Board & Gizmos</option>
-            <option value="neural_physics">⚡ Data Science & AI Simulator</option>
-            <option value="statistical_optimization">📊 Statistical & Optimization Lab</option>
             <option value="academic_whiteboard">🖌️ Prof. Joe Academic Board</option>
             <option value="excalidraw">✏️ Excalidraw Engine (Free MIT)</option>
+            <option value="neural_physics">⚡ Launch Deep Learning Studio</option>
+            <option value="statistical_optimization">📊 Launch Math & Stats Studio</option>
           </select>
         </div>
 
@@ -185,43 +199,7 @@ export const InteractiveSandboxView: React.FC = () => {
             <span className="module-label-mobile">🌟 Smart Board</span>
           </button>
 
-          {/* Module 2: Neural Simulator */}
-          <button
-            type="button"
-            onClick={() => setActiveModule('neural_physics')}
-            className="sandbox-module-pill-btn"
-            style={{
-              background: activeModule === 'neural_physics' ? 'rgba(245, 158, 11, 0.25)' : 'transparent',
-              color: activeModule === 'neural_physics' ? '#fbbf24' : 'var(--text-secondary, #94a3b8)',
-              border: activeModule === 'neural_physics' ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid transparent',
-              boxShadow: activeModule === 'neural_physics' ? '0 0 12px rgba(245, 158, 11, 0.2)' : 'none'
-            }}
-            title="Real-Time Data Science, Machine Learning & AI Simulator"
-          >
-            <Activity size={16} />
-            <span className="module-label-desktop">⚡ Data Science & AI Simulator</span>
-            <span className="module-label-mobile">⚡ Neural AI</span>
-          </button>
-
-          {/* Module 3: Statistical & Optimization Lab */}
-          <button
-            type="button"
-            onClick={() => setActiveModule('statistical_optimization')}
-            className="sandbox-module-pill-btn"
-            style={{
-              background: activeModule === 'statistical_optimization' ? 'var(--pill-active-bg, rgba(56, 189, 248, 0.25))' : 'transparent',
-              color: activeModule === 'statistical_optimization' ? 'var(--accent-cyan, #38bdf8)' : 'var(--text-secondary, #94a3b8)',
-              border: activeModule === 'statistical_optimization' ? '1px solid var(--accent-cyan, rgba(56, 189, 248, 0.5))' : '1px solid transparent',
-              boxShadow: activeModule === 'statistical_optimization' ? '0 0 12px rgba(56, 189, 248, 0.2)' : 'none'
-            }}
-            title="Statistical, Probabilistic & Numerical Optimization Lab (MLE, MAP, EM, MCMC, Adam/SGD, Newton-Raphson, Lagrange, LDA, SVD)"
-          >
-            <BarChart3 size={16} />
-            <span className="module-label-desktop">📊 Statistical & Optimization Lab</span>
-            <span className="module-label-mobile">📊 Statistics</span>
-          </button>
-
-          {/* Module 4: Prof. Joe Academic Board */}
+          {/* Module 2: Prof. Joe Academic Board */}
           <button
             type="button"
             onClick={() => setActiveModule('academic_whiteboard')}
@@ -239,7 +217,7 @@ export const InteractiveSandboxView: React.FC = () => {
             <span className="module-label-mobile">🖌️ KaTeX Board</span>
           </button>
 
-          {/* Module 5: Excalidraw MIT Engine */}
+          {/* Module 3: Excalidraw MIT Engine */}
           <button
             type="button"
             onClick={() => setActiveModule('excalidraw')}
@@ -256,36 +234,199 @@ export const InteractiveSandboxView: React.FC = () => {
             <span className="module-label-desktop">✏️ Excalidraw Engine (Free MIT)</span>
             <span className="module-label-mobile">✏️ Excalidraw</span>
           </button>
+
+          {/* Gateway Tab: Deep Learning Studio */}
+          <button
+            type="button"
+            onClick={() => setActiveModule('neural_physics')}
+            className="sandbox-module-pill-btn"
+            style={{
+              background: activeModule === 'neural_physics' ? 'rgba(245, 158, 11, 0.25)' : 'transparent',
+              color: activeModule === 'neural_physics' ? '#fbbf24' : 'var(--text-secondary, #94a3b8)',
+              border: activeModule === 'neural_physics' ? '1px solid rgba(245, 158, 11, 0.5)' : '1px solid transparent',
+              boxShadow: activeModule === 'neural_physics' ? '0 0 12px rgba(245, 158, 11, 0.2)' : 'none'
+            }}
+            title="Deep Learning & Neural Matrix Studio Gateway"
+          >
+            <Activity size={16} />
+            <span className="module-label-desktop">⚡ Deep Learning Studio</span>
+            <span className="module-label-mobile">⚡ Neural AI</span>
+          </button>
+
+          {/* Gateway Tab: Statistical Optimization */}
+          <button
+            type="button"
+            onClick={() => setActiveModule('statistical_optimization')}
+            className="sandbox-module-pill-btn"
+            style={{
+              background: activeModule === 'statistical_optimization' ? 'var(--pill-active-bg, rgba(56, 189, 248, 0.25))' : 'transparent',
+              color: activeModule === 'statistical_optimization' ? 'var(--accent-cyan, #38bdf8)' : 'var(--text-secondary, #94a3b8)',
+              border: activeModule === 'statistical_optimization' ? '1px solid var(--accent-cyan, rgba(56, 189, 248, 0.5))' : '1px solid transparent',
+              boxShadow: activeModule === 'statistical_optimization' ? '0 0 12px rgba(56, 189, 248, 0.2)' : 'none'
+            }}
+            title="Advanced Math, Stats & ML Studio Gateway"
+          >
+            <BarChart3 size={16} />
+            <span className="module-label-desktop">📊 Math & Stats Studio</span>
+            <span className="module-label-mobile">📊 Math Lab</span>
+          </button>
         </div>
       </div>
 
-      {/* ─── Persistent Active Module Rendering (Preserves 100% State Across Tabs) ─── */}
+      {/* ─── Persistent Active Module Rendering ─── */}
       <div style={{ flex: 1, height: '100%', minHeight: 0, position: 'relative', overflow: 'hidden' }}>
+        {/* Module 1: Smart Teaching Board */}
         <div style={{ display: activeModule === 'smart_teaching_board' ? 'flex' : 'none', flexDirection: 'column', height: '100%' }}>
           <SandboxModuleErrorBoundary fallbackTitle="Smart Teaching Board">
             <SmartTeachingBoardModule />
           </SandboxModuleErrorBoundary>
         </div>
-        <div style={{ display: activeModule === 'neural_physics' ? 'flex' : 'none', flexDirection: 'column', height: '100%' }}>
-          <SandboxModuleErrorBoundary fallbackTitle="Neural & AI Simulator">
-            <NeuralSimulatorModule />
-          </SandboxModuleErrorBoundary>
-        </div>
-        <div style={{ display: activeModule === 'statistical_optimization' ? 'flex' : 'none', flexDirection: 'column', height: '100%' }}>
-          <SandboxModuleErrorBoundary fallbackTitle="Statistical Optimization Lab">
-            <StatisticalOptimizationModule />
-          </SandboxModuleErrorBoundary>
-        </div>
+
+        {/* Module 2: Prof. Joe Academic Board */}
         <div style={{ display: activeModule === 'academic_whiteboard' ? 'flex' : 'none', flexDirection: 'column', height: '100%' }}>
           <SandboxModuleErrorBoundary fallbackTitle="Prof. Joe Academic Board">
             <WhiteboardModule />
           </SandboxModuleErrorBoundary>
         </div>
+
+        {/* Module 3: Excalidraw Engine */}
         <div style={{ display: activeModule === 'excalidraw' ? 'flex' : 'none', flexDirection: 'column', height: '100%' }}>
           <SandboxModuleErrorBoundary fallbackTitle="Excalidraw Engine">
             <ExcalidrawModule />
           </SandboxModuleErrorBoundary>
         </div>
+
+        {/* Gateway View: Deep Learning Studio */}
+        {activeModule === 'neural_physics' && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            padding: '24px',
+            background: 'radial-gradient(ellipse at center, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.95) 100%)'
+          }}>
+            <div style={{
+              maxWidth: '560px',
+              padding: '32px',
+              borderRadius: '20px',
+              background: 'rgba(15, 23, 42, 0.85)',
+              border: '1px solid rgba(245, 158, 11, 0.35)',
+              backdropFilter: 'blur(16px)',
+              textAlign: 'center',
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.45)'
+            }}>
+              <div style={{
+                width: '64px',
+                height: '64px',
+                margin: '0 auto 16px',
+                borderRadius: '16px',
+                background: 'rgba(245, 158, 11, 0.15)',
+                border: '1px solid rgba(245, 158, 11, 0.4)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#fbbf24'
+              }}>
+                <Brain size={32} />
+              </div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f8fafc', margin: '0 0 8px' }}>
+                Deep Learning & Neural Studio
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: '#94a3b8', lineHeight: 1.6, margin: '0 0 24px' }}>
+                Neural simulation has been upgraded into our full-power <strong>Deep Learning Studio</strong> featuring 8 dedicated modules: Multi-Layer Perceptrons, CNN feature maps, RNN/LSTM unrolling, Transformer multi-head attention, and Latent space embeddings.
+              </p>
+              <button
+                type="button"
+                onClick={handleLaunchDeepLearning}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '12px 28px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #f59e0b, #d97706)',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: '0.92rem',
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 16px rgba(245, 158, 11, 0.35)',
+                  transition: 'transform 0.15s ease'
+                }}
+              >
+                <span>Launch Deep Learning Studio</span>
+                <ArrowRight size={18} />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Gateway View: Statistical Optimization */}
+        {activeModule === 'statistical_optimization' && (
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            height: '100%',
+            padding: '24px',
+            background: 'radial-gradient(ellipse at center, rgba(30, 41, 59, 0.6) 0%, rgba(15, 23, 42, 0.95) 100%)'
+          }}>
+            <div style={{
+              maxWidth: '560px',
+              padding: '32px',
+              borderRadius: '20px',
+              background: 'rgba(15, 23, 42, 0.85)',
+              border: '1px solid rgba(56, 189, 248, 0.35)',
+              backdropFilter: 'blur(16px)',
+              textAlign: 'center',
+              boxShadow: '0 20px 40px rgba(0, 0, 0, 0.45)'
+            }}>
+              <div style={{
+                width: '64px',
+                height: '64px',
+                margin: '0 auto 16px',
+                borderRadius: '16px',
+                background: 'rgba(56, 189, 248, 0.15)',
+                border: '1px solid rgba(56, 189, 248, 0.4)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#38bdf8'
+              }}>
+                <BarChart3 size={32} />
+              </div>
+              <h3 style={{ fontSize: '1.25rem', fontWeight: 800, color: '#f8fafc', margin: '0 0 8px' }}>
+                Advanced Math, Stats & ML Studio
+              </h3>
+              <p style={{ fontSize: '0.88rem', color: '#94a3b8', lineHeight: 1.6, margin: '0 0 24px' }}>
+                Statistical models and gradient optimization have been consolidated into our <strong>Math & ML Studio</strong>, powered by pure calculation engines with 3D loss surfaces, Support Vector Machines, OLS Regression, and ODE dynamics.
+              </p>
+              <button
+                type="button"
+                onClick={handleLaunchMathStudio}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                  padding: '12px 28px',
+                  borderRadius: '12px',
+                  background: 'linear-gradient(135deg, #0284c7, #0369a1)',
+                  color: '#ffffff',
+                  fontWeight: 700,
+                  fontSize: '0.92rem',
+                  border: 'none',
+                  cursor: 'pointer',
+                  boxShadow: '0 4px 16px rgba(56, 189, 248, 0.35)',
+                  transition: 'transform 0.15s ease'
+                }}
+              >
+                <span>Launch Math & Stats Studio</span>
+                <ArrowRight size={18} />
+              </button>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   );

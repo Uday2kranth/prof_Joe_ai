@@ -3,15 +3,22 @@ const fetch = globalThis.fetch || (typeof fetch !== 'undefined' ? fetch : requir
 // All API credentials are read dynamically from request headers or process.env (Vercel Environment Variables).
 // Zero hardcoded API keys are permitted.
 
-// Helper to scrape DuckDuckGo search snippets for free web search RAG capabilities
+// In-memory temporary key cooldown tracking (records timestamps of keys that hit 429 quota exhaustion)
+const keyCooldownMap = new Map();
+
+// Helper to scrape DuckDuckGo search snippets for free web search RAG capabilities (Fast 1.8s timeout)
 async function getWebSearchSnippets(query, searchDepth = 'deep') {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 1800);
     try {
-        const maxSnippets = searchDepth === 'fast' ? 3 : 10;
+        const maxSnippets = searchDepth === 'fast' ? 3 : 8;
         const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
-            }
+            },
+            signal: controller.signal
         });
+        clearTimeout(timer);
         if (!response.ok) return '';
         const html = await response.text();
         
@@ -77,19 +84,22 @@ Snippet: "${snippet}"`);
         if (snippets.length === 0) return '';
         return snippets.join('\n\n');
     } catch (err) {
-        console.error('Failed to query DuckDuckGo search:', err);
+        clearTimeout(timer);
         return '';
     }
 }
 
-// Dedicated Server Backend RAG Helper for live diagram image search via Wikimedia Commons API
+// Dedicated Server Backend RAG Helper for live diagram image search via Wikimedia Commons API (Fast 1.8s timeout)
 async function getImageSearchLinks(query) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), 1800);
     try {
-        // Query Wikimedia for explicit diagram, chart, graph, flowchart, or schema images
-        const wikiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query + ' diagram OR flowchart OR schema filetype:svg|png')}&gsrnamespace=6&gsrlimit=10&prop=imageinfo&iiprop=url|mime&iiurlwidth=800&format=json`;
+        const wikiUrl = `https://commons.wikimedia.org/w/api.php?action=query&generator=search&gsrsearch=${encodeURIComponent(query + ' diagram OR flowchart OR schema filetype:svg|png')}&gsrnamespace=6&gsrlimit=8&prop=imageinfo&iiprop=url|mime&iiurlwidth=800&format=json`;
         const response = await fetch(wikiUrl, {
-            headers: { 'User-Agent': 'ChatterBot-DiagramRAG/1.0 (https://chatterbot.vercel.app)' }
+            headers: { 'User-Agent': 'ChatterBot-DiagramRAG/1.0 (https://chatterbot.vercel.app)' },
+            signal: controller.signal
         });
+        clearTimeout(timer);
 
         const validImages = [];
         const blockedKeywords = [
@@ -140,7 +150,7 @@ async function getImageSearchLinks(query) {
 
         return validImages.map((url, idx) => `[Verified Diagram Image ${idx + 1}]: ${url}`).join('\n');
     } catch (err) {
-        console.error('Failed to fetch image search links:', err);
+        clearTimeout(timer);
         return '';
     }
 }
@@ -178,7 +188,8 @@ export default async function handler(req, res) {
         temperature,
         maxTokens,
         max_tokens,
-        graderMode
+        graderMode,
+        stream
     } = req.body || {};
 
     const targetTemperature = typeof temperature === 'number' ? Math.max(0, Math.min(1, temperature)) : 0.2;
@@ -434,15 +445,19 @@ GENERAL AI ASSISTANT DIRECTIVES:
         return res.status(400).json({ error: `Unknown provider specified: ${provider}` });
     }
 
-    // Optional: Fetch web search snippets if requested (Text-Only Grounding)
-    let searchContext = '';
-    if (webSearch) {
-        searchContext = await getWebSearchSnippets(prompt, searchDepth);
-        apiMessages.unshift({
-            role: "system",
-            content: `You are in STRICT WEB GROUNDING MODE. Live search results have been retrieved for this query:
+    // Optional: Parallel Web Search & Diagram RAG Pre-Fetching with Fast Timeout
+    if (webSearch || enableDiagrams) {
+        const [searchResult, imageResult] = await Promise.all([
+            webSearch ? getWebSearchSnippets(prompt, searchDepth) : Promise.resolve(''),
+            enableDiagrams ? getImageSearchLinks(prompt) : Promise.resolve('')
+        ]);
 
-${searchContext || "No live search results could be retrieved for this query."}
+        if (webSearch && searchResult) {
+            apiMessages.unshift({
+                role: "system",
+                content: `You are in STRICT WEB GROUNDING MODE. Live search results have been retrieved for this query:
+
+${searchResult}
 
 STRICT CITATION & FORMATTING DIRECTIVES:
 1. Exclusively answer using the search snippets provided above.
@@ -452,6 +467,48 @@ STRICT CITATION & FORMATTING DIRECTIVES:
    [2] [Source Title](URL)
 4. Do NOT scatter raw URL strings randomly throughout the text.
 5. TEXT-ONLY LINKS: Format citations as text links only. Under NO circumstances should you output markdown image tags ![...](url) or diagram code blocks.`
+            });
+        }
+
+        if (enableDiagrams) {
+            if (imageResult && imageResult.trim()) {
+                apiMessages.push({
+                    role: "system",
+                    content: `📐 VISUAL DIAGRAM ARCHITECTURE — VERIFIED ONLINE GRAPHIC ACTIVE:
+Verified direct online diagram images have been retrieved for this topic:
+${imageResult}
+
+MANDATORY VISUAL DELIVERY & EMBEDDING DIRECTIVES:
+1. Embed the SINGLE most accurate, high-relevance diagram image from the verified list above at an appropriate visual anchor in your explanation using standard markdown:
+   ![Descriptive Diagram Caption](VERIFIED_IMAGE_URL)
+2. If the topic also involves an algorithmic state sequence or pipeline that benefits from code execution, you may optionally provide a supporting Mermaid or Kroki code block.
+3. NEVER hallucinate or output raw webpage URLs inside image tags; use ONLY the verified direct image URLs (.png, .svg) provided above.`
+                });
+            } else {
+                apiMessages.push({
+                    role: "system",
+                    content: `📐 VISUAL DIAGRAM ARCHITECTURE — MANDATORY CODE DIAGRAM GENERATION:
+Visual Diagrams mode is enabled by the user. No direct graphic images exist online for this exact query.
+You MUST render at least 1 high-clarity visual diagram. Select the most effective diagram engine for the topic:
+• Mermaid Flowcharts & Subgraphs (\`\`\`mermaid graph LR / graph TD\`\`\`): Multi-stage ML pipelines, system dataflows, decision logic, algorithmic state sequences.
+• Mermaid Sequence Diagrams (\`\`\`mermaid sequenceDiagram\`\`\`): Network handshakes, authentication protocols, client-server exchanges with lifelines.
+• Mermaid State Diagrams (\`\`\`mermaid stateDiagram-v2\`\`\`): State transitions, automata, lifecycle phases.
+• Mermaid ER Diagrams (\`\`\`mermaid erDiagram\`\`\`): Relational database models and entity relationships.
+• Kroki Graphviz (\`\`\`kroki-graphviz\`\`\`): Directed graphs (DOT syntax), decision trees, PERT/CPM activity networks.
+• Kroki PlantUML (\`\`\`kroki-plantuml\`\`\`): UML Class structures, Use-Case diagrams, Component architectures.
+• FunctionPlot (\`\`\`functionplot\`\`\`): 2D mathematical probability curves, loss surfaces, decision boundaries.
+STRICT QUALITY DIRECTIVE:
+1. Every node and stage MUST have an explicit, meaningful descriptive title enclosed in quotes (e.g. Node1["1. Extract Jackknife Pseudo-Values \\(J_i\\)"]). NEVER output empty, unexpanded, or single-letter nodes (like A, B).
+2. Under NO circumstances should you skip rendering a diagram when this mode is ON.`
+                });
+            }
+        }
+    } else {
+        // 🚫 STRICT NEGATIVE CONSTRAINT: Diagrams & Images are explicitly DISABLED by user setting
+        apiMessages.push({
+            role: "system",
+            content: `🚫 STRICT DIAGRAM & IMAGE DISABLE DIRECTIVE:
+Diagram generation and visual image embeddings are strictly turned OFF by user setting. Under NO circumstances should you output, draw, embed, or generate any diagram code blocks (such as \`\`\`mermaid, \`\`\`kroki-*, \`\`\`functionplot, \`\`\`plantuml, \`\`\`graphviz, \`\`\`erd, \`\`\`blockdiag, \`\`\`packetdiag, \`\`\`bytefield, ASCII art schemas, or flowchart blocks) or markdown image tags (\`![...](...)\`). Respond EXCLUSIVELY in clear formatted text, markdown tables, and mathematical formulas.`
         });
     }
 
@@ -515,60 +572,20 @@ MANDATORY H1 HEADING STRUCTURE:
         });
     }
 
-    // 📐 Dedicated Visual Diagrams Architecture (Active ONLY when Diagrams Toggle is ON)
-    if (enableDiagrams) {
-        let imageContext = '';
-        try {
-            imageContext = await getImageSearchLinks(prompt);
-        } catch (e) {
-            console.error('Failed to fetch diagram images from internet:', e);
-        }
-
-        if (imageContext && imageContext.trim()) {
-            // Priority 1: Verified Direct Diagram Image from Internet
-            apiMessages.push({
-                role: "system",
-                content: `📐 VISUAL DIAGRAM ARCHITECTURE — VERIFIED ONLINE GRAPHIC ACTIVE:
-Verified direct online diagram images have been retrieved for this topic:
-${imageContext}
-
-MANDATORY VISUAL DELIVERY & EMBEDDING DIRECTIVES:
-1. Embed the SINGLE most accurate, high-relevance diagram image from the verified list above at an appropriate visual anchor in your explanation using standard markdown:
-   ![Descriptive Diagram Caption](VERIFIED_IMAGE_URL)
-2. If the topic also involves an algorithmic state sequence or pipeline that benefits from code execution, you may optionally provide a supporting Mermaid or Kroki code block.
-3. NEVER hallucinate or output raw webpage URLs inside image tags; use ONLY the verified direct image URLs (.png, .svg) provided above.`
-            });
-        } else {
-            // Priority 2: Guaranteed Multi-Engine Code Diagram Fallback when no direct graphic images exist
-            apiMessages.push({
-                role: "system",
-                content: `📐 VISUAL DIAGRAM ARCHITECTURE — MANDATORY CODE DIAGRAM GENERATION:
-Visual Diagrams mode is enabled by the user. No direct graphic images exist online for this exact query.
-You MUST render at least 1 high-clarity visual diagram. Select the most effective diagram engine for the topic:
-• Mermaid Flowcharts & Subgraphs (\`\`\`mermaid graph LR / graph TD\`\`\`): Multi-stage ML pipelines, system dataflows, decision logic, algorithmic state sequences.
-• Mermaid Sequence Diagrams (\`\`\`mermaid sequenceDiagram\`\`\`): Network handshakes, authentication protocols, client-server exchanges with lifelines.
-• Mermaid State Diagrams (\`\`\`mermaid stateDiagram-v2\`\`\`): State transitions, automata, lifecycle phases.
-• Mermaid ER Diagrams (\`\`\`mermaid erDiagram\`\`\`): Relational database models and entity relationships.
-• Kroki Graphviz (\`\`\`kroki-graphviz\`\`\`): Directed graphs (DOT syntax), decision trees, PERT/CPM activity networks.
-• Kroki PlantUML (\`\`\`kroki-plantuml\`\`\`): UML Class structures, Use-Case diagrams, Component architectures.
-• FunctionPlot (\`\`\`functionplot\`\`\`): 2D mathematical probability curves, loss surfaces, decision boundaries.
-STRICT QUALITY DIRECTIVE:
-1. Every node and stage MUST have an explicit, meaningful descriptive title enclosed in quotes (e.g. Node1["1. Extract Jackknife Pseudo-Values \\(J_i\\)"]). NEVER output empty, unexpanded, or single-letter nodes (like A, B).
-2. Under NO circumstances should you skip rendering a diagram when this mode is ON.`
-            });
-        }
-    } else {
-        // 🚫 STRICT NEGATIVE CONSTRAINT: Diagrams & Images are explicitly DISABLED by user setting
-        apiMessages.push({
-            role: "system",
-            content: `🚫 STRICT DIAGRAM & IMAGE DISABLE DIRECTIVE:
-Diagram generation and visual image embeddings are strictly turned OFF by user setting. Under NO circumstances should you output, draw, embed, or generate any diagram code blocks (such as \`\`\`mermaid, \`\`\`kroki-*, \`\`\`functionplot, \`\`\`plantuml, \`\`\`graphviz, \`\`\`erd, \`\`\`blockdiag, \`\`\`packetdiag, \`\`\`bytefield, ASCII art schemas, or flowchart blocks) or markdown image tags (\`![...](...)\`). Respond EXCLUSIVELY in clear formatted text, markdown tables, and mathematical formulas.`
-        });
-    }
-
     try {
-        // Support API Key rotation by splitting comma-separated keys
-        const keys = apiKey.split(',').map(k => k.trim()).filter(Boolean);
+        // Support API Key rotation with intelligent cooldown sorting
+        const rawKeys = apiKey.split(',').map(k => k.trim()).filter(Boolean);
+        const now = Date.now();
+        const keys = [...rawKeys].sort((a, b) => {
+            const coolA = keyCooldownMap.get(a) || 0;
+            const coolB = keyCooldownMap.get(b) || 0;
+            const isCoolA = (now - coolA) < 45000;
+            const isCoolB = (now - coolB) < 45000;
+            if (isCoolA && !isCoolB) return 1;
+            if (!isCoolA && isCoolB) return -1;
+            return 0;
+        });
+
         let lastErrorText = 'No active keys provided';
         let lastStatus = 400;
         let responsePayload = null;
@@ -576,6 +593,27 @@ Diagram generation and visual image embeddings are strictly turned OFF by user s
         const targetMaxTokens = maxTokens || 8192;
 
         let successfulModel = model;
+
+        // Clean model ID and apply legacy alias normalization
+        let cleanModel = (model || '').replace(/^models\//, '').trim();
+        let targetModel = cleanModel;
+        if (targetProvider === 'gemini' && (targetModel.startsWith('gemini-3.') || targetModel === 'gemini-flash-latest')) {
+            targetModel = 'gemini-2.5-flash';
+        } else if (targetProvider === 'gemini' && targetModel.startsWith('gemma-4-')) {
+            targetModel = 'gemma-2-27b-it';
+        } else if (targetProvider === 'groq' && (targetModel === 'openai/gpt-oss-120b' || targetModel === 'groq/compound')) {
+            targetModel = 'llama-3.3-70b-versatile';
+        } else if (targetProvider === 'groq' && targetModel === 'qwen/qwen3.6-27b') {
+            targetModel = 'qwen-2.5-coder-32b';
+        } else if (targetProvider === 'groq' && (targetModel === 'openai/gpt-oss-20b' || targetModel === 'groq/compound-mini')) {
+            targetModel = 'llama-3.1-8b-instant';
+        } else if (targetProvider === 'openrouter' && (targetModel === 'openrouter/free' || targetModel === 'google/gemma-4-26b-a4b-it:free')) {
+            targetModel = 'google/gemini-2.0-flash-exp:free';
+        } else if (targetProvider === 'openrouter' && targetModel === 'nvidia/nemotron-3-super-120b-a12b:free') {
+            targetModel = 'meta-llama/llama-3.3-70b-instruct:free';
+        } else if (targetProvider === 'opencode' && (targetModel === 'ling-3.0-flash-free' || targetModel === 'deepseek-v4-flash-free')) {
+            targetModel = 'opencode/laguna-s-2.1-free';
+        }
 
         for (let i = 0; i < keys.length; i++) {
             const currentKey = keys[i];
@@ -601,10 +639,6 @@ Diagram generation and visual image embeddings are strictly turned OFF by user s
                 headers["HTTP-Referer"] = "https://chatterbot-dashboard.vercel.app";
                 headers["X-Title"] = "Prof Joe AI";
             }
-
-            // Clean model ID from prefixes (e.g. models/gemini-2.5-flash -> gemini-2.5-flash)
-            const cleanModel = (model || '').replace(/^models\//, '').trim();
-            const targetModel = cleanModel;
 
             try {
                 let response;
@@ -874,6 +908,7 @@ Diagram generation and visual image embeddings are strictly turned OFF by user s
                     } else if (currentStatus === 503) {
                         lastErrorText = `Provider '${(provider || targetProvider).toUpperCase()}' is temporarily overloaded (HTTP 503). Please try again in 5s or select Pollinations AI (Free Keyless).`;
                     } else if (currentStatus === 429) {
+                        keyCooldownMap.set(currentKey, Date.now());
                         if (targetProvider === "gemini") {
                             lastErrorText = "Google Free Tier Rate Limit Exceeded (15 RPM / 1500 RPD quota). Please try again in 15s or switch provider.";
                         } else if (targetProvider === "pollinations") {

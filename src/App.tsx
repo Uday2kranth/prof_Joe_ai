@@ -37,6 +37,7 @@ const PinnedNotesArchiveView = React.lazy(() => import('./components/PinnedNotes
 const SettingsStudioView = React.lazy(() => import('./components/SettingsStudioView').then(m => ({ default: m.SettingsStudioView })));
 const TestDiagramsStudioView = React.lazy(() => import('./components/TestDiagramsStudioView').then(m => ({ default: m.TestDiagramsStudioView })));
 const DeepLearningStudioView = React.lazy(() => import('./components/DeepLearningStudioView').then(m => ({ default: m.DeepLearningStudioView })));
+const MasterSyllabusView = React.lazy(() => import('./components/MasterSyllabusView').then(m => ({ default: m.MasterSyllabusView })));
 import { ACADEMIC_PRESETS } from './components/CodeLabPresetDrawer';
 import { SettingsModal } from './components/SettingsModal';
 import { LoginModal } from './components/LoginModal';
@@ -763,17 +764,6 @@ export const App: React.FC = () => {
   const [isLoginOpen, setIsLoginOpen] = useState<boolean>(() => !localStorage.getItem('chatterbot_token'));
   const [theme, setTheme] = useState<'dark' | 'light'>(() => {
     try {
-      const codeStyleSaved = localStorage.getItem('chatterbot_code_style');
-      if (codeStyleSaved) {
-        const parsed = JSON.parse(codeStyleSaved);
-        if (parsed.atmosphere) {
-          if (parsed.atmosphere === 'oxford_daylight' || parsed.atmosphere === 'amber_parchment') {
-            return 'light';
-          }
-        }
-      }
-      const savedAtmo = localStorage.getItem('chatterbot_atmosphere') || '';
-      if (savedAtmo === 'oxford_daylight' || savedAtmo === 'amber_parchment') return 'light';
       const savedTheme = localStorage.getItem('chatterbot_theme') || localStorage.getItem('theme');
       if (savedTheme === 'light' || savedTheme === 'dark') return savedTheme;
     } catch {}
@@ -1492,24 +1482,23 @@ export const App: React.FC = () => {
           if (parsed.canvasAtmosphere) canvasAtmoToSet = parsed.canvasAtmosphere;
         }
         if (!atmoToSet) {
-          atmoToSet = localStorage.getItem('chatterbot_atmosphere') || '';
+          atmoToSet = localStorage.getItem('chatterbot_atmosphere') || 'cyber_osmania';
         }
         if (atmoToSet) {
           setAtmosphere(atmoToSet);
           document.documentElement.setAttribute('data-atmosphere', atmoToSet);
-          const isLight = atmoToSet === 'oxford_daylight' || atmoToSet === 'amber_parchment';
-          const newTheme = isLight ? 'light' : 'dark';
-          setTheme(newTheme);
-          document.documentElement.setAttribute('data-theme', newTheme);
-          localStorage.setItem('chatterbot_theme', newTheme);
-          localStorage.setItem('theme', newTheme);
-
-          // Android Capacitor: Sync native status bar icon contrast
-          import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
-            StatusBar.setStyle({ style: newTheme === 'light' ? Style.Light : Style.Dark }).catch(() => {});
-            StatusBar.setBackgroundColor({ color: newTheme === 'light' ? '#f8fafc' : '#0b0f19' }).catch(() => {});
-          }).catch(() => {});
         }
+
+        const savedTheme = localStorage.getItem('chatterbot_theme') || localStorage.getItem('theme') || 'dark';
+        setTheme(savedTheme);
+        document.documentElement.setAttribute('data-theme', savedTheme);
+
+        // Android Capacitor: Sync native status bar icon contrast
+        import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
+          StatusBar.setStyle({ style: savedTheme === 'light' ? Style.Light : Style.Dark }).catch(() => {});
+          StatusBar.setBackgroundColor({ color: savedTheme === 'light' ? '#f8fafc' : '#020617' }).catch(() => {});
+        }).catch(() => {});
+
         if (bubbleToSet) {
           setBubbleStyle(bubbleToSet);
           document.documentElement.setAttribute('data-bubble-style', bubbleToSet);
@@ -1538,24 +1527,17 @@ export const App: React.FC = () => {
   const handleToggleTheme = () => {
     setTheme(prev => {
       const nextTheme = prev === 'dark' ? 'light' : 'dark';
-      const nextAtmo = nextTheme === 'light' ? 'oxford_daylight' : 'cyber_osmania';
-      setAtmosphere(nextAtmo);
       document.documentElement.setAttribute('data-theme', nextTheme);
-      document.documentElement.setAttribute('data-atmosphere', nextAtmo);
       localStorage.setItem('chatterbot_theme', nextTheme);
-      localStorage.setItem('chatterbot_atmosphere', nextAtmo);
-      try {
-        const codeStyleSaved = localStorage.getItem('chatterbot_code_style');
-        const parsed = codeStyleSaved ? JSON.parse(codeStyleSaved) : {};
-        localStorage.setItem('chatterbot_code_style', JSON.stringify({ ...parsed, atmosphere: nextAtmo }));
-      } catch {}
+      localStorage.setItem('theme', nextTheme);
 
       // Android Capacitor: Sync native status bar
       import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
         StatusBar.setStyle({ style: nextTheme === 'light' ? Style.Light : Style.Dark }).catch(() => {});
-        StatusBar.setBackgroundColor({ color: nextTheme === 'light' ? '#f8fafc' : '#0b0f19' }).catch(() => {});
+        StatusBar.setBackgroundColor({ color: nextTheme === 'light' ? '#f8fafc' : '#020617' }).catch(() => {});
       }).catch(() => {});
 
+      window.dispatchEvent(new Event('chatterbot_theme_updated'));
       window.dispatchEvent(new Event('chatterbot_code_style_updated'));
       window.dispatchEvent(new Event('chatterbot_atmosphere_updated'));
       return nextTheme;
@@ -1747,7 +1729,7 @@ export const App: React.FC = () => {
         role: 'assistant',
         content: response.content,
         timestamp: Date.now(),
-        modelUsed: response.modelUsed,
+        modelUsed: response.modelUsed || selectedModel,
         personaTag: effectivePersona,
         usage: response.usage
       };
@@ -1865,7 +1847,7 @@ export const App: React.FC = () => {
         role: 'assistant',
         content: response.content,
         timestamp: Date.now(),
-        modelUsed: response.modelUsed,
+        modelUsed: response.modelUsed || selectedModel,
         personaTag: effectivePersona,
         usage: response.usage
       };
@@ -1994,7 +1976,7 @@ export const App: React.FC = () => {
         role: 'assistant',
         content: response.content,
         timestamp: Date.now(),
-        modelUsed: response.modelUsed,
+        modelUsed: response.modelUsed || selectedModel,
         personaTag: effectivePersona,
         usage: response.usage
       };
@@ -2342,7 +2324,7 @@ export const App: React.FC = () => {
             )}
 
             {activeHubWorkspace === 'sandbox' && (
-              <InteractiveSandboxView />
+              <InteractiveSandboxView onNavigateWorkspace={(ws) => setActiveHubWorkspace(ws as any)} />
             )}
 
             {activeHubWorkspace === 'dsa_lab' && (
@@ -2488,6 +2470,13 @@ export const App: React.FC = () => {
 
             {activeHubWorkspace === 'deep_learning_studio' && (
               <DeepLearningStudioView />
+            )}
+
+            {activeHubWorkspace === 'master_syllabus' && (
+              <MasterSyllabusView
+                onBackToHub={() => setActiveHubWorkspace('landing')}
+                onNavigateWorkspace={(ws) => setActiveHubWorkspace(ws as ActiveViewType)}
+              />
             )}
             </React.Suspense>
           </main>

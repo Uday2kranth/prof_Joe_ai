@@ -68,7 +68,7 @@ export interface UserKeys {
   local_endpoint: string;
 }
 
-export type ActiveViewType = 'chat' | 'prompts' | 'examprep' | 'system_prompts' | 'diagrams' | 'cubes' | 'fun_personas' | 'extractor_studio' | 'code_lab' | 'lecture_notes' | 'sandbox' | 'dsa_lab' | 'flashcards_studio' | 'quiz_arena' | 'pinned_archive' | 'settings' | 'test_diagrams' | 'deep_learning_studio';
+export type ActiveViewType = 'chat' | 'prompts' | 'examprep' | 'system_prompts' | 'diagrams' | 'cubes' | 'fun_personas' | 'extractor_studio' | 'code_lab' | 'lecture_notes' | 'sandbox' | 'dsa_lab' | 'flashcards_studio' | 'quiz_arena' | 'pinned_archive' | 'settings' | 'test_diagrams' | 'deep_learning_studio' | 'master_syllabus';
 
 export interface CustomModel {
   id: string;
@@ -154,9 +154,20 @@ export const DEFAULT_AI_TUNING: AiTuningConfig = {
   graderMode: 'rigorous_12mark'
 };
 
-export type SupportedCodeTheme = 'onedark' | 'vscode_dark' | 'monokai' | 'tokyo_night' | 'github_light' | 'neon' | 'hc_black';
+export type SupportedCodeTheme = 
+  | 'onedark' 
+  | 'vscode_dark' 
+  | 'monokai' 
+  | 'tokyo_night' 
+  | 'github_light' 
+  | 'neon' 
+  | 'emerald_matrix' 
+  | 'dracula' 
+  | 'cyber_pink'
+  | 'cobalt' 
+  | 'solarized_amber';
 
-export type WorkspaceAtmosphere = 'cyber_osmania' | 'midnight_academy' | 'emerald_scholar' | 'obsidian_oled' | 'oxford_daylight' | 'amber_parchment';
+export type WorkspaceAtmosphere = 'cyber_osmania' | 'midnight_academy' | 'emerald_scholar' | 'obsidian_oled' | 'oxford_daylight' | 'amber_parchment' | 'crimson_rose' | 'sakura_pink';
 
 export type ChatBubbleStyle = 'cyan_glass' | 'velvet_indigo' | 'scholar_emerald' | 'obsidian_minimal' | 'clean_card';
 
