@@ -1,11 +1,11 @@
 # Graph Report - prof-joe-ai  (2026-08-31)
 
 ## Corpus Check
-- 223 files · ~3,765,272 words
+- 223 files · ~3,765,381 words
 - Verdict: corpus is large enough that graph structure adds value.
 
 ## Summary
-- 8090 nodes · 16530 edges · 669 communities (194 shown, 475 thin omitted)
+- 8090 nodes · 16530 edges · 663 communities (191 shown, 472 thin omitted)
 - Extraction: 99% EXTRACTED · 1% INFERRED · 0% AMBIGUOUS · INFERRED: 84 edges (avg confidence: 0.5)
 - Token cost: 0 input · 0 output
 
@@ -117,7 +117,7 @@
 - warn
 - Util
 - .getByte
-- Binder
+- XRef
 - WhiteboardModule.tsx
 - ButtonWidgetAnnotation
 - assert
@@ -127,22 +127,22 @@
 - getInteger
 - JpegImage
 - ConnectionSetNamespace
-- Page
+- FileSpec
 - webmcpify — make any web app agent-ready, verifiably
 - ConnectionSetNamespace
 - webmcp.d.ts
 - devDependencies
 - scripts
 - .getObj
-- bytesToString
-- BasePDFStreamReader
+- .addNode
+- HTMLResult
 - 🎨 Detailed Task-by-Task Design & CSS Specifications
 - goldenFixtures.test.ts
 - DecodeStream
 - t
 - webmcpify.ts
 - GlobalImageCache
-- find
+- FontFinder
 - GlobalImageCache
 - multilineSystems.ts
 - Napkin — Visual Whiteboard for Copilot CLI
@@ -168,12 +168,12 @@
 - CompositeGlyph
 - BasePDFStreamReader
 - CalRGBCS
-- DateTimeSymbols
+- createPNGLikeImage
 - createImage
 - unifiedExtractorService.ts
 - .convert
 - .[pl]
-- DefaultAppearanceEvaluator
+- config_Encryption
 - AlwaysEmbed
 - Using the Daily Focus Board
 - ToUnicodeMap
@@ -201,7 +201,7 @@
 - Commands
 - DeviceRgbCS
 - .getRgbBuffer
-- Desc
+- Day
 - LocalPdfManager
 - .checkAndRepair
 - graphify reference: extra exports and benchmark
@@ -337,7 +337,7 @@
 - @capacitor/network
 - .fallbackToSystemFont
 - Font
-- DocumentData
+- DocumentAssembly
 - odeVectorFields.ts
 - jspdf
 - XFAObjectArray
@@ -378,11 +378,11 @@
 - 🎨 Practical Academic Code Lab — Top Navigation Bar & Control Deck Refactor Plan
 - 🎨 Code Lab Navigation Clean-up & Control Deck Sidebar Z-Index Fix Plan
 - DataHandler
-- DynamicRender
+- Driver
 - @capacitor/share
 - 🎨 Comprehensive Dark & Light Mode Theme & Button Design Audit
 - @monaco-editor/react
-- EffectiveInputPolicy
+- Embed
 - Runtime — vendoring and wiring the templates
 - CFFHeader
 - Locale
@@ -392,12 +392,12 @@
 - motion
 - Mobile Responsiveness & iPhone 14 Pro Max Layout Audit Master Plan
 - graphify reference: add a URL and watch a folder
-- Encoding
+- ExcludeNS
 - graphify reference: commit hook and native CLAUDE.md integration
 - Jbig2Error
 - graphify reference: incremental update and cluster-only
 - BindItems
-- Enforce
+- Picture
 - html-to-image
 - Layout
 - React + TypeScript + Vite
@@ -493,21 +493,21 @@
 - PrintScaling
 - ParserEOFException
 - StringObject
-- SubsetBelow
+- Sup
 - AlwaysEmbed
 - ViewerPreferences
 - Xsl
-- Tagged
+- CompressLogicalStructure
 - WebClient
-- CompressObjectStream
+- config_Picture
 - WsdlAddress
-- config_FontInfo
+- ContentCopy
 - XRefParseException
 - ResponseException
-- config_Validate
-- connection_set_Uri
+- Contour
+- Data
 - BindItems
-- CurrentPage
+- DatePatterns
 - config_Encrypt
 - Conformance
 - ScriptModel
@@ -518,8 +518,8 @@
 - SquigglyAnnotation
 - er
 - XsdConnection
-- DataHandler
-- DefaultUi
+- Day
+- Desc
 - Certificate
 - CFFHeader
 - Threshold
@@ -533,68 +533,68 @@
 - Compression
 - UnderlineAnnotation
 - Base
-- Destination
-- Embed
+- DuplexOption
+- EffectiveOutputPolicy
 - Config
 - config_Message
 - config_Encryption
-- EncryptionMethod
+- Era
 - DNLMarkerError
 - DocumentAssembly
-- Extras
-- FlipLabel
+- Format
+- IfEmpty
 - EffectiveInputPolicy
 - Attributes
 - signature_Signature
-- FormFieldFilling
+- IncrementalMerge
 - Driver
-- GroupParent
+- JpegError
 - Encrypt
 - Enforce
 - ExcludeNS
 - IncrementalLoad
-- IncludeXDPContent
-- locale_set_Locale
-- LocalImageCache
+- Li
+- LocalGStateCache
+- MeridiemNames
 - DefaultAppearanceEvaluator
 - EOIMarkerError
 - Debug
-- MediumInfo
+- Messaging
 - locale_set_LocaleSet
 - DocumentData
 - Interactive
 - Whitespace
 - Jog
 - Layout
-- Message
+- NeverEmbed
 - Amd
 - Linearized
 - Xdc
 - LocaleSet
 - Log
 - InvalidPDFException
-- MissingDataException
+- NumberOfCopies
 - Mode
 - ModifyAnnots
-- MsgId
+- NumberPatterns
 - AutoSave
 - ExObject
-- NameTree
+- NumberTree
 - ol
 - Option10
-- NullStream
-- NumberSymbols
+- OpenAction
+- Output
 - Jbig2Error
 - Bookend
 - Month
-- Operation
+- PaginationOverride
 - Oid
-- OutputBin
-- Overprint
+- Permissions
+- Picture
 - ParserEOFException
-- PageData
+- PrinterName
 - Presence
-- Pagination
+- PsBinaryNode
 - Option01
 - Meridiem
 - Producer
@@ -603,59 +603,53 @@
 - ToolTip
 - PsIf
 - Pcl
-- Pdfa
-- PDFWorkerStream
+- PsNode
+- PsOperator
 - RunScripts
 - Common
 - OutputXSL
-- PickTrayByPDFSize
-- PlaintextMetadata
+- PsTernaryNode
+- RefElement
 - QCMS
 - PasswordException
-- PrintScaling
+- SilentPrint
 - Print
-- PsBlock
+- Span
 - Proto
 - Zpl
 - Level
-- PsNumber
+- StartNode
 - PsConstNode
 - PsIfElse
-- PsProgram
+- StrikeOutAnnotation
 - Present
 - WsdlAddress
 - RenderPolicy
-- PsUnaryNode
+- StructElement
 - SubsetBelow
 - Tagged
-- RootElement
-- ScriptModel
+- SubmitFormat
+- Threshold
 - Traversal
 - Severity
-- StartPage
+- ToolTip
 - ViewerPreferences
 - Whitespace
 - dsaStepInvariants.test.ts
 - Type
 - WsdlConnection
 - Sub
-- StringStream
+- TypeFace
 - TimePatterns
-- Stylesheet
-- SubmitUrl
+- UnderlineAnnotation
+- ValidationMessaging
 - Xdp
 - XmlConnection
-- Token
-- Trace
 - WebClient
 - Xdc
-- ul
 - ps
 - Zpl
-- UnknownErrorException
 - Transform
-- Uri
-- Version
 - Reason
 - ResponseException
 - SetProperty
@@ -691,15 +685,15 @@
 ## Import Cycles
 - None detected.
 
-## Communities (669 total, 475 thin omitted)
+## Communities (663 total, 472 thin omitted)
 
 ### Community 0 - "pdf.worker.js"
 Cohesion: 0.01
-Nodes (259): aa, AbortException, Acrobat, Acrobat7, ADBE_JSConsole, ADBE_JSDebugger, addChildren(), AddViewerPreferences (+251 more)
+Nodes (261): aa, AbortException, Acrobat, Acrobat7, ADBE_JSConsole, ADBE_JSDebugger, addChildren(), AddViewerPreferences (+253 more)
 
 ### Community 1 - "js"
 Cohesion: 0.01
-Nodes (266): js, aa, AbortException, Acrobat, Acrobat7, ADBE_JSConsole, ADBE_JSDebugger, AddViewerPreferences (+258 more)
+Nodes (268): js, aa, AbortException, Acrobat, Acrobat7, ADBE_JSConsole, ADBE_JSDebugger, AddViewerPreferences (+260 more)
 
 ### Community 2 - ".process"
 Cohesion: 0.09
@@ -710,16 +704,16 @@ Cohesion: 0.12
 Nodes (18): TestDiagramsStudioView, LinFunctionFamily, LinRegSubMode, LogActivationType, LogRegSubMode, MathStudioModuleId, STUDIO_MODULES, StudioModuleMeta (+10 more)
 
 ### Community 6 - ".getObj"
-Cohesion: 0.09
-Nodes (18): CMapFactory, createBuiltInCMap(), expectInt(), expectString(), extendCMap(), isCmd(), Linearization, getInt() (+10 more)
+Cohesion: 0.11
+Nodes (19): CMapFactory, createBuiltInCMap(), expectInt(), expectString(), extendCMap(), isCmd(), Lexer, Linearization (+11 more)
 
 ### Community 7 - "getStringOption"
 Cohesion: 0.02
-Nodes (52): AppearanceFilter, Barcode, BatchOutput, Bind, Calculate, Certificates, Compress, Connect (+44 more)
+Nodes (48): AppearanceFilter, BatchOutput, Bind, Calculate, Certificates, Compress, Connect, CurrencySymbol (+40 more)
 
 ### Community 11 - "getStringOption"
 Cohesion: 0.02
-Nodes (53): AppearanceFilter, Barcode, BatchOutput, Bind, Calculate, Certificates, Color, Compress (+45 more)
+Nodes (48): AppearanceFilter, BatchOutput, Bind, Calculate, Certificates, Color, Compress, Connect (+40 more)
 
 ### Community 12 - "._getAppearance"
 Cohesion: 0.06
@@ -727,7 +721,7 @@ Nodes (14): ErrorFont, escapeString(), FakeUnicodeFont, FreeTextAnnotation, getP
 
 ### Community 13 - "measureToString"
 Cohesion: 0.04
-Nodes (41): applyAssist(), ariaLabel(), Caption, CheckButton, checkDimensions(), computeBbox(), Corner, createWrapper() (+33 more)
+Nodes (49): applyAssist(), ariaLabel(), Caption, CheckButton, checkDimensions(), ChoiceList, computeBbox(), ContentArea (+41 more)
 
 ### Community 14 - "PracticalCodeLabView.tsx"
 Cohesion: 0.08
@@ -735,7 +729,7 @@ Nodes (40): PracticalCodeLabView, ChatWindow(), ChatWindowProps, ACADEMIC_PRESET
 
 ### Community 15 - "measureToString"
 Cohesion: 0.04
-Nodes (45): applyAssist(), ariaLabel(), Caption, CheckButton, checkDimensions(), computeBbox(), Corner, createWrapper() (+37 more)
+Nodes (45): applyAssist(), ariaLabel(), Caption, CheckButton, checkDimensions(), ChoiceList, computeBbox(), Corner (+37 more)
 
 ### Community 16 - "react"
 Cohesion: 0.04
@@ -751,7 +745,7 @@ Nodes (3): BrotliStream, buildHuffmanTable(), Zn
 
 ### Community 20 - "getInteger"
 Cohesion: 0.03
-Nodes (26): Arc, Break, BreakAfter, BreakBefore, ChoiceList, Comb, config_Area, DayNames (+18 more)
+Nodes (30): Arc, Barcode, Break, BreakAfter, BreakBefore, Comb, config_Area, DayNames (+22 more)
 
 ### Community 21 - "DsaLabView.tsx"
 Cohesion: 0.07
@@ -763,7 +757,7 @@ Nodes (15): createImage(), createImageDict(), deepCompare(), Dict, escapePDFName
 
 ### Community 23 - ".push"
 Cohesion: 0.07
-Nodes (24): buildHuffmanTable(), CircleAnnotation, encodeToXmlString(), findNextFileMarker(), FontRendererFactory, getColorConversionBatchSize(), getPdfColorArray(), getQuadPoints() (+16 more)
+Nodes (22): buildHuffmanTable(), buildPostScriptWasmFunction(), CircleAnnotation, encodeToXmlString(), FontRendererFactory, getColorConversionBatchSize(), getPdfColorArray(), getQuadPoints() (+14 more)
 
 ### Community 24 - "PsWasmCompiler"
 Cohesion: 0.08
@@ -783,23 +777,23 @@ Nodes (5): Annotation, MarkupAnnotation, MediaAnnotation, PopupAnnotation, RichM
 
 ### Community 28 - "getRelevant"
 Cohesion: 0.04
-Nodes (14): addHTML(), Area, Border, ContentArea, createLine(), ExclGroup, flushHTML(), getAvailableSpace() (+6 more)
+Nodes (14): addHTML(), Area, Border, createLine(), ExclGroup, flushHTML(), getAvailableSpace(), getContainedChildren() (+6 more)
 
 ### Community 29 - "getRelevant"
 Cohesion: 0.04
 Nodes (15): addHTML(), Area, Border, ContentArea, createLine(), ExclGroup, flushHTML(), getAvailableSpace() (+7 more)
 
 ### Community 30 - "._getAppearance"
-Cohesion: 0.07
-Nodes (13): ChoiceWidgetAnnotation, ErrorFont, escapeString(), FakeUnicodeFont, getPdfColor(), HighlightAnnotation, InkAnnotation, numberToString() (+5 more)
+Cohesion: 0.06
+Nodes (14): ErrorFont, escapeString(), FakeUnicodeFont, getPdfColor(), getTransformMatrix(), HighlightAnnotation, InkAnnotation, numberToString() (+6 more)
 
 ### Community 31 - "DeepLearningStudioView.tsx"
 Cohesion: 0.16
 Nodes (11): DeepLearningStudioView, DualParamControl(), DualParamControlProps, PillOption, PillSelector(), PillSelectorProps, DeepLearningModuleId, DeepLearningStudioView() (+3 more)
 
 ### Community 32 - "unreachable"
-Cohesion: 0.05
-Nodes (9): BasePdfManager, BasePDFStreamRangeReader, BaseShading, BaseStream, Pattern, PatternCS, RadialAxialShading, unreachable() (+1 more)
+Cohesion: 0.04
+Nodes (10): BasePdfManager, BasePDFStreamRangeReader, BasePDFStreamReader, BaseShading, BaseStream, Pattern, PatternCS, RadialAxialShading (+2 more)
 
 ### Community 33 - "App.tsx"
 Cohesion: 0.11
@@ -810,8 +804,8 @@ Cohesion: 0.07
 Nodes (17): AESBaseCipher, ARCFourCipher, calculateMD5(), calculateSHA384(), calculateSHA512(), ch(), CipherTransformFactory, isArrayEqual() (+9 more)
 
 ### Community 35 - ".createDocumentHandler"
-Cohesion: 0.09
-Nodes (15): AnnotationFactory, arrayBuffersToBytes(), NetworkPdfManager, on, WorkerMessageHandler, ensureNotTerminated(), finishWorkerTask(), getPassword() (+7 more)
+Cohesion: 0.05
+Nodes (18): AnnotationFactory, arrayBuffersToBytes(), getNewAnnotationsMap(), NetworkPdfManager, on, Page, TranslatedFont, WorkerMessageHandler (+10 more)
 
 ### Community 36 - ".createDocumentHandler"
 Cohesion: 0.09
@@ -835,7 +829,7 @@ Nodes (8): computeIDs(), MurmurHash3_64, parseMarkedContentProps(), _parseVisibi
 
 ### Community 41 - ".toString"
 Cohesion: 0.06
-Nodes (14): computeIDs(), escapePDFName(), getIndexes(), incrementalUpdate(), MurmurHash3_64, parseMarkedContentProps(), _parseVisibilityExpression(), RefSet (+6 more)
+Nodes (18): computeIDs(), escapePDFName(), findNextFileMarker(), getIndexes(), incrementalUpdate(), MurmurHash3_64, parseMarkedContentProps(), _parseVisibilityExpression() (+10 more)
 
 ### Community 42 - "XmlObject"
 Cohesion: 0.07
@@ -843,27 +837,27 @@ Nodes (8): ARCFourCipher, calculateMD5(), CipherTransformFactory, stringToBytes(
 
 ### Community 43 - ".get"
 Cohesion: 0.05
-Nodes (8): ButtonWidgetAnnotation, collectActions(), Dict, FreeTextAnnotation, getInheritableProperty(), getModificationDate(), PDFEditor, stringToAsciiOrUTF16BE()
+Nodes (9): ButtonWidgetAnnotation, ChoiceWidgetAnnotation, collectActions(), Dict, FreeTextAnnotation, getInheritableProperty(), getModificationDate(), PDFEditor (+1 more)
 
 ### Community 44 - "unreachable"
 Cohesion: 0.04
 Nodes (10): BasePdfManager, BasePDFStreamRangeReader, BaseShading, BaseStream, ColorSpace, Pattern, PatternCS, RadialAxialShading (+2 more)
 
 ### Community 45 - "warn"
-Cohesion: 0.04
-Nodes (17): addPageError(), createValidAbsoluteUrl(), decodeString(), EvaluatorPreprocessor, FileSpec, sanitizeTTProgram(), info(), isDefaultDecodeHelper() (+9 more)
+Cohesion: 0.03
+Nodes (30): Binder, addPageError(), createDataNode(), createText(), createValidAbsoluteUrl(), decodeString(), ea(), doRun() (+22 more)
 
 ### Community 46 - "fetchKrokiSvg"
 Cohesion: 0.07
 Nodes (52): LectureNotesStudioView, healMarkdownFences(), LectureNoteSession, LectureNotesStudioView(), loadDiagrams(), PRESET_SUBJECTS, PRESETS, TeacherPresetType (+44 more)
 
 ### Community 47 - ".add"
-Cohesion: 0.08
-Nodes (14): adjustMapping(), compileCharString(), bezierCurveTo(), lineTo(), moveTo(), CompiledFont, compileGlyf(), lineTo() (+6 more)
+Cohesion: 0.10
+Nodes (13): adjustMapping(), compileCharString(), bezierCurveTo(), lineTo(), moveTo(), CompiledFont, compileGlyf(), lineTo() (+5 more)
 
 ### Community 48 - "shadow"
 Cohesion: 0.03
-Nodes (10): AppearanceStreamEvaluator, Catalog, clearGlobalCaches(), ColorSpaceUtils, EquateRange, FeatureTest, fetchDest(), fonts_Glyph (+2 more)
+Nodes (12): AppearanceStreamEvaluator, Catalog, CCITTFaxStream, clearGlobalCaches(), ColorSpaceUtils, EquateRange, FeatureTest, fetchDest() (+4 more)
 
 ### Community 51 - ".parse"
 Cohesion: 0.12
@@ -894,8 +888,8 @@ Cohesion: 0.10
 Nodes (10): Binder, buildPostScriptWasmFunction(), createDataNode(), createText(), parseDefaultAppearance(), parseExpression(), parsePostScriptFunction(), PDFFunction (+2 more)
 
 ### Community 58 - ".getBytes"
-Cohesion: 0.16
-Nodes (6): decrypt(), isHexDigit(), isSpecial(), Lexer, toHexDigit(), Type1Parser
+Cohesion: 0.13
+Nodes (8): bytesToString(), decrypt(), getFontFileType(), isHexDigit(), isSpecial(), isTrueTypeCollectionFile(), Type1Font, Type1Parser
 
 ### Community 59 - "printPdfService.ts"
 Cohesion: 0.13
@@ -1029,10 +1023,6 @@ Nodes (20): amendFallbackToUnicode(), AppearanceStreamEvaluator, Catalog, CmykIC
 Cohesion: 0.16
 Nodes (4): Ascii85Stream, findBlock(), FlateStream, isWhiteSpace()
 
-### Community 102 - "Binder"
-Cohesion: 0.05
-Nodes (19): Binder, buildPostScriptWasmFunction(), CCITTFaxStream, createDataNode(), createText(), ea(), doRun(), receiveInstance() (+11 more)
-
 ### Community 103 - "WhiteboardModule.tsx"
 Cohesion: 0.06
 Nodes (30): InteractiveSandboxView, ErrorBoundaryProps, ErrorBoundaryState, InteractiveSandboxView(), InteractiveSandboxViewProps, SandboxModuleErrorBoundary, SandboxModuleType, ExcalidrawModule() (+22 more)
@@ -1051,11 +1041,7 @@ Nodes (22): addCachedImageOps(), fetchBinaryData(), generateFont(), getEncoding(
 
 ### Community 109 - "getInteger"
 Cohesion: 0.03
-Nodes (26): Arc, Break, BreakAfter, BreakBefore, ChoiceList, Comb, config_Area, DayNames (+18 more)
-
-### Community 112 - "Page"
-Cohesion: 0.09
-Nodes (4): getNewAnnotationsMap(), getTransformMatrix(), Page, StampAnnotation
+Nodes (29): Arc, Barcode, Break, BreakAfter, BreakBefore, Comb, config_Area, DayNames (+21 more)
 
 ### Community 113 - "webmcpify — make any web app agent-ready, verifiably"
 Cohesion: 0.14
@@ -1077,10 +1063,6 @@ Nodes (15): scripts, build, build:admin, build:student, cap:build, cap:open, cap
 Cohesion: 0.07
 Nodes (24): addHex(), BinaryCMapReader, BinaryCMapStream, CMapFactory, createBuiltInCMap(), expectInt(), expectString(), extendCMap() (+16 more)
 
-### Community 119 - "bytesToString"
-Cohesion: 0.21
-Nodes (4): bytesToString(), getFontFileType(), isTrueTypeCollectionFile(), Type1Font
-
 ### Community 121 - "🎨 Detailed Task-by-Task Design & CSS Specifications"
 Cohesion: 0.14
 Nodes (13): 1. Task 1: Tab Close Button (`×`) & In-Chat `👁️ View in IDE` Action, 2. Task 2: Tab Bar Overflow & Scroll Controls (`<` & `>`), 3. Task 3: Smart Topic-Aware File Naming Engine, 4. Task 4: Dual-Engine Code Viewer (Toggle System), 5. Task 5: Code Lab Session History Sidebar & Web Search Toggle, 6. Task 6: Download All Files as .ZIP, 7. Task 7: Reset Session Warning Confirmation Modal, 8. Task 8: Storage Engine (`IndexedDB`) (+5 more)
@@ -1096,10 +1078,6 @@ Nodes (20): buildComponentData(), CmykICCBasedCS, decodeScan(), decodeBlock(), d
 ### Community 125 - "webmcpify.ts"
 Cohesion: 0.24
 Nodes (9): ToolScopeHandle, ToolScopeOptions, createToolScope(), getModelContext(), isWebMCPAvailable(), makeHandle(), scopes, shouldValidate() (+1 more)
-
-### Community 127 - "find"
-Cohesion: 0.13
-Nodes (9): find(), FontFinder, FontInfo, getCurrentPara(), makeObj(), PageSet, selectFont(), setFontFamily() (+1 more)
 
 ### Community 129 - "multilineSystems.ts"
 Cohesion: 0.44
@@ -1160,6 +1138,10 @@ Nodes (3): convertBlackAndWhiteToRGBA(), convertToRGBA(), ImageResizer
 ### Community 150 - "CompositeGlyph"
 Cohesion: 0.15
 Nodes (3): CompositeGlyph, GlyfTable, Glyph
+
+### Community 153 - "createPNGLikeImage"
+Cohesion: 0.50
+Nodes (3): createPNGLikeImage(), createRawImage(), paethPredictor()
 
 ### Community 154 - "createImage"
 Cohesion: 0.33
@@ -1388,22 +1370,22 @@ Nodes (3): Expanding the Oxlint configuration, React Compiler, React + TypeScrip
 ## Knowledge Gaps
 - **828 isolated node(s):** `FORMAT_BY_EXTENSION`, `CONTENT_TYPE_BY_FORMAT`, `booleanFlags`, `valueFlags`, `react` (+823 more)
   These have ≤1 connection - possible missing edges or undocumented components.
-- **475 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **472 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `js` connect `js` to `.process`, `AdjustData`, `Common`, `Compression`, `.getObj`, `Base`, `ConfigNamespace`, `Destination`, `Config`, `getStringOption`, `config_Encryption`, `config_Message`, `DNLMarkerError`, `measureToString`, `DocumentAssembly`, `Embed`, `EffectiveInputPolicy`, `Attributes`, `getInteger`, `BrotliStream`, `.put`, `Driver`, `Encrypt`, `PsWasmCompiler`, `JpegStream`, `Enforce`, `ExcludeNS`, `getRelevant`, `FormFieldFilling`, `DefaultAppearanceEvaluator`, `EOIMarkerError`, `Debug`, `IncludeXDPContent`, `IncrementalLoad`, `.createDocumentHandler`, `XMLParserBase`, `DocumentData`, `Interactive`, `.toString`, `Jog`, `Amd`, `XmlObject`, `unreachable`, `Layout`, `Linearized`, `InvalidPDFException`, `LocaleSet`, `Log`, `Message`, `.parse`, `AutoSave`, `ExObject`, `.ensureBuffer`, `Parser`, `MissingDataException`, `.parse`, `.getBytes`, `Jbig2Error`, `Bookend`, `._getAppearance`, `Month`, `.get`, `NullStream`, `NumberSymbols`, `Oid`, `Operation`, `OutputBin`, `valueToHtml`, `Option01`, `Meridiem`, `Overprint`, `PageData`, `calculateSHA512`, `Pagination`, `LocaleSetNamespace`, `Part`, `.getTextContent`, `Pcl`, `Pdfa`, `PDFWorkerStream`, `TextMeasure`, `CalRGBCS`, `EncryptionMethod`, `isArrayEqual`, `.constructor`, `IccColorSpace`, `OutputXSL`, `PasswordException`, `PickTrayByPDFSize`, `MessageHandler`, `Level`, `PDFDocument`, `Print`, `ChunkedStream`, `PrintScaling`, `assert`, `Extras`, `warn`, `Present`, `.getByte`, `FlipLabel`, `PsConstNode`, `ButtonWidgetAnnotation`, `PsProgram`, `PartialEvaluator`, `PsUnaryNode`, `CMap`, `RootElement`, `JpegImage`, `ScriptModel`, `Severity`, `StartPage`, `ConnectionSetNamespace`, `StringStream`, `Sub`, `signature_Signature`, `Stylesheet`, `bytesToString`, `SubmitUrl`, `TimePatterns`, `DecodeStream`, `GlobalImageCache`, `GroupParent`, `MathClamp`, `Xdp`, `Token`, `Br`, `Trace`, `NullOptimizer`, `Stream`, `ps`, `ul`, `UnknownErrorException`, `Transform`, `.getUint16`, `Uri`, `Version`, `Xdc`, `ImageResizer`, `XFAFactory`, `Zpl`, `BasePDFStreamReader`, `Reason`, `ResponseException`, `SetProperty`, `locale_set_Locale`, `CFFCompiler`, `ToUnicodeMap`, `XFAAttribute`, `Traversal`, `LocalImageCache`, `Sup`, `SuppressBanner`, `SquigglyAnnotation`, `.[pl]`, `ast_Parser`, `lexer_Lexer`, `SingleIntersector`, `TextState`, `XmlConnection`, `XRefParseException`, `.checkAndRepair`, `MediumInfo`, `AES128Cipher`, `AnnotationBorderStyle`, `locale_set_LocaleSet`, `Commands`, `DeviceRgbCS`, `WebClient`, `GlyphHeader`, `LocalPdfManager`, `CFFIndex`, `DeviceGrayCS`, `FontSelector`, `ContentObject`, `DatasetsNamespace`, `GlobalColorSpaceCache`, `Ref`, `Root`, `Ui`, `ViewerPreferences`, `XFAObject`, `TemplateNamespace`, `Mode`, `Whitespace`, `.has`, `ModifyAnnots`, `MsgId`, `Assist`, `BehaviorOverride`, `Body`, `Cmd`, `Datasets`, `datasets_Data`, `Empty`, `EvalState`, `Exclude`, `Html`, `LinkAnnotation`, `LocalFunctionCache`, `LocalTilingPatternCache`, `Name`, `NameTree`, `Overflow`, `Packets`, `ol`, `PageRange`, `Range`, `Record`, `RegionalImageCache`, `Option10`, `Relevant`, `Rename`, `SignatureNamespace`, `SignatureWidgetAnnotation`, `Solid`, `StylesheetNamespace`, `SubjectDN`, `TrueTypeCompiled`, `UnknownNamespace`, `ValidateApprovalSignatures`, `Variables`, `Window`, `xdp_Xdp`, `XdpNamespace`, `calculateSHA256`, `Type`, `CompositeGlyph`, `Builder`, `.fallbackToSystemFont`, `Font`, `XFAObjectArray`, `SubsetBelow`, `find`, `.convert`, `WsdlConnection`, `PDFFunctionFactory`, `.push`, `ParserEOFException`, `Presence`, `Producer`, `PsArgNode`, `CFF`, `PsIf`, `RenderPolicy`, `RunScripts`, `PlaintextMetadata`, `QCMS`, `Tagged`, `PsBlock`, `WsdlAddress`, `Proto`, `AddSilentPrint`, `AlwaysEmbed`, `PsNumber`, `CompressObjectStream`, `config_FontInfo`, `config_Validate`, `connection_set_Uri`, `BindItems`, `CurrentPage`, `config_Encrypt`, `Conformance`, `PsIfElse`, `ConnectionSet`, `er`, `Util`, `DataHandler`, `DefaultUi`, `Certificate`, `CFFHeader`, `DateTimeSymbols`?**
+- **Why does `js` connect `js` to `.process`, `AdjustData`, `Common`, `Compression`, `.getObj`, `Base`, `ConfigNamespace`, `DuplexOption`, `Config`, `getStringOption`, `config_Encryption`, `config_Message`, `DNLMarkerError`, `measureToString`, `DocumentAssembly`, `EffectiveOutputPolicy`, `EffectiveInputPolicy`, `Attributes`, `getInteger`, `BrotliStream`, `.put`, `Driver`, `Encrypt`, `PsWasmCompiler`, `JpegStream`, `Enforce`, `ExcludeNS`, `getRelevant`, `IncrementalLoad`, `DefaultAppearanceEvaluator`, `EOIMarkerError`, `Debug`, `Li`, `locale_set_LocaleSet`, `.createDocumentHandler`, `XMLParserBase`, `DocumentData`, `Interactive`, `.toString`, `Jog`, `Amd`, `XmlObject`, `unreachable`, `Layout`, `Linearized`, `InvalidPDFException`, `LocaleSet`, `Log`, `Mode`, `.parse`, `AutoSave`, `ExObject`, `.ensureBuffer`, `Parser`, `ModifyAnnots`, `.parse`, `.getBytes`, `Jbig2Error`, `Bookend`, `._getAppearance`, `Month`, `.get`, `Oid`, `OpenAction`, `Output`, `PaginationOverride`, `ParserEOFException`, `valueToHtml`, `Option01`, `Meridiem`, `Permissions`, `Picture`, `calculateSHA512`, `Part`, `LocaleSetNamespace`, `Pcl`, `.getTextContent`, `Producer`, `PsArgNode`, `PsIf`, `TextMeasure`, `CalRGBCS`, `Era`, `isArrayEqual`, `.constructor`, `IccColorSpace`, `OutputXSL`, `PasswordException`, `Print`, `MessageHandler`, `Level`, `PDFDocument`, `Proto`, `ChunkedStream`, `PsConstNode`, `assert`, `Format`, `warn`, `Present`, `.getByte`, `IfEmpty`, `PsIfElse`, `ButtonWidgetAnnotation`, `RenderPolicy`, `PartialEvaluator`, `Severity`, `CMap`, `StructElement`, `JpegImage`, `SubmitFormat`, `Threshold`, `Sub`, `ConnectionSetNamespace`, `ToolTip`, `TimePatterns`, `signature_Signature`, `Type`, `TypeFace`, `HTMLResult`, `UnderlineAnnotation`, `IncrementalMerge`, `DecodeStream`, `ValidationMessaging`, `GlobalImageCache`, `JpegError`, `MathClamp`, `Xdp`, `XmlConnection`, `Br`, `WebClient`, `NullOptimizer`, `Stream`, `ps`, `Xdc`, `Zpl`, `Transform`, `.getUint16`, `XFAFactory`, `ImageResizer`, `BasePDFStreamReader`, `Reason`, `createPNGLikeImage`, `ResponseException`, `SetProperty`, `LocalGStateCache`, `CFFCompiler`, `ToUnicodeMap`, `XFAAttribute`, `Traversal`, `MeridiemNames`, `Sup`, `SuppressBanner`, `SquigglyAnnotation`, `.[pl]`, `ast_Parser`, `lexer_Lexer`, `SingleIntersector`, `TextState`, `XRefParseException`, `.checkAndRepair`, `Messaging`, `AES128Cipher`, `AnnotationBorderStyle`, `Commands`, `DeviceRgbCS`, `GlyphHeader`, `LocalPdfManager`, `CFFIndex`, `DeviceGrayCS`, `FontSelector`, `NeverEmbed`, `ContentObject`, `DatasetsNamespace`, `GlobalColorSpaceCache`, `Ref`, `Root`, `Ui`, `ViewerPreferences`, `XFAObject`, `TemplateNamespace`, `NumberOfCopies`, `Whitespace`, `.has`, `NumberPatterns`, `Assist`, `BehaviorOverride`, `Body`, `Cmd`, `Datasets`, `datasets_Data`, `Empty`, `EvalState`, `Exclude`, `Html`, `LinkAnnotation`, `LocalFunctionCache`, `LocalTilingPatternCache`, `Name`, `NumberTree`, `Overflow`, `Packets`, `ol`, `PageRange`, `Range`, `Record`, `RegionalImageCache`, `Option10`, `Relevant`, `Rename`, `SignatureNamespace`, `SignatureWidgetAnnotation`, `Solid`, `StylesheetNamespace`, `SubjectDN`, `TrueTypeCompiled`, `UnknownNamespace`, `ValidateApprovalSignatures`, `Variables`, `Window`, `xdp_Xdp`, `XdpNamespace`, `calculateSHA256`, `CompositeGlyph`, `Builder`, `.fallbackToSystemFont`, `Font`, `XFAObjectArray`, `SubsetBelow`, `find`, `.convert`, `WsdlConnection`, `PDFFunctionFactory`, `.push`, `PrinterName`, `Presence`, `PsBinaryNode`, `XRef`, `CFF`, `PsNode`, `PsOperator`, `RunScripts`, `PsTernaryNode`, `RefElement`, `QCMS`, `SilentPrint`, `Tagged`, `Span`, `WsdlAddress`, `AddSilentPrint`, `AlwaysEmbed`, `CompressLogicalStructure`, `StartNode`, `config_Picture`, `ContentCopy`, `Contour`, `Data`, `BindItems`, `DatePatterns`, `config_Encrypt`, `Conformance`, `ConnectionSet`, `StrikeOutAnnotation`, `er`, `Util`, `Day`, `Desc`, `Certificate`, `CFFHeader`, `DateTimeSymbols`?**
   _High betweenness centrality (0.140) - this node is a cross-community bridge._
 - **Why does `ConfigNamespace` connect `ConfigNamespace` to `pdf.worker.js`, `shadow`, `er`, `.add`?**
   _High betweenness centrality (0.016) - this node is a cross-community bridge._
-- **Why does `warn()` connect `warn` to `pdf.worker.js`, `.checkAndRepair`, `Rename`, `XRef`, `measureToString`, `Type1Font`, `PartialEvaluator`, `.push`, `Annotation`, `getRelevant`, `.convert`, `._getAppearance`, `calculateSHA512`, `.createDocumentHandler`, `ast_Parser`, `.toString`, `.get`, `.add`, `shadow`, `AnnotationBorderStyle`, `.getBytes`, `.has`, `Builder`, `.getByte`, `.parse`, `.getTextContent`, `ChunkedStreamManager`, `Binder`, `assert`, `getInteger`, `Page`, `.getObj`, `t`, `GlobalImageCache`?**
+- **Why does `warn()` connect `warn` to `pdf.worker.js`, `.checkAndRepair`, `Rename`, `XRef`, `measureToString`, `Type1Font`, `PartialEvaluator`, `.push`, `Annotation`, `getRelevant`, `.convert`, `._getAppearance`, `calculateSHA512`, `.createDocumentHandler`, `ast_Parser`, `.toString`, `.get`, `.add`, `shadow`, `AnnotationBorderStyle`, `.getBytes`, `.has`, `Builder`, `.getByte`, `.parse`, `.getTextContent`, `ChunkedStreamManager`, `assert`, `getInteger`, `FileSpec`, `.getObj`, `.addNode`, `t`, `GlobalImageCache`?**
   _High betweenness centrality (0.016) - this node is a cross-community bridge._
 - **What connects `FORMAT_BY_EXTENSION`, `CONTENT_TYPE_BY_FORMAT`, `booleanFlags` to the rest of the system?**
   _828 weakly-connected nodes found - possible documentation gaps or missing edges._
 - **Should `pdf.worker.js` be split into smaller, more focused modules?**
-  _Cohesion score 0.0057611203946844915 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.005695522945487932 - nodes in this community are weakly interconnected._
 - **Should `js` be split into smaller, more focused modules?**
-  _Cohesion score 0.005824779183576032 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.00569405971068021 - nodes in this community are weakly interconnected._
 - **Should `.process` be split into smaller, more focused modules?**
   _Cohesion score 0.09401709401709402 - nodes in this community are weakly interconnected._

@@ -1489,7 +1489,8 @@ export const App: React.FC = () => {
           document.documentElement.setAttribute('data-atmosphere', atmoToSet);
         }
 
-        const savedTheme = localStorage.getItem('chatterbot_theme') || localStorage.getItem('theme') || 'dark';
+        const rawTheme = localStorage.getItem('chatterbot_theme') || localStorage.getItem('theme') || 'dark';
+        const savedTheme: 'light' | 'dark' = rawTheme === 'light' ? 'light' : 'dark';
         setTheme(savedTheme);
         document.documentElement.setAttribute('data-theme', savedTheme);
 

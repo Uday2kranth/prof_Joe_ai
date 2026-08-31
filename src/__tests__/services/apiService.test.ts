@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { sendChatMessage } from '../../services/apiService';
-import { Message } from '../../types';
+import type { Message } from '../../types';
 
 describe('apiService - sendChatMessage Standard Service', () => {
   const dummyMessages: Message[] = [
