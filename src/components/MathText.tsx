@@ -2,6 +2,7 @@ import React, { useMemo } from 'react';
 import { marked } from 'marked';
 import katex from 'katex';
 import 'katex/dist/katex.min.css';
+import { highlightCode } from '../utils/syntaxHighlighter';
 
 marked.setOptions({
   gfm: true,
@@ -66,16 +67,26 @@ export function renderMathHtml(content: string, options: RenderMathOptions = {})
   const codeMap = new Map<string, string>();
   let tokenIdx = 0;
 
-  // Step 1: Protect triple-backtick and inline backtick code blocks from math replacements
-  let prepped = content.replace(/```[\s\S]*?```/g, (match) => {
+  // Step 1: Protect triple-backtick and inline backtick code blocks and tokenize syntax
+  let prepped = content.replace(/```([a-zA-Z0-9_#+-]*)\s*([\s\S]*?)```/g, (_, rawLang, rawCode) => {
     const token = `CODEBLOCKTOKEN${tokenIdx++}ENDTOKEN`;
-    codeMap.set(token, match);
+    const cleanLang = (rawLang || '').trim();
+    const cleanCode = (rawCode || '').replace(/^\n+|\n+$/g, '');
+    const highlighted = highlightCode(cleanCode, cleanLang);
+    const codeBlockHtml = `<pre class="code-block-wrapper" data-code-lang="${cleanLang || 'code'}"><code class="language-${cleanLang || 'text'}">${highlighted}</code></pre>`;
+    codeMap.set(token, codeBlockHtml);
     return token;
   });
 
-  prepped = prepped.replace(/`[^`\n]+`/g, (match) => {
+  prepped = prepped.replace(/`([^`\n]+)`/g, (_, inlineCode) => {
     const token = `INLINECODETOKEN${tokenIdx++}ENDTOKEN`;
-    codeMap.set(token, match);
+    const escaped = inlineCode
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+    codeMap.set(token, `<code class="inline-code">${escaped}</code>`);
     return token;
   });
 
@@ -151,13 +162,18 @@ export function renderMathHtml(content: string, options: RenderMathOptions = {})
     return token;
   });
 
-  // Step 6: Restore code blocks before marked parse
-  codeMap.forEach((codeStr, token) => {
-    prepped = prepped.replaceAll(token, codeStr);
-  });
-
-  // Step 7: Parse Markdown
+  // Step 6: Parse Markdown (Code & Math are protected by tokens)
   let parsedHtml = marked.parse(prepped) as string;
+
+  // Step 7: Restore Code Block Tokens with rich syntax highlight HTML
+  codeMap.forEach((html, token) => {
+    const pWrapped = `<p>${token}</p>`;
+    if (parsedHtml.includes(pWrapped)) {
+      parsedHtml = parsedHtml.replace(pWrapped, html);
+    } else {
+      parsedHtml = parsedHtml.replaceAll(token, html);
+    }
+  });
 
   // Step 8: Restore Math Tokens
   mathMap.forEach((html, token) => {

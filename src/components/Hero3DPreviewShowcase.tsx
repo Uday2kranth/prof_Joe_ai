@@ -15,6 +15,16 @@ export const Hero3DPreviewShowcase: React.FC<Hero3DPreviewShowcaseProps> = ({ on
   const isDraggingRef = useRef<boolean>(false);
   const lastMousePosRef = useRef<{ x: number; y: number }>({ x: 0, y: 0 });
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
+  const rotXRef = useRef<number>(rotX);
+  const rotYRef = useRef<number>(rotY);
+
+  useEffect(() => {
+    rotXRef.current = rotX;
+  }, [rotX]);
+
+  useEffect(() => {
+    rotYRef.current = rotY;
+  }, [rotY]);
 
   // Animation Loop for 60 FPS rendering
   useEffect(() => {
@@ -22,9 +32,14 @@ export const Hero3DPreviewShowcase: React.FC<Hero3DPreviewShowcaseProps> = ({ on
     let time = 0;
 
     const render = () => {
+      if (document.hidden) {
+        animId = requestAnimationFrame(render);
+        return;
+      }
+
       time += 0.025;
       if (isAutoOrbit && !isDraggingRef.current) {
-        setRotY(prev => (prev + 0.35) % 360);
+        rotYRef.current = (rotYRef.current + 0.35) % 360;
       }
 
       const canvas = canvasRef.current;
@@ -42,8 +57,8 @@ export const Hero3DPreviewShowcase: React.FC<Hero3DPreviewShowcaseProps> = ({ on
           ctx.fillStyle = bgGrad;
           ctx.fillRect(0, 0, W, H);
 
-          const radX = (rotX * Math.PI) / 180;
-          const radY = (rotY * Math.PI) / 180;
+          const radX = (rotXRef.current * Math.PI) / 180;
+          const radY = (rotYRef.current * Math.PI) / 180;
           const cosX = Math.cos(radX);
           const sinX = Math.sin(radX);
           const cosY = Math.cos(radY);
@@ -271,7 +286,7 @@ export const Hero3DPreviewShowcase: React.FC<Hero3DPreviewShowcaseProps> = ({ on
 
     animId = requestAnimationFrame(render);
     return () => cancelAnimationFrame(animId);
-  }, [mode, rotX, rotY, isAutoOrbit]);
+  }, [mode, isAutoOrbit]);
 
   const handlePointerDown = (e: React.PointerEvent) => {
     isDraggingRef.current = true;
@@ -285,8 +300,8 @@ export const Hero3DPreviewShowcase: React.FC<Hero3DPreviewShowcaseProps> = ({ on
     const dy = e.clientY - lastMousePosRef.current.y;
     lastMousePosRef.current = { x: e.clientX, y: e.clientY };
 
-    setRotY(prev => prev + dx * 0.7);
-    setRotX(prev => Math.max(-60, Math.min(60, prev - dy * 0.7)));
+    rotYRef.current = (rotYRef.current + dx * 0.7) % 360;
+    rotXRef.current = Math.max(-60, Math.min(60, rotXRef.current - dy * 0.7));
   };
 
   const handlePointerUp = (e: React.PointerEvent) => {

@@ -72,87 +72,99 @@ export const GreedyStringLab: React.FC<GreedyStringLabProps> = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
-      {/* Top Algorithm Selector Card */}
+      {/* Consolidated Action Bar */}
       <div className="dsa-header-card" style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '8px',
-        background: 'rgba(15, 23, 42, 0.75)',
+        background: 'rgba(15, 23, 42, 0.8)',
         padding: '8px 12px',
         borderRadius: '12px',
         border: '1px solid rgba(255,255,255,0.08)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 200px', minWidth: 0, maxWidth: '100%', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
-            MATCHING:
-          </span>
-          <select
-            value="kmp"
-            disabled
-            className="dsa-select-control"
-            style={{
-              minHeight: '36px',
-              padding: '6px 10px',
-              borderRadius: '8px',
-              background: 'rgba(30, 41, 59, 0.95)',
-              border: '1.5px solid #38bdf8',
-              color: '#f8fafc',
-              fontSize: '0.82rem',
-              fontWeight: 800,
-              cursor: 'default',
-              outline: 'none',
-              boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)'
-            }}
-          >
-            <option value="kmp">🔤 Knuth-Morris-Pratt (KMP) Automaton</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Action Bar */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '8px', background: 'rgba(15, 23, 42, 0.7)', padding: '8px 12px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.08)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <button
+            type="button"
             title="KMP Next Character Step"
             onClick={handleStepKMP}
             disabled={textPointer >= text.length}
             className="dsa-action-btn"
-            style={{ background: 'linear-gradient(135deg, #10b981, #059669)', color: '#fff', border: 'none', display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 12px', borderRadius: '6px', cursor: 'pointer' }}
+            style={{
+              background: 'linear-gradient(135deg, #10b981, #059669)',
+              color: '#fff',
+              border: 'none',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              padding: '5px 12px',
+              borderRadius: '7px',
+              cursor: 'pointer',
+              fontWeight: 700,
+              fontSize: '0.74rem'
+            }}
           >
             <Play size={13} />
-            <span className="dsa-btn-label">KMP Next</span>
+            <span>KMP Next</span>
           </button>
 
           <button
+            type="button"
             title="Reset"
             onClick={resetKMP}
             className="dsa-action-btn"
-            style={{ background: 'rgba(255,255,255,0.06)', color: 'var(--text-muted)', border: '1px solid rgba(255,255,255,0.1)', display: 'flex', alignItems: 'center', gap: '6px', padding: '6px 10px', borderRadius: '6px', cursor: 'pointer' }}
+            style={{
+              background: 'rgba(255,255,255,0.05)',
+              color: 'var(--text-muted, #94a3b8)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              padding: '5px 8px',
+              borderRadius: '7px',
+              cursor: 'pointer'
+            }}
           >
-            <RotateCcw size={12} />
-            <span className="dsa-btn-label">Reset</span>
+            <RotateCcw size={13} />
           </button>
         </div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Text:</span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted, #94a3b8)', fontWeight: 700 }}>Text:</span>
             <input
               type="text"
               value={text}
               onChange={(e) => { setText(e.target.value.toUpperCase()); resetKMP(); }}
-              style={{ width: '100px', padding: '3px 6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)', background: '#0f172a', color: '#fff', fontSize: '0.75rem' }}
+              style={{
+                width: '95px',
+                padding: '3px 6px',
+                borderRadius: '6px',
+                border: '1px solid rgba(255,255,255,0.2)',
+                background: '#0f172a',
+                color: '#fff',
+                fontSize: '0.76rem',
+                outline: 'none'
+              }}
             />
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Pat:</span>
+            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted, #94a3b8)', fontWeight: 700 }}>Pat:</span>
             <input
               type="text"
               value={pattern}
               onChange={(e) => { setPattern(e.target.value.toUpperCase()); resetKMP(); }}
-              style={{ width: '65px', padding: '3px 6px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)', background: '#0f172a', color: '#fff', fontSize: '0.75rem' }}
+              style={{
+                width: '65px',
+                padding: '3px 6px',
+                borderRadius: '6px',
+                border: '1px solid rgba(255,255,255,0.2)',
+                background: '#0f172a',
+                color: '#fff',
+                fontSize: '0.76rem',
+                outline: 'none'
+              }}
             />
           </div>
         </div>

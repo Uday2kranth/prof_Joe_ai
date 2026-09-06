@@ -36,8 +36,9 @@ import { CodeLabControlDeck } from './CodeLabControlDeck';
 import { ResetSessionModal } from './ResetSessionModal';
 import { saveCodeLabSession } from '../services/indexedDbService';
 import { PROVIDERS } from '../constants';
-import type { UserCustomModels, ChatSession, Message, IdeConfig, CodeStyleConfig } from '../types';
+import type { UserCustomModels, ChatSession, Message, IdeConfig, CodeStyleConfig, CodeLabDeliveryFormat, CodeLabApproach } from '../types';
 import { DEFAULT_IDE_CONFIG, DEFAULT_CODE_STYLE } from '../types';
+import { highlightCode } from '../utils/syntaxHighlighter';
 
 interface GeneratedFile {
   fileName: string;
@@ -557,7 +558,13 @@ const CodeDungeonMessageBubble: React.FC<CodeDungeonMessageBubbleProps> = ({
 
 interface PracticalCodeLabViewProps {
   onBackToHub?: () => void;
-  onSendMessage: (prompt: string, webSearch: boolean, mode: string, systemPrompt?: string) => void;
+  onSendMessage: (
+    prompt: string, 
+    webSearch: boolean, 
+    mode: string, 
+    systemPrompt?: string, 
+    codeLabOptions?: { deliveryFormat?: CodeLabDeliveryFormat; codeApproach?: CodeLabApproach }
+  ) => void;
   onRetry?: () => void;
   onEditUserMessage?: (oldText: string) => void;
   onBranchMessage?: (msg: Message) => void;
@@ -631,6 +638,40 @@ export function PracticalCodeLabView({
   const [isResetModalOpen, setIsResetModalOpen] = useState(false);
   const [isQuickExtractionOpen, setIsQuickExtractionOpen] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+
+  const [deliveryFormat, setDeliveryFormat] = useState<CodeLabDeliveryFormat>(() => {
+    try {
+      const saved = localStorage.getItem(`chatterbot_codelab_format_${activeUser}`);
+      if (saved && (saved === 'lab_record' || saved === 'interactive_learner' || saved === 'pure_code')) {
+        return saved as CodeLabDeliveryFormat;
+      }
+    } catch {}
+    return 'lab_record';
+  });
+
+  const [codeApproach, setCodeApproach] = useState<CodeLabApproach>(() => {
+    try {
+      const saved = localStorage.getItem(`chatterbot_codelab_approach_${activeUser}`);
+      if (saved && (saved === 'from_scratch' || saved === 'standard_lib' || saved === 'beginner_simple')) {
+        return saved as CodeLabApproach;
+      }
+    } catch {}
+    return 'standard_lib';
+  });
+
+  const handleSelectDeliveryFormat = (format: CodeLabDeliveryFormat) => {
+    setDeliveryFormat(format);
+    try {
+      localStorage.setItem(`chatterbot_codelab_format_${activeUser}`, format);
+    } catch {}
+  };
+
+  const handleSelectCodeApproach = (approach: CodeLabApproach) => {
+    setCodeApproach(approach);
+    try {
+      localStorage.setItem(`chatterbot_codelab_approach_${activeUser}`, approach);
+    } catch {}
+  };
   const [ideConfig, setIdeConfig] = useState<IdeConfig>(() => {
     try {
       const saved = localStorage.getItem('chatterbot_ide_settings');
@@ -658,6 +699,18 @@ export function PracticalCodeLabView({
     return 'fast';
   });
 
+  const [globalAppTheme, setGlobalAppTheme] = useState<'light' | 'dark'>(() => {
+    if (typeof document !== 'undefined') {
+      const attr = document.documentElement.getAttribute('data-theme');
+      if (attr === 'light' || attr === 'dark') return attr;
+    }
+    try {
+      const saved = localStorage.getItem('chatterbot_theme') || localStorage.getItem('theme');
+      if (saved === 'light' || saved === 'dark') return saved;
+    } catch {}
+    return 'dark';
+  });
+
   useEffect(() => {
     const handleIdeSettingsUpdate = () => {
       try {
@@ -677,15 +730,59 @@ export function PracticalCodeLabView({
       } catch {}
     };
 
+    const handleThemeSync = () => {
+      let current: 'light' | 'dark' = 'dark';
+      if (typeof document !== 'undefined') {
+        const attr = document.documentElement.getAttribute('data-theme');
+        if (attr === 'light' || attr === 'dark') current = attr;
+      }
+      try {
+        const saved = localStorage.getItem('chatterbot_theme') || localStorage.getItem('theme');
+        if (saved === 'light' || saved === 'dark') current = saved;
+      } catch {}
+      setGlobalAppTheme(current);
+    };
+
     window.addEventListener('chatterbot_ide_settings_updated', handleIdeSettingsUpdate);
     window.addEventListener('chatterbot_code_style_updated', handleCodeStyleUpdate);
+    window.addEventListener('chatterbot_theme_updated', handleThemeSync);
     window.addEventListener('storage', handleIdeSettingsUpdate);
+    window.addEventListener('storage', handleCodeStyleUpdate);
+    window.addEventListener('storage', handleThemeSync);
+
+    const observer = new MutationObserver((mutations) => {
+      for (const m of mutations) {
+        if (m.type === 'attributes' && m.attributeName === 'data-theme') {
+          handleThemeSync();
+        }
+      }
+    });
+    if (typeof document !== 'undefined' && document.documentElement) {
+      observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+    }
+
     return () => {
       window.removeEventListener('chatterbot_ide_settings_updated', handleIdeSettingsUpdate);
       window.removeEventListener('chatterbot_code_style_updated', handleCodeStyleUpdate);
+      window.removeEventListener('chatterbot_theme_updated', handleThemeSync);
       window.removeEventListener('storage', handleIdeSettingsUpdate);
+      window.removeEventListener('storage', handleCodeStyleUpdate);
+      window.removeEventListener('storage', handleThemeSync);
+      observer.disconnect();
     };
   }, []);
+
+  const selectedTheme = (codeStyle.codeTheme || ideConfig.theme || 'onedark') as string;
+  const effectiveThemeId = (() => {
+    if (globalAppTheme === 'light') {
+      return 'github_light';
+    }
+    // In dark mode: if user had selected github_light, fallback to onedark so dark mode is never white
+    if (selectedTheme === 'github_light') {
+      return 'onedark';
+    }
+    return selectedTheme;
+  })();
 
   const [isWebSearch, setIsWebSearch] = useState(false);
   const activeUser = localStorage.getItem('chatterbot_username') || 'guest';
@@ -784,23 +881,28 @@ export function PracticalCodeLabView({
 
   const CODE_DUNGEON_BASE_SYSTEM_PROMPT = `
 You are Prof. Joe AI operating inside Code Dungeon (Split-Screen IDE).
-Follow these mandatory formatting rules for all responses:
-1. CONCISE & DIRECT: Provide concise, high-impact technical explanations and clean code blocks. Do not write long conversational essays or filler text.
-2. STRICT CODE BLOCK & FILE NAMING RULES:
-   - EVERY code snippet, diagram, or dataset file MUST start with an explicit language tag (e.g. \`\`\`python, \`\`\`erd, \`\`\`plantuml, \`\`\`text).
-   - EVERY code block header MUST include a filename hint following this exact pattern:
-     \`\`\`[lang] filename: [model_name]_[dataset_name].[ext]
-     Examples:
-     - \`\`\`python filename: logistic_regression_iris.py
-     - \`\`\`erd filename: logistic_regression_iris_architecture.erd
-     - \`\`\`text filename: logistic_regression_iris_requirements.txt
+Your PRIMARY and MANDATORY purpose is writing clean, executable, multi-file code.
+
+CRITICAL CODE DUNGEON DIRECTIVES:
+1. MANDATORY EXECUTABLE CODE DELIVERY:
+   - Every single response MUST contain at least one complete, runnable code file in a \`\`\`[lang] filename: [name].[ext] block.
+   - Even if the user asks a question directly from a course syllabus (e.g. Statistical Inference, Cryptography, Data Mining, Computer Vision, Big Data, DSA), you MUST immediately provide the practical Python/C++/Java implementation script demonstrating that syllabus topic.
+   - NEVER respond with text-only advice, conversational filler, or non-code explanations.
+
+2. ZERO ESSAY TEMPLATES / NO EXAM ESSAY HEADINGS:
+   - Do NOT use Osmania University 12-mark exam essay headings (e.g. "# 📝 Official Exam Answer", "4. Key Observations & Statistical Inference Report", "5. Conclusion", "Prerequisites").
+   - Keep any textual explanation ultra-concise (1–3 sentences max) directly below the code block.
+
+3. STRICT CODE BLOCK & FILE NAMING FORMAT:
+   - Always tag code blocks with explicit language and filename:
+     \`\`\`python filename: statistical_analysis.py
+     import numpy as np
+     ...
+     \`\`\`
    - NEVER output untagged \`\`\` code blocks.
-3. DIAGRAM PREFERENCE HIERARCHY:
-   - Primary: Use ERD (Entity-Relationship Diagrams in \`\`\`erd blocks) for database schemas, data pipelines, or architecture relations.
-   - Fallback 1: Use PlantUML diagrams (\`\`\`plantuml).
-   - Fallback 2: Use ASCII File Trees (\`\`\`text or \`\`\`tree).
-   - STRICT RULE: Do NOT output mermaid diagrams.
-4. LATEX MATHEMATICS: Format mathematical equations using standard LaTeX syntax ($...$ for inline, $$...$$ for block formulas).
+
+4. WEB SEARCH FOR CODE:
+   - When web search is enabled, search for modern API syntax, documentation, and methods, and incorporate them directly into executable code.
 `;
 
   // Helper for Smart Topic & Code-Aware File Naming
@@ -811,7 +913,7 @@ Follow these mandatory formatting rules for all responses:
     userPromptText: string = '',
     fileIndex: number = 0
   ): string => {
-    let cleanHint = headerHint.trim();
+    let cleanHint = headerHint.replace(/^filename:\s*/i, '').trim();
     if (cleanHint && /^[a-zA-Z0-9_\-.]+\.[a-zA-Z0-9]+$/.test(cleanHint) && !cleanHint.includes(';') && !cleanHint.includes('(')) {
       return cleanHint;
     }
@@ -851,8 +953,9 @@ Follow these mandatory formatting rules for all responses:
     else if (promptLower.includes('k-means') || promptLower.includes('kmeans')) topicSlug = 'kmeans_clustering';
     else if (promptLower.includes('decision tree')) topicSlug = 'decision_tree';
     else if (promptLower.includes('random forest')) topicSlug = 'random_forest';
-    else if (promptLower.includes('logistic regression')) topicSlug = 'logistic_regression';
-    else if (promptLower.includes('linear regression')) topicSlug = 'linear_regression';
+    else if (promptLower.includes('logistic regression') || promptLower.includes('logistic')) topicSlug = 'logistic_regression';
+    else if (promptLower.includes('linear regression') || promptLower.includes('regression')) topicSlug = 'linear_regression';
+    else if (promptLower.includes('correlation') || promptLower.includes('pearson') || promptLower.includes('spearman')) topicSlug = 'correlation_analysis';
     else if (promptLower.includes('knn') || promptLower.includes('nearest neighbor')) topicSlug = 'knn_classifier';
     else if (promptLower.includes('svm') || promptLower.includes('support vector')) topicSlug = 'svm_classifier';
     else if (promptLower.includes('binary search')) topicSlug = 'binary_search';
@@ -860,7 +963,7 @@ Follow these mandatory formatting rules for all responses:
 
     const extMap: Record<string, string> = {
       python: 'py', javascript: 'js', typescript: 'ts', html: 'html', css: 'css',
-      cpp: 'cpp', c: 'c', java: 'java', sql: 'sql', json: 'json'
+      cpp: 'cpp', c: 'c', java: 'java', sql: 'sql', json: 'json', text: 'txt', bash: 'sh'
     };
     const ext = extMap[lang] || lang || 'txt';
 
@@ -876,7 +979,7 @@ Follow these mandatory formatting rules for all responses:
     return defaultNames[lang] || `script_${fileIndex + 1}.${ext}`;
   };
 
-  // Parse Code Blocks from AI Assistant messages
+  // Parse Code Blocks from AI Assistant messages automatically across conversation
   useEffect(() => {
     const assistantMessages = messages.filter(m => m.role === 'assistant');
     if (assistantMessages.length === 0) return;
@@ -884,23 +987,43 @@ Follow these mandatory formatting rules for all responses:
     const lastUserMsg = messages.filter(m => m.role === 'user').pop();
     const userPromptText = lastUserMsg ? lastUserMsg.content : '';
 
-    const latestMessage = assistantMessages[assistantMessages.length - 1].content || '';
     const codeBlockRegex = /```(\w+)?(?:\s+([^\n]+))?\n([\s\S]*?)```/g;
     const detectedFiles: GeneratedFile[] = [];
-    let match;
 
-    while ((match = codeBlockRegex.exec(latestMessage)) !== null) {
-      let lang = (match[1] || 'text').toLowerCase();
-      let hintName = (match[2] || '').trim();
-      let code = match[3] || '';
+    // Search backwards through assistant messages to find all generated code blocks
+    for (let i = assistantMessages.length - 1; i >= 0; i--) {
+      const msgContent = assistantMessages[i].content || '';
+      let match;
+      const messageFiles: GeneratedFile[] = [];
+      while ((match = codeBlockRegex.exec(msgContent)) !== null) {
+        let lang = (match[1] || 'text').toLowerCase();
+        let hintName = (match[2] || '').trim();
+        let code = match[3] || '';
 
-      const smartName = determineSmartFileName(lang, hintName, code, userPromptText, detectedFiles.length);
+        // Ignore diagram languages from IDE editor file tabs
+        if (['mermaid', 'kroki', 'plantuml', 'graphviz', 'dot', 'c4plantuml'].includes(lang)) {
+          continue;
+        }
 
-      detectedFiles.push({
-        fileName: smartName,
-        language: lang,
-        codeContent: code
-      });
+        const smartName = determineSmartFileName(lang, hintName, code, userPromptText, detectedFiles.length + messageFiles.length);
+
+        // Avoid adding duplicate file names
+        if (!messageFiles.some(f => f.fileName === smartName) && !detectedFiles.some(f => f.fileName === smartName)) {
+          messageFiles.push({
+            fileName: smartName,
+            language: lang,
+            codeContent: code
+          });
+        }
+      }
+
+      if (messageFiles.length > 0) {
+        detectedFiles.unshift(...messageFiles);
+        // Stop once we have gathered files from the most recent code-bearing turn
+        if (detectedFiles.length > 0) {
+          break;
+        }
+      }
     }
 
     if (detectedFiles.length > 0) {
@@ -935,7 +1058,8 @@ Follow these mandatory formatting rules for all responses:
       inputPrompt, 
       isWebSearch, 
       'general', 
-      combinedSystemPrompt
+      combinedSystemPrompt,
+      { deliveryFormat, codeApproach }
     );
     setInputPrompt('');
   };
@@ -1216,9 +1340,9 @@ Follow these mandatory formatting rules for all responses:
       </div>
 
       {/* Split Pane */}
-      <div ref={containerRef} className="code-lab-split-pane">
+      <div ref={containerRef} className="code-lab-split-pane" data-code-theme={effectiveThemeId}>
         {/* Left Panel: Chat & Prompt OCR */}
-        <div className={`code-lab-chat-panel ${mobileActiveTab === 'chat' ? 'mobile-active' : 'mobile-hidden'}`} style={{ width: `${leftPaneWidthPercent}%` }}>
+        <div className={`code-lab-chat-panel ${mobileActiveTab === 'chat' ? 'mobile-active' : 'mobile-hidden'}`} data-code-theme={effectiveThemeId} style={{ width: `${leftPaneWidthPercent}%` }}>
               {/* Chat Messages */}
               <div style={{ flex: 1, overflowY: 'auto', padding: '16px', display: 'flex', flexDirection: 'column', gap: '14px' }}>
                 {messages.length === 0 ? (
@@ -1296,7 +1420,10 @@ Follow these mandatory formatting rules for all responses:
         />
 
         {/* Right Panel: Resizable Code Viewer IDE */}
-        <div className={`code-lab-ide-panel ${mobileActiveTab === 'code' ? 'mobile-active' : 'mobile-hidden'}`}>
+        <div 
+          className={`code-lab-ide-panel ${mobileActiveTab === 'code' ? 'mobile-active' : 'mobile-hidden'}`}
+          data-code-theme={effectiveThemeId}
+        >
           {/* File Tab Bar */}
           <div className="code-lab-tab-bar">
             <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
@@ -1394,22 +1521,30 @@ Follow these mandatory formatting rules for all responses:
                 code={activeFile.codeContent}
                 language={activeFile.language}
                 onChange={handleCodeContentChange}
-                ideConfig={ideConfig}
+                ideConfig={{ ...ideConfig, theme: effectiveThemeId as any }}
               />
             ) : (
               <pre
                 className="code-lab-editor-area"
-                data-code-theme={codeStyle.codeTheme}
+                data-code-theme={effectiveThemeId}
                 style={{
                   height: '100%',
                   margin: 0,
-                  fontSize: `${ideConfig.fontSize}px`,
-                  tabSize: ideConfig.tabSize,
-                  whiteSpace: ideConfig.wordWrap === 'on' ? 'pre-wrap' : 'pre'
+                  padding: '16px',
+                  overflow: 'auto',
+                  boxSizing: 'border-box',
+                  fontSize: `${ideConfig.fontSize || 13}px`,
+                  tabSize: ideConfig.tabSize || 2,
+                  whiteSpace: ideConfig.wordWrap === 'on' ? 'pre-wrap' : 'pre',
+                  fontFamily: "'Fira Code', 'JetBrains Mono', Consolas, Monaco, monospace",
+                  lineHeight: 1.6
                 }}
-              >
-                {activeFile ? activeFile.codeContent : '// Generated lab code will stream live into this IDE viewer...'}
-              </pre>
+                dangerouslySetInnerHTML={{
+                  __html: activeFile 
+                    ? highlightCode(activeFile.codeContent, activeFile.language) 
+                    : '<span class="token-comment">// Generated lab code will stream live into this IDE viewer...</span>'
+                }}
+              />
             )}
           </div>
         </div>
@@ -1465,6 +1600,10 @@ Follow these mandatory formatting rules for all responses:
         onToggleWebSearch={() => setIsWebSearch(prev => !prev)}
         onOpenCheatSheet={onOpenCheatSheet}
         pinnedCount={pinnedCount}
+        deliveryFormat={deliveryFormat}
+        onSelectDeliveryFormat={handleSelectDeliveryFormat}
+        codeApproach={codeApproach}
+        onSelectCodeApproach={handleSelectCodeApproach}
       />
 
       {/* Reset Session Warning Confirmation Modal */}

@@ -7,11 +7,21 @@ const fetch = globalThis.fetch || (typeof fetch !== 'undefined' ? fetch : requir
 const keyCooldownMap = new Map();
 
 // Helper to scrape DuckDuckGo search snippets for free web search RAG capabilities (Fast 1.8s timeout)
-async function getWebSearchSnippets(query, searchDepth = 'deep') {
+async function getWebSearchSnippets(query, searchDepth = 4) {
     const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), 1800);
+    const timeoutMs = (typeof searchDepth === 'number' && searchDepth > 6) ? 2800 : 2000;
+    const timer = setTimeout(() => controller.abort(), timeoutMs);
     try {
-        const maxSnippets = searchDepth === 'fast' ? 3 : 8;
+        let maxSnippets = 4;
+        if (typeof searchDepth === 'number') {
+            maxSnippets = Math.min(Math.max(searchDepth, 1), 10);
+        } else if (searchDepth === 'fast') {
+            maxSnippets = 3;
+        } else if (searchDepth === 'deep') {
+            maxSnippets = 8;
+        } else if (!isNaN(Number(searchDepth))) {
+            maxSnippets = Math.min(Math.max(Number(searchDepth), 1), 10);
+        }
         const response = await fetch(`https://html.duckduckgo.com/html/?q=${encodeURIComponent(query)}`, {
             headers: {
                 'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/115.0.0.0 Safari/537.36'
@@ -189,7 +199,10 @@ export default async function handler(req, res) {
         maxTokens,
         max_tokens,
         graderMode,
-        stream
+        stream,
+        workspace,
+        deliveryFormat,
+        codeApproach
     } = req.body || {};
 
     const targetTemperature = typeof temperature === 'number' ? Math.max(0, Math.min(1, temperature)) : 0.2;
@@ -261,19 +274,101 @@ Scope: Point Estimation (Unbiasedness, Consistency, Sufficiency, Neyman Factoriz
 Mentoring Style: Step-by-step mathematical proofs in KaTeX ($...$, $$...$$), decision boundaries, and 💡 Intuitive Math Analogies.`
     };
 
-    if (persona && persona !== 'default' && PERSONAS_MAP[persona]) {
-        // When a fun persona is active, it takes COMPLETE precedence as the primary system prompt
+    // Top-Level Strict Workspace Prompt Isolation
+    if (workspace === 'code_lab') {
+        // CODE DUNGEON: Pure executable code environment with modular Delivery Format & Implementation Approach
+        const targetFormat = deliveryFormat || 'lab_record';
+        const targetApproach = codeApproach || 'standard_lib';
+
+        let codeDungeonPrompt = `You are Prof. Joe AI operating inside the Code Dungeon Split-Screen IDE.
+CRITICAL ENVIRONMENT RULES:
+1. ALWAYS generate complete, clean, self-contained, and immediately runnable code files in \`\`\`[lang] filename: [name].[ext] blocks.
+2. NEVER output Osmania University 12-mark exam essay headings (e.g. "# 💡 Concept Buildup", "# 📝 Official Exam Answer", "# 🔍 Formula Breakdown").
+3. MANDATORY CODE FILE OUTPUT: Even if the user asks a theoretical question from a syllabus (e.g. Statistical Inference, ANOVA, Regression, DSA, Big Data), you MUST immediately provide the practical Python/C++/Java implementation script demonstrating that syllabus topic.
+4. STRICT FILE NAMING: Always tag code blocks with explicit language and filename (\`\`\`python filename: [name].py).\n\n`;
+
+        // Active Preset Technical Domain (if provided)
+        if (isCustomPresetPrompt) {
+            codeDungeonPrompt += `TECHNICAL DOMAIN & LIBRARY SCOPE:\n${systemPrompt.trim()}\n\n`;
+        }
+
+        // Implementation Approach Directive
+        if (targetApproach === 'from_scratch') {
+            codeDungeonPrompt += `IMPLEMENTATION APPROACH: 🛠️ FROM SCRATCH (FIRST-PRINCIPLES FORMULAS)
+- Implement core algorithms from mathematical formulas and foundational loops/logic rather than using high-level black-box wrappers (e.g. build K-Means, Linear Regression, Gradient Descent, or RSA encryption using core logic/math, using I/O libraries like pandas/numpy only for raw data loading if needed).
+- Show the internal mechanics and mathematical derivations directly in the code.\n\n`;
+        } else if (targetApproach === 'beginner_simple') {
+            codeDungeonPrompt += `IMPLEMENTATION APPROACH: 🌱 BEGINNER-FRIENDLY & SEQUENTIAL SCRIPT
+- Keep code structure as simple, readable, and flat as possible.
+- Avoid complex OOP classes, deep inheritance, metaclasses, or intimidating design patterns.
+- Use a clean top-to-bottom sequential flow with clear inline comments explaining each step so any student or beginner can understand effortlessly.\n\n`;
+        } else {
+            // 'standard_lib'
+            codeDungeonPrompt += `IMPLEMENTATION APPROACH: 📦 STANDARD PRODUCTION LIBRARIES
+- Use battle-tested, industry-standard production packages and idiomatic conventions (e.g. scikit-learn, scipy.stats, statsmodels, PyCryptodome, Playwright, Tokio, etc.).
+- Deliver modular, clean, and high-performance production code.\n\n`;
+        }
+
+        // Delivery Format Output Structure Directive
+        if (targetFormat === 'interactive_learner') {
+            codeDungeonPrompt += `DELIVERY FORMAT: 💡 INTERACTIVE LEARNER (INTUITION & WALKTHROUGH)
+Structure your response in the Chat pane as follows:
+1. 💡 Conceptual Intuition & Real-World Physical Analogy (1 short paragraph).
+2. 📐 Architecture / Data Flow Diagram (Render exactly 1 clean Mermaid block \`\`\`mermaid ... \`\`\` with descriptive node titles).
+3. 💻 Code Implementation (Place complete runnable code in \`\`\`[lang] filename: [name].[ext] for the IDE).
+4. 🔍 Step-by-Step Code Walkthrough & Time/Space Complexity Analysis.`;
+        } else if (targetFormat === 'pure_code') {
+            codeDungeonPrompt += `DELIVERY FORMAT: ⚡ PURE EXECUTABLE CODE (IDE-FIRST)
+- Output 100% complete, production-ready runnable code in \`\`\`[lang] filename: [name].[ext] blocks.
+- Keep any textual explanation in the chat pane to at most 1–2 sentences of execution instructions. Zero extra headings or fluff.`;
+        } else {
+            // 'lab_record' (Default 5-part format)
+            codeDungeonPrompt += `DELIVERY FORMAT: 🏛️ PRACTICAL LAB RECORD (5-PART STANDARD)
+Structure your response strictly following this university practical record format:
+# [Topic / Experiment Title]
+
+## 1. Aim & Objectives
+Concise 1-2 sentence statement of the experiment goal, target libraries, and input parameters.
+
+## 2. Algorithmic Breakdown & Step-by-Step Procedure
+Numbered procedure steps explaining the logic, mathematical workflow, and execution sequence.
+
+## 3. Executable Code
+Complete, modular, and directly runnable code in \`\`\`[lang] filename: [name].[ext] code block for the IDE tab.
+
+## 4. Key Observations & Results Report
+A clean Markdown table summarizing the expected outputs, metric comparisons (e.g. accuracy/support/p-values), or test cases.
+
+## 5. Conclusion & Inferences
+A short concluding summary of the computational findings.`;
+        }
+
         apiMessages.unshift({
             role: "system",
-            content: PERSONAS_MAP[persona]
+            content: codeDungeonPrompt
+        });
+    } else if (workspace === 'fun_personas' || (persona && persona !== 'default' && PERSONAS_MAP[persona])) {
+        // FUN PERSONAS: Pop-culture roleplay or study buddy mentor
+        const effectivePersonaPrompt = (persona && PERSONAS_MAP[persona]) ? PERSONAS_MAP[persona] : (isCustomPresetPrompt ? systemPrompt.trim() : PERSONAS_MAP.rick);
+        apiMessages.unshift({
+            role: "system",
+            content: effectivePersonaPrompt
+        });
+    } else if (workspace === 'lecture_notes') {
+        // LECTURE NOTES: Academic monograph author
+        const defaultLecturePrompt = `You are an expert University Professor creating exhaustive, textbook-grade Academic Lecture Monographs. Output deep, structured markdown monographs with comprehensive theoretical depth, derivations, and examples.`;
+        apiMessages.unshift({
+            role: "system",
+            content: isCustomPresetPrompt ? systemPrompt.trim() : defaultLecturePrompt
         });
     } else if (isCustomPresetPrompt) {
-        // When a custom preset prompt (e.g. Code Lab Elective Presets) is passed, it takes COMPLETE precedence
+        // Other custom preset system prompts
         apiMessages.unshift({
             role: "system",
             content: systemPrompt.trim()
         });
     } else {
+        // MAIN CHAT (workspace === 'chat' or default)
         // Determine System Prompt Mode: "auto" | "12marks" | "2marks" | "general" | "none"
         let effectiveMode = mode || 'auto';
         if (effectiveMode === 'auto') {
@@ -321,21 +416,31 @@ EXAM ANSWER LENGTH & SCOPE BOUNDARY DIRECTIVES:
                 role: "system",
                 content: `ROLE PERSONA: You are an Osmania University (OU) M.Sc. Data Science & Computer Science Short Answer Evaluator.
 
-SHORT ANSWER DIRECTIVES:
-1. TARGET PURE PROSE COUNT: Output strictly between 300 and 350 words of PURE NATURAL ENGLISH PROSE for the CORE ANSWER (100–200 words if answering a 1-2 mark sub-question).
-2. EXCLUSIONS FROM WORD COUNT: All LaTeX math code ($...$, $$...$$), formula expressions, diagram code blocks, symbol/formula breakdowns, auxiliary summary tables, and keyword glossary tables are 100% EXCLUDED from the word budget.
-3. ANTI-PADDING: If the concept is inherently concise, provide complete technical accuracy and stop without fluff.
-4. STRUCTURE: Direct definition on Line 1, key properties/types, and 1 mathematical formula or code example. No conversational intro fluff.`
+CRITICAL HARD LENGTH LIMIT (200–300 WORDS MAXIMUM TOTAL):
+This is a 3-4 mark short question. The ENTIRE response MUST be concise and strictly within 200–300 words.
+DO NOT output extensive derivations, multi-page proofs, or textbook chapters.
+
+MANDATORY SHORT-ANSWER STRUCTURE:
+1. **Technical Definition & Core Concept (2–3 sentences)**: Direct high-accuracy overview.
+2. **Essential Mathematical Formula / Schema**: Key equations in LaTeX.
+3. **Core Properties / Algorithm Steps (3–4 bullet points)**: Main characteristics.
+4. **Brief Example or Complexity Note**: 1 short practical point.
+Stop immediately after these concise points. Zero conversational filler.`
             });
         } else if (effectiveMode === '1marks' || effectiveMode === '1-2marks') {
             apiMessages.unshift({
                 role: "system",
                 content: `ROLE PERSONA: You are an Osmania University (OU) Micro-Answer Evaluator for 1-2 Mark Questions.
 
-1-2 MARK MICRO-ANSWER DIRECTIVES:
-1. TARGET PURE PROSE COUNT: Output strictly between 100 and 200 words of PURE NATURAL ENGLISH PROSE PER QUESTION for the CORE ANSWER.
-2. EXCLUSIONS FROM WORD COUNT: All LaTeX math ($...$, $$...$$), symbol breakdowns, diagram code blocks, and glossary tables are 100% EXCLUDED.
-3. ANTI-PADDING: Direct 1-2 sentence technical definition + 2-3 core bullet points + 1 short formula or example. Zero conversational filler.`
+CRITICAL HARD LENGTH LIMIT (100–160 WORDS MAXIMUM TOTAL):
+This is a 1-2 mark micro question. The ENTIRE response MUST be short, compact, and fit strictly within 100–160 words.
+DO NOT output long derivations, multi-step proofs, worked numerical examples, textbook chapters, or extended section headings.
+
+MANDATORY MICRO-ANSWER STRUCTURE:
+1. **Direct Definition (1–2 sentences)**: Crystal-clear technical definition of the concept.
+2. **Key Mathematical Formula / Test Statistic**: The core formula or notation in LaTeX.
+3. **Core Properties / Decision Rule (2–3 bullet points)**: Brief essentials only.
+Stop immediately after these 3 short parts. Zero conversational fluff.`
             });
         } else if (effectiveMode === 'general') {
             apiMessages.unshift({
@@ -371,35 +476,35 @@ GENERAL AI ASSISTANT DIRECTIVES:
     const isAdmin = Boolean(user && (user.toLowerCase() === "admin@uday" || user.toLowerCase() === "uday@joe"));
 
     if (targetProvider === "openrouter") {
-        apiKey = req.headers['x-user-openrouter-key'] || (isAdmin ? process.env.OPENROUTER_API_KEY : '') || '';
+        apiKey = req.headers['x-user-openrouter-key'] || process.env.OPENROUTER_API_KEY || (isAdmin ? process.env.OPENROUTER_API_KEY : '') || '';
     } else if (targetProvider === "nvidia") {
-        apiKey = req.headers['x-user-nvidia-key'] || (isAdmin ? process.env.NVIDIA_API_KEY : '') || '';
+        apiKey = req.headers['x-user-nvidia-key'] || process.env.NVIDIA_API_KEY || (isAdmin ? process.env.NVIDIA_API_KEY : '') || '';
     } else if (targetProvider === "omnirouter") {
-        apiKey = req.headers['x-user-omnirouter-key'] || (isAdmin ? process.env.OMNIROUTER_API_KEY : '') || '';
+        apiKey = req.headers['x-user-omnirouter-key'] || process.env.OMNIROUTER_API_KEY || (isAdmin ? process.env.OMNIROUTER_API_KEY : '') || '';
     } else if (targetProvider === "mistral") {
-        apiKey = req.headers['x-user-mistral-key'] || (isAdmin ? process.env.MISTRAL_API_KEY : '') || '';
+        apiKey = req.headers['x-user-mistral-key'] || process.env.MISTRAL_API_KEY || (isAdmin ? process.env.MISTRAL_API_KEY : '') || '';
     } else if (targetProvider === "cerebras") {
-        apiKey = req.headers['x-user-cerebras-key'] || (isAdmin ? process.env.CEREBRAS_API_KEY : '') || '';
+        apiKey = req.headers['x-user-cerebras-key'] || process.env.CEREBRAS_API_KEY || (isAdmin ? process.env.CEREBRAS_API_KEY : '') || '';
     } else if (targetProvider === "groq") {
-        apiKey = req.headers['x-user-groq-key'] || (isAdmin ? process.env.GROQ_API_KEY : '') || '';
+        apiKey = req.headers['x-user-groq-key'] || process.env.GROQ_API_KEY || (isAdmin ? process.env.GROQ_API_KEY : '') || '';
     } else if (targetProvider === "sambanova") {
-        apiKey = req.headers['x-user-sambanova-key'] || (isAdmin ? process.env.SAMBANOVA_API_KEY : '') || '';
+        apiKey = req.headers['x-user-sambanova-key'] || process.env.SAMBANOVA_API_KEY || (isAdmin ? process.env.SAMBANOVA_API_KEY : '') || '';
     } else if (targetProvider === "gemini") {
-        apiKey = req.headers['x-user-gemini-key'] || (isAdmin ? process.env.GEMINI_API_KEY : '') || '';
+        apiKey = req.headers['x-user-gemini-key'] || process.env.GEMINI_API_KEY || (isAdmin ? process.env.GEMINI_API_KEY : '') || '';
     } else if (targetProvider === "nararouter") {
-        apiKey = req.headers['x-user-nararouter-key'] || (isAdmin ? process.env.NARAROUTER_API_KEY : '') || '';
+        apiKey = req.headers['x-user-nararouter-key'] || process.env.NARAROUTER_API_KEY || (isAdmin ? process.env.NARAROUTER_API_KEY : '') || '';
     } else if (targetProvider === "huggingface") {
-        apiKey = req.headers['x-user-huggingface-key'] || (isAdmin ? process.env.HUGGINGFACE_API_KEY : '') || '';
+        apiKey = req.headers['x-user-huggingface-key'] || process.env.HUGGINGFACE_API_KEY || (isAdmin ? process.env.HUGGINGFACE_API_KEY : '') || '';
     } else if (targetProvider === "opencode") {
-        apiKey = req.headers['x-user-opencode-key'] || (isAdmin ? process.env.OPENCODE_API_KEY : '') || '';
+        apiKey = req.headers['x-user-opencode-key'] || process.env.OPENCODE_API_KEY || (isAdmin ? process.env.OPENCODE_API_KEY : '') || '';
     } else if (targetProvider === "poolside") {
-        apiKey = req.headers['x-user-poolside-key'] || (isAdmin ? process.env.POOLSIDE_API_KEY : '') || '';
+        apiKey = req.headers['x-user-poolside-key'] || process.env.POOLSIDE_API_KEY || (isAdmin ? process.env.POOLSIDE_API_KEY : '') || '';
     } else if (targetProvider === "local_endpoint" || targetProvider === "local") {
         apiKey = 'local_device_keyless';
     } else if (targetProvider === "pollinations-keyed" || targetProvider === "pollinations") {
-        apiKey = req.headers['x-user-pollinations-key'] || (isAdmin ? process.env.POLLINATIONS_API_KEY : '') || '';
+        apiKey = req.headers['x-user-pollinations-key'] || process.env.POLLINATIONS_API_KEY || (isAdmin ? process.env.POLLINATIONS_API_KEY : '') || 'pollinations_free_keyless';
     } else if (targetProvider === "ollama") {
-        apiKey = req.headers['x-user-ollama-key'] || (isAdmin ? process.env.OLLAMA_API_KEY : '') || '';
+        apiKey = req.headers['x-user-ollama-key'] || process.env.OLLAMA_API_KEY || (isAdmin ? process.env.OLLAMA_API_KEY : '') || '';
     }
 
     if (!apiKey) {
@@ -453,21 +558,28 @@ GENERAL AI ASSISTANT DIRECTIVES:
         ]);
 
         if (webSearch && searchResult) {
-            apiMessages.unshift({
-                role: "system",
-                content: `You are in STRICT WEB GROUNDING MODE. Live search results have been retrieved for this query:
+            if (isCustomPresetPrompt) {
+                apiMessages.push({
+                    role: "system",
+                    content: `🌐 LIVE WEB SEARCH DOCUMENTATION & API CONTEXT:
+${searchResult}
+
+DIRECTIVE: Use the live search results above for the latest library APIs and syntax. ALWAYS output clean, complete, and runnable code in \`\`\`[lang] filename: [name].[ext] code blocks.`
+                });
+            } else {
+                apiMessages.unshift({
+                    role: "system",
+                    content: `You are in WEB GROUNDING MODE. Live search results have been retrieved for this query:
 
 ${searchResult}
 
-STRICT CITATION & FORMATTING DIRECTIVES:
-1. Exclusively answer using the search snippets provided above.
-2. Place numbered inline citations like [1], [2] next to key claims. If the same source is referenced multiple times, reuse the exact same number (e.g. [1]).
-3. At the VERY BOTTOM of your answer, include a neat "### 📚 References & Sources" section listing each numbered citation with its clickable source link:
-   [1] [Source Title](URL)
-   [2] [Source Title](URL)
-4. Do NOT scatter raw URL strings randomly throughout the text.
-5. TEXT-ONLY LINKS: Format citations as text links only. Under NO circumstances should you output markdown image tags ![...](url) or diagram code blocks.`
-            });
+CITATION & FORMATTING DIRECTIVES:
+1. Answer using the search snippets provided above.
+2. Place numbered inline citations like [1], [2] next to key claims.
+3. At the bottom, include a "### 📚 References & Sources" section with source links.
+4. If code is requested, provide complete, runnable code blocks with explicit language tags.`
+                });
+            }
         }
 
         if (enableDiagrams) {
@@ -597,22 +709,30 @@ MANDATORY H1 HEADING STRUCTURE:
         // Clean model ID and apply legacy alias normalization
         let cleanModel = (model || '').replace(/^models\//, '').trim();
         let targetModel = cleanModel;
-        if (targetProvider === 'gemini' && (targetModel.startsWith('gemini-3.') || targetModel === 'gemini-flash-latest')) {
-            targetModel = 'gemini-2.5-flash';
-        } else if (targetProvider === 'gemini' && targetModel.startsWith('gemma-4-')) {
-            targetModel = 'gemma-2-27b-it';
-        } else if (targetProvider === 'groq' && (targetModel === 'openai/gpt-oss-120b' || targetModel === 'groq/compound')) {
-            targetModel = 'llama-3.3-70b-versatile';
-        } else if (targetProvider === 'groq' && targetModel === 'qwen/qwen3.6-27b') {
-            targetModel = 'qwen-2.5-coder-32b';
-        } else if (targetProvider === 'groq' && (targetModel === 'openai/gpt-oss-20b' || targetModel === 'groq/compound-mini')) {
-            targetModel = 'llama-3.1-8b-instant';
-        } else if (targetProvider === 'openrouter' && (targetModel === 'openrouter/free' || targetModel === 'google/gemma-4-26b-a4b-it:free')) {
-            targetModel = 'google/gemini-2.0-flash-exp:free';
-        } else if (targetProvider === 'openrouter' && targetModel === 'nvidia/nemotron-3-super-120b-a12b:free') {
-            targetModel = 'meta-llama/llama-3.3-70b-instruct:free';
-        } else if (targetProvider === 'opencode' && (targetModel === 'ling-3.0-flash-free' || targetModel === 'deepseek-v4-flash-free')) {
-            targetModel = 'opencode/laguna-s-2.1-free';
+        if (targetProvider === 'gemini') {
+            if (!targetModel || targetModel === 'gemini-2.5-flash' || targetModel === 'gemini-2.0-flash' || targetModel === 'gemini-1.5-flash' || targetModel === 'gemini-flash-latest' || targetModel === 'gemini-flash') {
+                targetModel = 'gemini-3.6-flash';
+            } else if (targetModel.startsWith('gemma-4-')) {
+                targetModel = 'gemma-2-27b-it';
+            }
+        } else if (targetProvider === 'groq') {
+            if (targetModel === 'llama-3.3-70b-versatile' || targetModel === 'llama-3.1-70b-versatile') {
+                targetModel = 'openai/gpt-oss-120b';
+            } else if (targetModel === 'llama-3.1-8b-instant' || targetModel === 'llama3-8b-8192') {
+                targetModel = 'openai/gpt-oss-20b';
+            } else if (targetModel === 'qwen-2.5-coder-32b') {
+                targetModel = 'qwen/qwen3.6-27b';
+            }
+        } else if (targetProvider === 'openrouter') {
+            if (targetModel === 'google/gemma-4-26b-a4b-it:free') {
+                targetModel = 'google/gemini-2.0-flash-exp:free';
+            } else if (targetModel === 'nvidia/nemotron-3-super-120b-a12b:free') {
+                targetModel = 'meta-llama/llama-3.3-70b-instruct:free';
+            }
+        } else if (targetProvider === 'opencode') {
+            if (targetModel === 'ling-3.0-flash-free' || targetModel === 'deepseek-v4-flash-free') {
+                targetModel = 'opencode/laguna-s-2.1-free';
+            }
         }
 
         for (let i = 0; i < keys.length; i++) {

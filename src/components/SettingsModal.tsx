@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { X, Key, Save, Check, Eye, EyeOff, Download, Upload, Cpu, Zap, SlidersHorizontal, BookOpen, Code, Terminal } from 'lucide-react';
+import { X, Key, Save, Check, Eye, EyeOff, Download, Upload, Cpu, Zap, SlidersHorizontal, BookOpen, Code, Terminal, Globe } from 'lucide-react';
 import type { UserKeys, UserCustomModels, AiTuningConfig, CodeStyleConfig, IdeConfig } from '../types';
 import { DEFAULT_AI_TUNING, DEFAULT_CODE_STYLE, DEFAULT_IDE_CONFIG } from '../types';
 import { ModelManagerTab } from './ModelManagerTab';
@@ -80,6 +80,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
     setIdeConfig(next);
     localStorage.setItem('chatterbot_ide_settings', JSON.stringify(next));
     window.dispatchEvent(new Event('chatterbot_ide_settings_updated'));
+    window.dispatchEvent(new Event('storage'));
   };
 
   useEffect(() => {
@@ -402,77 +403,118 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({
                 </div>
               </div>
 
-              {/* Live Streaming & Search Depth */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px', background: 'var(--bg-tertiary)', borderRadius: '10px', border: '1px solid var(--border-color)', cursor: 'pointer' }}>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 600 }}>Live Token Streaming</span>
-                  <input
-                    type="checkbox"
-                    checked={aiTuning.streaming}
-                    onChange={(e) => updateAiTuning({ streaming: e.target.checked })}
-                    style={{ accentColor: 'var(--accent-cyan)' }}
-                  />
-                </label>
-
-                <div style={{ display: 'flex', gap: '4px', padding: '4px', background: 'var(--bg-tertiary)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-                  {(['fast', 'deep'] as const).map(sd => (
-                    <button
-                      key={sd}
-                      type="button"
-                      onClick={() => updateAiTuning({ searchDepth: sd })}
-                      style={{
-                        flex: 1,
-                        padding: '8px 4px',
-                        borderRadius: '6px',
-                        border: aiTuning.searchDepth === sd ? '1px solid var(--accent-cyan)' : 'none',
-                        background: aiTuning.searchDepth === sd ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
-                        color: aiTuning.searchDepth === sd ? 'var(--accent-cyan)' : 'var(--text-primary)',
-                        fontSize: '0.75rem',
-                        fontWeight: 600,
-                        cursor: 'pointer',
-                        textTransform: 'capitalize'
-                      }}
-                    >
-                      {sd === 'fast' ? 'Fast (3 Sources)' : 'Deep (10 Sources)'}
-                    </button>
-                  ))}
-                </div>
-              </div>
-
-              {/* OU Exam Answer Schema */}
+              {/* Response Delivery Pacing */}
               <div style={{ padding: '16px', borderRadius: '12px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
                 <div style={{ fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <BookOpen size={16} style={{ color: 'var(--accent-cyan)' }} />
-                  <span>OU Exam Answer Schema</span>
+                  <Zap size={16} style={{ color: 'var(--accent-cyan)' }} />
+                  <span>Response Delivery Pacing</span>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
                   {[
-                    { id: 'rigorous_12mark', label: '12-Mark Rigorous Proof Scheme', desc: 'Theorem Statement → Proof → Step Derivation → Python Code' },
-                    { id: 'step_by_step', label: 'Step-by-Step Friendly Tutor', desc: 'Concept Intuition → Example Scenario → Bullet Points' },
-                    { id: 'compact', label: 'Ultra-Compact Cheat Sheet', desc: 'Formulas and critical values only' }
-                  ].map(g => (
-                    <button
-                      key={g.id}
-                      type="button"
-                      onClick={() => updateAiTuning({ graderMode: g.id as any })}
-                      style={{
-                        padding: '8px 10px',
-                        borderRadius: '8px',
-                        border: aiTuning.graderMode === g.id ? '1.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
-                        background: aiTuning.graderMode === g.id ? 'rgba(6, 182, 212, 0.15)' : 'var(--bg-primary)',
-                        color: aiTuning.graderMode === g.id ? 'var(--accent-cyan)' : 'var(--text-primary)',
-                        cursor: 'pointer',
-                        textAlign: 'left',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '2px'
-                      }}
-                    >
-                      <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>{g.label}</span>
-                      <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{g.desc}</span>
-                    </button>
-                  ))}
+                    { id: 'instant', label: '⚡ Instant Display (0ms)', desc: 'Full message renders immediately with zero lag' },
+                    { id: 'fast', label: '🚀 Turbo Stream (2x)', desc: 'Smooth, high-speed simulated streaming animation' },
+                    { id: 'smooth', label: '📖 Natural Reading Pace (1x)', desc: 'Comfortable everyday reading flow (~40 wps)' },
+                    { id: 'lecture', label: '🎓 Lecture & Study Pace (0.5x)', desc: 'Deliberate pace for note-taking and derivations' }
+                  ].map(dp => {
+                    const isSelected = (aiTuning.deliveryPacing || 'instant') === dp.id;
+                    return (
+                      <button
+                        key={dp.id}
+                        type="button"
+                        onClick={() => updateAiTuning({ deliveryPacing: dp.id as any })}
+                        style={{
+                          padding: '8px 10px',
+                          borderRadius: '8px',
+                          border: isSelected ? '1.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                          background: isSelected ? 'rgba(6, 182, 212, 0.15)' : 'var(--bg-primary)',
+                          color: isSelected ? 'var(--accent-cyan)' : 'var(--text-primary)',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '2px'
+                        }}
+                      >
+                        <span style={{ fontSize: '0.8rem', fontWeight: 700 }}>{dp.label}</span>
+                        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{dp.desc}</span>
+                      </button>
+                    );
+                  })}
                 </div>
+              </div>
+
+              {/* Web Research Search Depth */}
+              <div style={{ padding: '16px', borderRadius: '12px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '6px' }}>
+                  <div style={{ fontWeight: 700, fontSize: '0.9rem', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Globe size={16} style={{ color: 'var(--accent-cyan)' }} />
+                    <span>Web Research Search Depth</span>
+                  </div>
+                  {(() => {
+                    const count = aiTuning.searchSourcesCount ?? (typeof aiTuning.searchDepth === 'number' ? aiTuning.searchDepth : 4);
+                    const isRecommended = count >= 3 && count <= 5;
+                    return (
+                      <span style={{
+                        fontSize: '0.7rem',
+                        fontWeight: 700,
+                        padding: '2px 8px',
+                        borderRadius: '10px',
+                        background: isRecommended ? 'rgba(16, 185, 129, 0.15)' : 'rgba(6, 182, 212, 0.15)',
+                        color: isRecommended ? '#10b981' : 'var(--accent-cyan)'
+                      }}>
+                        {isRecommended ? '⭐ 3–5 Recommended' : `${count} Sources`}
+                      </span>
+                    );
+                  })()}
+                </div>
+
+                {(() => {
+                  const currentCount = aiTuning.searchSourcesCount ?? (typeof aiTuning.searchDepth === 'number' ? aiTuning.searchDepth : 4);
+                  return (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Live Sources:</span>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                          <input
+                            type="number"
+                            min="1"
+                            max="10"
+                            value={currentCount}
+                            onChange={(e) => {
+                              const val = Math.min(Math.max(parseInt(e.target.value) || 1, 1), 10);
+                              updateAiTuning({ searchSourcesCount: val, searchDepth: val });
+                            }}
+                            style={{
+                              width: '48px',
+                              padding: '2px 6px',
+                              borderRadius: '6px',
+                              background: 'var(--bg-primary)',
+                              border: '1px solid var(--accent-cyan)',
+                              color: 'var(--text-primary)',
+                              fontSize: '0.85rem',
+                              fontWeight: 700,
+                              textAlign: 'center'
+                            }}
+                          />
+                          <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>Sources</span>
+                        </div>
+                      </div>
+
+                      <input
+                        type="range"
+                        min="1"
+                        max="10"
+                        step="1"
+                        value={currentCount}
+                        onChange={(e) => {
+                          const val = parseInt(e.target.value);
+                          updateAiTuning({ searchSourcesCount: val, searchDepth: val });
+                        }}
+                        style={{ width: '100%', accentColor: 'var(--accent-cyan)', cursor: 'pointer' }}
+                      />
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           )}

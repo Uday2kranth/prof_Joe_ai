@@ -10,6 +10,7 @@ import {
   Moon, 
   Sun, 
   Settings,
+  Bell,
   Cpu, 
   PenTool, 
   Layers,
@@ -28,6 +29,8 @@ interface DemoLandingHubProps {
   onSelectWorkspace: (workspaceId: 'chat' | 'personas' | 'fun_personas' | 'examprep' | 'diagrams' | 'system_prompts' | 'prompts' | 'cubes' | 'extractor_studio' | 'code_lab' | 'lecture_notes' | 'sandbox' | 'dsa_lab' | 'flashcards_studio' | 'quiz_arena' | 'pinned_archive' | 'test_diagrams' | 'deep_learning_studio' | 'master_syllabus') => void;
   onOpenSettings: () => void;
   onOpenSettingsStudio?: () => void;
+  onOpenNotifications?: () => void;
+  hasUnreadNotifications?: boolean;
   theme: 'dark' | 'light';
   onToggleTheme: () => void;
   userRole?: string;
@@ -37,6 +40,8 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
   onSelectWorkspace,
   onOpenSettings,
   onOpenSettingsStudio,
+  onOpenNotifications,
+  hasUnreadNotifications = false,
   theme,
   onToggleTheme,
   userRole = 'student'
@@ -113,6 +118,23 @@ export const DemoLandingHub: React.FC<DemoLandingHubProps> = ({
         </div>
 
         <div className="demo-header-actions">
+          {/* Notifications & System Updates (Bell Symbol) */}
+          {onOpenNotifications && (
+            <button 
+              type="button" 
+              onClick={onOpenNotifications} 
+              className="demo-icon-btn demo-notification-btn"
+              title="System Updates, Model Notices & Changelog"
+              aria-label="System Updates & Model Notices"
+              style={{ position: 'relative' }}
+            >
+              <Bell size={18} className="bell-ring-on-hover" />
+              {hasUnreadNotifications && (
+                <span className="notification-badge-dot" />
+              )}
+            </button>
+          )}
+
           {/* Theme Switcher */}
           <button 
             type="button" 

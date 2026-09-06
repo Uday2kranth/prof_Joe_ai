@@ -105,11 +105,11 @@ export default async function handler(req, res) {
                     provider: 'gemini',
                     count: 7,
                     models: [
-                        { id: 'gemini-2.5-flash', name: 'Gemini 2.5 Flash [Primary Free]', isFree: true },
-                        { id: 'gemini-2.0-flash', name: 'Gemini 2.0 Flash [Fast Free]', isFree: true },
-                        { id: 'gemini-1.5-flash', name: 'Gemini 1.5 Flash [Reliable Free]', isFree: true },
-                        { id: 'gemini-1.5-pro', name: 'Gemini 1.5 Pro [High Capacity]', isFree: true },
-                        { id: 'gemini-2.0-flash-lite', name: 'Gemini 2.0 Flash Lite [Ultra Fast]', isFree: true },
+                        { id: 'gemini-3.6-flash', name: 'Gemini 3.6 Flash [Primary Free]', isFree: true },
+                        { id: 'gemini-3.7-flash', name: 'Gemini 3.7 Flash [High Reasoning]', isFree: true },
+                        { id: 'gemini-3.5-flash', name: 'Gemini 3.5 Flash [Fast Free]', isFree: true },
+                        { id: 'gemini-3.5-flash-lite', name: 'Gemini 3.5 Flash-Lite [Ultra Fast]', isFree: true },
+                        { id: 'gemini-2.0-flash-exp', name: 'Gemini 2.0 Flash Exp [Experimental]', isFree: true },
                         { id: 'gemma-2-27b-it', name: 'Gemma 2 27B [Free Open Weights]', isFree: true },
                         { id: 'gemma-2-9b-it', name: 'Gemma 2 9B [Free Lightweight]', isFree: true }
                     ]

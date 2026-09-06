@@ -690,7 +690,10 @@ ${currentPresetObj.instructionPrompt}
         webSearch,
         'none',
         studioSystemPrompt,
-        'default'
+        'default',
+        true,
+        false,
+        'lecture_notes'
       );
 
       const newContent = response.content.trim();

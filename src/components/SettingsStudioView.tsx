@@ -46,7 +46,15 @@ import {
   printBubbleToPdf 
 } from '../services/printPdfService';
 import type { UserKeys, UserCustomModels, AiTuningConfig, CodeStyleConfig, IdeConfig } from '../types';
-import { DEFAULT_AI_TUNING, DEFAULT_CODE_STYLE, DEFAULT_IDE_CONFIG } from '../types';
+import { 
+  DEFAULT_AI_TUNING, 
+  DEFAULT_CODE_STYLE, 
+  DEFAULT_IDE_CONFIG,
+  DEFAULT_MAIN_CHAT_TUNING,
+  DEFAULT_CODE_DUNGEON_TUNING,
+  DEFAULT_FUN_PERSONAS_TUNING,
+  DEFAULT_LECTURE_NOTES_TUNING
+} from '../types';
 import { ModelManagerTab } from './ModelManagerTab';
 
 export type { CodeStyleConfig, IdeConfig };
@@ -75,8 +83,10 @@ interface SettingsStudioViewProps {
   onBack: () => void;
   currentUser: string;
   userRole?: string;
-  theme: 'dark' | 'light';
-  onToggleTheme: () => void;
+  theme?: 'dark' | 'light';
+  themeMode?: 'dark' | 'light';
+  onThemeModeChange?: (mode: 'light' | 'dark') => void;
+  onToggleTheme?: () => void;
   userKeys: UserKeys;
   onSaveKeys: (keys: UserKeys) => void;
   customModels: UserCustomModels;
@@ -93,6 +103,10 @@ export const SettingsStudioView: React.FC<SettingsStudioViewProps> = ({
   onBack,
   currentUser,
   userRole = 'student',
+  theme = 'dark',
+  themeMode,
+  onThemeModeChange,
+  onToggleTheme,
   userKeys,
   onSaveKeys,
   customModels,
@@ -173,26 +187,46 @@ export const SettingsStudioView: React.FC<SettingsStudioViewProps> = ({
     setTimeout(() => setSaveFeedback(null), 2500);
   };
 
+  const effectiveTheme = themeMode || theme || 'dark';
   const [activeThemeMode, setActiveThemeMode] = useState<'light' | 'dark'>(() => {
-    return (localStorage.getItem('chatterbot_theme') || localStorage.getItem('theme') || 'dark') as 'light' | 'dark';
+    return (localStorage.getItem('chatterbot_theme') || localStorage.getItem('theme') || effectiveTheme) as 'light' | 'dark';
   });
+
+  useEffect(() => {
+    if (effectiveTheme && effectiveTheme !== activeThemeMode) {
+      setActiveThemeMode(effectiveTheme);
+    }
+  }, [effectiveTheme]);
+
+  useEffect(() => {
+    const handleSync = () => {
+      const saved = (localStorage.getItem('chatterbot_theme') || localStorage.getItem('theme') || 'dark') as 'light' | 'dark';
+      setActiveThemeMode(saved);
+    };
+    window.addEventListener('chatterbot_theme_updated', handleSync);
+    window.addEventListener('storage', handleSync);
+    return () => {
+      window.removeEventListener('chatterbot_theme_updated', handleSync);
+      window.removeEventListener('storage', handleSync);
+    };
+  }, []);
 
   const handleSetThemeMode = (mode: 'light' | 'dark') => {
     setActiveThemeMode(mode);
-    document.documentElement.setAttribute('data-theme', mode);
-    localStorage.setItem('chatterbot_theme', mode);
-    localStorage.setItem('theme', mode);
-
-    // Android Capacitor: Sync native status bar icon contrast
-    import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
-      StatusBar.setStyle({ style: mode === 'light' ? Style.Light : Style.Dark }).catch(() => {});
-      StatusBar.setBackgroundColor({ color: mode === 'light' ? '#f8fafc' : '#020617' }).catch(() => {});
-    }).catch(() => {});
-
-    window.dispatchEvent(new Event('chatterbot_theme_updated'));
-    window.dispatchEvent(new Event('chatterbot_code_style_updated'));
-    window.dispatchEvent(new Event('chatterbot_atmosphere_updated'));
-    window.dispatchEvent(new Event('storage'));
+    if (onThemeModeChange) {
+      onThemeModeChange(mode);
+    } else {
+      document.documentElement.setAttribute('data-theme', mode);
+      localStorage.setItem('chatterbot_theme', mode);
+      localStorage.setItem('theme', mode);
+      import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
+        StatusBar.setStyle({ style: mode === 'light' ? Style.Light : Style.Dark }).catch(() => {});
+        StatusBar.setBackgroundColor({ color: mode === 'light' ? '#f8fafc' : '#020617' }).catch(() => {});
+      }).catch(() => {});
+      window.dispatchEvent(new Event('chatterbot_theme_updated'));
+      window.dispatchEvent(new Event('chatterbot_code_style_updated'));
+      window.dispatchEvent(new Event('chatterbot_atmosphere_updated'));
+    }
     setSaveFeedback(`${mode === 'light' ? '☀️ Light' : '🌙 Dark'} Mode activated!`);
     setTimeout(() => setSaveFeedback(null), 2500);
   };
@@ -202,11 +236,11 @@ export const SettingsStudioView: React.FC<SettingsStudioViewProps> = ({
     setCodeStyle(next);
     localStorage.setItem('chatterbot_code_style', JSON.stringify(next));
     window.dispatchEvent(new Event('chatterbot_code_style_updated'));
+    window.dispatchEvent(new Event('storage'));
     if (patch.atmosphere) {
       document.documentElement.setAttribute('data-atmosphere', patch.atmosphere);
       localStorage.setItem('chatterbot_atmosphere', patch.atmosphere);
       window.dispatchEvent(new Event('chatterbot_atmosphere_updated'));
-      window.dispatchEvent(new Event('storage'));
     }
     if (patch.bubbleStyle) {
       document.documentElement.setAttribute('data-bubble-style', patch.bubbleStyle);
@@ -226,6 +260,7 @@ export const SettingsStudioView: React.FC<SettingsStudioViewProps> = ({
     setIdeConfig(next);
     localStorage.setItem('chatterbot_ide_settings', JSON.stringify(next));
     window.dispatchEvent(new Event('chatterbot_ide_settings_updated'));
+    window.dispatchEvent(new Event('storage'));
     setSaveFeedback('Code Dungeon & IDE settings applied!');
     setTimeout(() => setSaveFeedback(null), 2500);
   };
@@ -1763,227 +1798,511 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
             </div>
           )}
 
-          {/* TAB 3b: 🧠 AI GENERATION & PARAMETER TUNING (2-COLUMN BENTO DECK) */}
-          {activeTab === 'ai_tuning' && (
-            <div className="settings-bento-2col">
-              {/* Left Column: Temperature & Token Generation */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {/* Temperature Controls */}
-                <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <Cpu size={20} style={{ color: 'var(--accent-cyan)' }} />
-                      <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Temperature & Creativity Control</h3>
-                    </div>
-                    <span style={{
-                      fontSize: '0.85rem',
-                      padding: '3px 12px',
-                      borderRadius: '20px',
-                      background: 'rgba(6, 182, 212, 0.2)',
-                      color: 'var(--accent-cyan)',
-                      fontWeight: 800,
-                      border: '1px solid rgba(6, 182, 212, 0.4)'
-                    }}>
-                      {aiTuning.temperature.toFixed(2)}
-                    </span>
-                  </div>
+          {/* TAB 3b: 🧠 AI GENERATION & PARAMETER TUNING (WORKSPACE-SEGMENTED BENTO DECK) */}
+          {activeTab === 'ai_tuning' && (() => {
+            const currentTab = aiTuning.activeWorkspaceTuningTab || 'main_chat';
+            const mainChatConfig = aiTuning.mainChat || DEFAULT_MAIN_CHAT_TUNING;
+            const codeDungeonConfig = aiTuning.codeDungeon || DEFAULT_CODE_DUNGEON_TUNING;
+            const funPersonasConfig = aiTuning.funPersonas || DEFAULT_FUN_PERSONAS_TUNING;
+            const lectureNotesConfig = aiTuning.lectureNotes || DEFAULT_LECTURE_NOTES_TUNING;
 
-                  <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                    Controls randomness. Lower values are strictly deterministic (ideal for math derivations, exam proofs & code), while higher values produce creative explanations.
-                  </p>
-
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginTop: '6px' }}>
-                    <input
-                      type="range"
-                      min="0.0"
-                      max="1.0"
-                      step="0.05"
-                      value={aiTuning.temperature}
-                      onChange={(e) => updateAiTuning({ temperature: parseFloat(e.target.value) })}
-                      style={{ width: '100%', accentColor: 'var(--accent-cyan)' }}
-                    />
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
-                      <span>0.0 (Strict Proofs)</span>
-                      <span>0.5 (Balanced Tutor)</span>
-                      <span>1.0 (Creative Essay)</span>
-                    </div>
-                  </div>
-
-                  {/* Quick Preset Buttons */}
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '8px', marginTop: '4px' }}>
-                    {[
-                      { val: 0.0, label: '0.0 Strict' },
-                      { val: 0.2, label: '0.2 Exam (Def)' },
-                      { val: 0.5, label: '0.5 Tutor' },
-                      { val: 0.8, label: '0.8 Creative' }
-                    ].map(p => (
+            return (
+              <div style={{ maxWidth: '1600px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                {/* Top Workspace Pill Switcher */}
+                <div style={{
+                  padding: '6px',
+                  borderRadius: '16px',
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border-color)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  overflowX: 'auto'
+                }}>
+                  {[
+                    { id: 'main_chat', label: '💬 Main Chat', desc: 'Exam Evaluator & General Tutor', badge: `${mainChatConfig.mode.toUpperCase()} Active` },
+                    { id: 'code_dungeon', label: '🏰 Code Dungeon', desc: 'Split-Screen IDE & Lab Code', badge: 'Code-First Mode' },
+                    { id: 'fun_personas', label: '🎭 Fun Personas', desc: 'Character Dialogues & Humor', badge: 'No Diagrams' },
+                    { id: 'lecture_notes', label: '📚 Lecture Notes', desc: 'Unit Syllabus Monographs', badge: '16K Tokens' }
+                  ].map(tabItem => {
+                    const isSelected = currentTab === tabItem.id;
+                    return (
                       <button
-                        key={p.val}
+                        key={tabItem.id}
                         type="button"
-                        onClick={() => updateAiTuning({ temperature: p.val })}
+                        onClick={() => updateAiTuning({ activeWorkspaceTuningTab: tabItem.id as any })}
                         style={{
-                          padding: '8px 4px',
-                          borderRadius: '8px',
-                          border: Math.abs(aiTuning.temperature - p.val) < 0.01 ? '1.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
-                          background: Math.abs(aiTuning.temperature - p.val) < 0.01 ? 'rgba(6, 182, 212, 0.2)' : 'var(--bg-tertiary)',
-                          color: Math.abs(aiTuning.temperature - p.val) < 0.01 ? 'var(--accent-cyan)' : 'var(--text-primary)',
-                          fontSize: '0.75rem',
-                          fontWeight: 700,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        {p.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                {/* Max Tokens Generation */}
-                <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <SlidersHorizontal size={20} style={{ color: 'var(--accent-cyan)' }} />
-                    <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Maximum Output Tokens</h3>
-                  </div>
-
-                  <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                    Sets the upper length limit for generated exam solutions and lecture notes.
-                  </p>
-
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(110px, 1fr))', gap: '8px' }}>
-                    {[
-                      { val: 1024, label: '1,024', desc: 'Concise' },
-                      { val: 2048, label: '2,048', desc: 'Standard' },
-                      { val: 4096, label: '4,096', desc: '12-Mark Answer' },
-                      { val: 8192, label: '8,192', desc: 'Full Unit' },
-                      { val: 16384, label: '16,384', desc: 'Monograph' }
-                    ].map(tk => (
-                      <button
-                        key={tk.val}
-                        type="button"
-                        onClick={() => updateAiTuning({ maxTokens: tk.val })}
-                        style={{
-                          padding: '10px 8px',
-                          borderRadius: '10px',
-                          border: aiTuning.maxTokens === tk.val ? '1.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
-                          background: aiTuning.maxTokens === tk.val ? 'rgba(6, 182, 212, 0.18)' : 'var(--bg-tertiary)',
-                          color: aiTuning.maxTokens === tk.val ? 'var(--accent-cyan)' : 'var(--text-primary)',
+                          flex: 1,
+                          minWidth: '200px',
+                          padding: '10px 14px',
+                          borderRadius: '12px',
+                          border: isSelected ? '1.5px solid var(--accent-cyan)' : '1px solid transparent',
+                          background: isSelected ? 'rgba(6, 182, 212, 0.15)' : 'transparent',
+                          color: isSelected ? 'var(--accent-cyan)' : 'var(--text-primary)',
                           cursor: 'pointer',
                           display: 'flex',
-                          flexDirection: 'column',
                           alignItems: 'center',
-                          gap: '2px'
+                          justifyContent: 'space-between',
+                          gap: '8px',
+                          transition: 'all 0.2s ease'
                         }}
                       >
-                        <span style={{ fontWeight: 800, fontSize: '0.88rem' }}>{tk.label}</span>
-                        <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{tk.desc}</span>
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px' }}>
+                          <span style={{ fontWeight: 800, fontSize: '0.88rem' }}>{tabItem.label}</span>
+                          <span style={{ fontSize: '0.72rem', color: isSelected ? 'var(--accent-cyan)' : 'var(--text-muted)' }}>{tabItem.desc}</span>
+                        </div>
+                        <span style={{
+                          fontSize: '0.66rem',
+                          padding: '2px 8px',
+                          borderRadius: '10px',
+                          background: isSelected ? 'rgba(6, 182, 212, 0.25)' : 'var(--bg-tertiary)',
+                          color: isSelected ? 'var(--accent-cyan)' : 'var(--text-muted)',
+                          fontWeight: 700,
+                          border: isSelected ? '1px solid rgba(6, 182, 212, 0.4)' : '1px solid var(--border-color)',
+                          whiteSpace: 'nowrap'
+                        }}>
+                          {tabItem.badge}
+                        </span>
                       </button>
-                    ))}
-                  </div>
+                    );
+                  })}
                 </div>
-              </div>
 
-              {/* Right Column: Execution Modes & Exam Scheme */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
-                {/* Streaming & Real-time Synthesis */}
-                <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Zap size={20} style={{ color: 'var(--accent-cyan)' }} />
-                    <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Streaming & Delivery</h3>
-                  </div>
+                {/* WORKSPACE 1: 💬 MAIN CHAT (EXAM PREP & TUTORING) */}
+                {currentTab === 'main_chat' && (
+                  <div className="settings-bento-2col">
+                    {/* Left Column: Exam Mode & Temperature */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      {/* Exam Answer Length Mode Switcher */}
+                      <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <BookOpen size={20} style={{ color: 'var(--accent-cyan)' }} />
+                            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Academic Exam Answer Mode</h3>
+                          </div>
+                          <span style={{ fontSize: '0.75rem', padding: '3px 10px', borderRadius: '12px', background: 'rgba(6, 182, 212, 0.2)', color: 'var(--accent-cyan)', fontWeight: 800 }}>
+                            {mainChatConfig.mode.toUpperCase()}
+                          </span>
+                        </div>
 
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '12px 16px', background: 'var(--bg-primary)', borderRadius: '10px', border: '1px solid var(--border-color)', cursor: 'pointer' }}>
-                      <div>
-                        <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>Live Token Streaming</div>
-                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '2px' }}>Stream AI responses token-by-token with zero initial latency</div>
+                        <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                          Controls Osmania University examination answer structuring, word count bounds, and proof depth for Main Chat.
+                        </p>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
+                          {[
+                            { id: '12marks', label: '📝 12-Marks Mode (500–600 Words)', desc: 'Full Osmania Univ structure with Aim, Derivation, Schema & Observations' },
+                            { id: '2marks', label: '⚡ 2-Marks Mode (100–160 Words)', desc: 'Concise micro definition, core formula, and key properties only' },
+                            { id: '1marks', label: '🎯 1-Mark Micro Mode (60–100 Words)', desc: 'Direct 1-2 sentence definition and single test statistic formula' },
+                            { id: 'auto', label: '🧠 Auto Detect Intent', desc: 'Automatically selects 12-mark or general mode based on prompt keywords' },
+                            { id: 'general', label: '💬 General Assistant Mode', desc: 'Standard versatile assistant without artificial exam mark boundaries' }
+                          ].map(modeItem => {
+                            const isSelected = mainChatConfig.mode === modeItem.id;
+                            return (
+                              <button
+                                key={modeItem.id}
+                                type="button"
+                                onClick={() => {
+                                  const nextMain = { ...mainChatConfig, mode: modeItem.id as any };
+                                  updateAiTuning({ mainChat: nextMain, graderMode: modeItem.id === '12marks' ? 'rigorous_12mark' : 'step_by_step' });
+                                }}
+                                style={{
+                                  padding: '12px 14px',
+                                  borderRadius: '10px',
+                                  border: isSelected ? '1.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                                  background: isSelected ? 'rgba(6, 182, 212, 0.15)' : 'var(--bg-tertiary)',
+                                  color: isSelected ? 'var(--accent-cyan)' : 'var(--text-primary)',
+                                  cursor: 'pointer',
+                                  textAlign: 'left',
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: '2px'
+                                }}
+                              >
+                                <span style={{ fontWeight: 700, fontSize: '0.84rem' }}>{modeItem.label}</span>
+                                <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{modeItem.desc}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
                       </div>
-                      <input
-                        type="checkbox"
-                        checked={aiTuning.streaming}
-                        onChange={(e) => updateAiTuning({ streaming: e.target.checked })}
-                        style={{ width: '18px', height: '18px', accentColor: 'var(--accent-cyan)' }}
-                      />
-                    </label>
 
-                    {/* Web Search Depth */}
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px 16px', background: 'var(--bg-primary)', borderRadius: '10px', border: '1px solid var(--border-color)' }}>
-                      <div style={{ fontWeight: 700, fontSize: '0.88rem' }}>Web Research Search Depth</div>
-                      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                        {[
-                          { id: 'fast', label: 'Fast (3 Sources)', desc: 'Instant citations' },
-                          { id: 'deep', label: 'Deep (10 Sources)', desc: 'Multi-paper synthesis' }
-                        ].map(d => (
-                          <button
-                            key={d.id}
-                            type="button"
-                            onClick={() => updateAiTuning({ searchDepth: d.id as any })}
-                            style={{
-                              padding: '10px 8px',
-                              borderRadius: '8px',
-                              border: aiTuning.searchDepth === d.id ? '1.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
-                              background: aiTuning.searchDepth === d.id ? 'rgba(6, 182, 212, 0.15)' : 'var(--bg-tertiary)',
-                              color: aiTuning.searchDepth === d.id ? 'var(--accent-cyan)' : 'var(--text-primary)',
-                              fontSize: '0.78rem',
-                              fontWeight: 700,
-                              cursor: 'pointer',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              gap: '2px',
-                              textAlign: 'left'
-                            }}
-                          >
-                            <span>{d.label}</span>
-                            <span style={{ fontSize: '0.65rem', color: 'var(--text-muted)' }}>{d.desc}</span>
-                          </button>
-                        ))}
+                      {/* Main Chat Temperature */}
+                      <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Cpu size={20} style={{ color: 'var(--accent-cyan)' }} />
+                            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Academic Temperature</h3>
+                          </div>
+                          <span style={{ fontSize: '0.85rem', padding: '3px 12px', borderRadius: '20px', background: 'rgba(6, 182, 212, 0.2)', color: 'var(--accent-cyan)', fontWeight: 800 }}>
+                            {mainChatConfig.temperature.toFixed(2)}
+                          </span>
+                        </div>
+
+                        <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                          Lower values (0.1–0.2) ensure rigorous mathematical proofs and exact exam definitions.
+                        </p>
+
+                        <input
+                          type="range"
+                          min="0.0"
+                          max="1.0"
+                          step="0.05"
+                          value={mainChatConfig.temperature}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            updateAiTuning({ temperature: val, mainChat: { ...mainChatConfig, temperature: val } });
+                          }}
+                          style={{ width: '100%', accentColor: 'var(--accent-cyan)' }}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                          <span>0.0 (Strict Proofs)</span>
+                          <span>0.2 (Exam Recommended)</span>
+                          <span>1.0 (Creative)</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Delivery Pacing & Web Research */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      {/* Pacing Controls */}
+                      <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Zap size={20} style={{ color: 'var(--accent-cyan)' }} />
+                          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Response Delivery Pacing</h3>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
+                          {[
+                            { id: 'instant', label: '⚡ Instant Display (0ms)', desc: 'Renders complete message immediately for maximum speed' },
+                            { id: 'fast', label: '🚀 Turbo Stream (2x)', desc: 'High-speed simulated streaming animation' },
+                            { id: 'smooth', label: '📖 Natural Reading Pace (1x)', desc: 'Comfortable everyday reading flow' },
+                            { id: 'lecture', label: '🎓 Lecture Pace (0.5x)', desc: 'Deliberate pace for note-taking and math derivations' }
+                          ].map(dp => {
+                            const isSelected = mainChatConfig.deliveryPacing === dp.id;
+                            return (
+                              <button
+                                key={dp.id}
+                                type="button"
+                                onClick={() => {
+                                  const nextMain = { ...mainChatConfig, deliveryPacing: dp.id as any };
+                                  updateAiTuning({ deliveryPacing: dp.id as any, mainChat: nextMain });
+                                }}
+                                style={{
+                                  padding: '12px 14px',
+                                  borderRadius: '10px',
+                                  border: isSelected ? '1.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                                  background: isSelected ? 'rgba(6, 182, 212, 0.15)' : 'var(--bg-tertiary)',
+                                  color: isSelected ? 'var(--accent-cyan)' : 'var(--text-primary)',
+                                  cursor: 'pointer',
+                                  textAlign: 'left'
+                                }}
+                              >
+                                <span style={{ fontWeight: 700, fontSize: '0.84rem' }}>{dp.label}</span>
+                                <span style={{ display: 'block', fontSize: '0.72rem', color: 'var(--text-muted)' }}>{dp.desc}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+
+                      {/* Web Research Depth */}
+                      <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Globe size={20} style={{ color: 'var(--accent-cyan)' }} />
+                            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Academic Web Search Depth</h3>
+                          </div>
+                          <span style={{ fontSize: '0.78rem', fontWeight: 800, padding: '3px 10px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.15)', color: '#10b981' }}>
+                            {mainChatConfig.searchSourcesCount} Live Sources
+                          </span>
+                        </div>
+
+                        <input
+                          type="range"
+                          min="1"
+                          max="10"
+                          value={mainChatConfig.searchSourcesCount}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 4;
+                            updateAiTuning({ searchSourcesCount: val, searchDepth: val, mainChat: { ...mainChatConfig, searchSourcesCount: val } });
+                          }}
+                          style={{ width: '100%', accentColor: 'var(--accent-cyan)' }}
+                        />
                       </div>
                     </div>
                   </div>
-                </div>
+                )}
 
-                {/* Exam Evaluation Mode */}
-                <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <BookOpen size={20} style={{ color: 'var(--accent-cyan)' }} />
-                    <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>OU Exam Answer Schema</h3>
+                {/* WORKSPACE 2: 🏰 CODE DUNGEON (SPLIT-SCREEN IDE & LAB CODE) */}
+                {currentTab === 'code_dungeon' && (
+                  <div className="settings-bento-2col">
+                    {/* Left Column: Code-First Architecture & Determinism */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      {/* Code-First Enforcement Card */}
+                      <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Terminal size={20} style={{ color: 'var(--accent-cyan)' }} />
+                            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Code-First IDE Directives</h3>
+                          </div>
+                          <span style={{ fontSize: '0.72rem', padding: '3px 10px', borderRadius: '12px', background: 'rgba(16, 185, 129, 0.2)', color: '#10b981', fontWeight: 800, border: '1px solid rgba(16, 185, 129, 0.4)' }}>
+                            🛡️ ESSAY ENGINE BYPASSED
+                          </span>
+                        </div>
+
+                        <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                          Code Dungeon operates in a <strong>strict code-first container</strong>. It completely bypasses the 12-mark exam essay generator, delivering pure, runnable multi-file code blocks with explicit <code style={{ color: 'var(--accent-cyan)' }}>filename:</code> tags for instant IDE viewing.
+                        </p>
+
+                        <div style={{ padding: '12px 14px', borderRadius: '10px', background: 'var(--bg-tertiary)', border: '1px solid rgba(6, 182, 212, 0.25)', fontSize: '0.78rem', color: 'var(--text-primary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <div style={{ fontWeight: 700, color: 'var(--accent-cyan)' }}>✓ Code Delivery Contract:</div>
+                          <div>• Output complete runnable files (Python, C++, Java, JS/TS, SQL, ERD)</div>
+                          <div>• Concise 1–2 line explanations directly under code</div>
+                          <div>• Zero 500-word essay reports or mandatory exam paper headings</div>
+                        </div>
+                      </div>
+
+                      {/* Code Determinism Temperature */}
+                      <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Cpu size={20} style={{ color: 'var(--accent-cyan)' }} />
+                            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Code Temperature (Precision)</h3>
+                          </div>
+                          <span style={{ fontSize: '0.85rem', padding: '3px 12px', borderRadius: '20px', background: 'rgba(6, 182, 212, 0.2)', color: 'var(--accent-cyan)', fontWeight: 800 }}>
+                            {codeDungeonConfig.temperature.toFixed(2)}
+                          </span>
+                        </div>
+
+                        <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                          Low temperature (0.10–0.20) prevents syntax hallucinations and guarantees correct API method signatures.
+                        </p>
+
+                        <input
+                          type="range"
+                          min="0.0"
+                          max="0.5"
+                          step="0.05"
+                          value={codeDungeonConfig.temperature}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            updateAiTuning({ codeDungeon: { ...codeDungeonConfig, temperature: val } });
+                          }}
+                          style={{ width: '100%', accentColor: 'var(--accent-cyan)' }}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.7rem', color: 'var(--text-muted)' }}>
+                          <span>0.0 (Strict Syntax)</span>
+                          <span>0.15 (IDE Recommended)</span>
+                          <span>0.50 (Exploratory)</span>
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Right Column: Web Search Code Grounding & Token Allowance */}
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      {/* Web Search Code Grounding */}
+                      <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '16px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <Globe size={20} style={{ color: 'var(--accent-cyan)' }} />
+                            <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Web Search Code Grounding</h3>
+                          </div>
+                          <span style={{ fontSize: '0.75rem', padding: '3px 10px', borderRadius: '12px', background: 'rgba(6, 182, 212, 0.2)', color: 'var(--accent-cyan)', fontWeight: 800 }}>
+                            {codeDungeonConfig.searchSourcesCount} API Sources
+                          </span>
+                        </div>
+
+                        <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                          When Web Search is enabled in Code Dungeon, it searches for <strong>modern library APIs and syntax changes</strong> (e.g. Scikit-learn 1.4, PyTorch, PySpark) while strictly delivering code.
+                        </p>
+
+                        <input
+                          type="range"
+                          min="1"
+                          max="6"
+                          value={codeDungeonConfig.searchSourcesCount}
+                          onChange={(e) => {
+                            const val = parseInt(e.target.value) || 3;
+                            updateAiTuning({ codeDungeon: { ...codeDungeonConfig, searchSourcesCount: val } });
+                          }}
+                          style={{ width: '100%', accentColor: 'var(--accent-cyan)' }}
+                        />
+                      </div>
+
+                      {/* Supported Academic Elective Presets Stacks */}
+                      <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Sparkles size={20} style={{ color: 'var(--accent-cyan)' }} />
+                          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Supported Lab Stacks (11 Presets)</h3>
+                        </div>
+
+                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px' }}>
+                          {[
+                            'Statistical Inference (MDS-108-P)',
+                            'Cryptography & Security (PyCryptodome)',
+                            'Data Mining (scikit-learn, mlxtend)',
+                            'Computer Vision (OpenCV, PyTorch)',
+                            'Sentiment Analysis (NLTK, spaCy)',
+                            'Web Mining & Graphs (NetworkX, Scrapy)',
+                            'Scalable Architecture (PySpark, Kafka)',
+                            'Deep Learning (Keras, Transformers)',
+                            'C++ DSA & Algorithms',
+                            'Full-Stack Web (HTML/JS)',
+                            'Rust Systems & Cargo'
+                          ].map(st => (
+                            <span key={st} className="extractor-format-chip" style={{ fontSize: '0.74rem' }}>
+                              {st}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    </div>
                   </div>
+                )}
 
-                  <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                    Standard response formatting tailored to Osmania University M.Sc. Data Science marking criteria.
-                  </p>
+                {/* WORKSPACE 3: 🎭 FUN PERSONAS (CHARACTER DIALOGUES) */}
+                {currentTab === 'fun_personas' && (
+                  <div className="settings-bento-2col">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Bot size={20} style={{ color: 'var(--accent-cyan)' }} />
+                          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Character Humor & Dialogue Pacing</h3>
+                        </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr', gap: '8px' }}>
-                    {[
-                      { id: 'rigorous_12mark', label: '12-Mark Rigorous Proof Scheme', desc: 'Theorem Statement → Proof → Step Derivation → Python Code → Time Complexity' },
-                      { id: 'step_by_step', label: 'Step-by-Step Friendly Tutor', desc: 'Concept Intuition → Example Scenario → Bullet Points → Quick Summary' },
-                      { id: 'compact', label: 'Ultra-Compact Cheat Sheet Mode', desc: 'Formulas and critical values only without conversational prose' }
-                    ].map(g => (
-                      <button
-                        key={g.id}
-                        type="button"
-                        onClick={() => updateAiTuning({ graderMode: g.id as any })}
-                        style={{
-                          padding: '12px 14px',
-                          borderRadius: '10px',
-                          border: aiTuning.graderMode === g.id ? '1.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
-                          background: aiTuning.graderMode === g.id ? 'rgba(6, 182, 212, 0.15)' : 'var(--bg-tertiary)',
-                          color: aiTuning.graderMode === g.id ? 'var(--accent-cyan)' : 'var(--text-primary)',
-                          cursor: 'pointer',
-                          textAlign: 'left',
-                          display: 'flex',
-                          flexDirection: 'column',
-                          gap: '2px'
-                        }}
-                      >
-                        <span style={{ fontWeight: 700, fontSize: '0.84rem' }}>{g.label}</span>
-                        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>{g.desc}</span>
-                      </button>
-                    ))}
+                        <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                          Higher temperature allows Peter Griffin, Stewie, Rick Sanchez, Morty, and Courage to deliver vivid character humor and authentic dialogue.
+                        </p>
+
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: '6px' }}>
+                          <span style={{ fontSize: '0.84rem', fontWeight: 700 }}>Dialogue Creativity:</span>
+                          <span style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--accent-cyan)' }}>
+                            {funPersonasConfig.temperature.toFixed(2)}
+                          </span>
+                        </div>
+
+                        <input
+                          type="range"
+                          min="0.5"
+                          max="1.0"
+                          step="0.05"
+                          value={funPersonasConfig.temperature}
+                          onChange={(e) => {
+                            const val = parseFloat(e.target.value);
+                            updateAiTuning({ funPersonas: { ...funPersonasConfig, temperature: val } });
+                          }}
+                          style={{ width: '100%', accentColor: 'var(--accent-cyan)' }}
+                        />
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <Sliders size={20} style={{ color: 'var(--accent-cyan)' }} />
+                          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Persona Visual Directives</h3>
+                        </div>
+
+                        <div style={{ padding: '12px 14px', borderRadius: '10px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', fontSize: '0.8rem', color: 'var(--text-secondary)', display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                          <span style={{ fontWeight: 700, color: 'var(--accent-cyan)' }}>🚫 Diagram Suppression Active</span>
+                          <span>Diagram blocks (Kroki, PlantUML, Mermaid) are automatically suppressed in Fun Personas to keep character dialogues immersive in pure text.</span>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
+                )}
+
+                {/* WORKSPACE 4: 📚 LECTURE NOTES STUDIO */}
+                {currentTab === 'lecture_notes' && (
+                  <div className="settings-bento-2col">
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <BookOpen size={20} style={{ color: 'var(--accent-cyan)' }} />
+                          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Lecture Monograph Scope</h3>
+                        </div>
+
+                        <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                          Configures the academic depth for complete unit syllabus monographs, mathematical derivations, and summary tables.
+                        </p>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                          {[
+                            { id: 'comprehensive', label: 'Comprehensive', desc: 'Full chapter notes & derivations' },
+                            { id: 'concise', label: 'Concise', desc: 'High-yield exam review notes' },
+                            { id: 'bullet_summary', label: 'Quick Summary', desc: 'Bullet points & formula sheets' }
+                          ].map(nd => {
+                            const isSelected = lectureNotesConfig.notesDepth === nd.id;
+                            return (
+                              <button
+                                key={nd.id}
+                                type="button"
+                                onClick={() => {
+                                  updateAiTuning({ lectureNotes: { ...lectureNotesConfig, notesDepth: nd.id as any } });
+                                }}
+                                style={{
+                                  padding: '12px 10px',
+                                  borderRadius: '10px',
+                                  border: isSelected ? '1.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                                  background: isSelected ? 'rgba(6, 182, 212, 0.15)' : 'var(--bg-tertiary)',
+                                  color: isSelected ? 'var(--accent-cyan)' : 'var(--text-primary)',
+                                  cursor: 'pointer',
+                                  textAlign: 'center'
+                                }}
+                              >
+                                <span style={{ fontWeight: 700, fontSize: '0.82rem' }}>{nd.label}</span>
+                                <span style={{ display: 'block', fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: '2px' }}>{nd.desc}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+                      <div style={{ padding: '24px', borderRadius: '16px', background: 'var(--bg-secondary)', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <SlidersHorizontal size={20} style={{ color: 'var(--accent-cyan)' }} />
+                          <h3 style={{ margin: 0, fontSize: '1.05rem', fontWeight: 700 }}>Monograph Token Capacity</h3>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
+                          {[
+                            { val: 4096, label: '4,096', desc: 'Standard' },
+                            { val: 8192, label: '8,192', desc: 'Full Unit' },
+                            { val: 16384, label: '16,384', desc: 'Monograph' }
+                          ].map(tk => {
+                            const isSelected = lectureNotesConfig.maxTokens === tk.val;
+                            return (
+                              <button
+                                key={tk.val}
+                                type="button"
+                                onClick={() => {
+                                  updateAiTuning({ lectureNotes: { ...lectureNotesConfig, maxTokens: tk.val } });
+                                }}
+                                style={{
+                                  padding: '10px',
+                                  borderRadius: '10px',
+                                  border: isSelected ? '1.5px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                                  background: isSelected ? 'rgba(6, 182, 212, 0.15)' : 'var(--bg-tertiary)',
+                                  color: isSelected ? 'var(--accent-cyan)' : 'var(--text-primary)',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                <span style={{ fontWeight: 800, fontSize: '0.88rem' }}>{tk.label}</span>
+                                <span style={{ display: 'block', fontSize: '0.66rem', color: 'var(--text-muted)' }}>{tk.desc}</span>
+                              </button>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
-            </div>
-          )}
+            );
+          })()}
 
           {/* TAB 3c: 💻 CODE & MATH SYNTAX STYLING (VERTICAL BENTO DECK) */}
           {activeTab === 'code_style' && (() => {
@@ -2149,6 +2468,76 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                       >
                         <span style={{ fontWeight: 700, fontSize: '0.84rem' }}>⚡ Fast & Lightweight Editor</span>
                         <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Zero-latency instant streaming viewer (low memory)</span>
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Full IDE Monaco Theme Mode */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '14px', borderRadius: '12px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-color)', boxSizing: 'border-box' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <label style={{ fontSize: '0.75rem', fontWeight: 700, color: 'var(--text-muted)' }}>FULL IDE (MONACO) THEME BEHAVIOR</label>
+                      <span style={{ fontSize: '0.68rem', color: 'var(--accent-cyan)', fontWeight: 600 }}>VS Code Engine Sync</span>
+                    </div>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 170px), 1fr))', gap: '8px', width: '100%', boxSizing: 'border-box' }}>
+                      <button
+                        type="button"
+                        onClick={() => updateIdeConfig({ monacoThemeMode: 'auto' })}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          border: (ideConfig.monacoThemeMode || 'auto') === 'auto' ? '2px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                          background: (ideConfig.monacoThemeMode || 'auto') === 'auto' ? 'rgba(6, 182, 212, 0.18)' : 'var(--bg-primary)',
+                          color: (ideConfig.monacoThemeMode || 'auto') === 'auto' ? 'var(--accent-cyan)' : 'var(--text-primary)',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '2px',
+                          boxSizing: 'border-box'
+                        }}
+                      >
+                        <span style={{ fontWeight: 700, fontSize: '0.80rem' }}>🔄 Auto-Sync</span>
+                        <span style={{ fontSize: '0.67rem', color: 'var(--text-muted)' }}>Matches App Theme (Default)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateIdeConfig({ monacoThemeMode: 'dark' })}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          border: ideConfig.monacoThemeMode === 'dark' ? '2px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                          background: ideConfig.monacoThemeMode === 'dark' ? 'rgba(6, 182, 212, 0.18)' : 'var(--bg-primary)',
+                          color: ideConfig.monacoThemeMode === 'dark' ? 'var(--accent-cyan)' : 'var(--text-primary)',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '2px',
+                          boxSizing: 'border-box'
+                        }}
+                      >
+                        <span style={{ fontWeight: 700, fontSize: '0.80rem' }}>🌙 Always Dark</span>
+                        <span style={{ fontSize: '0.67rem', color: 'var(--text-muted)' }}>VS Code Dark+ (Dark Mode)</span>
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => updateIdeConfig({ monacoThemeMode: 'light' })}
+                        style={{
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          border: ideConfig.monacoThemeMode === 'light' ? '2px solid var(--accent-cyan)' : '1px solid var(--border-color)',
+                          background: ideConfig.monacoThemeMode === 'light' ? 'rgba(6, 182, 212, 0.18)' : 'var(--bg-primary)',
+                          color: ideConfig.monacoThemeMode === 'light' ? 'var(--accent-cyan)' : 'var(--text-primary)',
+                          cursor: 'pointer',
+                          textAlign: 'left',
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '2px',
+                          boxSizing: 'border-box'
+                        }}
+                      >
+                        <span style={{ fontWeight: 700, fontSize: '0.80rem' }}>☀️ Always Light</span>
+                        <span style={{ fontSize: '0.67rem', color: 'var(--text-muted)' }}>VS Code Light (Clean White)</span>
                       </button>
                     </div>
                   </div>
@@ -2716,11 +3105,32 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                       accentColor: '#10b981'
                     },
                     {
-                      id: 'obsidian_oled',
-                      name: 'Obsidian OLED (Monochrome)',
-                      desc: activeThemeMode === 'light' ? 'Clean minimalist monochrome white & slate' : 'Pure OLED black with high-contrast razor cyan',
-                      baseColor: activeThemeMode === 'light' ? '#ffffff' : '#000000',
-                      accentColor: activeThemeMode === 'light' ? '#18181b' : '#38bdf8'
+                      id: 'royal_sapphire',
+                      name: 'Royal Sapphire (Cobalt)',
+                      desc: activeThemeMode === 'light' ? 'Crisp porcelain canvas with bold cobalt blue buttons' : 'Deep navy midnight with luminous electric blue glow',
+                      baseColor: activeThemeMode === 'light' ? '#f8faff' : '#040b1e',
+                      accentColor: '#2563eb'
+                    },
+                    {
+                      id: 'oceanic_teal',
+                      name: 'Oceanic Teal (Turquoise)',
+                      desc: activeThemeMode === 'light' ? 'Sea-breeze white canvas with deep rich teal accents' : 'Abyssal deep marine dark with glowing turquoise borders',
+                      baseColor: activeThemeMode === 'light' ? '#f0fdfa' : '#031614',
+                      accentColor: '#0d9488'
+                    },
+                    {
+                      id: 'sunset_coral',
+                      name: 'Sunset Coral (Tangerine)',
+                      desc: activeThemeMode === 'light' ? 'Warm peach-cream canvas with vibrant coral-orange buttons' : 'Deep charred espresso with blazing neon orange glow',
+                      baseColor: activeThemeMode === 'light' ? '#fff7ed' : '#180903',
+                      accentColor: '#f97316'
+                    },
+                    {
+                      id: 'imperial_gold',
+                      name: 'Imperial Gold (24K Gold)',
+                      desc: activeThemeMode === 'light' ? 'Warm ivory-linen paper with rich solar gold accents' : 'Royal onyx-bronze dark with shimmering 24k gold borders',
+                      baseColor: activeThemeMode === 'light' ? '#fefce8' : '#140e02',
+                      accentColor: '#d97706'
                     },
                     {
                       id: 'amber_parchment',
@@ -2742,6 +3152,20 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                       desc: activeThemeMode === 'light' ? 'Soft pastel sakura pink with hot pink buttons' : 'Deep plum night dark with radiant blossom pink glow',
                       baseColor: activeThemeMode === 'light' ? '#fff0f5' : '#140410',
                       accentColor: '#ec4899'
+                    },
+                    {
+                      id: 'electric_amethyst',
+                      name: 'Electric Amethyst (Orchid)',
+                      desc: activeThemeMode === 'light' ? 'Soft lavender mist paper with vibrant magenta-purple buttons' : 'Velvet orchid-black with glowing electric magenta highlights',
+                      baseColor: activeThemeMode === 'light' ? '#fdf4ff' : '#150317',
+                      accentColor: '#c026d3'
+                    },
+                    {
+                      id: 'arctic_frost',
+                      name: 'Arctic Frost (Ice Blue)',
+                      desc: activeThemeMode === 'light' ? 'Ultra-crisp glacier white with razor sky-blue buttons' : 'Polar twilight dark with razor luminous ice-blue buttons',
+                      baseColor: activeThemeMode === 'light' ? '#f0f9ff' : '#031420',
+                      accentColor: '#0284c7'
                     }
                   ].map(atmo => {
                     const isSelected = (codeStyle.atmosphere || 'cyber_osmania') === atmo.id;
@@ -2852,6 +3276,69 @@ def neyman_pearson_ratio(L1, L0, alpha=0.05):
                       accentColor: '#38bdf8',
                       gridColor: 'rgba(51, 65, 85, 0.4)',
                       inkColor: '#ffffff'
+                    },
+                    {
+                      id: 'tokyo_synthwave',
+                      name: 'Tokyo Synthwave',
+                      desc: 'Cyberpunk neon retrowave with glowing magenta & violet grid',
+                      bgColor: '#0d0b1a',
+                      accentColor: '#f43f5e',
+                      gridColor: 'rgba(236, 72, 153, 0.35)',
+                      inkColor: '#fdf2f8'
+                    },
+                    {
+                      id: 'emerald_matrix',
+                      name: 'Emerald Matrix',
+                      desc: 'Sci-Fi phosphor CRT terminal with radiant mint graph axes',
+                      bgColor: '#021a12',
+                      accentColor: '#10b981',
+                      gridColor: 'rgba(16, 185, 129, 0.35)',
+                      inkColor: '#ecfdf5'
+                    },
+                    {
+                      id: 'solar_amber',
+                      name: 'Solar Flare Amber',
+                      desc: 'Warm molten gold & roasted espresso eye-friendly dark canvas',
+                      bgColor: '#160c07',
+                      accentColor: '#f59e0b',
+                      gridColor: 'rgba(245, 158, 11, 0.35)',
+                      inkColor: '#fffbeb'
+                    },
+                    {
+                      id: 'nordic_aurora',
+                      name: 'Nordic Aurora Glacier',
+                      desc: 'Arctic midnight teal with luminous glacial mint vector grid',
+                      bgColor: '#04161f',
+                      accentColor: '#2dd4bf',
+                      gridColor: 'rgba(45, 212, 191, 0.35)',
+                      inkColor: '#f0fdfa'
+                    },
+                    {
+                      id: 'chalkboard_slate',
+                      name: 'Chalkboard Academy',
+                      desc: 'Authentic university slate with dusty yellow chalk coordinates',
+                      bgColor: '#161e1b',
+                      accentColor: '#fef08a',
+                      gridColor: 'rgba(254, 240, 138, 0.30)',
+                      inkColor: '#f8fafc'
+                    },
+                    {
+                      id: 'royal_nebula',
+                      name: 'Royal Nebula Galaxy',
+                      desc: 'Cosmic celestial violet with ultraviolet deep-space grid',
+                      bgColor: '#0d0720',
+                      accentColor: '#8b5cf6',
+                      gridColor: 'rgba(139, 92, 246, 0.35)',
+                      inkColor: '#faf5ff'
+                    },
+                    {
+                      id: 'sakura_blossom',
+                      name: 'Sakura Blossom Plum',
+                      desc: 'Japanese twilight velvet plum with delicate pink petals grid',
+                      bgColor: '#150814',
+                      accentColor: '#ec4899',
+                      gridColor: 'rgba(244, 114, 182, 0.35)',
+                      inkColor: '#fdf2f8'
                     }
                   ].map(canvasAtmo => {
                     const isSelected = (codeStyle.canvasAtmosphere || 'deep_void') === canvasAtmo.id;

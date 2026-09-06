@@ -16,6 +16,7 @@ export const SortingLab: React.FC<SortingLabProps> = ({
   speed
 }) => {
   const [arraySize, setArraySize] = useState<number>(8);
+  const [customNInput, setCustomNInput] = useState<string>('8');
   const [array, setArray] = useState<ArrayBar[]>([]);
   const [activePreset, setActivePreset] = useState<OrderPreset>('random');
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
@@ -23,6 +24,16 @@ export const SortingLab: React.FC<SortingLabProps> = ({
   const [stepLogs, setStepLogs] = useState<StepLog[]>([]);
   const [comparisons, setComparisons] = useState<number>(0);
   const [swaps, setSwaps] = useState<number>(0);
+
+  const handleApplyN = () => {
+    const n = parseInt(customNInput, 10);
+    if (!isNaN(n) && n >= 4 && n <= 25) {
+      setArraySize(n);
+      generatePresetArray(activePreset, n);
+    } else {
+      setCustomNInput(String(arraySize));
+    }
+  };
 
   // Precomputed execution generator steps
   const stepsHistoryRef = useRef<{ array: ArrayBar[]; log: StepLog; comparisons: number; swaps: number }[]>([]);
@@ -494,7 +505,7 @@ export const SortingLab: React.FC<SortingLabProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
-      {/* 9 Sorting Algorithms Dropdown & Initial Order Presets */}
+      {/* Consolidated Control Deck with Preserved Order Dropdown & N [Set] Pattern */}
       <div className="dsa-header-card" style={{
         display: 'flex',
         alignItems: 'center',
@@ -507,42 +518,88 @@ export const SortingLab: React.FC<SortingLabProps> = ({
         border: '1px solid var(--card-border)',
         boxShadow: 'var(--card-shadow)'
       }}>
-        {/* Left: Sorting Algorithm Dropdown */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 200px', minWidth: 0, maxWidth: '100%' }}>
-          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
-            SORT:
-          </span>
-          <select
-            value={activeAlgorithm}
-            onChange={(e) => onSelectAlgorithm(e.target.value)}
-            className="dsa-select-control"
+        {/* Left: Action Control Buttons */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <button
+            type="button"
+            title={isPlaying ? 'Pause' : 'Play'}
+            onClick={() => setIsPlaying(!isPlaying)}
+            className="dsa-action-btn"
             style={{
-              minHeight: '36px',
-              padding: '6px 10px',
-              borderRadius: '8px',
-              background: 'var(--bg-tertiary)',
-              border: '1.5px solid var(--accent-cyan)',
-              color: 'var(--text-primary)',
-              fontSize: '0.82rem',
-              fontWeight: 800,
+              border: 'none',
+              background: isPlaying ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #10b981, #059669)',
+              color: '#fff',
+              padding: '5px 10px',
+              borderRadius: '7px',
               cursor: 'pointer',
-              outline: 'none',
-              boxShadow: '0 0 10px var(--cursor-glow)'
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontWeight: 700,
+              fontSize: '0.74rem'
             }}
           >
-            <option value="bubble_sort">📶 Bubble Sort (Adjacent Swaps)</option>
-            <option value="selection_sort">🎯 Selection Sort (Min/Max Scanning)</option>
-            <option value="insertion_sort">📥 Insertion Sort (Shift & Insert)</option>
-            <option value="shell_sort">🐚 Shell Sort (Diminishing Gap)</option>
-            <option value="merge_sort">🔀 Merge Sort (Divide & Conquer O(n log n))</option>
-            <option value="quick_sort">⚡ Quick Sort (Lomuto Partitioning)</option>
-            <option value="heap_sort">🔺 Heap Sort (Binary Max-Heap)</option>
-            <option value="counting_sort">📊 Counting Sort (Non-Comparison O(n+k))</option>
-            <option value="radix_sort">🔢 Radix Sort (LSD Bucket Pass)</option>
-          </select>
+            {isPlaying ? <Pause size={13} /> : <Play size={13} />}
+            <span>{isPlaying ? 'Pause' : 'Play'}</span>
+          </button>
+
+          <button
+            type="button"
+            title="Previous Step"
+            onClick={handleStepBackward}
+            disabled={currentStep === 0 || isPlaying}
+            className="dsa-action-btn"
+            style={{
+              border: '1px solid var(--border-color, rgba(51, 65, 85, 0.7))',
+              background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))',
+              color: 'var(--text-primary)',
+              opacity: currentStep === 0 ? 0.4 : 1,
+              padding: '5px 8px',
+              borderRadius: '7px',
+              cursor: 'pointer'
+            }}
+          >
+            <ChevronLeft size={14} />
+          </button>
+
+          <button
+            type="button"
+            title="Next Step"
+            onClick={handleStepForward}
+            disabled={currentStep >= stepsHistoryRef.current.length - 1 || isPlaying}
+            className="dsa-action-btn"
+            style={{
+              border: '1px solid var(--border-color, rgba(51, 65, 85, 0.7))',
+              background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))',
+              color: 'var(--text-primary)',
+              opacity: currentStep >= stepsHistoryRef.current.length - 1 ? 0.4 : 1,
+              padding: '5px 8px',
+              borderRadius: '7px',
+              cursor: 'pointer'
+            }}
+          >
+            <ChevronRight size={14} />
+          </button>
+
+          <button
+            type="button"
+            title="Reset Array"
+            onClick={handleReset}
+            className="dsa-action-btn"
+            style={{
+              border: '1px solid var(--border-color, rgba(51, 65, 85, 0.7))',
+              background: 'var(--bg-tertiary, rgba(30, 41, 59, 0.6))',
+              color: 'var(--text-muted, #94a3b8)',
+              padding: '5px 8px',
+              borderRadius: '7px',
+              cursor: 'pointer'
+            }}
+          >
+            <RotateCcw size={13} />
+          </button>
         </div>
 
-        {/* Right: Initial Order Presets */}
+        {/* Center: Preserved Initial Order Presets Dropdown */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
           <span style={{ fontSize: '0.74rem', color: '#94a3b8', fontWeight: 700 }}>Order:</span>
           <select
@@ -553,8 +610,8 @@ export const SortingLab: React.FC<SortingLabProps> = ({
               generatePresetArray(p, arraySize);
             }}
             style={{
-              minHeight: '32px',
-              padding: '4px 8px',
+              minHeight: '30px',
+              padding: '3px 8px',
               borderRadius: '6px',
               background: 'rgba(30, 41, 59, 0.95)',
               border: '1px solid rgba(168, 85, 247, 0.5)',
@@ -571,94 +628,47 @@ export const SortingLab: React.FC<SortingLabProps> = ({
             <option value="few_unique">🔁 Few Unique</option>
           </select>
         </div>
-      </div>
 
-      {/* Control Deck */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '8px',
-        background: 'var(--card-bg)',
-        padding: '6px 12px',
-        borderRadius: '10px',
-        border: '1px solid var(--card-border)',
-        boxShadow: 'var(--card-shadow)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <button
-            title={isPlaying ? 'Pause' : 'Auto Play'}
-            onClick={() => setIsPlaying(!isPlaying)}
-            className="dsa-action-btn"
-            style={{
-              border: 'none',
-              background: isPlaying ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #10b981, #059669)',
-              color: '#fff'
-            }}
-          >
-            {isPlaying ? <Pause size={14} /> : <Play size={14} />}
-            <span className="dsa-btn-label">{isPlaying ? 'Pause' : 'Auto Play'}</span>
-          </button>
-
-          <button
-            title="Previous Step"
-            onClick={handleStepBackward}
-            disabled={currentStep === 0 || isPlaying}
-            className="dsa-action-btn"
-            style={{
-              border: '1px solid var(--border-color)',
-              background: 'var(--bg-tertiary)',
-              color: 'var(--text-primary)',
-              opacity: currentStep === 0 ? 0.4 : 1
-            }}
-          >
-            <ChevronLeft size={14} />
-            <span className="dsa-btn-label">Prev</span>
-          </button>
-
-          <button
-            title="Next Step"
-            onClick={handleStepForward}
-            disabled={currentStep >= stepsHistoryRef.current.length - 1 || isPlaying}
-            className="dsa-action-btn"
-            style={{
-              border: '1px solid var(--border-color)',
-              background: 'var(--bg-tertiary)',
-              color: 'var(--text-primary)',
-              opacity: currentStep >= stepsHistoryRef.current.length - 1 ? 0.4 : 1
-            }}
-          >
-            <ChevronRight size={14} />
-            <span className="dsa-btn-label">Next</span>
-          </button>
-
-          <button
-            title="Reset Array"
-            onClick={handleReset}
-            className="dsa-action-btn"
-            style={{
-              border: '1px solid var(--border-color)',
-              background: 'var(--bg-tertiary)',
-              color: 'var(--text-muted)'
-            }}
-          >
-            <RotateCcw size={13} />
-            <span className="dsa-btn-label">Reset</span>
-          </button>
-        </div>
-
-        {/* Array Size Slider */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-          <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>N: <strong style={{ color: 'var(--accent-cyan)' }}>{arraySize}</strong></span>
+        {/* Right: Unified Array Size N [Set] Pattern */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', flexShrink: 0 }}>
+          <span style={{ fontSize: '0.74rem', color: '#94a3b8', fontWeight: 700 }}>N:</span>
           <input
-            type="range"
-            min="5"
-            max="25"
-            value={arraySize}
-            onChange={(e) => setArraySize(parseInt(e.target.value, 10))}
-            style={{ width: '70px', accentColor: 'var(--accent-cyan)' }}
+            type="number"
+            min={4}
+            max={25}
+            value={customNInput}
+            onChange={(e) => setCustomNInput(e.target.value)}
+            onKeyDown={(e) => { if (e.key === 'Enter') handleApplyN(); }}
+            style={{
+              width: '42px',
+              padding: '3px 5px',
+              borderRadius: '6px',
+              border: '1px solid rgba(255,255,255,0.2)',
+              background: '#0f172a',
+              color: '#fff',
+              fontSize: '0.76rem',
+              textAlign: 'center',
+              outline: 'none'
+            }}
           />
+          <button
+            type="button"
+            title="Set Array Size"
+            onClick={handleApplyN}
+            className="dsa-action-btn"
+            style={{
+              background: 'var(--accent-cyan, #0284c7)',
+              color: '#fff',
+              border: 'none',
+              padding: '3px 8px',
+              borderRadius: '5px',
+              fontSize: '0.7rem',
+              fontWeight: 700,
+              cursor: 'pointer'
+            }}
+          >
+            Set
+          </button>
         </div>
       </div>
 

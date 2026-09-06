@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo, useRef } from 'react';
-import { Play, Pause, RotateCcw, Zap, Shuffle, HelpCircle, Layers, Target, Compass, Activity, CheckCircle2, XCircle, ArrowRightLeft } from 'lucide-react';
+import { Play, Pause, RotateCcw, Zap, Shuffle, HelpCircle, Layers, Target, Compass, Activity, CheckCircle2, XCircle, ArrowRightLeft, ChevronLeft, ChevronRight } from 'lucide-react';
 import type { Node2D, Edge2D } from '../types';
 
 interface GraphLabProps {
@@ -32,12 +32,25 @@ interface GraphStepSnapshot {
 }
 
 export const GraphLab: React.FC<GraphLabProps> = ({
+  activeAlgorithm,
   onSelectAlgorithm,
   speed = 2
 }) => {
   const [selectedAlgo, setSelectedAlgo] = useState<
     'dijkstra' | 'bfs' | 'dfs' | 'bellman_ford' | 'prims' | 'kruskals' | 'floyd_warshall' | 'topo_sort'
   >('dijkstra');
+
+  // Synchronize activeAlgorithm with top Bento ribbon
+  useEffect(() => {
+    if (activeAlgorithm) {
+      const valid = ['dijkstra', 'bfs', 'dfs', 'bellman_ford', 'prims', 'kruskals', 'floyd_warshall', 'topo_sort'];
+      if (valid.includes(activeAlgorithm)) {
+        setSelectedAlgo(activeAlgorithm as any);
+        setIsPlaying(false);
+        setCurrentStep(0);
+      }
+    }
+  }, [activeAlgorithm]);
 
   const [activePreset, setActivePreset] = useState<GraphPreset>('default');
   const [randomSeedIdx, setRandomSeedIdx] = useState<number>(0);
@@ -1035,81 +1048,16 @@ export const GraphLab: React.FC<GraphLabProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
-      {/* Top Selector Card */}
+      {/* Preset & Graph Configuration Strip WITH START & DESTINATION CONTROLS */}
       <div className="dsa-header-card" style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: '8px',
-        background: 'rgba(15, 23, 42, 0.75)',
-        padding: '8px 12px',
-        borderRadius: '12px',
-        border: '1px solid rgba(255,255,255,0.08)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 200px', minWidth: 0, maxWidth: '100%', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
-            GRAPH:
-          </span>
-          <select
-            value={selectedAlgo}
-            onChange={(e) => {
-              const val = e.target.value as any;
-              setSelectedAlgo(val);
-              onSelectAlgorithm(val);
-            }}
-            className="dsa-select-control"
-            style={{
-              minHeight: '36px',
-              padding: '6px 10px',
-              borderRadius: '8px',
-              background: 'rgba(30, 41, 59, 0.95)',
-              border: '1.5px solid #38bdf8',
-              color: '#f8fafc',
-              fontSize: '0.82rem',
-              fontWeight: 800,
-              cursor: 'pointer',
-              outline: 'none',
-              boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)'
-            }}
-          >
-            <option value="dijkstra">🧭 Dijkstra's (Single-Source Shortest Path)</option>
-            <option value="bfs">🌊 Breadth-First Search (Queue Traversal)</option>
-            <option value="dfs">🌲 Depth-First Search (Recursive Backtracking)</option>
-            <option value="bellman_ford">⚡ Bellman-Ford (± Negative Weight Cycles)</option>
-            <option value="prims">🌐 Prim's Algorithm (Greedy Minimum Spanning Tree)</option>
-            <option value="kruskals">🔗 Kruskal's Algorithm (Edge Sorting & DSU)</option>
-            <option value="floyd_warshall">📊 Floyd-Warshall (All-Pairs Dynamic Programming)</option>
-            <option value="topo_sort">📐 Topological Sort (DAG Kahn's In-Degree)</option>
-          </select>
-        </div>
-
-        {/* Cheatsheet Modal Button */}
-        <button
-          title="Graph Algorithms Comparison Matrix"
-          onClick={() => setShowCheatsheet(!showCheatsheet)}
-          className="dsa-action-btn"
-          style={{
-            border: '1px solid rgba(56, 189, 248, 0.4)',
-            background: showCheatsheet ? '#0284c7' : 'rgba(56, 189, 248, 0.12)',
-            color: showCheatsheet ? '#fff' : '#38bdf8'
-          }}
-        >
-          <HelpCircle size={13} />
-          <span className="dsa-btn-label">Matrix</span>
-        </button>
-      </div>
-
-      {/* Preset & Graph Configuration Strip WITH START & DESTINATION CONTROLS */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
         gap: '6px',
-        padding: '6px 10px',
+        padding: '8px 12px',
         background: '#090d16',
-        borderRadius: '10px',
+        borderRadius: '12px',
         border: '1px solid rgba(255,255,255,0.08)'
       }}>
         {/* Topology Presets */}
@@ -1243,6 +1191,29 @@ export const GraphLab: React.FC<GraphLabProps> = ({
               ))}
             </select>
           </div>
+          {/* Matrix Cheatsheet Button */}
+          <button
+            type="button"
+            title="Graph Algorithms Comparison Matrix"
+            onClick={() => setShowCheatsheet(!showCheatsheet)}
+            className="dsa-action-btn"
+            style={{
+              border: '1px solid rgba(56, 189, 248, 0.4)',
+              background: showCheatsheet ? '#0284c7' : 'rgba(56, 189, 248, 0.12)',
+              color: showCheatsheet ? '#fff' : '#38bdf8',
+              padding: '2px 8px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontSize: '0.7rem',
+              fontWeight: 700
+            }}
+          >
+            <HelpCircle size={12} />
+            <span>Matrix</span>
+          </button>
         </div>
       </div>
 
@@ -1260,20 +1231,30 @@ export const GraphLab: React.FC<GraphLabProps> = ({
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <button
+            type="button"
             title={isPlaying ? 'Pause' : 'Auto Play'}
             onClick={() => setIsPlaying(!isPlaying)}
             className="dsa-action-btn"
             style={{
               border: 'none',
               background: isPlaying ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #10b981, #059669)',
-              color: '#fff'
+              color: '#fff',
+              padding: '5px 10px',
+              borderRadius: '7px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontWeight: 700,
+              fontSize: '0.74rem'
             }}
           >
             {isPlaying ? <Pause size={13} /> : <Play size={13} />}
-            <span className="dsa-btn-label">{isPlaying ? 'Pause' : 'Auto Play'}</span>
+            <span>{isPlaying ? 'Pause' : 'Play'}</span>
           </button>
 
           <button
+            type="button"
             title="Previous Step"
             onClick={() => {
               setIsPlaying(false);
@@ -1285,13 +1266,17 @@ export const GraphLab: React.FC<GraphLabProps> = ({
               border: '1px solid rgba(255,255,255,0.1)',
               background: 'rgba(255,255,255,0.05)',
               color: '#fff',
-              opacity: safeStep === 0 ? 0.4 : 1
+              opacity: safeStep === 0 ? 0.4 : 1,
+              padding: '5px 8px',
+              borderRadius: '7px',
+              cursor: 'pointer'
             }}
           >
-            ‹<span className="dsa-btn-label"> Prev</span>
+            <ChevronLeft size={14} />
           </button>
 
           <button
+            type="button"
             title="Next Step"
             onClick={() => {
               setIsPlaying(false);
@@ -1303,24 +1288,30 @@ export const GraphLab: React.FC<GraphLabProps> = ({
               border: '1px solid rgba(255,255,255,0.1)',
               background: 'rgba(255,255,255,0.05)',
               color: '#fff',
-              opacity: safeStep >= steps.length - 1 ? 0.4 : 1
+              opacity: safeStep >= steps.length - 1 ? 0.4 : 1,
+              padding: '5px 8px',
+              borderRadius: '7px',
+              cursor: 'pointer'
             }}
           >
-            <span className="dsa-btn-label">Next </span>›
+            <ChevronRight size={14} />
           </button>
 
           <button
+            type="button"
             title="Reset Graph"
             onClick={handleReset}
             className="dsa-action-btn"
             style={{
               border: '1px solid rgba(255,255,255,0.1)',
               background: 'rgba(255,255,255,0.05)',
-              color: '#94a3b8'
+              color: '#94a3b8',
+              padding: '5px 8px',
+              borderRadius: '7px',
+              cursor: 'pointer'
             }}
           >
-            <RotateCcw size={12} />
-            <span className="dsa-btn-label">Reset</span>
+            <RotateCcw size={13} />
           </button>
         </div>
 

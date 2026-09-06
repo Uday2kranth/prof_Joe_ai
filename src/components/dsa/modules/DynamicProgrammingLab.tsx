@@ -8,9 +8,20 @@ interface DynamicProgrammingLabProps {
 }
 
 export const DynamicProgrammingLab: React.FC<DynamicProgrammingLabProps> = ({
+  activeAlgorithm,
   onSelectAlgorithm
 }) => {
   const [activeDpAlgo, setActiveDpAlgo] = useState<'knapsack' | 'lcs' | 'coin_change' | 'fibonacci'>('knapsack');
+
+  // Synchronize activeAlgorithm with top Bento ribbon
+  useEffect(() => {
+    if (activeAlgorithm) {
+      if (activeAlgorithm.includes('knapsack')) setActiveDpAlgo('knapsack');
+      else if (activeAlgorithm.includes('lcs')) setActiveDpAlgo('lcs');
+      else if (activeAlgorithm.includes('coin')) setActiveDpAlgo('coin_change');
+      else if (activeAlgorithm.includes('fib')) setActiveDpAlgo('fibonacci');
+    }
+  }, [activeAlgorithm]);
 
   // 1. KNAPSACK STATE
   const knapsackCapacity = 6;
@@ -159,93 +170,66 @@ export const DynamicProgrammingLab: React.FC<DynamicProgrammingLabProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
-      {/* Top DP Problem Selector Card */}
+      {/* Control Action Bar */}
       <div className="dsa-header-card" style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '8px',
-        background: 'rgba(15, 23, 42, 0.75)',
+        background: 'rgba(15, 23, 42, 0.8)',
         padding: '8px 12px',
         borderRadius: '12px',
         border: '1px solid rgba(255,255,255,0.08)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 200px', minWidth: 0, maxWidth: '100%', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
-            DP:
-          </span>
-          <select
-            value={activeDpAlgo}
-            onChange={(e) => {
-              const val = e.target.value as any;
-              setActiveDpAlgo(val);
-              onSelectAlgorithm(val);
-              initAllTables();
-            }}
-            className="dsa-select-control"
-            style={{
-              minHeight: '36px',
-              padding: '6px 10px',
-              borderRadius: '8px',
-              background: 'rgba(30, 41, 59, 0.95)',
-              border: '1.5px solid #38bdf8',
-              color: '#f8fafc',
-              fontSize: '0.82rem',
-              fontWeight: 800,
-              cursor: 'pointer',
-              outline: 'none',
-              boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)'
-            }}
-          >
-            <option value="knapsack">🎒 0/1 Knapsack Problem (2D Table)</option>
-            <option value="lcs">🔤 Longest Common Subsequence (LCS Matrix)</option>
-            <option value="coin_change">🪙 Making Change (Coin Change 1D Table)</option>
-            <option value="fibonacci">🔢 Fibonacci DP (Memoization & Tabulation)</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Control Action Bar */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '8px',
-        background: 'rgba(15, 23, 42, 0.8)',
-        padding: '6px 12px',
-        borderRadius: '10px',
-        border: '1px solid rgba(255,255,255,0.08)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <button
+            type="button"
             title="Compute Next Cell"
             onClick={stepForward}
             className="dsa-action-btn"
             style={{
               border: 'none',
               background: 'linear-gradient(135deg, #10b981, #059669)',
-              color: '#fff'
+              color: '#fff',
+              padding: '5px 12px',
+              borderRadius: '7px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              fontWeight: 700,
+              fontSize: '0.74rem'
             }}
           >
             <Play size={13} />
-            <span className="dsa-btn-label">Compute Next</span>
+            <span>Compute Next Step</span>
           </button>
 
           <button
+            type="button"
             title="Reset Table"
             onClick={initAllTables}
             className="dsa-action-btn"
             style={{
               border: '1px solid rgba(255,255,255,0.1)',
               background: 'rgba(255,255,255,0.05)',
-              color: 'var(--text-muted)'
+              color: 'var(--text-muted, #94a3b8)',
+              padding: '5px 8px',
+              borderRadius: '7px',
+              cursor: 'pointer'
             }}
           >
-            <RotateCcw size={12} />
-            <span className="dsa-btn-label">Reset</span>
+            <RotateCcw size={13} />
           </button>
+        </div>
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+          <span style={{ fontSize: '0.76rem', color: '#38bdf8', fontWeight: 800 }}>
+            {activeDpAlgo === 'knapsack' ? '0/1 Knapsack (2D Table)' :
+             activeDpAlgo === 'lcs' ? 'Longest Common Subsequence' :
+             activeDpAlgo === 'coin_change' ? 'Coin Change (1D Table)' : 'Fibonacci DP'}
+          </span>
         </div>
       </div>
 

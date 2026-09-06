@@ -667,7 +667,6 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                     onClick={() => window.location.reload()}
                     className="kokonut-action-btn file-attach-btn"
                     title="Refresh App / Reload Page"
-                    style={{ background: 'rgba(255,255,255,0.05)', color: '#94a3b8' }}
                   >
                     <RotateCw size={14} />
                   </button>
@@ -721,7 +720,7 @@ export const ChatWindow: React.FC<ChatWindowProps> = ({
                       style={{ height: '32px', padding: '0 12px', fontSize: '11px', borderRadius: '16px' }}
                       title="Open Side Drawer Command Deck & History"
                     >
-                      <Zap size={13} style={{ color: 'var(--accent-cyan)' }} />
+                      <Zap size={13} />
                       <span>📜 Command Deck</span>
                     </button>
                   )}

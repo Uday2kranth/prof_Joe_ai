@@ -19,7 +19,10 @@ import {
   Network,
   GitBranch,
   SkipForward,
-  SkipBack
+  SkipBack,
+  Search,
+  ArrowRight,
+  RotateCcw
 } from 'lucide-react';
 import { DualParamControl } from './common/DualParamControl';
 import { PillSelector } from './common/PillSelector';
@@ -131,6 +134,9 @@ export const DL_STUDIO_MODULES: DLModuleMeta[] = [
 ];
 
 export const DeepLearningStudioView: React.FC = () => {
+  const [viewMode, setViewMode] = useState<'bento_hub' | 'studio_sheet'>('bento_hub');
+  const [bentoSearchQuery, setBentoSearchQuery] = useState<string>('');
+  const [bentoCategoryFilter, setBentoCategoryFilter] = useState<string>('all');
   const [activeModuleId, setActiveModuleId] = useState<DeepLearningModuleId>('mlp_playground');
   const [isSidebarOpen, setIsSidebarOpen] = useState<boolean>(true);
   const [isSimulating, setIsSimulating] = useState<boolean>(true);
@@ -142,24 +148,53 @@ export const DeepLearningStudioView: React.FC = () => {
     return DL_STUDIO_MODULES.find(m => m.id === activeModuleId) || DL_STUDIO_MODULES[0];
   }, [activeModuleId]);
 
-  // Global Animation Loop
+  // Filtered Bento Modules for Deep Learning Hub
+  const filteredBentoModules = useMemo(() => {
+    return DL_STUDIO_MODULES.filter(module => {
+      // Category filter
+      const matchesCategory =
+        bentoCategoryFilter === 'all' ||
+        module.category === bentoCategoryFilter;
+
+      // Live search filter
+      const query = bentoSearchQuery.toLowerCase().trim();
+      const matchesSearch =
+        !query ||
+        module.name.toLowerCase().includes(query) ||
+        module.description.toLowerCase().includes(query) ||
+        module.framework.toLowerCase().includes(query) ||
+        module.badge.toLowerCase().includes(query) ||
+        module.categoryLabel.toLowerCase().includes(query);
+
+      return matchesCategory && matchesSearch;
+    });
+  }, [bentoCategoryFilter, bentoSearchQuery]);
+
+  // Global Animation Loop - Optimized to run only when inside Studio Sheet and tab is visible
   useEffect(() => {
+    if (viewMode !== 'studio_sheet' || !isSimulating) return;
+
     let animId: number;
     let lastTime = performance.now();
+
     const loop = (now: number) => {
-      const dt = (now - lastTime) / 1000;
+      if (document.hidden) {
+        lastTime = now;
+        animId = requestAnimationFrame(loop);
+        return;
+      }
+      const dt = Math.min((now - lastTime) / 1000, 0.1);
       lastTime = now;
-      if (isSimulating) {
-        setTimeT(prev => prev + dt * animSpeed);
-        if (isAutoOrbit) {
-          setLatentRotY(prev => (prev + 0.4 * animSpeed) % 360);
-        }
+      setTimeT(prev => prev + dt * animSpeed);
+      if (isAutoOrbit) {
+        setLatentRotY(prev => (prev + 0.4 * animSpeed) % 360);
       }
       animId = requestAnimationFrame(loop);
     };
+
     animId = requestAnimationFrame(loop);
     return () => cancelAnimationFrame(animId);
-  }, [isSimulating, isAutoOrbit, animSpeed]);
+  }, [viewMode, isSimulating, isAutoOrbit, animSpeed]);
 
   // ─────────────────────────────────────────────────────────────────────────────
   // 1. MLP PLAYGROUND STATE
@@ -1255,142 +1290,437 @@ export const DeepLearningStudioView: React.FC = () => {
         position: 'relative'
       }}
     >
-      {/* ─── Top Studio Command Header ─── */}
-      <div
-        className="dsa-header-card"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: '12px',
-          padding: '8px 16px',
-          background: 'var(--card-bg, rgba(15, 23, 42, 0.88))',
-          borderRadius: '10px',
-          border: '1px solid var(--card-border, rgba(51, 65, 85, 0.7))',
-          backdropFilter: 'blur(10px)',
-          margin: '10px 14px 4px 14px',
-          flexShrink: 0
-        }}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <button
-            type="button"
-            onClick={() => setIsSidebarOpen(!isSidebarOpen)}
-            style={{
-              height: '32px',
-              padding: '0 10px',
-              borderRadius: '6px',
-              fontSize: '0.74rem',
-              fontWeight: 700,
-              cursor: 'pointer',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '6px',
-              background: 'var(--pill-bg, rgba(30, 41, 59, 0.6))',
-              color: 'var(--accent-cyan, #38bdf8)',
-              border: '1px solid var(--card-border, rgba(51, 65, 85, 0.7))'
-            }}
-          >
-            {isSidebarOpen ? <PanelLeftClose size={15} /> : <PanelLeftOpen size={15} />}
-            <span>{isSidebarOpen ? 'Hide Deck' : 'Show Deck'}</span>
-          </button>
-
-          <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <span style={{ fontSize: '0.90rem', fontWeight: 800, color: 'var(--text-primary, #f8fafc)' }}>
-                Deep Learning & Neural Network Studio 🧠
-              </span>
-              <span
+      {viewMode === 'bento_hub' ? (
+        /* ═══════════════════════════════════════════════════════════════════════
+           1. BENTO BOX MODELS GALLERY (MAIN HUB)
+           ═══════════════════════════════════════════════════════════════════════ */
+        <div className="mathbox-bento-hub">
+          {/* Top Bento Header Bar */}
+          <div className="mathbox-bento-header">
+            <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+              <div
                 style={{
-                  fontSize: '0.65rem',
-                  fontWeight: 800,
-                  padding: '2px 6px',
-                  borderRadius: '4px',
-                  background: 'rgba(168, 85, 247, 0.2)',
-                  color: '#c084fc',
-                  border: '1px solid rgba(168, 85, 247, 0.4)'
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '12px',
+                  background: 'rgba(168, 85, 247, 0.18)',
+                  border: '1px solid rgba(168, 85, 247, 0.4)',
+                  color: '#c084fc'
                 }}
               >
-                {activeMeta.badge}
-              </span>
+                <Cpu size={22} />
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <h2 style={{ margin: 0, fontSize: '1.08rem', fontWeight: 800, color: 'var(--text-primary, #f8fafc)' }}>
+                    Deep Learning & Neural Network Studio
+                  </h2>
+                  <span
+                    style={{
+                      fontSize: '0.64rem',
+                      fontWeight: 800,
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      background: 'rgba(168, 85, 247, 0.2)',
+                      color: '#c084fc',
+                      border: '1px solid rgba(168, 85, 247, 0.4)'
+                    }}
+                  >
+                    BENTO SUITE
+                  </span>
+                </div>
+                <p style={{ margin: '2px 0 0 0', fontSize: '0.74rem', color: 'var(--text-muted, #94a3b8)' }}>
+                  Interactive neural networks, 2D CNN feature maps, RNN sequence gating, Transformer self-attention, and 3D latent embeddings
+                </p>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+              {/* Live Search Input */}
+              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
+                <Search size={14} style={{ position: 'absolute', left: '10px', color: 'var(--text-muted, #94a3b8)', pointerEvents: 'none' }} />
+                <input
+                  type="text"
+                  className="mathbox-bento-search-input"
+                  value={bentoSearchQuery}
+                  onChange={(e) => setBentoSearchQuery(e.target.value)}
+                  placeholder="Search 8 DL models..."
+                />
+              </div>
+
+              {/* Quick Launch Active Sheet Button */}
+              <button
+                type="button"
+                onClick={() => setViewMode('studio_sheet')}
+                style={{
+                  height: '34px',
+                  padding: '0 14px',
+                  borderRadius: '8px',
+                  background: 'var(--btn-primary-bg, linear-gradient(135deg, #7c3aed, #9333ea))',
+                  color: 'var(--btn-primary-text, #ffffff)',
+                  border: '1px solid var(--card-border, rgba(168, 85, 247, 0.5))',
+                  fontSize: '0.76rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  boxShadow: 'var(--card-shadow, 0 4px 12px rgba(124, 58, 237, 0.35))'
+                }}
+              >
+                <span>Launch Active Sheet ({activeMeta.name.split(' ')[0]})</span>
+                <ArrowRight size={14} />
+              </button>
             </div>
           </div>
-        </div>
 
-        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-            <select
-              value={activeModuleId}
-              onChange={(e) => setActiveModuleId(e.target.value as DeepLearningModuleId)}
-              style={{
-                height: '32px',
-                padding: '0 32px 0 12px',
-                borderRadius: '6px',
-                background: 'var(--dropdown-bg, rgba(15, 23, 42, 0.96))',
-                color: 'var(--text-primary, #f8fafc)',
-                border: '1px solid var(--dropdown-border, rgba(168, 85, 247, 0.4))',
-                fontSize: '0.76rem',
-                fontWeight: 700,
-                cursor: 'pointer',
-                outline: 'none',
-                appearance: 'none'
-              }}
-            >
-              <optgroup label="⚡ Feedforward & Vision">
-                <option value="mlp_playground">Multilayer Perceptron (MLP) Playground</option>
-                <option value="cnn_feature_maps">CNN Kernels & Feature Maps</option>
-              </optgroup>
-              <optgroup label="🔄 Sequences & Transformers">
-                <option value="rnn_lstm_unroll">RNN & LSTM Unrolled Gating Lab</option>
-                <option value="transformer_attention">Multi-Head Attention & QKV Lab</option>
-              </optgroup>
-              <optgroup label="🌌 Latent Spaces & Dynamics">
-                <option value="latent_space_embeddings">3D Latent Space & PCA/t-SNE Projector</option>
-                <option value="training_dynamics">Hyperparameter Tuning & Optimizers</option>
-                <option value="vae_generative">Autoencoder & VAE Latent Manifold</option>
-              </optgroup>
-              <optgroup label="🏗️ Model Architecture">
-                <option value="netron_graph">Netron-Style Model DAG Inspector</option>
-              </optgroup>
-            </select>
-            <ChevronDown size={14} style={{ position: 'absolute', right: '10px', pointerEvents: 'none', color: '#c084fc' }} />
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setIsSimulating(!isSimulating)}
+          {/* Category Filter Pills Bar */}
+          <div
             style={{
-              height: '32px',
-              padding: '0 10px',
-              borderRadius: '6px',
-              fontSize: '0.72rem',
-              fontWeight: 700,
-              cursor: 'pointer',
               display: 'flex',
               alignItems: 'center',
-              gap: '4px',
-              background: isSimulating ? 'rgba(52, 211, 153, 0.25)' : 'rgba(239, 68, 68, 0.2)',
-              color: isSimulating ? '#34d399' : '#f87171',
-              border: isSimulating ? '1px solid #34d399' : '1px solid rgba(239, 68, 68, 0.4)'
+              gap: '8px',
+              overflowX: 'auto',
+              paddingBottom: '10px',
+              marginBottom: '14px',
+              flexShrink: 0
             }}
           >
-            {isSimulating ? <Pause size={13} /> : <Play size={13} />}
-            <span>{isSimulating ? 'Live Flow' : 'Paused'}</span>
-          </button>
-        </div>
-      </div>
+            {[
+              { id: 'all', label: `All DL Models (${DL_STUDIO_MODULES.length})`, icon: Sparkles },
+              { id: 'feedforward', label: '⚡ MLP & Feedforward (1)', icon: Network },
+              { id: 'vision', label: '👁️ CNNs & Vision (1)', icon: Grid },
+              { id: 'sequences', label: '🔄 RNN & LSTM (1)', icon: Workflow },
+              { id: 'transformers', label: '🤖 Transformers & QKV (1)', icon: Cpu },
+              { id: 'embeddings', label: '🌌 3D Latent Space (1)', icon: Box },
+              { id: 'optimization', label: '📈 Optimizers & Dynamics (1)', icon: TrendingUp },
+              { id: 'generative', label: '🎨 VAE & Generative (1)', icon: Sparkles },
+              { id: 'architecture', label: '🏗️ Netron DAG (1)', icon: GitBranch }
+            ].map((cat) => {
+              const isSelected = bentoCategoryFilter === cat.id;
+              const CatIcon = cat.icon;
+              return (
+                <button
+                  key={cat.id}
+                  type="button"
+                  onClick={() => setBentoCategoryFilter(cat.id)}
+                  className={`mathbox-bento-pill ${isSelected ? 'active' : ''}`}
+                >
+                  <CatIcon size={12} />
+                  <span>{cat.label}</span>
+                </button>
+              );
+            })}
+          </div>
 
-      {/* ─── Main Workspace Flex Layout ─── */}
-      <div
-        style={{
-          flex: 1,
-          display: 'flex',
-          gap: isSidebarOpen ? '12px' : '0px',
-          padding: '6px 14px 14px 14px',
-          overflow: 'hidden',
-          position: 'relative'
-        }}
-      >
+          {/* Bento Cards Grid */}
+          <div
+            style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))',
+              gap: '14px',
+              alignItems: 'stretch'
+            }}
+          >
+            {filteredBentoModules.map((module) => {
+              const IconComponent = module.icon;
+              const isActive = activeModuleId === module.id;
+
+              let themeColor = '#a855f7';
+              if (module.category === 'feedforward') themeColor = '#a855f7';
+              else if (module.category === 'vision') themeColor = '#38bdf8';
+              else if (module.category === 'sequences') themeColor = '#34d399';
+              else if (module.category === 'transformers') themeColor = '#f59e0b';
+              else if (module.category === 'embeddings') themeColor = '#818cf8';
+              else if (module.category === 'optimization') themeColor = '#fb923c';
+              else if (module.category === 'generative') themeColor = '#ec4899';
+              else if (module.category === 'architecture') themeColor = '#06b6d4';
+
+              return (
+                <div
+                  key={module.id}
+                  className={`mathbox-bento-card ${isActive ? 'active' : ''}`}
+                  onClick={() => {
+                    setActiveModuleId(module.id);
+                    setViewMode('studio_sheet');
+                  }}
+                >
+                  {/* Top Accent Line */}
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      left: 0,
+                      right: 0,
+                      height: '3px',
+                      background: `linear-gradient(90deg, transparent, ${themeColor}, transparent)`
+                    }}
+                  />
+
+                  <div>
+                    {/* Header inside Card */}
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          width: '36px',
+                          height: '36px',
+                          borderRadius: '10px',
+                          background: 'var(--pill-bg, rgba(168, 85, 247, 0.12))',
+                          border: '1px solid var(--pill-border, rgba(168, 85, 247, 0.3))',
+                          color: themeColor
+                        }}
+                      >
+                        <IconComponent size={18} />
+                      </div>
+
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                        <span
+                          style={{
+                            fontSize: '0.62rem',
+                            fontWeight: 800,
+                            padding: '2px 8px',
+                            borderRadius: '10px',
+                            background: 'var(--pill-bg, rgba(30, 41, 59, 0.8))',
+                            color: 'var(--text-muted, #94a3b8)',
+                            border: '1px solid var(--card-border, rgba(51, 65, 85, 0.6))'
+                          }}
+                        >
+                          {module.framework.split(' ')[0]}
+                        </span>
+                        {isActive && (
+                          <span
+                            style={{
+                              fontSize: '0.62rem',
+                              fontWeight: 800,
+                              padding: '2px 8px',
+                              borderRadius: '10px',
+                              background: 'var(--pill-active-bg, rgba(168, 85, 247, 0.25))',
+                              color: '#c084fc',
+                              border: '1px solid var(--pill-border, rgba(168, 85, 247, 0.5))'
+                            }}
+                          >
+                            Active
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Title & Badge */}
+                    <h3 style={{ margin: '0 0 6px 0', fontSize: '0.94rem', fontWeight: 800, lineHeight: 1.3 }}>
+                      {module.name}
+                    </h3>
+
+                    <div
+                      style={{
+                        display: 'inline-block',
+                        fontSize: '0.62rem',
+                        fontWeight: 800,
+                        padding: '2px 6px',
+                        borderRadius: '4px',
+                        background: 'var(--pill-bg, rgba(168, 85, 247, 0.12))',
+                        color: themeColor,
+                        border: '1px solid var(--pill-border, rgba(168, 85, 247, 0.25))',
+                        marginBottom: '8px'
+                      }}
+                    >
+                      {module.badge}
+                    </div>
+
+                    {/* Description */}
+                    <p
+                      style={{
+                        margin: 0,
+                        fontSize: '0.72rem',
+                        lineHeight: 1.45,
+                        display: '-webkit-box',
+                        WebkitLineClamp: 3,
+                        WebkitBoxOrient: 'vertical',
+                        overflow: 'hidden'
+                      }}
+                    >
+                      {module.description}
+                    </p>
+                  </div>
+
+                  {/* Card Action Footer */}
+                  <div
+                    style={{
+                      marginTop: '14px',
+                      paddingTop: '10px',
+                      borderTop: '1px solid var(--border-color, rgba(51, 65, 85, 0.4))',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between'
+                    }}
+                  >
+                    <span style={{ fontSize: '0.66rem', color: 'var(--text-muted, #94a3b8)', fontWeight: 600 }}>
+                      {module.categoryLabel.split(' ')[1] || 'Module'}
+                    </span>
+
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveModuleId(module.id);
+                        setViewMode('studio_sheet');
+                      }}
+                      style={{
+                        padding: '4px 10px',
+                        borderRadius: '6px',
+                        fontSize: '0.70rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        background: isActive ? 'var(--pill-active-bg, rgba(168, 85, 247, 0.25))' : 'var(--pill-bg, rgba(30, 41, 59, 0.8))',
+                        color: isActive ? '#c084fc' : 'var(--text-primary, #f8fafc)',
+                        border: isActive ? '1px solid #a855f7' : '1px solid var(--card-border, rgba(51, 65, 85, 0.7))'
+                      }}
+                    >
+                      <span>Launch Sheet</span>
+                      <ArrowRight size={12} />
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      ) : (
+        /* ═══════════════════════════════════════════════════════════════════════
+           2. PERSONALIZED VISUALIZATION STUDIO SHEET
+           ═══════════════════════════════════════════════════════════════════════ */
+        <>
+          {/* ─── Top Studio Command Header ─── */}
+          <div
+            className="dsa-header-card"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              gap: '12px',
+              padding: '8px 16px',
+              background: 'var(--card-bg, rgba(15, 23, 42, 0.88))',
+              borderRadius: '10px',
+              border: '1px solid var(--card-border, rgba(51, 65, 85, 0.7))',
+              backdropFilter: 'blur(10px)',
+              margin: '10px 14px 4px 14px',
+              flexShrink: 0
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <button
+                type="button"
+                onClick={() => setViewMode('bento_hub')}
+                style={{
+                  height: '32px',
+                  padding: '0 12px',
+                  borderRadius: '6px',
+                  fontSize: '0.74rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: 'var(--pill-active-bg, rgba(168, 85, 247, 0.22))',
+                  color: '#c084fc',
+                  border: '1px solid var(--pill-border, rgba(168, 85, 247, 0.45))',
+                  transition: 'all 0.18s ease'
+                }}
+                title="Return to Deep Learning Bento Hub"
+              >
+                <Grid size={14} />
+                <span>← Bento Hub</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+                style={{
+                  height: '32px',
+                  padding: '0 10px',
+                  borderRadius: '6px',
+                  fontSize: '0.74rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '6px',
+                  background: 'var(--btn-secondary-bg, rgba(15, 23, 42, 0.85))',
+                  color: 'var(--text-primary, #f8fafc)',
+                  border: '1px solid var(--card-border, rgba(168, 85, 247, 0.3))',
+                  transition: 'all 0.18s ease'
+                }}
+              >
+                {isSidebarOpen ? <PanelLeftClose size={15} /> : <PanelLeftOpen size={15} />}
+                <span>{isSidebarOpen ? 'Hide Deck' : 'Show Deck'}</span>
+              </button>
+
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <span style={{ fontSize: '0.90rem', fontWeight: 800, color: 'var(--text-primary, #f8fafc)' }}>
+                    {activeMeta.name}
+                  </span>
+                  <span
+                    style={{
+                      fontSize: '0.65rem',
+                      fontWeight: 800,
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      background: 'rgba(168, 85, 247, 0.2)',
+                      color: '#c084fc',
+                      border: '1px solid rgba(168, 85, 247, 0.4)'
+                    }}
+                  >
+                    {activeMeta.badge}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={() => setIsSimulating(!isSimulating)}
+                style={{
+                  height: '32px',
+                  padding: '0 10px',
+                  borderRadius: '6px',
+                  fontSize: '0.72rem',
+                  fontWeight: 700,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  background: isSimulating ? 'rgba(52, 211, 153, 0.25)' : 'rgba(239, 68, 68, 0.2)',
+                  color: isSimulating ? '#34d399' : '#f87171',
+                  border: isSimulating ? '1px solid #34d399' : '1px solid rgba(239, 68, 68, 0.4)'
+                }}
+              >
+                {isSimulating ? <Pause size={13} /> : <Play size={13} />}
+                <span>{isSimulating ? 'Live Flow' : 'Paused'}</span>
+              </button>
+            </div>
+          </div>
+
+          {/* ─── Main Workspace Flex Layout ─── */}
+          <div
+            style={{
+              flex: 1,
+              display: 'flex',
+              gap: isSidebarOpen ? '12px' : '0px',
+              padding: '6px 14px 14px 14px',
+              overflow: 'hidden',
+              position: 'relative'
+            }}
+          >
         {/* ─── LEFT COLUMN: Collapsible Control Deck ─── */}
         <div
           style={{
@@ -3235,6 +3565,10 @@ export const DeepLearningStudioView: React.FC = () => {
           )}
         </div>
       </div>
-    </div>
+    </>
+  )}
+</div>
   );
 };
+
+

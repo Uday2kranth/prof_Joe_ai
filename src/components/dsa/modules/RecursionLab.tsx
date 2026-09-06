@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Play, Pause, RotateCcw } from 'lucide-react';
+import { Play, Pause, RotateCcw, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface RecursionLabProps {
   activeAlgorithm?: string;
@@ -29,13 +29,37 @@ interface RecStepSnapshot {
 }
 
 export const RecursionLab: React.FC<RecursionLabProps> = ({
+  activeAlgorithm,
+  onSelectAlgorithm,
   speed = 2
 }) => {
   const [sizeN, setSizeN] = useState<number>(4);
+  const [customNInput, setCustomNInput] = useState<string>('4');
   const [activeMode, setActiveMode] = useState<'fibonacci' | 'factorial'>('fibonacci');
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [localSpeed, setLocalSpeed] = useState<number>(speed);
+
+  // Synchronize activeAlgorithm with top Bento ribbon
+  useEffect(() => {
+    if (activeAlgorithm) {
+      if (activeAlgorithm.includes('fib')) setActiveMode('fibonacci');
+      else if (activeAlgorithm.includes('fact')) setActiveMode('factorial');
+      setIsPlaying(false);
+      setCurrentStep(0);
+    }
+  }, [activeAlgorithm]);
+
+  const handleApplyN = () => {
+    const n = parseInt(customNInput, 10);
+    if (!isNaN(n) && n >= 2 && n <= 6) {
+      setSizeN(n);
+      setIsPlaying(false);
+      setCurrentStep(0);
+    } else {
+      setCustomNInput(String(sizeN));
+    }
+  };
 
   // Generate Tree Layout
   const treeData = useMemo(() => {
@@ -333,7 +357,7 @@ export const RecursionLab: React.FC<RecursionLabProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
-      {/* Model Selection Header */}
+      {/* Header with N [Set] Input Pattern & Legend */}
       <div className="dsa-header-card" style={{
         display: 'flex',
         alignItems: 'center',
@@ -345,31 +369,51 @@ export const RecursionLab: React.FC<RecursionLabProps> = ({
         borderRadius: '12px',
         border: '1px solid rgba(255,255,255,0.08)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 200px', minWidth: 0, maxWidth: '100%', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
-            MODEL:
+        {/* Left: Active Mode Title & N [Set] Input */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#38bdf8' }}>
+            {activeMode === 'fibonacci' ? 'Fibonacci Tree' : 'Factorial Tree'}
           </span>
-          <select
-            value={activeMode}
-            onChange={(e) => setActiveMode(e.target.value as any)}
-            className="dsa-select-control"
-            style={{
-              minHeight: '36px',
-              padding: '6px 10px',
-              borderRadius: '8px',
-              background: 'rgba(30, 41, 59, 0.95)',
-              border: '1.5px solid #38bdf8',
-              color: '#f8fafc',
-              fontSize: '0.82rem',
-              fontWeight: 800,
-              cursor: 'pointer',
-              outline: 'none',
-              boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)'
-            }}
-          >
-            <option value="fibonacci">🔢 Fibonacci Tree (Binary Branching)</option>
-            <option value="factorial">📦 Factorial Tree (Linear Unwinding)</option>
-          </select>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ fontSize: '0.74rem', color: '#94a3b8', fontWeight: 700 }}>N:</span>
+            <input
+              type="number"
+              min={2}
+              max={6}
+              value={customNInput}
+              onChange={(e) => setCustomNInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleApplyN(); }}
+              style={{
+                width: '38px',
+                padding: '3px 5px',
+                borderRadius: '6px',
+                border: '1px solid rgba(255,255,255,0.2)',
+                background: '#0f172a',
+                color: '#fff',
+                fontSize: '0.76rem',
+                textAlign: 'center',
+                outline: 'none'
+              }}
+            />
+            <button
+              type="button"
+              title="Set Tree N"
+              onClick={handleApplyN}
+              className="dsa-action-btn"
+              style={{
+                background: 'var(--accent-cyan, #0284c7)',
+                color: '#fff',
+                border: 'none',
+                padding: '3px 8px',
+                borderRadius: '5px',
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              Set
+            </button>
+          </div>
         </div>
 
         {/* Legend */}
@@ -494,20 +538,30 @@ export const RecursionLab: React.FC<RecursionLabProps> = ({
         {/* Playback Controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <button
+            type="button"
             title={isPlaying ? 'Pause' : 'Play'}
             onClick={() => setIsPlaying(!isPlaying)}
             className="dsa-action-btn"
             style={{
               border: 'none',
               background: isPlaying ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #0284c7, #0369a1)',
-              color: '#fff'
+              color: '#fff',
+              padding: '5px 10px',
+              borderRadius: '7px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontWeight: 700,
+              fontSize: '0.74rem'
             }}
           >
             {isPlaying ? <Pause size={13} /> : <Play size={13} />}
-            <span className="dsa-btn-label">{isPlaying ? 'Pause' : 'Play'}</span>
+            <span>{isPlaying ? 'Pause' : 'Play'}</span>
           </button>
 
           <button
+            type="button"
             title="Previous Step"
             onClick={() => {
               setIsPlaying(false);
@@ -519,13 +573,17 @@ export const RecursionLab: React.FC<RecursionLabProps> = ({
               border: '1px solid rgba(255,255,255,0.1)',
               background: 'rgba(255,255,255,0.05)',
               color: '#fff',
-              opacity: currentStep === 0 ? 0.4 : 1
+              opacity: currentStep === 0 ? 0.4 : 1,
+              padding: '5px 8px',
+              borderRadius: '7px',
+              cursor: 'pointer'
             }}
           >
-            ‹<span className="dsa-btn-label"> Prev</span>
+            <ChevronLeft size={14} />
           </button>
 
           <button
+            type="button"
             title="Next Step"
             onClick={() => {
               setIsPlaying(false);
@@ -537,52 +595,38 @@ export const RecursionLab: React.FC<RecursionLabProps> = ({
               border: '1px solid rgba(255,255,255,0.1)',
               background: 'rgba(255,255,255,0.05)',
               color: '#fff',
-              opacity: currentStep >= steps.length - 1 ? 0.4 : 1
+              opacity: currentStep >= steps.length - 1 ? 0.4 : 1,
+              padding: '5px 8px',
+              borderRadius: '7px',
+              cursor: 'pointer'
             }}
           >
-            <span className="dsa-btn-label">Next </span>›
+            <ChevronRight size={14} />
           </button>
 
           <button
+            type="button"
             title="Reset"
             onClick={handleReset}
             className="dsa-action-btn"
             style={{
               border: '1px solid rgba(255,255,255,0.1)',
               background: 'rgba(255,255,255,0.05)',
-              color: 'var(--text-muted)'
+              color: 'var(--text-muted, #94a3b8)',
+              padding: '5px 8px',
+              borderRadius: '7px',
+              cursor: 'pointer'
             }}
           >
-            <RotateCcw size={12} />
-            <span className="dsa-btn-label">Reset</span>
+            <RotateCcw size={13} />
           </button>
         </div>
 
-        {/* Speed & Size Sliders */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Speed: {localSpeed}x</span>
-            <input
-              type="range"
-              min="1"
-              max="5"
-              value={localSpeed}
-              onChange={(e) => setLocalSpeed(parseInt(e.target.value, 10))}
-              style={{ width: '50px', accentColor: '#38bdf8' }}
-            />
-          </div>
-
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-            <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>n = {sizeN}</span>
-            <input
-              type="range"
-              min="2"
-              max="5"
-              value={sizeN}
-              onChange={(e) => setSizeN(parseInt(e.target.value, 10))}
-              style={{ width: '55px', accentColor: '#c084fc' }}
-            />
-          </div>
+        {/* Status / Step indicator */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>
+            Step <strong>{currentStep}</strong>/{Math.max(0, steps.length - 1)}
+          </span>
         </div>
       </div>
 

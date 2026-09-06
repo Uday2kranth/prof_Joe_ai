@@ -4257,7 +4257,12 @@ export const TestDiagramsStudioView: React.FC = () => {
     let animId: number;
     let lastTime = performance.now();
     const loop = (now: number) => {
-      const dt = (now - lastTime) / 1000;
+      if (document.hidden) {
+        lastTime = now;
+        animId = requestAnimationFrame(loop);
+        return;
+      }
+      const dt = Math.min((now - lastTime) / 1000, 0.1);
       lastTime = now;
       if (isSimulating) {
         setTimeT(prev => prev + dt * animSpeed);

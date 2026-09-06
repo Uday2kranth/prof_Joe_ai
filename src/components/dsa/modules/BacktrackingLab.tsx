@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Play, Pause, RotateCcw, Zap, Crown } from 'lucide-react';
+import { Play, Pause, RotateCcw, Zap, Crown, ChevronRight } from 'lucide-react';
 
 interface BacktrackingLabProps {
   activeAlgorithm?: string;
@@ -8,9 +8,12 @@ interface BacktrackingLabProps {
 }
 
 export const BacktrackingLab: React.FC<BacktrackingLabProps> = ({
+  activeAlgorithm,
+  onSelectAlgorithm,
   speed
 }) => {
   const [activeTab, setActiveTab] = useState<'n_queens' | 'rec_factorial' | 'sudoku'>('n_queens');
+  const [customNInput, setCustomNInput] = useState<string>('4');
 
   // 1. N-QUEENS STATE
   const [boardSize, setBoardSize] = useState<number>(4);
@@ -18,6 +21,27 @@ export const BacktrackingLab: React.FC<BacktrackingLabProps> = ({
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [history, setHistory] = useState<{ queens: number[]; log: string; status: 'placing' | 'conflict' | 'backtrack' | 'solved' }[]>([]);
+
+  // Synchronize activeAlgorithm with top Bento ribbon
+  useEffect(() => {
+    if (activeAlgorithm) {
+      if (activeAlgorithm.includes('queen')) setActiveTab('n_queens');
+      else if (activeAlgorithm.includes('sudoku')) setActiveTab('sudoku');
+      else if (activeAlgorithm.includes('maze') || activeAlgorithm.includes('fact')) setActiveTab('rec_factorial');
+      setIsPlaying(false);
+      setSudokuIsPlaying(false);
+    }
+  }, [activeAlgorithm]);
+
+  const handleApplyN = () => {
+    const n = parseInt(customNInput, 10);
+    if (!isNaN(n) && n >= 4 && n <= 8) {
+      setBoardSize(n);
+      generateNQueensSteps(n);
+    } else {
+      setCustomNInput(String(boardSize));
+    }
+  };
 
   // 2. RECURSIVE CALL STACK STATE
   const [factorialInput, setFactorialInput] = useState<number>(4);
@@ -348,77 +372,46 @@ export const BacktrackingLab: React.FC<BacktrackingLabProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%' }}>
-      {/* Top Solver Selector Card */}
+      {/* Control Action Bar with Unified Set Controls */}
       <div className="dsa-header-card" style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '8px',
-        background: 'rgba(15, 23, 42, 0.75)',
+        background: 'rgba(15, 23, 42, 0.8)',
         padding: '8px 12px',
         borderRadius: '12px',
-        border: '1px solid rgba(255,255,255,0.08)'
-      }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 200px', minWidth: 0, maxWidth: '100%', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
-            SOLVER:
-          </span>
-          <select
-            value={activeTab}
-            onChange={(e) => setActiveTab(e.target.value as any)}
-            className="dsa-select-control"
-            style={{
-              minHeight: '36px',
-              padding: '6px 10px',
-              borderRadius: '8px',
-              background: 'rgba(30, 41, 59, 0.95)',
-              border: '1.5px solid #38bdf8',
-              color: '#f8fafc',
-              fontSize: '0.82rem',
-              fontWeight: 800,
-              cursor: 'pointer',
-              outline: 'none',
-              boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)'
-            }}
-          >
-            <option value="n_queens">👑 N-Queens Problem (Backtrack Pruning)</option>
-            <option value="rec_factorial">📦 Recursive Call Stack (Factorial N! Unwinding)</option>
-            <option value="sudoku">🧩 Sudoku 9x9 Solver (Depth-First Search)</option>
-          </select>
-        </div>
-      </div>
-
-      {/* Control Action Bar */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '8px',
-        background: 'rgba(15, 23, 42, 0.8)',
-        padding: '6px 12px',
-        borderRadius: '10px',
         border: '1px solid rgba(255,255,255,0.08)'
       }}>
         {activeTab === 'n_queens' ? (
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <button
-                title={isPlaying ? 'Pause' : 'Auto Backtrack'}
+                type="button"
+                title={isPlaying ? 'Pause' : 'Play'}
                 onClick={() => setIsPlaying(!isPlaying)}
                 className="dsa-action-btn"
                 style={{
                   border: 'none',
                   background: isPlaying ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #10b981, #059669)',
-                  color: '#fff'
+                  color: '#fff',
+                  padding: '5px 10px',
+                  borderRadius: '7px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontWeight: 700,
+                  fontSize: '0.74rem'
                 }}
               >
                 {isPlaying ? <Pause size={13} /> : <Play size={13} />}
-                <span className="dsa-btn-label">{isPlaying ? 'Pause' : 'Auto Backtrack'}</span>
+                <span>{isPlaying ? 'Pause' : 'Play'}</span>
               </button>
 
               <button
+                type="button"
                 title="Next Step"
                 onClick={() => {
                   if (currentStep < history.length - 1) {
@@ -433,13 +426,17 @@ export const BacktrackingLab: React.FC<BacktrackingLabProps> = ({
                   border: '1px solid rgba(255,255,255,0.1)',
                   background: 'rgba(255,255,255,0.05)',
                   color: '#fff',
-                  opacity: currentStep >= history.length - 1 ? 0.4 : 1
+                  opacity: currentStep >= history.length - 1 ? 0.4 : 1,
+                  padding: '5px 8px',
+                  borderRadius: '7px',
+                  cursor: 'pointer'
                 }}
               >
-                +1<span className="dsa-btn-label"> Step</span>
+                <ChevronRight size={14} />
               </button>
 
               <button
+                type="button"
                 title="Reset Board"
                 onClick={() => {
                   setIsPlaying(false);
@@ -450,33 +447,56 @@ export const BacktrackingLab: React.FC<BacktrackingLabProps> = ({
                 style={{
                   border: '1px solid rgba(255,255,255,0.1)',
                   background: 'rgba(255,255,255,0.05)',
-                  color: 'var(--text-muted)'
+                  color: 'var(--text-muted, #94a3b8)',
+                  padding: '5px 8px',
+                  borderRadius: '7px',
+                  cursor: 'pointer'
                 }}
               >
-                <RotateCcw size={12} />
-                <span className="dsa-btn-label">Reset</span>
+                <RotateCcw size={13} />
               </button>
             </div>
 
+            {/* Board Size N [Set] Input */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-              <span style={{ fontSize: '0.72rem', color: '#94a3b8' }}>Queens:</span>
-              {[4, 5, 6].map(n => (
-                <button
-                  key={`n-${n}`}
-                  onClick={() => setBoardSize(n)}
-                  className="dsa-action-btn"
-                  style={{
-                    padding: '2px 6px',
-                    borderRadius: '4px',
-                    border: boardSize === n ? '1px solid #38bdf8' : '1px solid rgba(255,255,255,0.1)',
-                    background: boardSize === n ? '#0284c7' : 'rgba(255,255,255,0.05)',
-                    color: '#fff',
-                    fontSize: '0.72rem'
-                  }}
-                >
-                  {n}
-                </button>
-              ))}
+              <span style={{ fontSize: '0.74rem', color: '#94a3b8', fontWeight: 700 }}>N:</span>
+              <input
+                type="number"
+                min={4}
+                max={8}
+                value={customNInput}
+                onChange={(e) => setCustomNInput(e.target.value)}
+                onKeyDown={(e) => { if (e.key === 'Enter') handleApplyN(); }}
+                style={{
+                  width: '38px',
+                  padding: '3px 5px',
+                  borderRadius: '6px',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  background: '#0f172a',
+                  color: '#fff',
+                  fontSize: '0.76rem',
+                  textAlign: 'center',
+                  outline: 'none'
+                }}
+              />
+              <button
+                type="button"
+                title="Set Board Size"
+                onClick={handleApplyN}
+                className="dsa-action-btn"
+                style={{
+                  background: 'var(--accent-cyan, #0284c7)',
+                  color: '#fff',
+                  border: 'none',
+                  padding: '3px 8px',
+                  borderRadius: '5px',
+                  fontSize: '0.7rem',
+                  fontWeight: 700,
+                  cursor: 'pointer'
+                }}
+              >
+                Set
+              </button>
             </div>
           </>
         ) : activeTab === 'rec_factorial' ? (
@@ -509,17 +529,26 @@ export const BacktrackingLab: React.FC<BacktrackingLabProps> = ({
           <>
             <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
               <button
-                title={sudokuIsPlaying ? 'Pause' : 'Auto Backtrack'}
+                type="button"
+                title={sudokuIsPlaying ? 'Pause' : 'Play'}
                 onClick={() => setSudokuIsPlaying(!sudokuIsPlaying)}
                 className="dsa-action-btn"
                 style={{
                   border: 'none',
                   background: sudokuIsPlaying ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #10b981, #059669)',
-                  color: '#fff'
+                  color: '#fff',
+                  padding: '5px 10px',
+                  borderRadius: '7px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  fontWeight: 700,
+                  fontSize: '0.74rem'
                 }}
               >
                 {sudokuIsPlaying ? <Pause size={13} /> : <Play size={13} />}
-                <span className="dsa-btn-label">{sudokuIsPlaying ? 'Pause' : 'Auto Backtrack'}</span>
+                <span>{sudokuIsPlaying ? 'Pause' : 'Play'}</span>
               </button>
 
               <button

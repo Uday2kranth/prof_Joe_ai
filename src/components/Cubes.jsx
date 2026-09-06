@@ -195,7 +195,7 @@ const Cubes = ({
     };
     const speed = 0.02;
     const loop = () => {
-      if (!userActiveRef.current) {
+      if (!document.hidden && !userActiveRef.current) {
         const pos = simPosRef.current;
         const tgt = simTargetRef.current;
         pos.x += (tgt.x - pos.x) * speed;
@@ -214,6 +214,12 @@ const Cubes = ({
     return () => {
       if (simRAFRef.current != null) {
         cancelAnimationFrame(simRAFRef.current);
+      }
+      if (sceneRef.current) {
+        const cubes = sceneRef.current.querySelectorAll('.cube');
+        if (cubes && cubes.length > 0) {
+          gsap.killTweensOf(cubes);
+        }
       }
     };
   }, [autoAnimate, gridSize, tiltAt]);
@@ -241,6 +247,11 @@ const Cubes = ({
 
       rafRef.current != null && cancelAnimationFrame(rafRef.current);
       idleTimerRef.current && clearTimeout(idleTimerRef.current);
+
+      const cubes = el.querySelectorAll('.cube');
+      if (cubes && cubes.length > 0) {
+        gsap.killTweensOf(cubes);
+      }
     };
   }, [onPointerMove, resetAll, onClick, onTouchMove, onTouchStart, onTouchEnd]);
 

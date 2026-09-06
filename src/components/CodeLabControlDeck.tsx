@@ -8,13 +8,19 @@ import {
   RotateCcw, 
   Search, 
   MessageSquare, 
-  Trash2, 
-  Cloud,
-  Pin,
-  Printer,
-  Sparkles
+  Pin, 
+  Printer, 
+  Sparkles,
+  FileText,
+  Lightbulb,
+  Zap,
+  Wrench,
+  Package,
+  Layers,
+  Trash2,
+  Cloud
 } from 'lucide-react';
-import type { ChatSession } from '../types';
+import type { ChatSession, CodeLabDeliveryFormat, CodeLabApproach } from '../types';
 
 interface CodeLabControlDeckProps {
   isOpen: boolean;
@@ -33,6 +39,10 @@ interface CodeLabControlDeckProps {
   onOpenCheatSheet?: () => void;
   pinnedCount?: number;
   onPrintSession?: () => void;
+  deliveryFormat?: CodeLabDeliveryFormat;
+  onSelectDeliveryFormat?: (format: CodeLabDeliveryFormat) => void;
+  codeApproach?: CodeLabApproach;
+  onSelectCodeApproach?: (approach: CodeLabApproach) => void;
 }
 
 export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
@@ -50,7 +60,11 @@ export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
   onToggleWebSearch,
   onOpenCheatSheet,
   pinnedCount = 0,
-  onPrintSession
+  onPrintSession,
+  deliveryFormat = 'lab_record',
+  onSelectDeliveryFormat,
+  codeApproach = 'standard_lib',
+  onSelectCodeApproach
 }) => {
   const [searchQuery, setSearchQuery] = useState('');
 
@@ -205,6 +219,138 @@ export const CodeLabControlDeck: React.FC<CodeLabControlDeckProps> = ({
                 <Printer size={13} />
               </div>
               <span className="bento-tile-label">Print Lab</span>
+            </div>
+          </div>
+        </div>
+
+        {/* 📄 1. DELIVERY FORMAT (3-COLUMN SELECTOR) */}
+        <div className="demo-bento-deck" style={{ marginBottom: '8px' }}>
+          <div className="bento-deck-header">
+            <div className="flex items-center gap-1.5">
+              <FileText size={12} style={{ color: 'var(--accent-cyan)' }} />
+              <span>DELIVERY FORMAT</span>
+            </div>
+            <span style={{ fontSize: '0.62rem', color: '#94a3b8', textTransform: 'none' }}>
+              Output Structure
+            </span>
+          </div>
+
+          <div className="bento-grid-container-3col">
+            {/* Format 1: 5-Part Lab Record */}
+            <div
+              onClick={() => onSelectDeliveryFormat && onSelectDeliveryFormat('lab_record')}
+              className={`bento-card-tile-compact ${deliveryFormat === 'lab_record' ? 'active-glow-cyan' : ''}`}
+              title="5-Part Formal Lab Record (Aim, Steps, Runnable Code, Observation Table, Conclusion)"
+            >
+              <div className="bento-tile-icon-sm cyan">
+                <FileText size={12} />
+              </div>
+              <span className="bento-tile-label" style={{ fontWeight: deliveryFormat === 'lab_record' ? 700 : 500 }}>
+                Lab Record
+              </span>
+              <span className={`bento-mini-badge ${deliveryFormat === 'lab_record' ? 'on' : 'off'}`}>
+                5-Part
+              </span>
+            </div>
+
+            {/* Format 2: Interactive Learner */}
+            <div
+              onClick={() => onSelectDeliveryFormat && onSelectDeliveryFormat('interactive_learner')}
+              className={`bento-card-tile-compact ${deliveryFormat === 'interactive_learner' ? 'active-glow-amber' : ''}`}
+              title="Interactive Learning with Intuition, Architecture Flowchart (Mermaid), and Step-by-Step Code Walkthrough"
+            >
+              <div className="bento-tile-icon-sm amber">
+                <Lightbulb size={12} />
+              </div>
+              <span className="bento-tile-label" style={{ fontWeight: deliveryFormat === 'interactive_learner' ? 700 : 500 }}>
+                Learner
+              </span>
+              <span className={`bento-mini-badge ${deliveryFormat === 'interactive_learner' ? 'on' : 'off'}`}>
+                Intuition
+              </span>
+            </div>
+
+            {/* Format 3: Pure Code */}
+            <div
+              onClick={() => onSelectDeliveryFormat && onSelectDeliveryFormat('pure_code')}
+              className={`bento-card-tile-compact ${deliveryFormat === 'pure_code' ? 'active-glow-emerald' : ''}`}
+              title="Pure Executable Code: Direct 100% production script file in IDE tab with minimal 1-line note"
+            >
+              <div className="bento-tile-icon-sm emerald">
+                <Zap size={12} />
+              </div>
+              <span className="bento-tile-label" style={{ fontWeight: deliveryFormat === 'pure_code' ? 700 : 500 }}>
+                Pure Code
+              </span>
+              <span className={`bento-mini-badge ${deliveryFormat === 'pure_code' ? 'on' : 'off'}`}>
+                IDE-First
+              </span>
+            </div>
+          </div>
+        </div>
+
+        {/* 🧠 2. IMPLEMENTATION APPROACH (3-COLUMN SELECTOR) */}
+        <div className="demo-bento-deck" style={{ marginBottom: '8px' }}>
+          <div className="bento-deck-header">
+            <div className="flex items-center gap-1.5">
+              <Layers size={12} style={{ color: 'var(--accent-purple, #c084fc)' }} />
+              <span>CODE APPROACH</span>
+            </div>
+            <span style={{ fontSize: '0.62rem', color: '#94a3b8', textTransform: 'none' }}>
+              Coding Style
+            </span>
+          </div>
+
+          <div className="bento-grid-container-3col">
+            {/* Approach 1: From Scratch */}
+            <div
+              onClick={() => onSelectCodeApproach && onSelectCodeApproach('from_scratch')}
+              className={`bento-card-tile-compact ${codeApproach === 'from_scratch' ? 'active-glow-purple' : ''}`}
+              title="From Scratch: Raw mathematical formulas and core loops without black-box library wrappers"
+            >
+              <div className="bento-tile-icon-sm purple">
+                <Wrench size={12} />
+              </div>
+              <span className="bento-tile-label" style={{ fontWeight: codeApproach === 'from_scratch' ? 700 : 500 }}>
+                Scratch
+              </span>
+              <span className={`bento-mini-badge ${codeApproach === 'from_scratch' ? 'on' : 'off'}`}>
+                Formulas
+              </span>
+            </div>
+
+            {/* Approach 2: Standard Libraries */}
+            <div
+              onClick={() => onSelectCodeApproach && onSelectCodeApproach('standard_lib')}
+              className={`bento-card-tile-compact ${codeApproach === 'standard_lib' ? 'active-glow-cyan' : ''}`}
+              title="Standard Libraries: Battle-tested production packages (scikit-learn, scipy, statsmodels, PyCryptodome, Tokio)"
+            >
+              <div className="bento-tile-icon-sm cyan">
+                <Package size={12} />
+              </div>
+              <span className="bento-tile-label" style={{ fontWeight: codeApproach === 'standard_lib' ? 700 : 500 }}>
+                Standard Lib
+              </span>
+              <span className={`bento-mini-badge ${codeApproach === 'standard_lib' ? 'on' : 'off'}`}>
+                Production
+              </span>
+            </div>
+
+            {/* Approach 3: Beginner Simple */}
+            <div
+              onClick={() => onSelectCodeApproach && onSelectCodeApproach('beginner_simple')}
+              className={`bento-card-tile-compact ${codeApproach === 'beginner_simple' ? 'active-glow-emerald' : ''}`}
+              title="Beginner Simple: Flat, sequential top-to-bottom code with zero complex OOP/abstractions"
+            >
+              <div className="bento-tile-icon-sm emerald">
+                <Sparkles size={12} />
+              </div>
+              <span className="bento-tile-label" style={{ fontWeight: codeApproach === 'beginner_simple' ? 700 : 500 }}>
+                Beginner
+              </span>
+              <span className={`bento-mini-badge ${codeApproach === 'beginner_simple' ? 'on' : 'off'}`}>
+                Flat Script
+              </span>
             </div>
           </div>
         </div>

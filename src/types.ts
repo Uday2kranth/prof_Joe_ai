@@ -138,20 +138,96 @@ export interface QuizDeck {
   questions: QuizQuestion[];
 }
 
+export interface MainChatTuning {
+  mode: 'auto' | '12marks' | '2marks' | '1marks' | 'general' | 'none';
+  temperature: number;
+  maxTokens: number;
+  searchSourcesCount: number;
+  deliveryPacing: 'instant' | 'fast' | 'smooth' | 'lecture';
+}
+
+export interface CodeDungeonTuning {
+  strictCodeFirst: boolean;
+  temperature: number;
+  maxTokens: number;
+  searchSourcesCount: number;
+  deliveryPacing: 'instant' | 'fast' | 'smooth' | 'lecture';
+  libraryDocsGrounding: boolean;
+}
+
+export interface FunPersonasTuning {
+  temperature: number;
+  maxTokens: number;
+  deliveryPacing: 'instant' | 'fast' | 'smooth' | 'lecture';
+  suppressDiagrams: boolean;
+}
+
+export interface LectureNotesTuning {
+  notesDepth: 'comprehensive' | 'concise' | 'bullet_summary';
+  temperature: number;
+  maxTokens: number;
+  includeLatexDerivations: boolean;
+  deliveryPacing: 'instant' | 'fast' | 'smooth' | 'lecture';
+}
+
 export interface AiTuningConfig {
   temperature: number;
   maxTokens: number;
-  streaming: boolean;
-  searchDepth: 'fast' | 'deep';
-  graderMode: 'rigorous_12mark' | 'step_by_step' | 'compact';
+  deliveryPacing?: 'instant' | 'fast' | 'smooth' | 'lecture';
+  searchDepth: 'fast' | 'deep' | number;
+  searchSourcesCount?: number;
+  streaming?: boolean;
+  graderMode?: 'rigorous_12mark' | 'step_by_step' | 'compact';
+  activeWorkspaceTuningTab?: 'main_chat' | 'code_dungeon' | 'fun_personas' | 'lecture_notes';
+  mainChat?: MainChatTuning;
+  codeDungeon?: CodeDungeonTuning;
+  funPersonas?: FunPersonasTuning;
+  lectureNotes?: LectureNotesTuning;
 }
+
+export const DEFAULT_MAIN_CHAT_TUNING: MainChatTuning = {
+  mode: '12marks',
+  temperature: 0.2,
+  maxTokens: 4096,
+  searchSourcesCount: 4,
+  deliveryPacing: 'instant'
+};
+
+export const DEFAULT_CODE_DUNGEON_TUNING: CodeDungeonTuning = {
+  strictCodeFirst: true,
+  temperature: 0.15,
+  maxTokens: 4096,
+  searchSourcesCount: 3,
+  deliveryPacing: 'instant',
+  libraryDocsGrounding: true
+};
+
+export const DEFAULT_FUN_PERSONAS_TUNING: FunPersonasTuning = {
+  temperature: 0.8,
+  maxTokens: 3072,
+  deliveryPacing: 'instant',
+  suppressDiagrams: true
+};
+
+export const DEFAULT_LECTURE_NOTES_TUNING: LectureNotesTuning = {
+  notesDepth: 'comprehensive',
+  temperature: 0.2,
+  maxTokens: 8192,
+  includeLatexDerivations: true,
+  deliveryPacing: 'instant'
+};
 
 export const DEFAULT_AI_TUNING: AiTuningConfig = {
   temperature: 0.2,
   maxTokens: 4096,
-  streaming: true,
-  searchDepth: 'deep',
-  graderMode: 'rigorous_12mark'
+  deliveryPacing: 'instant',
+  searchDepth: 4,
+  searchSourcesCount: 4,
+  activeWorkspaceTuningTab: 'main_chat',
+  mainChat: DEFAULT_MAIN_CHAT_TUNING,
+  codeDungeon: DEFAULT_CODE_DUNGEON_TUNING,
+  funPersonas: DEFAULT_FUN_PERSONAS_TUNING,
+  lectureNotes: DEFAULT_LECTURE_NOTES_TUNING
 };
 
 export type SupportedCodeTheme = 
@@ -167,11 +243,35 @@ export type SupportedCodeTheme =
   | 'cobalt' 
   | 'solarized_amber';
 
-export type WorkspaceAtmosphere = 'cyber_osmania' | 'midnight_academy' | 'emerald_scholar' | 'obsidian_oled' | 'oxford_daylight' | 'amber_parchment' | 'crimson_rose' | 'sakura_pink';
+export type WorkspaceAtmosphere =
+  | 'cyber_osmania'
+  | 'midnight_academy'
+  | 'emerald_scholar'
+  | 'royal_sapphire'
+  | 'oceanic_teal'
+  | 'sunset_coral'
+  | 'imperial_gold'
+  | 'amber_parchment'
+  | 'crimson_rose'
+  | 'sakura_pink'
+  | 'electric_amethyst'
+  | 'arctic_frost';
 
 export type ChatBubbleStyle = 'cyan_glass' | 'velvet_indigo' | 'scholar_emerald' | 'obsidian_minimal' | 'clean_card';
 
-export type CanvasAtmosphere = 'deep_void' | 'blueprint_matrix' | 'academic_parchment' | 'oxford_daylight' | 'oled_black';
+export type CanvasAtmosphere =
+  | 'deep_void'
+  | 'blueprint_matrix'
+  | 'academic_parchment'
+  | 'oxford_daylight'
+  | 'oled_black'
+  | 'tokyo_synthwave'
+  | 'emerald_matrix'
+  | 'solar_amber'
+  | 'nordic_aurora'
+  | 'chalkboard_slate'
+  | 'royal_nebula'
+  | 'sakura_blossom';
 
 export interface CodeStyleConfig {
   codeTheme: SupportedCodeTheme;
@@ -199,6 +299,7 @@ export interface IdeConfig {
   wordWrap: 'on' | 'off';
   lineNumbers: 'on' | 'off';
   editorEngine?: 'monaco' | 'fast';
+  monacoThemeMode?: 'auto' | 'dark' | 'light';
 }
 
 export const DEFAULT_IDE_CONFIG: IdeConfig = {
@@ -208,7 +309,12 @@ export const DEFAULT_IDE_CONFIG: IdeConfig = {
   tabSize: 2,
   wordWrap: 'on',
   lineNumbers: 'on',
-  editorEngine: 'monaco'
+  editorEngine: 'monaco',
+  monacoThemeMode: 'auto'
 };
+
+export type CodeLabDeliveryFormat = 'lab_record' | 'interactive_learner' | 'pure_code';
+export type CodeLabApproach = 'from_scratch' | 'standard_lib' | 'beginner_simple';
+
 
 

@@ -8,10 +8,13 @@ interface SearchingLabProps {
 }
 
 export const SearchingLab: React.FC<SearchingLabProps> = ({
+  activeAlgorithm,
   onSelectAlgorithm,
   speed
 }) => {
   const [activeSearchAlgo, setActiveSearchAlgo] = useState<'linear_search' | 'binary_search' | 'two_pointers'>('binary_search');
+  const [arraySize, setArraySize] = useState<number>(8);
+  const [customNInput, setCustomNInput] = useState<string>('8');
   const [array, setArray] = useState<number[]>([]);
   const [target, setTarget] = useState<number>(45);
   const [customTargetInput, setCustomTargetInput] = useState<string>('45');
@@ -19,15 +22,24 @@ export const SearchingLab: React.FC<SearchingLabProps> = ({
   const [currentStep, setCurrentStep] = useState<number>(0);
   const [showCheatsheet, setShowCheatsheet] = useState<boolean>(false);
 
+  // Synchronize activeAlgorithm with top Bento ribbon
+  useEffect(() => {
+    if (activeAlgorithm && ['linear_search', 'binary_search', 'two_pointers'].includes(activeAlgorithm)) {
+      setActiveSearchAlgo(activeAlgorithm as any);
+      setIsPlaying(false);
+      setCurrentStep(0);
+    }
+  }, [activeAlgorithm]);
+
   const [pointers, setPointers] = useState<{ low: number; mid?: number; high: number; current?: number; found?: boolean }>({ low: -1, high: -1 });
   const [comparisons, setComparisons] = useState<number>(0);
 
   const stepsRef = useRef<{ pointers: { low: number; mid?: number; high: number; current?: number; found?: boolean }; log: string; comp: number }[]>([]);
 
-  const generateSortedArray = useCallback(() => {
+  const generateSortedArray = useCallback((len: number = 8) => {
     const arr: number[] = [];
     let current = Math.floor(Math.random() * 5) + 3;
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < len; i++) {
       current += Math.floor(Math.random() * 6) + 2;
       arr.push(current);
     }
@@ -40,9 +52,19 @@ export const SearchingLab: React.FC<SearchingLabProps> = ({
     setIsPlaying(false);
   }, []);
 
+  const handleApplyN = () => {
+    const n = parseInt(customNInput, 10);
+    if (!isNaN(n) && n >= 4 && n <= 20) {
+      setArraySize(n);
+      generateSortedArray(n);
+    } else {
+      setCustomNInput(String(arraySize));
+    }
+  };
+
   useEffect(() => {
-    generateSortedArray();
-  }, [generateSortedArray]);
+    generateSortedArray(arraySize);
+  }, [generateSortedArray, arraySize]);
 
   // Compile search simulation steps
   const compileSearchSteps = useCallback(() => {
@@ -195,92 +217,45 @@ export const SearchingLab: React.FC<SearchingLabProps> = ({
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', height: '100%' }}>
       {/* Search Algorithm Dropdown & Cheatsheet */}
+      {/* Consolidated Searching Lab Control Deck with Unified [Set] Controls */}
       <div className="dsa-header-card" style={{
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: '8px',
-        background: 'rgba(15, 23, 42, 0.75)',
+        background: 'rgba(15, 23, 42, 0.8)',
         padding: '8px 12px',
         borderRadius: '12px',
         border: '1px solid rgba(255,255,255,0.08)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 200px', minWidth: 0, maxWidth: '100%', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
-            SEARCH:
-          </span>
-          <select
-            value={activeSearchAlgo}
-            onChange={(e) => {
-              const val = e.target.value as any;
-              setActiveSearchAlgo(val);
-              onSelectAlgorithm(val);
-            }}
-            className="dsa-select-control"
-            style={{
-              minHeight: '36px',
-              padding: '6px 10px',
-              borderRadius: '8px',
-              background: 'rgba(30, 41, 59, 0.95)',
-              border: '1.5px solid #38bdf8',
-              color: '#f8fafc',
-              fontSize: '0.82rem',
-              fontWeight: 800,
-              cursor: 'pointer',
-              outline: 'none',
-              boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)'
-            }}
-          >
-            <option value="linear_search">🔍 Linear Search (Sequential O(n))</option>
-            <option value="binary_search">⚡ Binary Search (Halve Window O(log n))</option>
-            <option value="two_pointers">👉👈 Two-Pointer Technique (2-Sum Target)</option>
-          </select>
-        </div>
-
-        <button
-          title="Searching Comparison Matrix"
-          onClick={() => setShowCheatsheet(!showCheatsheet)}
-          className="dsa-action-btn"
-          style={{
-            border: '1px solid rgba(56, 189, 248, 0.4)',
-            background: showCheatsheet ? '#0284c7' : 'rgba(56, 189, 248, 0.12)',
-            color: showCheatsheet ? '#fff' : '#38bdf8'
-          }}
-        >
-          <HelpCircle size={13} />
-          <span className="dsa-btn-label">Matrix</span>
-        </button>
-      </div>
-
-      {/* Control Bar */}
-      <div style={{
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'space-between',
-        flexWrap: 'wrap',
-        gap: '8px',
-        background: 'rgba(15, 23, 42, 0.8)',
-        padding: '6px 12px',
-        borderRadius: '10px',
-        border: '1px solid rgba(255,255,255,0.08)'
-      }}>
+        {/* Left: Action Control Buttons */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <button
-            title={isPlaying ? 'Pause' : 'Auto Search'}
+            type="button"
+            title={isPlaying ? 'Pause' : 'Play'}
             onClick={() => setIsPlaying(!isPlaying)}
             className="dsa-action-btn"
             style={{
               border: 'none',
               background: isPlaying ? 'linear-gradient(135deg, #ef4444, #dc2626)' : 'linear-gradient(135deg, #10b981, #059669)',
-              color: '#fff'
+              color: '#fff',
+              padding: '5px 10px',
+              borderRadius: '7px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontWeight: 700,
+              fontSize: '0.74rem'
             }}
           >
             {isPlaying ? <Pause size={13} /> : <Play size={13} />}
-            <span className="dsa-btn-label">{isPlaying ? 'Pause' : 'Auto Search'}</span>
+            <span>{isPlaying ? 'Pause' : 'Play'}</span>
           </button>
 
           <button
+            type="button"
             title="Next Step"
             onClick={() => {
               if (currentStep < stepsRef.current.length - 1) {
@@ -296,14 +271,17 @@ export const SearchingLab: React.FC<SearchingLabProps> = ({
               border: '1px solid rgba(255,255,255,0.1)',
               background: 'rgba(255,255,255,0.05)',
               color: '#fff',
-              opacity: currentStep >= stepsRef.current.length - 1 ? 0.4 : 1
+              opacity: currentStep >= stepsRef.current.length - 1 ? 0.4 : 1,
+              padding: '5px 8px',
+              borderRadius: '7px',
+              cursor: 'pointer'
             }}
           >
-            <ChevronRight size={13} />
-            <span className="dsa-btn-label">Next</span>
+            <ChevronRight size={14} />
           </button>
 
           <button
+            type="button"
             title="Reset Search"
             onClick={() => {
               setIsPlaying(false);
@@ -317,44 +295,145 @@ export const SearchingLab: React.FC<SearchingLabProps> = ({
             style={{
               border: '1px solid rgba(255,255,255,0.1)',
               background: 'rgba(255,255,255,0.05)',
-              color: 'var(--text-muted)'
+              color: 'var(--text-muted, #94a3b8)',
+              padding: '5px 8px',
+              borderRadius: '7px',
+              cursor: 'pointer'
             }}
           >
-            <RotateCcw size={12} />
-            <span className="dsa-btn-label">Reset</span>
+            <RotateCcw size={13} />
           </button>
 
           <button
+            type="button"
             title="Generate New Random Sorted Array"
-            onClick={generateSortedArray}
+            onClick={() => generateSortedArray(arraySize)}
             className="dsa-action-btn"
             style={{
               border: '1px solid rgba(255,255,255,0.1)',
               background: 'rgba(255,255,255,0.05)',
-              color: '#38bdf8'
+              color: '#38bdf8',
+              padding: '5px 8px',
+              borderRadius: '7px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontSize: '0.72rem',
+              fontWeight: 700
             }}
           >
             <Shuffle size={12} />
-            <span className="dsa-btn-label">New Array</span>
+            <span>New Array</span>
           </button>
         </div>
 
-        {/* Target Input */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-          <span style={{ fontSize: '0.74rem', color: '#94a3b8' }}>Target:</span>
-          <input
-            type="number"
-            value={customTargetInput}
-            onChange={(e) => setCustomTargetInput(e.target.value)}
-            style={{ width: '48px', padding: '3px 5px', borderRadius: '6px', border: '1px solid rgba(255,255,255,0.2)', background: '#0f172a', color: '#fff', fontSize: '0.78rem' }}
-          />
+        {/* Center/Right: Target and N [Set] Inputs & Matrix Button */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+          {/* Target Input with [Set] */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ fontSize: '0.74rem', color: '#94a3b8', fontWeight: 700 }}>Target:</span>
+            <input
+              type="number"
+              value={customTargetInput}
+              onChange={(e) => setCustomTargetInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleApplyCustomTarget(); }}
+              style={{
+                width: '44px',
+                padding: '3px 5px',
+                borderRadius: '6px',
+                border: '1px solid rgba(255,255,255,0.2)',
+                background: '#0f172a',
+                color: '#fff',
+                fontSize: '0.76rem',
+                textAlign: 'center',
+                outline: 'none'
+              }}
+            />
+            <button
+              type="button"
+              title="Set Target"
+              onClick={handleApplyCustomTarget}
+              className="dsa-action-btn"
+              style={{
+                background: '#0284c7',
+                color: '#fff',
+                border: 'none',
+                padding: '3px 8px',
+                borderRadius: '5px',
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              Set
+            </button>
+          </div>
+
+          {/* Array Size N Input with [Set] */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+            <span style={{ fontSize: '0.74rem', color: '#94a3b8', fontWeight: 700 }}>N:</span>
+            <input
+              type="number"
+              min={4}
+              max={20}
+              value={customNInput}
+              onChange={(e) => setCustomNInput(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter') handleApplyN(); }}
+              style={{
+                width: '40px',
+                padding: '3px 5px',
+                borderRadius: '6px',
+                border: '1px solid rgba(255,255,255,0.2)',
+                background: '#0f172a',
+                color: '#fff',
+                fontSize: '0.76rem',
+                textAlign: 'center',
+                outline: 'none'
+              }}
+            />
+            <button
+              type="button"
+              title="Set Array Size"
+              onClick={handleApplyN}
+              className="dsa-action-btn"
+              style={{
+                background: 'var(--accent-cyan, #0284c7)',
+                color: '#fff',
+                border: 'none',
+                padding: '3px 8px',
+                borderRadius: '5px',
+                fontSize: '0.7rem',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              Set
+            </button>
+          </div>
+
+          {/* Matrix Cheatsheet Button */}
           <button
-            title="Set Target"
-            onClick={handleApplyCustomTarget}
+            type="button"
+            title="Searching Comparison Matrix"
+            onClick={() => setShowCheatsheet(!showCheatsheet)}
             className="dsa-action-btn"
-            style={{ background: '#0284c7', color: '#fff', border: 'none', padding: '3px 8px', minWidth: 'unset', minHeight: 'unset' }}
+            style={{
+              border: '1px solid rgba(56, 189, 248, 0.4)',
+              background: showCheatsheet ? '#0284c7' : 'rgba(56, 189, 248, 0.12)',
+              color: showCheatsheet ? '#fff' : '#38bdf8',
+              padding: '3px 8px',
+              borderRadius: '6px',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '4px',
+              fontSize: '0.72rem',
+              fontWeight: 700
+            }}
           >
-            Set
+            <HelpCircle size={13} />
+            <span>Matrix</span>
           </button>
         </div>
       </div>

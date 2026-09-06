@@ -1,4 +1,4 @@
-import type { Message, UserKeys } from '../types';
+import type { Message, UserKeys, CodeLabDeliveryFormat, CodeLabApproach } from '../types';
 
 export function getApiUrl(path: string): string {
   const cleanPath = path.startsWith('/') ? path : `/${path}`;
@@ -19,11 +19,14 @@ export async function sendChatMessage(
   messages: Message[],
   userKeys: UserKeys,
   webSearch: boolean = false,
-  mode: 'auto' | '12marks' | '2marks' | 'general' | 'none' = 'auto',
+  mode: 'auto' | '12marks' | '2marks' | '1marks' | 'general' | 'none' = 'auto',
   systemPrompt?: string,
   persona: string = 'default',
   enableDiagrams: boolean = false,
-  beginnerFriendly: boolean = false
+  beginnerFriendly: boolean = false,
+  workspace: 'chat' | 'code_lab' | 'fun_personas' | 'lecture_notes' | 'exam' = 'chat',
+  customTuning?: { temperature?: number; maxTokens?: number; searchDepth?: number },
+  codeLabOptions?: { deliveryFormat?: CodeLabDeliveryFormat; codeApproach?: CodeLabApproach }
 ): Promise<{ content: string; modelUsed: string; usage?: any }> {
   const formattedMessages = messages.map(m => ({
     role: m.role,
@@ -40,10 +43,41 @@ export async function sendChatMessage(
     if (rawTuning) aiTuningConfig = JSON.parse(rawTuning);
   } catch {}
 
-  const temperature = aiTuningConfig?.temperature ?? 0.2;
-  const maxTokens = aiTuningConfig?.maxTokens ?? 4096;
-  const searchDepth = aiTuningConfig?.searchDepth ?? 'deep';
-  const graderMode = aiTuningConfig?.graderMode ?? 'rigorous_12mark';
+  let temperature = customTuning?.temperature;
+  let maxTokens = customTuning?.maxTokens;
+  let searchDepth = customTuning?.searchDepth;
+
+  if (temperature === undefined) {
+    if (workspace === 'code_lab') {
+      temperature = aiTuningConfig?.codeDungeon?.temperature ?? 0.15;
+    } else if (workspace === 'fun_personas') {
+      temperature = aiTuningConfig?.funPersonas?.temperature ?? 0.8;
+    } else if (workspace === 'lecture_notes') {
+      temperature = aiTuningConfig?.lectureNotes?.temperature ?? 0.2;
+    } else {
+      temperature = aiTuningConfig?.mainChat?.temperature ?? (aiTuningConfig?.temperature ?? 0.2);
+    }
+  }
+
+  if (maxTokens === undefined) {
+    if (workspace === 'code_lab') {
+      maxTokens = aiTuningConfig?.codeDungeon?.maxTokens ?? 4096;
+    } else if (workspace === 'fun_personas') {
+      maxTokens = aiTuningConfig?.funPersonas?.maxTokens ?? 3072;
+    } else if (workspace === 'lecture_notes') {
+      maxTokens = aiTuningConfig?.lectureNotes?.maxTokens ?? 8192;
+    } else {
+      maxTokens = aiTuningConfig?.mainChat?.maxTokens ?? (aiTuningConfig?.maxTokens ?? 4096);
+    }
+  }
+
+  if (searchDepth === undefined) {
+    if (workspace === 'code_lab') {
+      searchDepth = aiTuningConfig?.codeDungeon?.searchSourcesCount ?? 3;
+    } else {
+      searchDepth = aiTuningConfig?.mainChat?.searchSourcesCount ?? (aiTuningConfig?.searchSourcesCount ?? (typeof aiTuningConfig?.searchDepth === 'number' ? aiTuningConfig.searchDepth : 4));
+    }
+  }
 
   const headers: Record<string, string> = {
     'Content-Type': 'application/json',
@@ -81,7 +115,9 @@ export async function sendChatMessage(
       beginnerFriendly,
       temperature,
       maxTokens,
-      graderMode
+      workspace,
+      deliveryFormat: codeLabOptions?.deliveryFormat,
+      codeApproach: codeLabOptions?.codeApproach
     })
   });
 

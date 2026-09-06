@@ -64,6 +64,21 @@ export const DataStructuresLab: React.FC<DataStructuresLabProps> = ({
     | 'disjoint_set_ds'
   >('array_ds');
 
+  // Synchronize activeAlgorithm with top Bento ribbon
+  useEffect(() => {
+    if (activeAlgorithm) {
+      const validDs = [
+        'array_ds', 'string_ds', 'singly_linked_list', 'doubly_linked_list', 'circular_linked_list',
+        'stack_ds', 'queue_ds', 'hash_table', 'binary_tree_ds', 'bst_ds', 'avl_ds', 'rbtree_ds',
+        'segment_tree_ds', 'trie_ds', 'heap_ds', 'b_tree_ds', 'disjoint_set_ds'
+      ];
+      if (validDs.includes(activeAlgorithm)) {
+        setActiveDs(activeAlgorithm as any);
+        setStatusMessage(`Switched to ${activeAlgorithm.replace(/_/g, ' ').toUpperCase()}.`);
+      }
+    }
+  }, [activeAlgorithm]);
+
   // Input states
   const [inputValue, setInputValue] = useState<string>('42');
   const [indexInput, setIndexInput] = useState<string>('2');
@@ -1398,7 +1413,7 @@ export const DataStructuresLab: React.FC<DataStructuresLabProps> = ({
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', height: '100%', overflowY: 'auto', paddingRight: '6px' }}>
-      {/* Top Selector Bar */}
+      {/* Top Header & Complexity Matrix */}
       <div className="dsa-header-card" style={{
         display: 'flex',
         alignItems: 'center',
@@ -1410,67 +1425,32 @@ export const DataStructuresLab: React.FC<DataStructuresLabProps> = ({
         borderRadius: '12px',
         border: '1px solid rgba(255,255,255,0.08)'
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flex: '1 1 200px', minWidth: 0, maxWidth: '100%', flexWrap: 'wrap' }}>
-          <span style={{ fontSize: '0.74rem', fontWeight: 800, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '0.04em', flexShrink: 0 }}>
-            DS:
+        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <span style={{ fontSize: '0.82rem', fontWeight: 800, color: '#38bdf8' }}>
+            {DS_TABS_MAP[activeDs] || activeDs}
           </span>
-          <select
-            value={activeDs}
-            onChange={(e) => handleSelectDs(e.target.value)}
-            className="dsa-select-control"
-            style={{
-              minHeight: '36px',
-              padding: '6px 10px',
-              borderRadius: '8px',
-              background: 'rgba(30, 41, 59, 0.95)',
-              border: '1.5px solid #38bdf8',
-              color: '#f8fafc',
-              fontSize: '0.82rem',
-              fontWeight: 800,
-              cursor: 'pointer',
-              outline: 'none',
-              boxShadow: '0 0 10px rgba(56, 189, 248, 0.2)'
-            }}
-          >
-            <optgroup label="── Linear Data Structures ──">
-              <option value="array_ds">📊 Array (Contiguous Memory & Rotation)</option>
-              <option value="string_ds">🔤 String & Palindrome Checking</option>
-              <option value="singly_linked_list">➡️ Singly Linked List (Pointers)</option>
-              <option value="doubly_linked_list">↔️ Doubly Linked List (Prev/Next)</option>
-              <option value="circular_linked_list">🔄 Circular Linked List (Ring)</option>
-              <option value="stack_ds">🥞 Stack (LIFO Reactor & Parentheses)</option>
-              <option value="queue_ds">🚶 Queue (FIFO & Ring Buffer)</option>
-            </optgroup>
-            <optgroup label="── Hashing & Disjoint Sets ──">
-              <option value="hash_table">#️⃣ Hash Table (Chaining & Probing)</option>
-              <option value="disjoint_set_ds">🔗 Disjoint Sets (Union-Find & Compression)</option>
-            </optgroup>
-            <optgroup label="── Trees & Hierarchies ──">
-              <option value="binary_tree_ds">🌲 Binary Tree (Hierarchy & Traversals)</option>
-              <option value="bst_ds">🔍 Binary Search Tree (BST Operations)</option>
-              <option value="avl_ds">⚖️ AVL Tree (Self-Balancing Rotations)</option>
-              <option value="rbtree_ds">🔴⚫ Red-Black Tree (Color Balancing)</option>
-              <option value="segment_tree_ds">📊 Segment Tree (Range Queries)</option>
-              <option value="trie_ds">🔠 Trie (Prefix Tree & Auto-Suggest)</option>
-              <option value="b_tree_ds">📚 B-Tree (2-3-4 Multi-Way Tree)</option>
-            </optgroup>
-            <optgroup label="── Heaps & Priority Queues ──">
-              <option value="heap_ds">🔺 Heap (Priority Queue & HeapSort)</option>
-            </optgroup>
-          </select>
         </div>
 
         <button
+          type="button"
           title="Complexity Matrix Cheatsheet"
           onClick={() => setShowCheatsheet(!showCheatsheet)}
           className="dsa-action-btn"
           style={{
             border: '1px solid rgba(56, 189, 248, 0.4)',
             background: showCheatsheet ? '#0284c7' : 'rgba(56, 189, 248, 0.12)',
-            color: showCheatsheet ? '#fff' : '#38bdf8'
+            color: showCheatsheet ? '#fff' : '#38bdf8',
+            padding: '4px 10px',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '4px',
+            fontWeight: 700,
+            fontSize: '0.74rem'
           }}
         >
-          <span className="dsa-btn-label">Complexity Matrix</span>
+          <span>Complexity Matrix</span>
           <span style={{ fontSize: '0.74rem' }}>⚡</span>
         </button>
       </div>

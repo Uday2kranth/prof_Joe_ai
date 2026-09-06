@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import type { ChatSession, Message, UserKeys, ActiveViewType, UserCustomModels, PinnedItem, Flashcard, QuizQuestion, FlashcardDeck, QuizDeck } from './types';
+import type { ChatSession, Message, UserKeys, ActiveViewType, UserCustomModels, PinnedItem, Flashcard, QuizQuestion, FlashcardDeck, QuizDeck, CodeLabDeliveryFormat, CodeLabApproach } from './types';
 import { ChatWindow } from './components/ChatWindow';
 import { CheatSheetDrawer } from './components/CheatSheetDrawer';
 import { FlashcardsModal } from './components/FlashcardsModal';
@@ -43,10 +43,11 @@ import { SettingsModal } from './components/SettingsModal';
 import { LoginModal } from './components/LoginModal';
 import { DemoLandingHub } from './components/DemoLandingHub';
 import { DemoChatHistoryDrawer } from './components/DemoChatHistoryDrawer';
+import { NotificationCenterModal, getHasUnreadNotifications } from './components/NotificationCenterModal';
 import { PdfPreviewModal } from './components/PdfPreviewModal';
 import { printSessionToPdf } from './services/printPdfService';
 import { pruneOldRenderCache } from './services/renderCacheService';
-import { Home, Key, Moon, Sun, Menu, RotateCw, Settings } from 'lucide-react';
+import { Home, Key, Moon, Sun, Menu, RotateCw, Settings, Bell } from 'lucide-react';
 import { sendChatMessage, getApiUrl } from './services/apiService';
 import { fetchCloudCodeLabPresetSessions, syncCodeLabPresetSessions } from './services/codelabSyncService';
 
@@ -197,6 +198,13 @@ export const App: React.FC = () => {
   const [isCodeLabDrawerOpen, setIsCodeLabDrawerOpen] = useState<boolean>(false);
   const [isLectureDrawerOpen, setIsLectureDrawerOpen] = useState<boolean>(false);
   const [isDemoPdfPreviewOpen, setIsDemoPdfPreviewOpen] = useState<boolean>(false);
+  const [isNotificationsOpen, setIsNotificationsOpen] = useState<boolean>(false);
+  const [hasUnreadNotifs, setHasUnreadNotifs] = useState<boolean>(() => getHasUnreadNotifications());
+
+  const handleOpenNotifications = useCallback(() => {
+    setIsNotificationsOpen(true);
+    setHasUnreadNotifs(false);
+  }, []);
   const [isCheatSheetOpen, setIsCheatSheetOpen] = useState<boolean>(false);
   const [isFlashcardsOpen, setIsFlashcardsOpen] = useState<boolean>(false);
   const [isQuizOpen, setIsQuizOpen] = useState<boolean>(false);
@@ -1461,12 +1469,24 @@ export const App: React.FC = () => {
     return 'deep_void';
   });
 
+  const [codeTheme, setCodeTheme] = useState<string>(() => {
+    try {
+      const codeStyleSaved = localStorage.getItem('chatterbot_code_style');
+      if (codeStyleSaved) {
+        const parsed = JSON.parse(codeStyleSaved);
+        if (parsed.codeTheme) return parsed.codeTheme;
+      }
+    } catch {}
+    return 'vscode_dark';
+  });
+
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', theme);
     document.documentElement.setAttribute('data-atmosphere', atmosphere);
     document.documentElement.setAttribute('data-bubble-style', bubbleStyle);
     document.documentElement.setAttribute('data-canvas-atmosphere', canvasAtmosphere);
-  }, [theme, atmosphere, bubbleStyle, canvasAtmosphere]);
+    document.documentElement.setAttribute('data-code-theme', codeTheme);
+  }, [theme, atmosphere, bubbleStyle, canvasAtmosphere, codeTheme]);
 
   useEffect(() => {
     const handleAtmosphereUpdate = () => {
@@ -1474,12 +1494,18 @@ export const App: React.FC = () => {
         let atmoToSet = '';
         let bubbleToSet = '';
         let canvasAtmoToSet = '';
+        let codeThemeToSet = '';
         const codeStyleSaved = localStorage.getItem('chatterbot_code_style');
         if (codeStyleSaved) {
           const parsed = JSON.parse(codeStyleSaved);
           if (parsed.atmosphere) atmoToSet = parsed.atmosphere;
           if (parsed.bubbleStyle) bubbleToSet = parsed.bubbleStyle;
           if (parsed.canvasAtmosphere) canvasAtmoToSet = parsed.canvasAtmosphere;
+          if (parsed.codeTheme) codeThemeToSet = parsed.codeTheme;
+        }
+        if (codeThemeToSet) {
+          setCodeTheme(codeThemeToSet);
+          document.documentElement.setAttribute('data-code-theme', codeThemeToSet);
         }
         if (!atmoToSet) {
           atmoToSet = localStorage.getItem('chatterbot_atmosphere') || 'cyber_osmania';
@@ -1513,11 +1539,13 @@ export const App: React.FC = () => {
         }
       } catch {}
     };
+    window.addEventListener('chatterbot_theme_updated', handleAtmosphereUpdate);
     window.addEventListener('chatterbot_code_style_updated', handleAtmosphereUpdate);
     window.addEventListener('chatterbot_atmosphere_updated', handleAtmosphereUpdate);
     window.addEventListener('chatterbot_canvas_atmosphere_updated', handleAtmosphereUpdate);
     window.addEventListener('storage', handleAtmosphereUpdate);
     return () => {
+      window.removeEventListener('chatterbot_theme_updated', handleAtmosphereUpdate);
       window.removeEventListener('chatterbot_code_style_updated', handleAtmosphereUpdate);
       window.removeEventListener('chatterbot_atmosphere_updated', handleAtmosphereUpdate);
       window.removeEventListener('chatterbot_canvas_atmosphere_updated', handleAtmosphereUpdate);
@@ -1525,25 +1553,27 @@ export const App: React.FC = () => {
     };
   }, []);
 
-  const handleToggleTheme = () => {
-    setTheme(prev => {
-      const nextTheme = prev === 'dark' ? 'light' : 'dark';
-      document.documentElement.setAttribute('data-theme', nextTheme);
-      localStorage.setItem('chatterbot_theme', nextTheme);
-      localStorage.setItem('theme', nextTheme);
+  const handleSetThemeMode = useCallback((nextTheme: 'light' | 'dark') => {
+    setTheme(nextTheme);
+    document.documentElement.setAttribute('data-theme', nextTheme);
+    localStorage.setItem('chatterbot_theme', nextTheme);
+    localStorage.setItem('theme', nextTheme);
 
-      // Android Capacitor: Sync native status bar
-      import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
-        StatusBar.setStyle({ style: nextTheme === 'light' ? Style.Light : Style.Dark }).catch(() => {});
-        StatusBar.setBackgroundColor({ color: nextTheme === 'light' ? '#f8fafc' : '#020617' }).catch(() => {});
-      }).catch(() => {});
+    // Android Capacitor: Sync native status bar
+    import('@capacitor/status-bar').then(({ StatusBar, Style }) => {
+      StatusBar.setStyle({ style: nextTheme === 'light' ? Style.Light : Style.Dark }).catch(() => {});
+      StatusBar.setBackgroundColor({ color: nextTheme === 'light' ? '#f8fafc' : '#020617' }).catch(() => {});
+    }).catch(() => {});
 
-      window.dispatchEvent(new Event('chatterbot_theme_updated'));
-      window.dispatchEvent(new Event('chatterbot_code_style_updated'));
-      window.dispatchEvent(new Event('chatterbot_atmosphere_updated'));
-      return nextTheme;
-    });
-  };
+    window.dispatchEvent(new Event('chatterbot_theme_updated'));
+    window.dispatchEvent(new Event('chatterbot_code_style_updated'));
+    window.dispatchEvent(new Event('chatterbot_atmosphere_updated'));
+  }, []);
+
+  const handleToggleTheme = useCallback(() => {
+    const nextTheme = theme === 'dark' ? 'light' : 'dark';
+    handleSetThemeMode(nextTheme);
+  }, [theme, handleSetThemeMode]);
 
   const handleNewSession = () => {
     const customTitle = prompt('Enter title for new chat session:', `Chat Session ${sessions.length + 1}`);
@@ -1613,8 +1643,9 @@ export const App: React.FC = () => {
   const handleSendMessage = async (
     prompt: string,
     webSearch: boolean,
-    modeOrPersona: 'auto' | '12marks' | '2marks' | 'general' | 'none' | string = 'auto',
-    personaArg?: string
+    modeOrPersona: 'auto' | '12marks' | '2marks' | '1marks' | 'general' | 'none' | string = 'auto',
+    personaArg?: string,
+    codeLabOptions?: { deliveryFormat?: CodeLabDeliveryFormat; codeApproach?: CodeLabApproach }
   ) => {
     const isCodeLabWorkspace = activeHubWorkspace === 'code_lab';
     const isPersonaWorkspace = activeView === 'fun_personas' || activeHubWorkspace === 'fun_personas';
@@ -1624,10 +1655,10 @@ export const App: React.FC = () => {
 
     if (!currentSess) return;
 
-    let effectiveMode: 'auto' | '12marks' | '2marks' | 'general' | 'none' = 'auto';
+    let effectiveMode: 'auto' | '12marks' | '2marks' | '1marks' | 'general' | 'none' = 'auto';
     let effectivePersona = 'default';
 
-    if (['auto', '12marks', '2marks', 'general', 'none'].includes(modeOrPersona)) {
+    if (['auto', '12marks', '2marks', '1marks', 'general', 'none'].includes(modeOrPersona)) {
       effectiveMode = modeOrPersona as any;
     }
 
@@ -1711,6 +1742,18 @@ export const App: React.FC = () => {
           ? sanitizeSystemPrompt(currentSess.systemPrompt)
           : sanitizeSystemPrompt(currentSess.systemPrompt || persistentMainSystemPrompt?.prompt));
 
+    const activeWorkspaceParam = isCodeLabWorkspace
+      ? 'code_lab'
+      : (isPersonaWorkspace ? 'fun_personas' : 'chat');
+
+    let codeLabOpts = codeLabOptions;
+    if (isCodeLabWorkspace && !codeLabOpts) {
+      codeLabOpts = {
+        deliveryFormat: (localStorage.getItem(`chatterbot_codelab_format_${currentUser || 'guest'}`) as CodeLabDeliveryFormat) || 'lab_record',
+        codeApproach: (localStorage.getItem(`chatterbot_codelab_approach_${currentUser || 'guest'}`) as CodeLabApproach) || 'standard_lib'
+      };
+    }
+
     try {
       const response = await sendChatMessage(
         selectedProvider,
@@ -1722,7 +1765,10 @@ export const App: React.FC = () => {
         effectiveSystemPrompt,
         effectivePersona,
         isDiagramsEnabled,
-        isBeginnerFriendly
+        isBeginnerFriendly,
+        activeWorkspaceParam,
+        undefined,
+        codeLabOpts
       );
 
       const assistantMsg: Message = {
@@ -1735,7 +1781,53 @@ export const App: React.FC = () => {
         usage: response.usage
       };
 
-      updateSessState([...updatedMessages, assistantMsg]);
+      let deliveryPacing: 'instant' | 'fast' | 'smooth' | 'lecture' = 'instant';
+      try {
+        const rawTuning = localStorage.getItem('chatterbot_ai_tuning');
+        if (rawTuning) {
+          const parsed = JSON.parse(rawTuning);
+          if (isCodeLabWorkspace) {
+            deliveryPacing = parsed.codeDungeon?.deliveryPacing || 'instant';
+          } else if (isPersonaWorkspace) {
+            deliveryPacing = parsed.funPersonas?.deliveryPacing || 'instant';
+          } else {
+            deliveryPacing = parsed.mainChat?.deliveryPacing || parsed.deliveryPacing || 'instant';
+          }
+        }
+      } catch {}
+
+      if (deliveryPacing === 'instant' || !response.content) {
+        updateSessState([...updatedMessages, assistantMsg]);
+      } else {
+        const fullContent = response.content;
+        const words = fullContent.split(' ');
+        const chunkSize = deliveryPacing === 'fast' ? 14 : (deliveryPacing === 'smooth' ? 4 : 1);
+        const intervalMs = deliveryPacing === 'fast' ? 20 : (deliveryPacing === 'smooth' ? 30 : 45);
+        let currentIndex = Math.min(chunkSize, words.length);
+
+        const initialMsg: Message = {
+          ...assistantMsg,
+          content: words.slice(0, currentIndex).join(' ')
+        };
+        updateSessState([...updatedMessages, initialMsg]);
+
+        if (currentIndex < words.length) {
+          const streamInterval = setInterval(() => {
+            currentIndex = Math.min(currentIndex + chunkSize, words.length);
+            const currentText = currentIndex >= words.length ? fullContent : words.slice(0, currentIndex).join(' ');
+
+            const currentAssistant: Message = {
+              ...assistantMsg,
+              content: currentText
+            };
+            updateSessState([...updatedMessages, currentAssistant]);
+
+            if (currentIndex >= words.length) {
+              clearInterval(streamInterval);
+            }
+          }, intervalMs);
+        }
+      }
     } catch (err: any) {
       const errorMsg: Message = {
         id: `msg-${Date.now() + 1}`,
@@ -1771,10 +1863,15 @@ export const App: React.FC = () => {
 
     const activePresetObj = ACADEMIC_PRESETS.find(p => p.id === activeCodeLabPresetId);
     const effectiveSystemPrompt = isCodeLabWorkspace
-      ? activePresetObj?.systemInstruction
+      ? [
+          'You are Prof. Joe AI operating inside Code Dungeon Split-Screen IDE. Prioritize generating complete, clean, self-contained, and immediately runnable code files in ```python filename: [name].py blocks with zero essay headings.',
+          activePresetObj?.systemInstruction
+        ].filter(Boolean).join('\n\n')
       : (isPersonaWorkspace
           ? sanitizeSystemPrompt(currentSess.systemPrompt)
           : sanitizeSystemPrompt(currentSess.systemPrompt || persistentMainSystemPrompt?.prompt));
+
+    const effectiveMode = (isCodeLabWorkspace || isPersonaWorkspace) ? 'general' : promptMode;
 
     const updateSessState = (msgList: Message[]) => {
       if (isCodeLabWorkspace) {
@@ -1829,6 +1926,18 @@ export const App: React.FC = () => {
       ? updated.filter(m => !m.personaTag || m.personaTag === 'default')
       : updated;
 
+    const activeWorkspaceParam = isCodeLabWorkspace
+      ? 'code_lab'
+      : (isPersonaWorkspace ? 'fun_personas' : 'chat');
+
+    let codeLabOpts: { deliveryFormat?: CodeLabDeliveryFormat; codeApproach?: CodeLabApproach } | undefined = undefined;
+    if (isCodeLabWorkspace) {
+      codeLabOpts = {
+        deliveryFormat: (localStorage.getItem(`chatterbot_codelab_format_${currentUser || 'guest'}`) as CodeLabDeliveryFormat) || 'lab_record',
+        codeApproach: (localStorage.getItem(`chatterbot_codelab_approach_${currentUser || 'guest'}`) as CodeLabApproach) || 'standard_lib'
+      };
+    }
+
     try {
       const response = await sendChatMessage(
         selectedProvider,
@@ -1836,11 +1945,14 @@ export const App: React.FC = () => {
         apiPayloadMessages,
         userKeys,
         isPersistentWebSearch,
-        promptMode,
+        effectiveMode,
         effectiveSystemPrompt,
         effectivePersona,
         isDiagramsEnabled,
-        isBeginnerFriendly
+        isBeginnerFriendly,
+        activeWorkspaceParam,
+        undefined,
+        codeLabOpts
       );
 
       const assistantMsg: Message = {
@@ -1853,7 +1965,53 @@ export const App: React.FC = () => {
         usage: response.usage
       };
 
-      updateSessState([...updated, assistantMsg]);
+      let deliveryPacing: 'instant' | 'fast' | 'smooth' | 'lecture' = 'instant';
+      try {
+        const rawTuning = localStorage.getItem('chatterbot_ai_tuning');
+        if (rawTuning) {
+          const parsed = JSON.parse(rawTuning);
+          if (isCodeLabWorkspace) {
+            deliveryPacing = parsed.codeDungeon?.deliveryPacing || 'instant';
+          } else if (isPersonaWorkspace) {
+            deliveryPacing = parsed.funPersonas?.deliveryPacing || 'instant';
+          } else {
+            deliveryPacing = parsed.mainChat?.deliveryPacing || parsed.deliveryPacing || 'instant';
+          }
+        }
+      } catch {}
+
+      if (deliveryPacing === 'instant' || !response.content) {
+        updateSessState([...updated, assistantMsg]);
+      } else {
+        const fullContent = response.content;
+        const words = fullContent.split(' ');
+        const chunkSize = deliveryPacing === 'fast' ? 14 : (deliveryPacing === 'smooth' ? 4 : 1);
+        const intervalMs = deliveryPacing === 'fast' ? 20 : (deliveryPacing === 'smooth' ? 30 : 45);
+        let currentIndex = Math.min(chunkSize, words.length);
+
+        const initialMsg: Message = {
+          ...assistantMsg,
+          content: words.slice(0, currentIndex).join(' ')
+        };
+        updateSessState([...updated, initialMsg]);
+
+        if (currentIndex < words.length) {
+          const streamInterval = setInterval(() => {
+            currentIndex = Math.min(currentIndex + chunkSize, words.length);
+            const currentText = currentIndex >= words.length ? fullContent : words.slice(0, currentIndex).join(' ');
+
+            const currentAssistant: Message = {
+              ...assistantMsg,
+              content: currentText
+            };
+            updateSessState([...updated, currentAssistant]);
+
+            if (currentIndex >= words.length) {
+              clearInterval(streamInterval);
+            }
+          }, intervalMs);
+        }
+      }
     } catch (err: any) {
       const errorMsg: Message = {
         id: `msg-${Date.now() + 1}`,
@@ -1900,10 +2058,15 @@ export const App: React.FC = () => {
 
     const activePresetObj = ACADEMIC_PRESETS.find(p => p.id === activeCodeLabPresetId);
     const effectiveSystemPrompt = isCodeLabWorkspace
-      ? activePresetObj?.systemInstruction
+      ? [
+          'You are Prof. Joe AI operating inside Code Dungeon Split-Screen IDE. Prioritize generating complete, clean, self-contained, and immediately runnable code files in ```python filename: [name].py blocks with zero essay headings.',
+          activePresetObj?.systemInstruction
+        ].filter(Boolean).join('\n\n')
       : (isPersonaWorkspace
           ? sanitizeSystemPrompt(currentSess.systemPrompt)
           : sanitizeSystemPrompt(currentSess.systemPrompt || persistentMainSystemPrompt?.prompt));
+
+    const effectiveMode = (isCodeLabWorkspace || isPersonaWorkspace) ? 'general' : promptMode;
 
     const updateSessState = (msgList: Message[]) => {
       if (isCodeLabWorkspace) {
@@ -1958,6 +2121,18 @@ export const App: React.FC = () => {
       ? updated.filter(m => !m.personaTag || m.personaTag === 'default')
       : updated;
 
+    const activeWorkspaceParam = isCodeLabWorkspace
+      ? 'code_lab'
+      : (isPersonaWorkspace ? 'fun_personas' : 'chat');
+
+    let codeLabOpts: { deliveryFormat?: CodeLabDeliveryFormat; codeApproach?: CodeLabApproach } | undefined = undefined;
+    if (isCodeLabWorkspace) {
+      codeLabOpts = {
+        deliveryFormat: (localStorage.getItem(`chatterbot_codelab_format_${currentUser || 'guest'}`) as CodeLabDeliveryFormat) || 'lab_record',
+        codeApproach: (localStorage.getItem(`chatterbot_codelab_approach_${currentUser || 'guest'}`) as CodeLabApproach) || 'standard_lib'
+      };
+    }
+
     try {
       const response = await sendChatMessage(
         selectedProvider,
@@ -1965,11 +2140,14 @@ export const App: React.FC = () => {
         apiPayloadMessages,
         userKeys,
         isPersistentWebSearch,
-        promptMode,
+        effectiveMode,
         effectiveSystemPrompt,
         effectivePersona,
         isDiagramsEnabled,
-        isBeginnerFriendly
+        isBeginnerFriendly,
+        activeWorkspaceParam,
+        undefined,
+        codeLabOpts
       );
 
       const assistantMsg: Message = {
@@ -2067,6 +2245,8 @@ export const App: React.FC = () => {
           onSelectWorkspace={(ws) => setActiveHubWorkspace(ws as ActiveViewType)}
           onOpenSettings={() => setIsSettingsOpen(true)}
           onOpenSettingsStudio={() => setActiveHubWorkspace('settings')}
+          onOpenNotifications={handleOpenNotifications}
+          hasUnreadNotifications={hasUnreadNotifs}
           theme={theme}
           onToggleTheme={handleToggleTheme}
           userRole={userRole}
@@ -2087,6 +2267,12 @@ export const App: React.FC = () => {
           preventClose={false}
           onClose={() => setIsLoginOpen(false)}
           onLoginSuccess={handleLoginSuccess}
+        />
+        <NotificationCenterModal
+          isOpen={isNotificationsOpen}
+          onClose={() => setIsNotificationsOpen(false)}
+          onSelectWorkspace={(ws) => setActiveHubWorkspace(ws)}
+          onOpenSettings={() => setIsSettingsOpen(true)}
         />
       </div>
     );
@@ -2169,36 +2355,50 @@ export const App: React.FC = () => {
                 <RotateCw size={16} />
               </button>
 
-              {/* 4. Theme Toggle */}
+              {/* 4. Theme Toggle (L/D Mode) */}
               <button 
                 type="button" 
                 onClick={handleToggleTheme} 
-                className="demo-icon-btn"
-                title="Toggle Dark/Light Theme"
+                className="demo-icon-btn demo-theme-toggle-btn"
+                title={theme === 'dark' ? "Switch to Light Mode ☀️" : "Switch to Dark Mode 🌙"}
+                aria-label="Toggle Light/Dark Mode"
               >
-                {theme === 'dark' ? <Sun size={16} className="text-amber-400" /> : <Moon size={16} style={{ color: 'var(--accent-cyan)' }} />}
+                {theme === 'dark' ? <Sun size={16} className="theme-toggle-sun text-amber-400" /> : <Moon size={16} className="theme-toggle-moon text-sky-500" />}
               </button>
 
-              {/* 5. Quick API Keys & Model Selector (Key Symbol) */}
+              {/* 5. Notifications & Model Updates (Bell Symbol) */}
+              <button 
+                type="button" 
+                onClick={handleOpenNotifications} 
+                className="demo-icon-btn demo-notification-btn"
+                title="System Updates, Model Notices & Changelog"
+                aria-label="System Updates & Model Notices"
+                style={{ position: 'relative' }}
+              >
+                <Bell size={16} className="bell-ring-on-hover" />
+                {hasUnreadNotifs && (
+                  <span className="notification-badge-dot" />
+                )}
+              </button>
+
+              {/* 6. Quick API Keys & Model Selector (Key Symbol) */}
               <button 
                 type="button" 
                 onClick={() => setIsSettingsOpen(true)} 
                 className="demo-quick-key-btn"
                 title="Quick API Keys & Model Selector"
                 aria-label="Quick API Keys & Model Selector"
-                style={{ width: '34px', height: '34px' }}
               >
                 <Key size={16} className="key-bounce-on-hover" />
               </button>
 
-              {/* 6. Universal Settings & Print Studio 3D Gear Button */}
+              {/* 7. Universal Settings & Print Studio 3D Gear Button */}
               <button 
                 type="button" 
                 onClick={() => setActiveHubWorkspace('settings')} 
                 className="demo-settings-gear-btn"
                 title="Open Universal Settings & Print Studio"
                 aria-label="Universal Settings & Print Studio"
-                style={{ width: '34px', height: '34px' }}
               >
                 <Settings size={16} className="gear-spin-on-hover" />
               </button>
@@ -2384,8 +2584,8 @@ export const App: React.FC = () => {
             {activeHubWorkspace === 'code_lab' && (
               <PracticalCodeLabView
                 onBackToHub={() => setActiveHubWorkspace('chat')}
-                onSendMessage={(prompt, webSearch, mode) => {
-                  handleSendMessage(prompt, webSearch, mode);
+                onSendMessage={(prompt, webSearch, mode, customPrompt, codeLabOpts) => {
+                  handleSendMessage(prompt, webSearch, mode, customPrompt, codeLabOpts);
                 }}
                 onRetry={handleRetryLastAssistantMessage}
                 onEditUserMessage={handleEditLastUserMessage}
@@ -2452,6 +2652,8 @@ export const App: React.FC = () => {
                 currentUser={currentUser}
                 userRole={userRole}
                 theme={theme}
+                themeMode={theme}
+                onThemeModeChange={handleSetThemeMode}
                 onToggleTheme={handleToggleTheme}
                 userKeys={userKeys}
                 onSaveKeys={handleSaveUserKeys}
@@ -2527,6 +2729,13 @@ export const App: React.FC = () => {
           onClose={() => setIsQuizOpen(false)}
           questions={quizQuestions}
           sessionTitle={activeSession?.title}
+        />
+
+        <NotificationCenterModal
+          isOpen={isNotificationsOpen}
+          onClose={() => setIsNotificationsOpen(false)}
+          onSelectWorkspace={(ws) => setActiveHubWorkspace(ws)}
+          onOpenSettings={() => setIsSettingsOpen(true)}
         />
       </div>
   );
