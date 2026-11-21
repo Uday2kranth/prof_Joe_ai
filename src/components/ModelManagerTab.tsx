@@ -36,13 +36,18 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
     return PROVIDERS.find(p => p.id === selectedProviderId) || PROVIDERS[0];
   }, [selectedProviderId]);
 
+  const currentUser = typeof window !== 'undefined' ? (localStorage.getItem('chatterbot_username') || '') : '';
+  const userRole = typeof window !== 'undefined' ? (localStorage.getItem('chatterbot_role') || '') : '';
+  const isAdmin = userRole === 'admin' || userRole === 'co_admin' || currentUser.toLowerCase() === 'admin@uday' || currentUser.toLowerCase() === 'uday@joe';
+
   const activeApiKey = useMemo(() => {
     const keyProp = selectedProviderId.replace('-keyed', '') as keyof UserKeys;
     const rawVal = userKeys ? userKeys[keyProp] : '';
     return typeof rawVal === 'string' ? rawVal : (rawVal ? String(rawVal) : '');
   }, [selectedProviderId, userKeys]);
 
-  const hasApiKey = Boolean(activeApiKey);
+  const isKeyless = selectedProviderId === 'pollinations' || selectedProviderId === 'local_endpoint' || selectedProviderId === 'local';
+  const hasApiKey = Boolean(activeApiKey) || isAdmin || isKeyless;
 
   // Initialize or get current provider models list
   const currentModelList: CustomModel[] = useMemo(() => {
@@ -112,7 +117,10 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
     try {
       const response = await fetch(getApiUrl('/api/models'), {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+          'Content-Type': 'application/json',
+          'x-user-authorization': typeof window !== 'undefined' ? (localStorage.getItem('chatterbot_token') || '') : ''
+        },
         body: JSON.stringify({
           provider: selectedProviderId,
           apiKey: activeApiKey,
@@ -174,7 +182,7 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
             const isSelected = p.id === selectedProviderId;
             const provModels = customModels[p.id] || p.models;
             const provKey = userKeys ? (userKeys as any)[p.id.replace('-keyed', '')] : '';
-            const isConfigured = Boolean(provKey);
+            const isConfigured = Boolean(provKey) || isAdmin || p.id === 'pollinations' || p.id === 'local_endpoint' || p.id === 'local';
 
             return (
               <button
@@ -331,7 +339,7 @@ export const ModelManagerTab: React.FC<ModelManagerTabProps> = ({
             color: hasApiKey ? '#4ade80' : '#f87171',
             border: `1px solid ${hasApiKey ? 'rgba(34, 197, 94, 0.3)' : 'rgba(239, 68, 68, 0.3)'}`
           }}>
-            {hasApiKey ? '🟢 Key Configured' : '🔴 Key Required'}
+            {isAdmin && !activeApiKey && !isKeyless ? '🟢 Server Env Key (Admin)' : (hasApiKey ? '🟢 Key Configured' : '🔴 Key Required')}
           </span>
 
           <button

@@ -1,3 +1,4 @@
+import { verifyToken } from './_auth.js';
 let IN_MEMORY_USER_KEYS = {};
 let cachedClient = null;
 let cachedDb = null;
@@ -25,12 +26,23 @@ export default async function handler(req, res) {
     return res.status(200).end();
   }
 
+  const authHeader = req.headers['x-user-authorization'] || req.headers['authorization'];
+  const userAuth = verifyToken(authHeader);
+
+  if (!userAuth.valid) {
+    return res.status(401).json({ error: 'Unauthorized: A valid login session token is required to access API keys.' });
+  }
+
   const mongodbUri = process.env.MONGODB_URI;
 
   if (req.method === 'GET') {
     const { username } = req.query || {};
     if (!username) {
       return res.status(400).json({ error: 'Username query parameter is required' });
+    }
+
+    if (!userAuth.isAdmin && userAuth.username.toLowerCase() !== username.toLowerCase()) {
+      return res.status(403).json({ error: "Forbidden: You can only access your own saved API keys." });
     }
 
     if (mongodbUri) {
@@ -55,6 +67,10 @@ export default async function handler(req, res) {
     const { username, keys } = req.body || {};
     if (!username || !keys) {
       return res.status(400).json({ error: 'Username and keys are required in body' });
+    }
+
+    if (!userAuth.isAdmin && userAuth.username.toLowerCase() !== username.toLowerCase()) {
+      return res.status(403).json({ error: "Forbidden: You can only update your own API keys." });
     }
 
     // Save to in-memory store

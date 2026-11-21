@@ -1,3 +1,5 @@
+import { createToken } from './_auth.js';
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -42,7 +44,7 @@ export default async function handler(req, res) {
       return res.status(401).json({ error: 'Invalid credentials. Please check your username and password.' });
     }
 
-    const userToken = `prof-joe-${Date.now()}-${Buffer.from(username).toString('base64')}`;
+    const userToken = createToken(username, matchedUser.role);
 
     // Optional MongoDB Audit & Single-Device Token Registration
     if (process.env.MONGODB_URI) {

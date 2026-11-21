@@ -1,3 +1,4 @@
+import { verifyToken } from './_auth.js';
 export default async function handler(req, res) {
     res.setHeader('Access-Control-Allow-Origin', '*');
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -21,7 +22,28 @@ export default async function handler(req, res) {
         let fetchUrl = '';
         const headers = { 'Content-Type': 'application/json' };
 
-        const keyStr = typeof apiKey === 'string' ? apiKey : (apiKey ? String(apiKey) : '');
+        const userAuth = verifyToken(req.headers['x-user-authorization'] || req.headers['authorization']);
+        let keyStr = typeof apiKey === 'string' ? apiKey : (apiKey ? String(apiKey) : '');
+
+        // Fallback to server-side Vercel environment variables STRICTLY for verified Admins / Co-Admins
+        if (!keyStr && userAuth.valid && userAuth.isAdmin) {
+            switch (provider) {
+                case 'openrouter': keyStr = process.env.OPENROUTER_API_KEY || ''; break;
+                case 'gemini': keyStr = process.env.GEMINI_API_KEY || ''; break;
+                case 'groq': keyStr = process.env.GROQ_API_KEY || ''; break;
+                case 'nvidia': keyStr = process.env.NVIDIA_API_KEY || ''; break;
+                case 'mistral': keyStr = process.env.MISTRAL_API_KEY || ''; break;
+                case 'cerebras': keyStr = process.env.CEREBRAS_API_KEY || ''; break;
+                case 'sambanova': keyStr = process.env.SAMBANOVA_API_KEY || ''; break;
+                case 'nararouter': keyStr = process.env.NARAROUTER_API_KEY || ''; break;
+                case 'huggingface': keyStr = process.env.HUGGINGFACE_API_KEY || ''; break;
+                case 'opencode': keyStr = process.env.OPENCODE_API_KEY || ''; break;
+                case 'poolside': keyStr = process.env.POOLSIDE_API_KEY || ''; break;
+                case 'ollama': keyStr = process.env.OLLAMA_API_KEY || ''; break;
+                case 'pollinations':
+                case 'pollinations-keyed': keyStr = process.env.POLLINATIONS_API_KEY || ''; break;
+            }
+        }
 
         if (keyStr) {
             const firstKey = keyStr.split(',')[0].trim();

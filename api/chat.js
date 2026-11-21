@@ -1,3 +1,4 @@
+import { verifyToken } from './_auth.js';
 const fetch = globalThis.fetch || (typeof fetch !== 'undefined' ? fetch : require('node-fetch'));
 
 // All API credentials are read dynamically from request headers or process.env (Vercel Environment Variables).
@@ -471,40 +472,41 @@ GENERAL AI ASSISTANT DIRECTIVES:
     else if (targetProvider.includes('opencode')) targetProvider = 'opencode';
     else if (targetProvider.includes('nararouter')) targetProvider = 'nararouter';
 
-    // 1. Resolve API Key: prioritizes client-submitted header keys. Admin fallback keys are strictly reserved for Admin accounts.
+    // 1. Resolve API Key: prioritizes client-submitted header keys. Admin fallback keys are strictly reserved for Admin accounts with verified tokens.
     let apiKey = '';
-    const isAdmin = Boolean(user && (user.toLowerCase() === "admin@uday" || user.toLowerCase() === "uday@joe"));
+    const userAuth = verifyToken(req.headers['x-user-authorization'] || req.headers['authorization']);
+    const isAdmin = Boolean(userAuth.valid && userAuth.isAdmin);
 
     if (targetProvider === "openrouter") {
-        apiKey = req.headers['x-user-openrouter-key'] || process.env.OPENROUTER_API_KEY || (isAdmin ? process.env.OPENROUTER_API_KEY : '') || '';
+        apiKey = req.headers['x-user-openrouter-key'] || (isAdmin ? (process.env.OPENROUTER_API_KEY || '') : '');
     } else if (targetProvider === "nvidia") {
-        apiKey = req.headers['x-user-nvidia-key'] || process.env.NVIDIA_API_KEY || (isAdmin ? process.env.NVIDIA_API_KEY : '') || '';
+        apiKey = req.headers['x-user-nvidia-key'] || (isAdmin ? (process.env.NVIDIA_API_KEY || '') : '');
     } else if (targetProvider === "omnirouter") {
-        apiKey = req.headers['x-user-omnirouter-key'] || process.env.OMNIROUTER_API_KEY || (isAdmin ? process.env.OMNIROUTER_API_KEY : '') || '';
+        apiKey = req.headers['x-user-omnirouter-key'] || (isAdmin ? (process.env.OMNIROUTER_API_KEY || '') : '');
     } else if (targetProvider === "mistral") {
-        apiKey = req.headers['x-user-mistral-key'] || process.env.MISTRAL_API_KEY || (isAdmin ? process.env.MISTRAL_API_KEY : '') || '';
+        apiKey = req.headers['x-user-mistral-key'] || (isAdmin ? (process.env.MISTRAL_API_KEY || '') : '');
     } else if (targetProvider === "cerebras") {
-        apiKey = req.headers['x-user-cerebras-key'] || process.env.CEREBRAS_API_KEY || (isAdmin ? process.env.CEREBRAS_API_KEY : '') || '';
+        apiKey = req.headers['x-user-cerebras-key'] || (isAdmin ? (process.env.CEREBRAS_API_KEY || '') : '');
     } else if (targetProvider === "groq") {
-        apiKey = req.headers['x-user-groq-key'] || process.env.GROQ_API_KEY || (isAdmin ? process.env.GROQ_API_KEY : '') || '';
+        apiKey = req.headers['x-user-groq-key'] || (isAdmin ? (process.env.GROQ_API_KEY || '') : '');
     } else if (targetProvider === "sambanova") {
-        apiKey = req.headers['x-user-sambanova-key'] || process.env.SAMBANOVA_API_KEY || (isAdmin ? process.env.SAMBANOVA_API_KEY : '') || '';
+        apiKey = req.headers['x-user-sambanova-key'] || (isAdmin ? (process.env.SAMBANOVA_API_KEY || '') : '');
     } else if (targetProvider === "gemini") {
-        apiKey = req.headers['x-user-gemini-key'] || process.env.GEMINI_API_KEY || (isAdmin ? process.env.GEMINI_API_KEY : '') || '';
+        apiKey = req.headers['x-user-gemini-key'] || (isAdmin ? (process.env.GEMINI_API_KEY || '') : '');
     } else if (targetProvider === "nararouter") {
-        apiKey = req.headers['x-user-nararouter-key'] || process.env.NARAROUTER_API_KEY || (isAdmin ? process.env.NARAROUTER_API_KEY : '') || '';
+        apiKey = req.headers['x-user-nararouter-key'] || (isAdmin ? (process.env.NARAROUTER_API_KEY || '') : '');
     } else if (targetProvider === "huggingface") {
-        apiKey = req.headers['x-user-huggingface-key'] || process.env.HUGGINGFACE_API_KEY || (isAdmin ? process.env.HUGGINGFACE_API_KEY : '') || '';
+        apiKey = req.headers['x-user-huggingface-key'] || (isAdmin ? (process.env.HUGGINGFACE_API_KEY || '') : '');
     } else if (targetProvider === "opencode") {
-        apiKey = req.headers['x-user-opencode-key'] || process.env.OPENCODE_API_KEY || (isAdmin ? process.env.OPENCODE_API_KEY : '') || '';
+        apiKey = req.headers['x-user-opencode-key'] || (isAdmin ? (process.env.OPENCODE_API_KEY || '') : '');
     } else if (targetProvider === "poolside") {
-        apiKey = req.headers['x-user-poolside-key'] || process.env.POOLSIDE_API_KEY || (isAdmin ? process.env.POOLSIDE_API_KEY : '') || '';
+        apiKey = req.headers['x-user-poolside-key'] || (isAdmin ? (process.env.POOLSIDE_API_KEY || '') : '');
     } else if (targetProvider === "local_endpoint" || targetProvider === "local") {
         apiKey = 'local_device_keyless';
     } else if (targetProvider === "pollinations-keyed" || targetProvider === "pollinations") {
-        apiKey = req.headers['x-user-pollinations-key'] || process.env.POLLINATIONS_API_KEY || (isAdmin ? process.env.POLLINATIONS_API_KEY : '') || 'pollinations_free_keyless';
+        apiKey = req.headers['x-user-pollinations-key'] || (isAdmin ? (process.env.POLLINATIONS_API_KEY || '') : '') || 'pollinations_free_keyless';
     } else if (targetProvider === "ollama") {
-        apiKey = req.headers['x-user-ollama-key'] || process.env.OLLAMA_API_KEY || (isAdmin ? process.env.OLLAMA_API_KEY : '') || '';
+        apiKey = req.headers['x-user-ollama-key'] || (isAdmin ? (process.env.OLLAMA_API_KEY || '') : '');
     }
 
     if (!apiKey) {
@@ -765,10 +767,10 @@ MANDATORY H1 HEADING STRUCTURE:
 
                     if (targetProvider === "poolside") {
                         // Poolside Laguna Model Multi-Bridge Router (NaraRouter, Pollinations, OpenCode, OpenRouter)
-                        const naraKey = req.headers['x-user-nararouter-key'] || (isAdmin ? process.env.NARAROUTER_API_KEY : '') || process.env.NARAROUTER_API_KEY || "";
-                        const openrouterKey = req.headers['x-user-openrouter-key'] || process.env.OPENROUTER_API_KEY || "";
-                        const opencodeKey = req.headers['x-user-opencode-key'] || (isAdmin ? process.env.OPENCODE_API_KEY : '') || process.env.OPENCODE_API_KEY || "";
-                        const pollinationsKey = req.headers['x-user-pollinations-key'] || (isAdmin ? process.env.POLLINATIONS_API_KEY : '') || process.env.POLLINATIONS_API_KEY || "";
+                        const naraKey = req.headers['x-user-nararouter-key'] || (isAdmin ? (process.env.NARAROUTER_API_KEY || '') : '');
+                        const openrouterKey = req.headers['x-user-openrouter-key'] || (isAdmin ? (process.env.OPENROUTER_API_KEY || '') : '');
+                        const opencodeKey = req.headers['x-user-opencode-key'] || (isAdmin ? (process.env.OPENCODE_API_KEY || '') : '');
+                        const pollinationsKey = req.headers['x-user-pollinations-key'] || (isAdmin ? (process.env.POLLINATIONS_API_KEY || '') : '') || 'pollinations_free_keyless';
 
                         const poolsideEndpoints = [];
 
